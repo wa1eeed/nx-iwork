@@ -9,6 +9,24 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+---
+
+## [0.1.1] - 2026-04-27
+
+Patch release: deployment hardening and Alpine compatibility. No app
+behavior changes — purely infrastructure to make `v0.1.0` actually run
+in the Coolify/Docker target.
+
+### Fixed
+- **Docker runner stage failed on missing dirs.** `Dockerfile` copied `/app/public` and `/app/scripts` from the builder, but neither existed in the Sprint 0 source. Added an empty `public/` (with `.gitkeep`) and removed the `scripts` COPY (left a comment to restore it once Sprint 1+ adds `create-admin`/seed/scheduler scripts).
+- **Prisma 7 ↔ schema 5 mismatch at runtime.** The original `CMD npx prisma migrate deploy && node server.js` fetched the latest Prisma CLI (7.8.0) from npm at container start, which rejected our 5.22 schema with *"datasource property `url` is no longer supported"*. Switched the CMD to JSON-array form invoking the pinned local CLI (also resolves the `JSONArgsRecommended` BuildKit warning).
+- **Prisma CLI not available in standalone runner.** Next.js standalone tracing only follows static `require`/`import`, so the `prisma` CLI (invoked but never imported) was excluded. Explicitly `COPY` the `prisma` package from the builder. Tried promoting `prisma` to runtime deps first — confirmed standalone tracing still skips it, reverted to `devDependencies` and pinned to exact `5.22.0`.
+- **`.bin/prisma` symlink resolved into a regular file.** Docker `COPY` of a symlink follows it on the source side, so `node_modules/.bin/prisma` arrived in the runner as a copy of `build/index.js`. At runtime that broke `__dirname`-relative loading of `prisma_schema_build_bg.wasm` (it was searched in `.bin/` instead of `prisma/build/`). Replaced the COPY with `mkdir -p .bin && ln -sf ../prisma/build/index.js .bin/prisma && chown -h nextjs:nodejs .bin/prisma` so the symlink is real and points at the actual file.
+- **Prisma engine missing for Alpine + OpenSSL 3.x.** First DB query at signup failed with *"Prisma Client could not locate the Query Engine for runtime `linux-musl-openssl-3.0.x`"*. Added `binaryTargets = ["native", "linux-musl-openssl-3.0.x"]` to the generator block — schema metadata only, no migration required.
+
+### Ops
+- **`AUTH_TRUST_HOST=true`** must be set in Coolify environment (NextAuth v5 refuses to trust the proxy host otherwise, breaking sign-in behind Caddy). Add it alongside the other secrets documented in the v0.1.0 deploy guide.
+
 ### Planned for v1.0.0
 - Sprint 0: Next.js setup, Auth, base layout
 - Sprint 1: Onboarding, Settings, BYOK
