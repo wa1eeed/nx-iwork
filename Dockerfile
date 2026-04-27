@@ -50,8 +50,8 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# Copy scripts (for create-admin, seed, etc.)
-COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
+# scripts/ is added in later sprints (create-admin, seed, scheduler).
+# When that happens, restore: COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
 USER nextjs
 
