@@ -50,6 +50,12 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
+# Pinned Prisma CLI (devDep) so the runtime CMD doesn't fall back to `npx`,
+# which downloads the latest CLI from npm and breaks against our schema.
+# The .bin/prisma symlink resolves to ../prisma/build/index.js at COPY time.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.bin/prisma ./node_modules/.bin/prisma
+
 # scripts/ is added in later sprints (create-admin, seed, scheduler).
 # When that happens, restore: COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
 
@@ -61,4 +67,4 @@ ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
 # Run migrations then start the app
-CMD npx prisma migrate deploy && node server.js
+CMD ["sh", "-c", "node_modules/.bin/prisma migrate deploy && node server.js"]
