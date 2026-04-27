@@ -24,6 +24,22 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [0.1.0] - 2026-04-27
 
+### Sprint 0 — Foundations
+- **Next.js 15 + Tailwind + TypeScript** baseline with `output: 'standalone'`
+- **Fonts:** Tajawal (Arabic, default) + Inter (Latin) wired through Tailwind variables
+- **Theme:** Dark default with Light toggle via `next-themes`
+- **shadcn/ui primitives:** Button, Input, Card, Label, DropdownMenu, Sonner toaster
+- **i18n (next-intl):** ar/en messages, RTL/LTR auto-detection from `<html dir>`, cookie-backed `setLocale` server action, `LanguageSwitcher` component
+- **Prisma + PostgreSQL:** initial migration `20260427120000_init` (vector, pg_trgm, pgcrypto extensions), full schema for Companies, Agents, Tasks, BYOK API settings, 3-layer memory
+- **NextAuth v5 (JWT):** Credentials provider with bcryptjs, edge-safe `lib/auth.config.ts` for middleware, typed Session/JWT augmentations in `types/next-auth.d.ts`
+- **AES-256-GCM encryption helper** at `lib/encryption.ts` for BYOK keys
+- **Auth pages:** `/login` and `/signup` with react-hook-form + zod validation, signup API at `/api/auth/signup` with bcrypt(12) hashing, automatic sign-in after signup
+- **Dashboard shell:** sidebar nav (Overview/Agents/Departments/Tasks/Chat/Settings), topbar with theme toggle + language switcher + user menu, protected by middleware + server-side `auth()` check at `/overview`
+- **Middleware:** route protection for dashboard prefixes, redirect-after-login via `?callbackUrl`
+
+### Architecture Fix
+- **next-intl + Next.js 16 compat:** `next-intl@3` writes its Turbopack alias under `experimental.turbo`, which Next 16 rejects. `next.config.ts` now promotes those keys to top-level `turbopack` after the plugin runs.
+
 ### Documentation
 - Complete project planning with Walid (owner)
 - PROJECT.md (constitution - dual-mode SaaS + single-tenant)

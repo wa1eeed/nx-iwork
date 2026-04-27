@@ -1,0 +1,66 @@
+{
+  "common": {
+    "appName": "NX iWork",
+    "tagline": "Build AI-powered companies",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "save": "Save",
+    "cancel": "Cancel",
+    "submit": "Submit",
+    "confirm": "Confirm",
+    "back": "Back",
+    "next": "Next",
+    "language": "Language",
+    "theme": "Theme",
+    "themeDark": "Dark",
+    "themeLight": "Light",
+    "signOut": "Sign out"
+  },
+  "home": {
+    "title": "NX iWork",
+    "subtitle": "Build self-running companies with AI agents",
+    "sprintStatus": "Sprint 0 — Under construction",
+    "login": "Sign in",
+    "signup": "Create account"
+  },
+  "auth": {
+    "loginTitle": "Sign in",
+    "loginSubtitle": "Enter your credentials to access your dashboard",
+    "signupTitle": "Create your account",
+    "signupSubtitle": "Start building your AI workforce",
+    "name": "Full name",
+    "namePlaceholder": "Ahmad Mohammed",
+    "email": "Email",
+    "emailPlaceholder": "name@example.com",
+    "password": "Password",
+    "passwordPlaceholder": "••••••••",
+    "loginCta": "Sign in",
+    "signupCta": "Create account",
+    "alreadyHaveAccount": "Already have an account?",
+    "dontHaveAccount": "Don't have an account?",
+    "signInLink": "Sign in",
+    "signUpLink": "Sign up",
+    "errors": {
+      "invalidCredentials": "Invalid email or password",
+      "emailExists": "This email is already registered",
+      "weakPassword": "Password must be at least 8 characters",
+      "invalidEmail": "Invalid email address",
+      "nameRequired": "Name is required",
+      "generic": "Something went wrong. Please try again"
+    },
+    "success": {
+      "signupCreated": "Account created successfully"
+    }
+  },
+  "dashboard": {
+    "welcomeBack": "Welcome back, {name}",
+    "overview": "Overview",
+    "agents": "Agents",
+    "departments": "Departments",
+    "tasks": "Tasks",
+    "chat": "Chat",
+    "settings": "Settings",
+    "emptyStateTitle": "Your dashboard is ready",
+    "emptyStateBody": "This is the empty shell. Onboarding (Sprint 1) and Virtual HQ (Sprint 2) come next."
+  }
+}

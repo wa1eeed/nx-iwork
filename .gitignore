@@ -58,3 +58,6 @@ Thumbs.db
 # Misc
 .cache/
 .turbo/
+
+# Local agent state (Claude Code)
+.claude/
