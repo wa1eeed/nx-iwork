@@ -50,8 +50,15 @@ COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
 
-# prisma CLI is now a runtime dependency, so Next standalone tracing should
-# pick it up via .next/standalone/node_modules with intact .bin/ symlinks.
+# Pinned Prisma CLI (devDep). Next standalone tracing skips it (the CLI is
+# never required by app code), so copy the package directly. .bin/prisma is
+# recreated as a fresh symlink instead of being copied — Docker resolves a
+# symlink source into a regular file, which breaks __dirname-relative
+# loading of prisma_schema_build_bg.wasm at runtime.
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/prisma ./node_modules/prisma
+RUN mkdir -p ./node_modules/.bin \
+ && ln -sf ../prisma/build/index.js ./node_modules/.bin/prisma \
+ && chown -h nextjs:nodejs ./node_modules/.bin/prisma
 
 # scripts/ is added in later sprints (create-admin, seed, scheduler).
 # When that happens, restore: COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
