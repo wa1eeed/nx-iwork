@@ -1,0 +1,1225 @@
+// ============================================
+// NX iWork - Database Schema (Complete)
+// ============================================
+// Dual-Mode SaaS + Single-Tenant
+// 3-Layer Memory System + BYOK
+// 
+// Run: npx prisma generate && npx prisma migrate dev --name init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  url        = env("DATABASE_URL")
+  extensions = [vector, pg_trgm, pgcrypto]
+}
+
+// ========================================
+// USERS & AUTH
+// ========================================
+
+enum UserRole {
+  SUPER_ADMIN       // وليد (مالك المنصة)
+  BUSINESS_OWNER    // صاحب الشركة المشتركة
+  BUSINESS_MEMBER   // موظف بشري في شركة
+}
+
+model User {
+  id               String    @id @default(cuid())
+  email            String    @unique
+  emailVerified    DateTime?
+  name             String
+  password         String
+  role             UserRole  @default(BUSINESS_OWNER)
+  image            String?
+  locale           String    @default("ar")
+  twoFactorEnabled Boolean   @default(false)
+
+  companyId String?
+  company   Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+
+  sessions          Session[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  supportTickets    SupportTicket[]
+  approvalsResolved Approval[] @relation("ApprovalResolver")
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  lastLoginAt DateTime?
+
+  @@index([companyId])
+  @@index([email])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expires      DateTime
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+// ========================================
+// COMPANY (TENANT)
+// ========================================
+
+enum CompanyStatus {
+  ACTIVE
+  SUSPENDED
+  TRIAL
+  EXPIRED
+}
+
+model Company {
+  id              String        @id @default(cuid())
+  name            String
+  nameEn          String?
+  slug            String        @unique
+  logo            String?
+  industry        String?
+  teamSize        String?
+  mainGoal        String?
+  vision          String?       @db.Text
+  brandVoice      String?       @db.Text
+  status          CompanyStatus @default(TRIAL)
+  trialEndsAt     DateTime?
+
+  // Custom domain support
+  customDomain         String?  @unique
+  customDomainVerified Boolean  @default(false)
+  customDomainSslReady Boolean  @default(false)
+
+  // Relations
+  users               User[]
+  departments         Department[]
+  agents              Agent[]
+  tasks               Task[]
+  taskAttempts        TaskAttempt[]
+  approvals           Approval[]
+  chatMessages        ChatMessage[]
+  subscription        Subscription?
+  invoices            Invoice[]
+  notifications       Notification[]
+  auditLogs           AuditLog[]
+  companyDNA          CompanyDNA?
+  apiSettings         CompanyApiSettings?
+  settings            BusinessSettings?
+  websiteConfig       WebsiteConfig?
+  timelineEvents      TimelineEvent[]
+  agentMemories       AgentMemory[]
+  agentSchedules      AgentSchedule[]
+  services            Service[]
+  products            Product[]
+  orders              Order[]
+  publicConversations PublicConversation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([status])
+  @@index([slug])
+  @@index([customDomain])
+}
+
+model CompanyDNA {
+  id             String   @id @default(cuid())
+  companyId      String   @unique
+  company        Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  aboutUs        String   @db.Text
+  products       Json?    // [{name, desc, price}]
+  policies       String?  @db.Text
+  tone           String?
+  targetAudience String?  @db.Text
+  
+  // Operating procedures
+  operationsManual String? @db.Text
+  decisionPolicies String? @db.Text  // ما يقدر الـ agents يقررونه وحدهم
+  
+  updatedAt      DateTime @updatedAt
+}
+
+// ========================================
+// BUSINESS SETTINGS (Configurable)
+// ========================================
+
+model BusinessSettings {
+  id              String   @id @default(cuid())
+  companyId       String   @unique
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  // Language
+  primaryLanguage    String   @default("ar")           // ar, en
+  showLanguageToggle Boolean  @default(true)
+  enabledLanguages   String[] @default(["ar", "en"])
+
+  // Currency
+  currency       String  @default("SAR")
+  currencySymbol String  @default("ر.س")
+
+  // Date & Time
+  dateFormat    String  @default("DD/MM/YYYY")
+  showHijriDate Boolean @default(true)
+  timezone      String  @default("Asia/Riyadh")
+  weekStart     String  @default("sunday")           // sunday, monday, saturday
+
+  // Theme
+  themeMode    String @default("dark")               // dark, light, system
+  primaryColor String @default("#06b6d4")
+  accentColor  String @default("#8b5cf6")
+
+  // Branding
+  showPoweredBy Boolean @default(true)
+  customCSS     String? @db.Text
+
+  // Notifications preferences
+  emailNotifications    Boolean @default(true)
+  desktopNotifications  Boolean @default(true)
+
+  updatedAt DateTime @updatedAt
+}
+
+// ========================================
+// DEPARTMENTS & AGENTS
+// ========================================
+
+model Department {
+  id          String   @id @default(cuid())
+  companyId   String
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  name        String
+  nameEn      String?
+  icon        String   @default("briefcase")
+  description String?  @db.Text
+  color       String   @default("#06b6d4")
+
+  agents Agent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+enum AgentStatus {
+  ONLINE
+  WORKING
+  PAUSED
+  OFFLINE
+  ARCHIVED
+}
+
+enum ClaudeModel {
+  HAIKU
+  SONNET
+  OPUS
+}
+
+model Agent {
+  id           String      @id @default(cuid())
+  companyId    String
+  company      Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  name         String
+  nameEn       String?
+  avatar       String?
+  initial      String
+  
+  role         String
+  roleEn       String?
+  persona      String      @db.Text
+  
+  departmentId String
+  department   Department  @relation(fields: [departmentId], references: [id], onDelete: Restrict)
+  parentId     String?
+  parent       Agent?      @relation("AgentHierarchy", fields: [parentId], references: [id], onDelete: SetNull)
+  subordinates Agent[]     @relation("AgentHierarchy")
+  
+  // AI Configuration
+  model        ClaudeModel @default(SONNET)
+  temperature  Float       @default(0.7)
+  maxTokens    Int         @default(4096)
+  systemPrompt String?     @db.Text
+  
+  // Capabilities
+  skills       AgentSkill[]
+  tools        AgentTool[]
+  
+  // Memory
+  memories     AgentMemory[]
+  
+  // Schedules
+  schedules    AgentSchedule[]
+  
+  // Activity
+  status            AgentStatus @default(ONLINE)
+  tasks             Task[]
+  taskAttempts      TaskAttempt[]
+  approvals         Approval[]
+  chatMessages      ChatMessage[]
+  publicConversations PublicConversation[]
+  timeline          TimelineEvent[]
+
+  // Statistics
+  tasksCompleted   Int @default(0)
+  tasksFailed      Int @default(0)
+  totalTokensUsed  Int @default(0)
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  archivedAt DateTime?
+
+  @@index([companyId])
+  @@index([departmentId])
+  @@index([parentId])
+  @@index([status])
+}
+
+// ========================================
+// 3-LAYER MEMORY
+// ========================================
+
+// Layer 3: Semantic Memory (Vector Embeddings)
+model AgentMemory {
+  id        String  @id @default(cuid())
+  agentId   String
+  agent     Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  summary    String                       @db.Text
+  embedding  Unsupported("vector(1536)")?
+  
+  importance Int     @default(5)         // 1-10
+  category   String?                     // 'customer', 'product', 'decision', 'learning'
+  
+  metadata   Json?
+  
+  createdAt  DateTime  @default(now())
+  expiresAt  DateTime?
+  
+  @@index([agentId])
+  @@index([companyId])
+  @@index([category])
+}
+
+// ========================================
+// SKILLS & TOOLS
+// ========================================
+
+model Skill {
+  id             String   @id @default(cuid())
+  key            String   @unique
+  name           String
+  nameEn         String
+  description    String   @db.Text
+  descriptionEn  String   @db.Text
+  icon           String   @default("sparkle")
+  
+  isSaudi        Boolean  @default(false)
+  isPremium      Boolean  @default(false)
+  isActive       Boolean  @default(true)
+  
+  promptTemplate String?  @db.Text
+  category       String?
+  
+  usersCount     Int      @default(0)
+  rating         Float    @default(0)
+
+  agents         AgentSkill[]
+
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([isActive])
+  @@index([category])
+}
+
+model AgentSkill {
+  agentId String
+  skillId String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  skill   Skill  @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  addedAt DateTime @default(now())
+
+  @@id([agentId, skillId])
+  @@index([skillId])
+}
+
+enum ToolType {
+  CLAUDE_TOOL      // built-in
+  N8N_WORKFLOW     // external n8n
+  INTERNAL_API     // internal NX iWork API
+  CUSTOM_HTTP      // custom webhook
+}
+
+model Tool {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  nameEn      String?
+  description String   @db.Text
+  
+  type        ToolType
+  schema      Json     // JSON schema for inputs
+  
+  // For N8N_WORKFLOW
+  webhookUrl  String?
+  
+  // For INTERNAL_API
+  handler     String?
+  
+  // For CUSTOM_HTTP
+  httpMethod  String?
+  httpUrl     String?
+  httpHeaders Json?
+  
+  isActive    Boolean  @default(true)
+  
+  agents      AgentTool[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AgentTool {
+  agentId String
+  toolId  String
+  agent   Agent  @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  tool    Tool   @relation(fields: [toolId], references: [id], onDelete: Cascade)
+  
+  config  Json?  // tool-specific configuration
+  
+  @@id([agentId, toolId])
+  @@index([toolId])
+}
+
+// ========================================
+// SCHEDULES (Wake triggers - cron based)
+// ========================================
+
+model AgentSchedule {
+  id           String   @id @default(cuid())
+  agentId      String
+  agent        Agent    @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  companyId    String
+  company      Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name         String
+  description  String?
+  
+  cronExpression String  // e.g., "0 8 * * *" = 8 AM daily
+  timezone       String  @default("Asia/Riyadh")
+  
+  taskTemplate   String  @db.Text  // The prompt sent to the agent
+  
+  isActive       Boolean   @default(true)
+  lastRunAt      DateTime?
+  nextRunAt      DateTime?
+  runCount       Int       @default(0)
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  @@index([agentId])
+  @@index([nextRunAt])
+}
+
+// ========================================
+// TASKS & ATTEMPTS
+// ========================================
+
+enum TaskStatus {
+  PENDING            // لم يبدأ
+  WORKING            // يشتغل عليه
+  PENDING_APPROVAL   // ينتظر موافقة
+  PENDING_REVIEW     // ينتظر مراجعة
+  BLOCKED            // متوقف
+  DONE               // منجز
+  FAILED             // فشل بعد محاولات
+  CANCELLED          // ملغى
+}
+
+enum TaskPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model Task {
+  id            String       @id @default(cuid())
+  companyId     String
+  company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentId       String
+  agent         Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  title         String
+  description   String       @db.Text
+  notes         String?      @db.Text
+  
+  status        TaskStatus   @default(PENDING)
+  priority      TaskPriority @default(MEDIUM)
+  progress      Int          @default(0)
+  
+  // Trigger source
+  triggerType   String       // USER_MESSAGE, TASK_ASSIGNMENT, SCHEDULE, WEBHOOK, INTER_AGENT
+  triggerSource Json?
+  
+  // Execution
+  startedAt     DateTime?
+  dueAt         DateTime?
+  completedAt   DateTime?
+  result        String?      @db.Text
+  
+  // Hierarchy
+  parentTaskId  String?
+  parentTask    Task?        @relation("TaskHierarchy", fields: [parentTaskId], references: [id], onDelete: SetNull)
+  subtasks      Task[]       @relation("TaskHierarchy")
+  
+  // Stats
+  tokensUsed    Int          @default(0)
+  
+  // Relations
+  attempts      TaskAttempt[]
+  approvals     Approval[]
+  
+  // Who assigned
+  assignedById  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([agentId])
+  @@index([status])
+  @@index([dueAt])
+  @@index([parentTaskId])
+}
+
+enum AttemptStatus {
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+model TaskAttempt {
+  id            String        @id @default(cuid())
+  taskId        String
+  task          Task          @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  agentId       String
+  agent         Agent         @relation(fields: [agentId], references: [id])
+  companyId     String
+  company       Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  attemptNumber Int
+  status        AttemptStatus
+  
+  errorReason   String?       @db.Text
+  errorType     String?       // 'API_LIMIT', 'PERMISSION', 'EXTERNAL_API_ERROR', 'VALIDATION', 'OTHER'
+  retryable     Boolean       @default(true)
+  
+  startedAt     DateTime
+  endedAt       DateTime?
+  
+  tokensUsed    Int           @default(0)
+  metadata      Json?
+  
+  createdAt     DateTime      @default(now())
+
+  @@index([taskId, attemptNumber])
+  @@index([agentId])
+  @@index([companyId])
+  @@index([status])
+}
+
+// ========================================
+// APPROVALS (Inbox)
+// ========================================
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  EXPIRED
+}
+
+model Approval {
+  id           String         @id @default(cuid())
+  companyId    String
+  company      Company        @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentId      String
+  agent        Agent          @relation(fields: [agentId], references: [id])
+  taskId       String?
+  task         Task?          @relation(fields: [taskId], references: [id], onDelete: SetNull)
+  
+  decision     String         @db.Text
+  options      Json           // ["approve", "reject"] or custom options
+  context      String?        @db.Text
+  metadata     Json?
+  
+  status       ApprovalStatus @default(PENDING)
+  resolution   String?
+  resolvedById String?
+  resolvedBy   User?          @relation("ApprovalResolver", fields: [resolvedById], references: [id])
+  resolvedAt   DateTime?
+  notes        String?        @db.Text
+  
+  expiresAt    DateTime?
+  
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  @@index([companyId, status])
+  @@index([agentId])
+}
+
+// ========================================
+// CHAT MESSAGES
+// ========================================
+
+enum MessageRole {
+  USER
+  AGENT
+  SYSTEM
+}
+
+model ChatMessage {
+  id         String      @id @default(cuid())
+  companyId  String
+  company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentId    String
+  agent      Agent       @relation(fields: [agentId], references: [id], onDelete: Cascade)
+  
+  role       MessageRole
+  content    String      @db.Text
+  userId     String?
+  
+  tokensUsed Int         @default(0)
+  model      String?
+  metadata   Json?
+  
+  createdAt  DateTime    @default(now())
+
+  @@index([companyId])
+  @@index([agentId, createdAt])
+}
+
+// ========================================
+// PUBLIC FRONTEND (Services, Products, Orders)
+// ========================================
+
+model Service {
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  title         String
+  titleEn       String?
+  description   String   @db.Text
+  descriptionEn String?  @db.Text
+  
+  icon          String?
+  image         String?
+  
+  price         Decimal? @db.Decimal(10, 2)
+  priceLabel    String?
+  
+  ctaText       String   @default("اطلب الخدمة")
+  ctaTextEn     String   @default("Request Service")
+  
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  
+  orders        Order[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+model Product {
+  id            String   @id @default(cuid())
+  companyId     String
+  company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  title         String
+  titleEn       String?
+  description   String   @db.Text
+  descriptionEn String?  @db.Text
+  
+  images        String[]
+  
+  price         Decimal  @db.Decimal(10, 2)
+  comparePrice  Decimal? @db.Decimal(10, 2)
+  
+  sku           String?
+  stock         Int      @default(-1)  // -1 = unlimited
+  
+  isActive      Boolean  @default(true)
+  sortOrder     Int      @default(0)
+  
+  orderItems    OrderItem[]
+  
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+enum OrderType {
+  SERVICE
+  PRODUCT
+}
+
+enum OrderStatus {
+  NEW
+  CONFIRMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  REFUNDED
+  FAILED
+}
+
+model Order {
+  id           String        @id @default(cuid())
+  companyId    String
+  company      Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  orderNumber  String        @unique
+  
+  type         OrderType
+  
+  // Customer info
+  customerName  String
+  customerEmail String?
+  customerPhone String?
+  customerNotes String?      @db.Text
+  
+  // Service order
+  serviceId    String?
+  service      Service?      @relation(fields: [serviceId], references: [id])
+  
+  // Product order
+  items        OrderItem[]
+  
+  // Totals
+  subtotal     Decimal       @db.Decimal(10, 2) @default(0)
+  vat          Decimal       @db.Decimal(10, 2) @default(0)
+  total        Decimal       @db.Decimal(10, 2) @default(0)
+  currency     String        @default("SAR")
+  
+  status        OrderStatus   @default(NEW)
+  paymentStatus PaymentStatus @default(PENDING)
+  
+  // Source tracking
+  agentId      String?       // if came through agent chat
+  conversationId String?     // public conversation ID
+  
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  @@index([companyId])
+  @@index([status])
+  @@index([orderNumber])
+}
+
+model OrderItem {
+  id        String  @id @default(cuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+  
+  quantity  Int
+  unitPrice Decimal @db.Decimal(10, 2)
+  total     Decimal @db.Decimal(10, 2)
+
+  @@index([orderId])
+}
+
+// ========================================
+// WEBSITE CONFIG (Public Frontend Settings)
+// ========================================
+
+enum HeroType {
+  IMAGE
+  SLIDER
+  VIDEO
+  TEXT_ONLY
+}
+
+model WebsiteConfig {
+  id          String   @id @default(cuid())
+  companyId   String   @unique
+  company     Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // Hero
+  heroType       HeroType @default(IMAGE)
+  heroTitle      String?
+  heroTitleEn    String?
+  heroSubtitle   String?  @db.Text
+  heroSubtitleEn String?  @db.Text
+  heroCTA        String?
+  heroCTAEn      String?
+  heroImages     String[]
+  heroVideo      String?
+  
+  // About
+  aboutTitle     String?
+  aboutTitleEn   String?
+  aboutContent   String?  @db.Text
+  aboutContentEn String?  @db.Text
+  
+  // Contact
+  whatsapp       String?
+  phone          String?
+  email          String?
+  address        String?  @db.Text
+  
+  // Social
+  instagram      String?
+  twitter        String?
+  tiktok         String?
+  linkedin       String?
+  snapchat       String?
+  
+  // SEO
+  metaTitle      String?
+  metaDescription String?
+  ogImage        String?
+  
+  // Chat Widget
+  chatEnabled       Boolean @default(true)
+  chatAgentId       String?
+  chatPosition      String  @default("bottom-right")
+  chatGreeting      String?
+  chatGreetingEn    String?
+  chatPrimaryColor  String?
+  
+  // Display flags
+  showServices    Boolean @default(true)
+  showProducts    Boolean @default(true)
+  showAbout       Boolean @default(true)
+  showContact     Boolean @default(true)
+  
+  updatedAt   DateTime @updatedAt
+}
+
+// ========================================
+// PUBLIC CONVERSATIONS (Visitors → Agents)
+// ========================================
+
+model PublicConversation {
+  id              String   @id @default(cuid())
+  companyId       String
+  company         Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentId         String
+  agent           Agent    @relation(fields: [agentId], references: [id])
+  
+  // Visitor info
+  visitorId       String
+  visitorName     String?
+  visitorEmail    String?
+  visitorPhone    String?
+  
+  // Session
+  sessionStarted  DateTime @default(now())
+  lastMessageAt   DateTime @default(now())
+  ended           Boolean  @default(false)
+  
+  // Outcome
+  resultedInOrder Boolean  @default(false)
+  orderId         String?
+  
+  // Analytics
+  pageUrl         String?
+  referrer        String?
+  userAgent       String?
+  ipAddress       String?
+  country         String?
+  
+  messages        PublicMessage[]
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([companyId, sessionStarted])
+  @@index([visitorId])
+  @@index([agentId])
+}
+
+model PublicMessage {
+  id              String              @id @default(cuid())
+  conversationId  String
+  conversation    PublicConversation  @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  
+  role            MessageRole
+  content         String              @db.Text
+  
+  tokensUsed      Int                 @default(0)
+  metadata        Json?
+  
+  createdAt       DateTime            @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+// ========================================
+// TIMELINE
+// ========================================
+
+enum TimelineEventType {
+  TASK_CREATED
+  TASK_STARTED
+  TASK_COMPLETED
+  TASK_FAILED
+  TASK_BLOCKED
+  AGENT_MESSAGE
+  AGENT_HANDOFF
+  DECISION_NEEDED
+  APPROVAL_REQUESTED
+  APPROVAL_RESOLVED
+  MEMORY_SAVED
+  SYSTEM_ALERT
+  INTEGRATION_TRIGGERED
+  AGENT_WOKE
+  AGENT_SLEPT
+}
+
+model TimelineEvent {
+  id          String            @id @default(cuid())
+  companyId   String
+  company     Company           @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentId     String?
+  agent       Agent?            @relation(fields: [agentId], references: [id], onDelete: SetNull)
+  
+  type        TimelineEventType
+  title       String
+  description String?           @db.Text
+  metadata    Json?
+  
+  createdAt   DateTime          @default(now())
+
+  @@index([companyId, createdAt])
+  @@index([agentId])
+}
+
+// ========================================
+// API SETTINGS (BYOK)
+// ========================================
+
+model CompanyApiSettings {
+  id            String      @id @default(cuid())
+  companyId     String      @unique
+  company       Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  // BYOK
+  byokApiKey    String?     // ENCRYPTED with AES-256-GCM
+  byokProvider  String      @default("anthropic")
+  byokVerified  Boolean     @default(false)
+  byokLastTest  DateTime?
+  
+  // Model preferences
+  defaultModel  ClaudeModel @default(SONNET)
+  allowedModels String[]    @default(["HAIKU", "SONNET", "OPUS"])
+  
+  // Optional limits
+  monthlyCapUsd Decimal?    @db.Decimal(10, 2)
+  
+  updatedAt     DateTime    @updatedAt
+}
+
+// ========================================
+// SUBSCRIPTIONS & BILLING (SaaS phase)
+// ========================================
+
+enum PlanTier {
+  FREE
+  STARTER
+  GROWTH
+  SCALE
+  ENTERPRISE
+}
+
+enum SubscriptionStatus {
+  TRIAL
+  ACTIVE
+  PAST_DUE
+  CANCELLED
+  EXPIRED
+}
+
+model Plan {
+  id                String   @id @default(cuid())
+  tier              PlanTier @unique
+  name              String
+  nameEn            String
+  description       String?  @db.Text
+  
+  priceMonthly      Decimal  @db.Decimal(10, 2)
+  priceYearly       Decimal  @db.Decimal(10, 2)
+  
+  // Limits
+  maxAgents         Int
+  maxDepartments    Int
+  maxMembers        Int
+  maxProducts       Int      @default(-1)  // -1 = unlimited
+  maxServices       Int      @default(-1)
+  
+  // Features
+  allowCustomDomain Boolean  @default(false)
+  allowCustomBranding Boolean @default(false)
+  allowApiAccess    Boolean  @default(false)
+  allowN8nIntegration Boolean @default(false)
+  prioritySupport   Boolean  @default(false)
+  
+  features          Json     // array of feature labels
+  
+  isActive          Boolean  @default(true)
+  sortOrder         Int      @default(0)
+
+  subscriptions     Subscription[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Subscription {
+  id                     String             @id @default(cuid())
+  companyId              String             @unique
+  company                Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  planId                 String
+  plan                   Plan               @relation(fields: [planId], references: [id])
+  
+  status                 SubscriptionStatus @default(TRIAL)
+  
+  provider               String?
+  providerCustomerId     String?
+  providerSubscriptionId String?
+  
+  currentPeriodStart     DateTime
+  currentPeriodEnd       DateTime
+  cancelAt               DateTime?
+  cancelledAt            DateTime?
+  
+  interval               String             @default("month")
+
+  invoices               Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+enum InvoiceStatus {
+  DRAFT
+  OPEN
+  PAID
+  FAILED
+  REFUNDED
+}
+
+model Invoice {
+  id                String        @id @default(cuid())
+  companyId         String
+  company           Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  subscriptionId    String?
+  subscription      Subscription? @relation(fields: [subscriptionId], references: [id])
+  
+  number            String        @unique
+  
+  amount            Decimal       @db.Decimal(10, 2)
+  vat               Decimal       @db.Decimal(10, 2) @default(0)
+  total             Decimal       @db.Decimal(10, 2)
+  currency          String        @default("SAR")
+  
+  status            InvoiceStatus @default(DRAFT)
+  
+  providerInvoiceId String?
+  pdfUrl            String?
+  
+  dueAt             DateTime?
+  paidAt            DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([status])
+}
+
+// ========================================
+// NOTIFICATIONS
+// ========================================
+
+enum NotificationType {
+  TASK_COMPLETED
+  TASK_FAILED
+  APPROVAL_NEEDED
+  NEW_MESSAGE
+  NEW_ORDER
+  SYSTEM_ALERT
+  BILLING_ALERT
+  ADMIN_ANNOUNCEMENT
+  AGENT_HANDOFF
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String?
+  user      User?            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  companyId String?
+  company   Company?         @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  
+  type      NotificationType
+  title     String
+  message   String           @db.Text
+  
+  read      Boolean          @default(false)
+  actionUrl String?
+  metadata  Json?
+  
+  createdAt DateTime         @default(now())
+  readAt    DateTime?
+
+  @@index([userId, read])
+  @@index([companyId, read])
+}
+
+// ========================================
+// AUDIT LOGS
+// ========================================
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
+  companyId  String?
+  company    Company? @relation(fields: [companyId], references: [id], onDelete: SetNull)
+  
+  action     String
+  entityType String?
+  entityId   String?
+  
+  ipAddress  String?
+  userAgent  String?
+  metadata   Json?
+  
+  createdAt  DateTime @default(now())
+
+  @@index([userId])
+  @@index([companyId])
+  @@index([action])
+  @@index([createdAt])
+}
+
+// ========================================
+// SUPPORT TICKETS
+// ========================================
+
+enum TicketStatus {
+  OPEN
+  IN_PROGRESS
+  WAITING_USER
+  RESOLVED
+  CLOSED
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
+
+model SupportTicket {
+  id           String         @id @default(cuid())
+  number       String         @unique
+  userId       String
+  user         User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  subject      String
+  description  String         @db.Text
+  status       TicketStatus   @default(OPEN)
+  priority     TicketPriority @default(MEDIUM)
+  category     String?
+  assignedToId String?
+
+  messages TicketMessage[]
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  resolvedAt DateTime?
+
+  @@index([userId])
+  @@index([status])
+}
+
+model TicketMessage {
+  id          String        @id @default(cuid())
+  ticketId    String
+  ticket      SupportTicket @relation(fields: [ticketId], references: [id], onDelete: Cascade)
+  senderId    String
+  senderRole  UserRole
+  content     String        @db.Text
+  attachments Json?
+  createdAt   DateTime      @default(now())
+}
+
+// ========================================
+// PLATFORM SETTINGS (Super Admin)
+// ========================================
+
+model PlatformSettings {
+  id                 String   @id @default("singleton")
+  
+  // Branding
+  siteName           String   @default("NX iWork")
+  siteNameAr         String   @default("NX iWork")
+  logoUrl            String?
+  primaryColor       String   @default("#06b6d4")
+  
+  // Deployment mode
+  deploymentMode     String   @default("saas")  // "saas" or "single_tenant"
+  
+  // Features
+  signupEnabled      Boolean  @default(true)
+  trialEnabled       Boolean  @default(true)
+  trialDays          Int      @default(14)
+  
+  // Financial (SaaS)
+  vatRate            Decimal  @db.Decimal(5, 2) @default(15.00)
+  defaultCurrency    String   @default("SAR")
+  
+  // Maintenance
+  maintenanceMode    Boolean  @default(false)
+  maintenanceMessage String?
+  
+  // SaaS limits (single_tenant ignores these)
+  maxCompaniesAllowed Int?    // null = unlimited
+  
+  updatedAt          DateTime @updatedAt
+}
