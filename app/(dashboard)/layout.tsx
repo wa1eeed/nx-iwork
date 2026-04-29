@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
+import { getUserCompany } from '@/lib/companies';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
 
@@ -11,6 +12,12 @@ export default async function DashboardLayout({
   const session = await auth();
   if (!session?.user) {
     redirect('/login');
+  }
+
+  // Read companyId fresh from DB — the JWT can be stale right after onboarding.
+  const companyId = await getUserCompany(session.user.id);
+  if (!companyId) {
+    redirect('/onboarding');
   }
 
   return (

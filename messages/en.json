@@ -61,6 +61,151 @@
     "chat": "Chat",
     "settings": "Settings",
     "emptyStateTitle": "Your dashboard is ready",
-    "emptyStateBody": "This is the empty shell. Onboarding (Sprint 1) and Virtual HQ (Sprint 2) come next."
+    "emptyStateBody": "This is the empty shell. Onboarding (Sprint 1) and Virtual HQ (Sprint 2) come next.",
+    "companySuffix": "at {company}",
+    "quickActions": "Quick actions",
+    "addAgentTitle": "Add your first AI agent",
+    "addAgentBody": "Start building your team. Available in Sprint 2.",
+    "addAgentCta": "Coming soon",
+    "openSettingsTitle": "Company settings",
+    "openSettingsBody": "Update language, theme, company info, and Anthropic key.",
+    "openSettingsCta": "Open settings",
+    "byokWarningTitle": "Finish setup",
+    "byokWarningBody": "Add your Anthropic API key so your agents can think.",
+    "byokWarningCta": "Add key"
+  },
+  "onboarding": {
+    "title": "Welcome — let's set up your company",
+    "subtitle": "Four short steps to tailor the platform to your business.",
+    "stepLabel": "Step {current} of {total}",
+    "step1Title": "Company details",
+    "step1Subtitle": "Start with the name and basics.",
+    "companyName": "Company name (Arabic)",
+    "companyNamePlaceholder": "e.g. شركة الأفق",
+    "companyNameEn": "Company name (English — optional)",
+    "companyNameEnPlaceholder": "Horizon Co.",
+    "companySlug": "Public slug",
+    "companySlugHelp": "This appears in your public URL: nx.sa/{slug}",
+    "step2Title": "Industry & team size",
+    "step2Subtitle": "We tailor the experience to your sector.",
+    "industry": "Industry",
+    "industryPlaceholder": "Select industry",
+    "industries": {
+      "retail": "Retail & e-commerce",
+      "saas": "Software & technology",
+      "consulting": "Consulting",
+      "education": "Education & training",
+      "healthcare": "Healthcare",
+      "realestate": "Real estate",
+      "food": "Restaurants & food",
+      "marketing": "Marketing & advertising",
+      "finance": "Finance",
+      "manufacturing": "Manufacturing",
+      "logistics": "Logistics & shipping",
+      "other": "Other"
+    },
+    "teamSize": "Team size",
+    "teamSizes": {
+      "solo": "Just me",
+      "small": "2-10",
+      "medium": "11-50",
+      "large": "More than 50"
+    },
+    "step3Title": "Goals & vision",
+    "step3Subtitle": "Help us understand where you're heading.",
+    "mainGoal": "Main goal for the platform",
+    "mainGoalPlaceholder": "e.g. Automate customer responses and grow sales.",
+    "vision": "Company vision (optional)",
+    "visionPlaceholder": "A short note about your mission and values.",
+    "step4Title": "Review & confirm",
+    "step4Subtitle": "Double-check before we create your company.",
+    "reviewName": "Name",
+    "reviewNameEn": "English name",
+    "reviewSlug": "Slug",
+    "reviewIndustry": "Industry",
+    "reviewTeamSize": "Team size",
+    "reviewMainGoal": "Main goal",
+    "reviewVision": "Vision",
+    "createCta": "Create my company",
+    "creating": "Creating...",
+    "errors": {
+      "nameRequired": "Company name is required",
+      "slugTaken": "This slug is already taken, please choose another",
+      "slugInvalid": "Slug must be lowercase letters, digits, and dashes only",
+      "generic": "Something went wrong, please try again"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "subtitle": "Manage your company configuration.",
+    "tabs": {
+      "localization": "Language & region",
+      "branding": "Theme & branding",
+      "company": "Company info",
+      "api": "API keys"
+    },
+    "saved": "Saved",
+    "saveError": "Save failed, please try again",
+    "saveCta": "Save changes",
+    "saving": "Saving...",
+    "localization": {
+      "primaryLanguage": "Primary language",
+      "primaryLanguageHelp": "Default language for the dashboard and public site.",
+      "currency": "Currency",
+      "currencySymbol": "Currency symbol",
+      "dateFormat": "Date format",
+      "showHijri": "Show Hijri date",
+      "timezone": "Timezone",
+      "weekStart": "Week starts on",
+      "weekStarts": {
+        "sunday": "Sunday",
+        "monday": "Monday",
+        "saturday": "Saturday"
+      }
+    },
+    "branding": {
+      "themeMode": "Display mode",
+      "themeModes": {
+        "dark": "Dark",
+        "light": "Light",
+        "system": "System"
+      },
+      "primaryColor": "Primary color",
+      "accentColor": "Accent color",
+      "logoNote": "Logo upload comes in Sprint 5."
+    },
+    "company": {
+      "name": "Company name",
+      "nameEn": "English name",
+      "industry": "Industry",
+      "mainGoal": "Main goal",
+      "vision": "Vision",
+      "brandVoice": "Brand voice",
+      "brandVoiceHelp": "How your brand speaks to customers (formal, friendly, playful...)"
+    },
+    "api": {
+      "title": "Anthropic API key (BYOK)",
+      "subtitle": "Your agents call Anthropic with your key — billed directly to you.",
+      "currentKey": "Current key",
+      "noKey": "No key added yet",
+      "newKey": "Add or update key",
+      "newKeyPlaceholder": "sk-ant-api03-...",
+      "newKeyHelp": "Stored encrypted (AES-256-GCM). The key is not shown again after saving.",
+      "verified": "Verified",
+      "notVerified": "Not verified",
+      "lastTested": "Last tested: {when}",
+      "saveAndTest": "Save & test",
+      "test": "Test key",
+      "testing": "Testing...",
+      "removeKey": "Remove key",
+      "errors": {
+        "invalid_format": "Invalid key format",
+        "unauthorized": "Key rejected by Anthropic — check your account",
+        "rate_limited": "Rate limited, try again in a minute",
+        "api_error": "Anthropic returned an error (status {status})",
+        "timeout": "Connection timed out",
+        "network_error": "Network error"
+      }
+    }
   }
 }

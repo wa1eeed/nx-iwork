@@ -64,7 +64,9 @@ export function SignupForm() {
         router.push('/login');
         return;
       }
-      router.push('/overview');
+      // New users always land in onboarding — the dashboard layout would
+      // bounce them there anyway, so save the round-trip.
+      router.push('/onboarding');
       router.refresh();
     });
   }

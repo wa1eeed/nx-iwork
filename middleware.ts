@@ -15,6 +15,7 @@ const PROTECTED_PREFIXES = [
   '/products',
   '/settings',
   '/admin',
+  '/onboarding',
 ];
 
 export default auth((req) => {

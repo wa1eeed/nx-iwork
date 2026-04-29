@@ -61,6 +61,151 @@
     "chat": "المحادثة",
     "settings": "الإعدادات",
     "emptyStateTitle": "لوحة التحكم جاهزة",
-    "emptyStateBody": "هذي بداية حسابك. شاشات الإعداد (Sprint 1) و Virtual HQ (Sprint 2) جاية قريباً."
+    "emptyStateBody": "هذي بداية حسابك. شاشات الإعداد (Sprint 1) و Virtual HQ (Sprint 2) جاية قريباً.",
+    "companySuffix": "في {company}",
+    "quickActions": "إجراءات سريعة",
+    "addAgentTitle": "أضف أول موظف ذكي",
+    "addAgentBody": "ابدأ ببناء فريقك. متاح في Sprint 2.",
+    "addAgentCta": "قريباً",
+    "openSettingsTitle": "إعدادات الشركة",
+    "openSettingsBody": "حدّث اللغة، الثيم، البيانات، ومفتاح Anthropic.",
+    "openSettingsCta": "افتح الإعدادات",
+    "byokWarningTitle": "أكمل الإعداد",
+    "byokWarningBody": "أضف مفتاح Anthropic API عشان موظفينك يقدرون يفكّرون.",
+    "byokWarningCta": "أضف المفتاح"
+  },
+  "onboarding": {
+    "title": "أهلاً، خلّنا نبني شركتك",
+    "subtitle": "أربع خطوات قصيرة عشان نهيّئ المنصة لشركتك.",
+    "stepLabel": "الخطوة {current} من {total}",
+    "step1Title": "بيانات الشركة",
+    "step1Subtitle": "ابدأ بالاسم والنبذة الأساسية.",
+    "companyName": "اسم الشركة (عربي)",
+    "companyNamePlaceholder": "مثل: شركة الأفق",
+    "companyNameEn": "اسم الشركة (إنجليزي - اختياري)",
+    "companyNameEnPlaceholder": "Horizon Co.",
+    "companySlug": "المعرّف العام (Slug)",
+    "companySlugHelp": "هذا المعرّف يظهر في رابط موقعك العام: nx.sa/{slug}",
+    "step2Title": "الصناعة وحجم الفريق",
+    "step2Subtitle": "نبني تجربة مناسبة لمجال شركتك.",
+    "industry": "الصناعة",
+    "industryPlaceholder": "اختر الصناعة",
+    "industries": {
+      "retail": "تجزئة وتجارة إلكترونية",
+      "saas": "برمجيات وتقنية",
+      "consulting": "استشارات",
+      "education": "تعليم وتدريب",
+      "healthcare": "صحة",
+      "realestate": "عقارات",
+      "food": "مطاعم وأغذية",
+      "marketing": "تسويق وإعلان",
+      "finance": "مالية",
+      "manufacturing": "صناعة وإنتاج",
+      "logistics": "لوجستيات وشحن",
+      "other": "أخرى"
+    },
+    "teamSize": "حجم الفريق",
+    "teamSizes": {
+      "solo": "أنا فقط",
+      "small": "2-10",
+      "medium": "11-50",
+      "large": "أكثر من 50"
+    },
+    "step3Title": "الأهداف والرؤية",
+    "step3Subtitle": "ساعدنا نفهم وين تبي توصل.",
+    "mainGoal": "الهدف الرئيسي من المنصة",
+    "mainGoalPlaceholder": "مثل: أتمتة الرد على العملاء وزيادة المبيعات.",
+    "vision": "رؤية الشركة (اختياري)",
+    "visionPlaceholder": "نبذة عن مهمة شركتك وقيمها.",
+    "step4Title": "المراجعة والتأكيد",
+    "step4Subtitle": "تأكد من البيانات قبل الإنشاء.",
+    "reviewName": "الاسم",
+    "reviewNameEn": "الاسم بالإنجليزية",
+    "reviewSlug": "المعرّف",
+    "reviewIndustry": "الصناعة",
+    "reviewTeamSize": "حجم الفريق",
+    "reviewMainGoal": "الهدف الرئيسي",
+    "reviewVision": "الرؤية",
+    "createCta": "أنشئ شركتي",
+    "creating": "جارٍ الإنشاء...",
+    "errors": {
+      "nameRequired": "اسم الشركة مطلوب",
+      "slugTaken": "هذا المعرّف مستخدم مسبقاً، اختر معرّفاً آخر",
+      "slugInvalid": "المعرّف لازم يكون أحرف إنجليزية وأرقام وشرطات فقط",
+      "generic": "حدث خطأ، حاول مرة ثانية"
+    }
+  },
+  "settings": {
+    "title": "الإعدادات",
+    "subtitle": "تحكّم في إعدادات شركتك.",
+    "tabs": {
+      "localization": "اللغة والمنطقة",
+      "branding": "المظهر والهوية",
+      "company": "بيانات الشركة",
+      "api": "مفاتيح API"
+    },
+    "saved": "تم الحفظ",
+    "saveError": "فشل الحفظ، حاول مرة ثانية",
+    "saveCta": "حفظ التغييرات",
+    "saving": "جارٍ الحفظ...",
+    "localization": {
+      "primaryLanguage": "اللغة الأساسية",
+      "primaryLanguageHelp": "اللغة الافتراضية للوحة التحكم وللموقع العام.",
+      "currency": "العملة",
+      "currencySymbol": "رمز العملة",
+      "dateFormat": "صيغة التاريخ",
+      "showHijri": "إظهار التاريخ الهجري",
+      "timezone": "المنطقة الزمنية",
+      "weekStart": "بداية الأسبوع",
+      "weekStarts": {
+        "sunday": "الأحد",
+        "monday": "الإثنين",
+        "saturday": "السبت"
+      }
+    },
+    "branding": {
+      "themeMode": "وضع العرض",
+      "themeModes": {
+        "dark": "داكن",
+        "light": "فاتح",
+        "system": "حسب النظام"
+      },
+      "primaryColor": "اللون الأساسي",
+      "accentColor": "لون التمييز",
+      "logoNote": "رفع الشعار يضاف في Sprint 5."
+    },
+    "company": {
+      "name": "اسم الشركة",
+      "nameEn": "الاسم بالإنجليزية",
+      "industry": "الصناعة",
+      "mainGoal": "الهدف الرئيسي",
+      "vision": "الرؤية",
+      "brandVoice": "أسلوب العلامة التجارية",
+      "brandVoiceHelp": "كيف تتحدث شركتك مع عملائها (رسمي، ودود، مرح...)"
+    },
+    "api": {
+      "title": "مفتاح Anthropic (BYOK)",
+      "subtitle": "موظفينك يستخدمون مفتاحك مباشرة. التكلفة عليك في Anthropic.",
+      "currentKey": "المفتاح الحالي",
+      "noKey": "لم يُضَف مفتاح بعد",
+      "newKey": "أضف أو حدّث المفتاح",
+      "newKeyPlaceholder": "sk-ant-api03-...",
+      "newKeyHelp": "نخزّن المفتاح مشفّراً (AES-256-GCM). لا يُعرض المفتاح بعد الحفظ.",
+      "verified": "تم التحقق",
+      "notVerified": "لم يُتحقق منه",
+      "lastTested": "آخر اختبار: {when}",
+      "saveAndTest": "احفظ واختبر",
+      "test": "اختبر المفتاح",
+      "testing": "جارٍ الاختبار...",
+      "removeKey": "احذف المفتاح",
+      "errors": {
+        "invalid_format": "صيغة المفتاح غير صحيحة",
+        "unauthorized": "المفتاح غير صالح، تأكد منه في حساب Anthropic",
+        "rate_limited": "محدود حالياً، حاول بعد دقيقة",
+        "api_error": "فشل الاتصال بـ Anthropic (رمز {status})",
+        "timeout": "انتهت مهلة الاتصال",
+        "network_error": "خطأ في الشبكة"
+      }
+    }
   }
 }
