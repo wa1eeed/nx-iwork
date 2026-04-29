@@ -72,7 +72,13 @@
     "openSettingsCta": "Open settings",
     "byokWarningTitle": "Finish setup",
     "byokWarningBody": "Add your Anthropic API key so your agents can think.",
-    "byokWarningCta": "Add key"
+    "byokWarningCta": "Add key",
+    "sprintBadge": "Sprint {sprint}"
+  },
+  "comingSoon": {
+    "title": "Coming soon",
+    "body": "This feature is under development and will arrive in Sprint {sprint}.",
+    "backToOverview": "Back to dashboard"
   },
   "onboarding": {
     "title": "Welcome — let's set up your company",

@@ -72,7 +72,13 @@
     "openSettingsCta": "افتح الإعدادات",
     "byokWarningTitle": "أكمل الإعداد",
     "byokWarningBody": "أضف مفتاح Anthropic API عشان موظفينك يقدرون يفكّرون.",
-    "byokWarningCta": "أضف المفتاح"
+    "byokWarningCta": "أضف المفتاح",
+    "sprintBadge": "Sprint {sprint}"
+  },
+  "comingSoon": {
+    "title": "قريباً",
+    "body": "هذه الميزة قيد التطوير وستكون متاحة في Sprint {sprint}.",
+    "backToOverview": "العودة للوحة التحكم"
   },
   "onboarding": {
     "title": "أهلاً، خلّنا نبني شركتك",
