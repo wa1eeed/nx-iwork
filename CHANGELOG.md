@@ -9,6 +9,21 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Changed — Customer UX for managed mode (no keys; task visibility)
+
+- **Settings: API-key tab hidden in managed mode** — the platform supplies AI
+  centrally, so the customer never sees BYOK key settings (shown only when
+  `AI_MODE=byok`).
+- **Tasks page is now tabbed**: قيد التنفيذ / منجزة / مجدولة, with created/finished
+  timestamps and a **live countdown** to each scheduled run.
+- **Agent profile** (`/agents/[id]`): a real profile — header with status +
+  stats (completed / failed / tokens) and tabs: **النشاط والمهام** (the agent's
+  in-progress / done / scheduled work with countdowns) and **الإعدادات** (edit +
+  automation). Reusable `<Countdown>` component.
+- **Chat commands become tasks**: the agent prompt now instructs agents to log
+  any order via `create_task`, so it surfaces in the agent's profile and the
+  global task list automatically.
+
 ### Changed — Vertex credentials via env (swap accounts without file mounts)
 
 - **Inline env credentials** (`lib/ai/gcp-auth.ts`): `GCP_CLIENT_EMAIL` +

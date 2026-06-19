@@ -13,6 +13,7 @@ import { LocalizationTab } from '@/components/settings/localization-tab';
 import { BrandingTab } from '@/components/settings/branding-tab';
 import { CompanyInfoTab } from '@/components/settings/company-info-tab';
 import { ApiSettingsTab } from '@/components/settings/api-settings-tab';
+import { getAiMode } from '@/lib/ai';
 import type { INDUSTRIES } from '@/lib/validators/onboarding';
 
 export default async function SettingsPage() {
@@ -83,7 +84,11 @@ export default async function SettingsPage() {
           <TabsTrigger value="localization">{t('tabs.localization')}</TabsTrigger>
           <TabsTrigger value="branding">{t('tabs.branding')}</TabsTrigger>
           <TabsTrigger value="company">{t('tabs.company')}</TabsTrigger>
-          <TabsTrigger value="api">{t('tabs.api')}</TabsTrigger>
+          {/* Managed mode: the platform supplies the AI centrally — the customer
+              never deals with API keys. Only show the tab in BYOK mode. */}
+          {getAiMode() === 'byok' && (
+            <TabsTrigger value="api">{t('tabs.api')}</TabsTrigger>
+          )}
         </TabsList>
 
         <TabsContent value="localization">
@@ -131,9 +136,11 @@ export default async function SettingsPage() {
           />
         </TabsContent>
 
-        <TabsContent value="api">
-          <ApiSettingsTab initial={apiSettingsForClient} />
-        </TabsContent>
+        {getAiMode() === 'byok' && (
+          <TabsContent value="api">
+            <ApiSettingsTab initial={apiSettingsForClient} />
+          </TabsContent>
+        )}
       </Tabs>
     </div>
   );

@@ -10,6 +10,7 @@ import {
   CheckCircle2,
   XCircle,
   Clock,
+  CalendarClock,
   ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,7 +19,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { Countdown } from '@/components/dashboard/countdown';
 import { createTask, deleteTask } from '@/lib/actions/tasks';
 
 export interface TaskRow {
@@ -29,7 +32,17 @@ export interface TaskRow {
   priority: string;
   agentName: string | null;
   result: string | null;
-  dueAt: string | null;
+  createdAt: string;
+  completedAt: string | null;
+}
+
+export interface ScheduleRow {
+  id: string;
+  name: string;
+  agentName: string | null;
+  cronExpression: string;
+  nextRunAt: string | null;
+  runCount: number;
 }
 
 const STATUS: Record<string, { label: string; cls: string; icon: typeof Clock }> = {
@@ -40,13 +53,24 @@ const STATUS: Record<string, { label: string; cls: string; icon: typeof Clock }>
   CANCELLED: { label: 'ملغى', cls: 'text-muted-foreground', icon: XCircle },
 };
 
+const IN_PROGRESS = new Set(['PENDING', 'WORKING', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'BLOCKED']);
 const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
+
+function fmt(iso: string | null): string {
+  if (!iso) return '';
+  return new Date(iso).toLocaleString('ar', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
 
 export function TaskManager({
   tasks,
+  schedules,
   agents,
 }: {
   tasks: TaskRow[];
+  schedules: ScheduleRow[];
   agents: { id: string; name: string }[];
 }) {
   const router = useRouter();
@@ -58,6 +82,9 @@ export function TaskManager({
   const [saving, startSave] = useTransition();
   const [runningId, setRunningId] = useState<string | null>(null);
   const [openId, setOpenId] = useState<string | null>(null);
+
+  const inProgress = tasks.filter((t) => IN_PROGRESS.has(t.status));
+  const done = tasks.filter((t) => !IN_PROGRESS.has(t.status));
 
   function submit() {
     if (!title.trim()) return toast.error('عنوان المهمة مطلوب.');
@@ -87,13 +114,10 @@ export function TaskManager({
     try {
       const res = await fetch(`/api/tasks/${id}/run`, { method: 'POST' });
       const data = await res.json();
-      if (data.ok) {
-        toast.success('نفّذ الموظف المهمة.');
-      } else if (data.reason === 'no_key' || data.reason === 'no_settings') {
-        toast.error('أضف مفتاح الذكاء الاصطناعي من الإعدادات أولاً.');
-      } else {
-        toast.error('تعذّر تنفيذ المهمة.');
-      }
+      if (data.ok) toast.success('نفّذ الموظف المهمة.');
+      else if (data.reason === 'billing_limit') toast.error('انتهى رصيد التوكنز.');
+      else if (data.reason === 'vertex_not_configured') toast.error('خدمة الذكاء غير مهيأة.');
+      else toast.error('تعذّر تنفيذ المهمة.');
     } catch {
       toast.error('فشل الاتصال بالخادم.');
     } finally {
@@ -115,6 +139,66 @@ export function TaskManager({
     });
   }
 
+  function TaskCard({ t, showRun }: { t: TaskRow; showRun: boolean }) {
+    const st = STATUS[t.status] ?? STATUS.PENDING;
+    const StIcon = st.icon;
+    const busy = runningId === t.id || t.status === 'WORKING';
+    return (
+      <Card>
+        <CardContent className="space-y-2 p-4">
+          <div className="flex items-start gap-3">
+            <div className="min-w-0 flex-1">
+              <p className="font-medium">{t.title}</p>
+              <p className="text-xs text-muted-foreground">
+                {t.agentName ?? 'بدون موظف'} ·{' '}
+                <span className={cn('inline-flex items-center gap-1', st.cls)}>
+                  <StIcon className={cn('h-3 w-3', busy && 'animate-spin')} />
+                  {busy ? 'يعمل الآن' : st.label}
+                </span>
+              </p>
+              <p className="mt-1 text-[11px] text-muted-foreground">
+                أُنشئت: {fmt(t.createdAt)}
+                {t.completedAt ? ` · انتهت: ${fmt(t.completedAt)}` : ''}
+              </p>
+            </div>
+            {showRun && t.kind === 'AGENT_TASK' && (
+              <Button size="sm" onClick={() => run(t.id)} disabled={busy}>
+                {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
+                <span className="ms-1">تشغيل</span>
+              </Button>
+            )}
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => remove(t.id)}
+              className="text-destructive hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          </div>
+          {t.result && (
+            <div>
+              <button
+                onClick={() => setOpenId(openId === t.id ? null : t.id)}
+                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+              >
+                <ChevronDown className={cn('h-3 w-3 transition', openId === t.id && 'rotate-180')} />
+                نتيجة التنفيذ
+              </button>
+              {openId === t.id && (
+                <p className="mt-2 whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm">{t.result}</p>
+              )}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    );
+  }
+
+  function empty(text: string) {
+    return <p className="py-10 text-center text-sm text-muted-foreground">{text}</p>;
+  }
+
   return (
     <div className="space-y-4">
       {!adding && (
@@ -132,29 +216,18 @@ export function TaskManager({
           <CardContent className="space-y-4 pt-6">
             <div className="space-y-2">
               <Label>عنوان المهمة *</Label>
-              <Input
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="مثل: اكتب 3 منشورات تسويقية عن العرض الجديد"
-              />
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder="مثل: اكتب 3 منشورات تسويقية" />
             </div>
             <div className="space-y-2">
               <Label>التفاصيل</Label>
-              <Textarea
-                rows={3}
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                placeholder="وضّح المطلوب بدقة ليؤدي الموظف المهمة كما تريد."
-              />
+              <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder="وضّح المطلوب بدقة." />
             </div>
             <div className="grid gap-4 sm:grid-cols-2">
               <div className="space-y-2">
                 <Label>الموظف المسؤول *</Label>
                 <select className={selectCls} value={agentId} onChange={(e) => setAgentId(e.target.value)}>
                   {agents.map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.name}
-                    </option>
+                    <option key={a.id} value={a.id}>{a.name}</option>
                   ))}
                 </select>
               </div>
@@ -169,9 +242,7 @@ export function TaskManager({
               </div>
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" onClick={() => setAdding(false)} disabled={saving}>
-                إلغاء
-              </Button>
+              <Button variant="ghost" onClick={() => setAdding(false)} disabled={saving}>إلغاء</Button>
               <Button onClick={submit} disabled={saving}>
                 {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
                 إضافة المهمة
@@ -181,64 +252,49 @@ export function TaskManager({
         </Card>
       )}
 
-      <div className="grid gap-3">
-        {tasks.map((t) => {
-          const st = STATUS[t.status] ?? STATUS.PENDING;
-          const StIcon = st.icon;
-          const busy = runningId === t.id || t.status === 'WORKING';
-          return (
-            <Card key={t.id}>
-              <CardContent className="space-y-3 p-4">
-                <div className="flex items-start gap-3">
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium">{t.title}</p>
-                    <p className="text-xs text-muted-foreground">
-                      {t.agentName ?? 'بدون موظف'} ·{' '}
-                      <span className={cn('inline-flex items-center gap-1', st.cls)}>
-                        <StIcon className={cn('h-3 w-3', busy && 'animate-spin')} />
-                        {busy ? 'يعمل الآن' : st.label}
-                      </span>
-                    </p>
-                  </div>
-                  {t.kind === 'AGENT_TASK' && (
-                    <Button size="sm" onClick={() => run(t.id)} disabled={busy}>
-                      {busy ? <Loader2 className="h-4 w-4 animate-spin" /> : <Play className="h-4 w-4" />}
-                      <span className="ms-1">تشغيل</span>
-                    </Button>
-                  )}
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={() => remove(t.id)}
-                    className="text-destructive hover:text-destructive"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </Button>
-                </div>
+      <Tabs defaultValue="active">
+        <TabsList>
+          <TabsTrigger value="active">قيد التنفيذ ({inProgress.length})</TabsTrigger>
+          <TabsTrigger value="done">منجزة ({done.length})</TabsTrigger>
+          <TabsTrigger value="scheduled">مجدولة ({schedules.length})</TabsTrigger>
+        </TabsList>
 
-                {t.result && (
-                  <div>
-                    <button
-                      onClick={() => setOpenId(openId === t.id ? null : t.id)}
-                      className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-                    >
-                      <ChevronDown
-                        className={cn('h-3 w-3 transition', openId === t.id && 'rotate-180')}
-                      />
-                      نتيجة التنفيذ
-                    </button>
-                    {openId === t.id && (
-                      <p className="mt-2 whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm">
-                        {t.result}
+        <TabsContent value="active" className="space-y-3">
+          {inProgress.length === 0
+            ? empty('لا مهام قيد التنفيذ.')
+            : inProgress.map((t) => <TaskCard key={t.id} t={t} showRun />)}
+        </TabsContent>
+
+        <TabsContent value="done" className="space-y-3">
+          {done.length === 0
+            ? empty('لا مهام منجزة بعد.')
+            : done.map((t) => <TaskCard key={t.id} t={t} showRun={false} />)}
+        </TabsContent>
+
+        <TabsContent value="scheduled" className="space-y-3">
+          {schedules.length === 0
+            ? empty('لا مهام مجدولة. أضف جدولة من بروفايل الموظف.')
+            : schedules.map((s) => (
+                <Card key={s.id}>
+                  <CardContent className="flex items-center gap-3 p-4">
+                    <CalendarClock className="h-5 w-5 shrink-0 text-primary" />
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate font-medium">{s.name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {s.agentName ?? '—'} · نُفّذت {s.runCount} مرة
+                        {s.nextRunAt ? ` · التالي ${fmt(s.nextRunAt)}` : ''}
                       </p>
+                    </div>
+                    {s.nextRunAt && (
+                      <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs">
+                        <Countdown target={s.nextRunAt} />
+                      </span>
                     )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          );
-        })}
-      </div>
+                  </CardContent>
+                </Card>
+              ))}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
