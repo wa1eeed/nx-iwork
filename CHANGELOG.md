@@ -9,6 +9,18 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Storage layer (Cloudflare R2, portable)
+
+- **Provider-agnostic storage** (`lib/storage/`): neutral `StorageProvider`
+  interface + Cloudflare R2 adapter (S3 v3 SDK). Same code runs on AWS S3 /
+  Alibaba OSS by changing endpoint + keys — keeps the platform portable.
+- **Direct-to-bucket presigned uploads**: `POST /api/uploads/sign` returns a
+  presigned PUT URL so files upload straight to R2 — bytes never transit the
+  VPS (scales independently of app resources).
+- **Per-tenant isolation**: `companyKey()` prefixes every object with
+  `companies/{companyId}/…` and sanitises paths.
+- Env: `R2_*` in `.env.example` (replaces the old unused `S3_*` placeholders).
+
 ### Added — Priority 1: Agent Loop + Chat (multi-provider AI)
 
 - **Provider-agnostic AI layer** (`lib/ai/`): neutral `AiProvider` interface with
