@@ -17,7 +17,8 @@
     "test": "vitest",
     "test:e2e": "playwright test",
     "create-admin": "tsx scripts/create-admin.ts",
-    "scheduler": "tsx scripts/scheduler.ts"
+    "scheduler": "tsx scripts/scheduler.ts",
+    "test:vertex": "tsx scripts/test-vertex.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.30.0",

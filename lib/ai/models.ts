@@ -22,11 +22,11 @@ const GOOGLE_MODELS: TierMap = {
   OPUS: process.env.GOOGLE_MODEL_ADVANCED ?? 'gemini-2.5-pro',
 };
 
-// Vertex model ids differ slightly from AI Studio and are region-dependent —
-// keep them overridable.
+// Vertex model ids are project/region-dependent — verified available on
+// bznss-one/us-central1 (see `npm run test:vertex`). Overridable via env.
 const VERTEX_MODELS: TierMap = {
-  HAIKU: process.env.VERTEX_MODEL_FAST ?? 'gemini-2.0-flash-001',
-  SONNET: process.env.VERTEX_MODEL_BALANCED ?? 'gemini-2.0-flash-001',
+  HAIKU: process.env.VERTEX_MODEL_FAST ?? 'gemini-2.5-flash',
+  SONNET: process.env.VERTEX_MODEL_BALANCED ?? 'gemini-2.5-flash',
   OPUS: process.env.VERTEX_MODEL_ADVANCED ?? 'gemini-2.5-pro',
 };
 

@@ -9,6 +9,21 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Verified — Vertex AI live (service account) + model fix
+
+- **Live smoke test passes** on `bznss-one` / `us-central1`: service-account
+  auth, chat (`gemini-2.5-flash`), and embeddings (1536 dims) all work. Added
+  `scripts/test-vertex.ts` (`npm run test:vertex`) as a reusable connectivity
+  check (exits non-zero on failure).
+- **Model ids corrected** to what the project actually exposes: `gemini-2.5-flash`
+  (fast/balanced) + `gemini-2.5-pro` (advanced). The 2.0/1.5 ids returned 404.
+- **Accurate token billing:** Gemini 2.5 "thinking" tokens are excluded from
+  `candidatesTokenCount`, so the Vertex adapter now charges on
+  `totalTokenCount − promptTokenCount` (token bank no longer under-counts).
+- **New reference doc:** [`docs/AI_VERTEX.md`](docs/AI_VERTEX.md) — full setup,
+  credentials handling (Coolify mount, never committed), models, token bank,
+  verification, troubleshooting.
+
 ### Changed — Vertex AI is now the default AI path (strict, service-account)
 
 - **`AI_MODE` defaults to `managed`** (was `byok`): the platform authenticates to

@@ -53,6 +53,7 @@
 1. **[START_HERE.md](./START_HERE.md)** ⭐ ابدأ هنا
 2. **[docs/PROJECT.md](./docs/PROJECT.md)** - دستور المشروع
 3. **[docs/AGENT_SYSTEM.md](./docs/AGENT_SYSTEM.md)** - قلب المنصة التقني
+3.1. **[docs/AI_VERTEX.md](./docs/AI_VERTEX.md)** - مرجع Vertex AI (managed، service account، بنك التوكنز)
 4. **[docs/ROADMAP.md](./docs/ROADMAP.md)** - خارطة الطريق
 5. **[docs/DATABASE.md](./docs/DATABASE.md)** - مخطط البيانات
 6. **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - دليل النشر

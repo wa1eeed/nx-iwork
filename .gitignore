@@ -11,6 +11,11 @@ node_modules/
 .env.staging
 .env.development
 
+# Secrets — service account keys / credentials. NEVER COMMIT.
+ai-config/
+*-service-account*.json
+*.sa.json
+
 # Next.js
 .next/
 out/

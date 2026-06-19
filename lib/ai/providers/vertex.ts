@@ -68,7 +68,7 @@ export function createVertexProvider(): AiProvider {
 
       const model = getClient().getGenerativeModel({
         model: modelId,
-        systemInstruction: { role: 'system', parts: [{ text: req.system }] },
+        systemInstruction: req.system,
         generationConfig: {
           temperature: req.temperature ?? 0.7,
           maxOutputTokens: req.maxTokens ?? 4096,
@@ -110,15 +110,20 @@ export function createVertexProvider(): AiProvider {
           args: (p.functionCall!.args ?? {}) as Record<string, unknown>,
         }));
 
+      // Gemini 2.5 models "think" — thinking tokens are billed but land in
+      // neither promptTokenCount nor candidatesTokenCount. Charge on the
+      // difference from totalTokenCount so the token bank stays accurate.
+      const prompt = resp.usageMetadata?.promptTokenCount ?? 0;
+      const total = resp.usageMetadata?.totalTokenCount ?? 0;
+      const candidates = resp.usageMetadata?.candidatesTokenCount ?? 0;
+      const output = total > prompt ? total - prompt : candidates;
+
       return {
         text,
         toolCalls,
         needsTools: toolCalls.length > 0,
         model: modelId,
-        usage: {
-          inputTokens: resp.usageMetadata?.promptTokenCount ?? 0,
-          outputTokens: resp.usageMetadata?.candidatesTokenCount ?? 0,
-        },
+        usage: { inputTokens: prompt, outputTokens: output },
       };
     },
   };

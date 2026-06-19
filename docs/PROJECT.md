@@ -286,7 +286,7 @@ nx-iwork/
 | القدرة | الحالة | المكان |
 |---|---|---|
 | طبقة AI محايدة (Gemini افتراضي + Claude) BYOK | ✅ | `lib/ai/` |
-| وضع Managed: Vertex AI + بنك توكنز (`AI_MODE=managed`) | ✅ | `lib/ai/providers/vertex.ts`, `lib/billing/tokens.ts` |
+| وضع Managed: Vertex AI + بنك توكنز (`AI_MODE=managed`، **افتراضي**) | ✅ مُتحقَّق حيّاً | `lib/ai/providers/vertex.ts`, `lib/billing/tokens.ts` — مرجع: `docs/AI_VERTEX.md` |
 | محادثة الوكيل + استدعاء الأدوات (catalog/CRM/tasks/memory) | ✅ | `lib/agent/run.ts`, `tools.ts` |
 | نموذج بيانات مرن: CRM (Customer) + customFields + Task موحّد | ✅ | `prisma/schema.prisma` |
 | إدارة الأقسام والوكلاء + بناء الشخصية | ✅ | `app/(dashboard)/agents`, `departments` |
