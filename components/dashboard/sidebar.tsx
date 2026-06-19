@@ -15,13 +15,13 @@ import {
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
-  { href: '/overview', icon: LayoutDashboard, labelKey: 'overview', sprint: null },
-  { href: '/agents', icon: Users, labelKey: 'agents', sprint: null },
-  { href: '/departments', icon: Building2, labelKey: 'departments', sprint: null },
-  { href: '/products', icon: Package, labelKey: 'products', sprint: null },
-  { href: '/tasks', icon: ListChecks, labelKey: 'tasks', sprint: null },
-  { href: '/chat', icon: MessageSquare, labelKey: 'chat', sprint: null },
-  { href: '/settings', icon: Settings, labelKey: 'settings', sprint: null },
+  { href: '/overview', icon: LayoutDashboard, labelKey: 'overview' },
+  { href: '/agents', icon: Users, labelKey: 'agents' },
+  { href: '/departments', icon: Building2, labelKey: 'departments' },
+  { href: '/products', icon: Package, labelKey: 'products' },
+  { href: '/tasks', icon: ListChecks, labelKey: 'tasks' },
+  { href: '/chat', icon: MessageSquare, labelKey: 'chat' },
+  { href: '/settings', icon: Settings, labelKey: 'settings' },
 ] as const;
 
 export function Sidebar() {
@@ -37,7 +37,7 @@ export function Sidebar() {
         </span>
       </div>
       <nav className="flex-1 space-y-1 p-4">
-        {NAV_ITEMS.map(({ href, icon: Icon, labelKey, sprint }) => {
+        {NAV_ITEMS.map(({ href, icon: Icon, labelKey }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
           return (
             <Link
@@ -52,11 +52,6 @@ export function Sidebar() {
             >
               <Icon className="size-4" />
               <span className="flex-1">{tDashboard(labelKey)}</span>
-              {sprint && (
-                <span className="rounded-full border border-border px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">
-                  {tDashboard('sprintBadge', { sprint })}
-                </span>
-              )}
             </Link>
           );
         })}
