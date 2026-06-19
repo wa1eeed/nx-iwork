@@ -1,7 +1,35 @@
 import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { createVertexProvider, isVertexConfigured } from '@/lib/ai/providers/vertex';
 import { getEmbedding, isEmbeddingsConfigured, EMBEDDING_DIMS } from '@/lib/ai/embeddings';
+import { ensureAdcFromEnv } from '@/lib/ai/gcp-auth';
+
+// Reports which auth source the container sees — never the secret content, only
+// booleans + the credential `type` field. Makes remote ADC debugging trivial.
+function authDiagnostics() {
+  const credJson = process.env.GOOGLE_APPLICATION_CREDENTIALS_JSON;
+  let jsonEnvValid = false;
+  let jsonType: string | null = null;
+  if (credJson) {
+    try {
+      jsonType = (JSON.parse(credJson) as { type?: string }).type ?? null;
+      jsonEnvValid = true;
+    } catch {
+      jsonEnvValid = false;
+    }
+  }
+  ensureAdcFromEnv(); // reflect what the providers do
+  const credFile = process.env.GOOGLE_APPLICATION_CREDENTIALS ?? null;
+  return {
+    hasInlineCreds: Boolean(process.env.GCP_CLIENT_EMAIL && process.env.GCP_PRIVATE_KEY),
+    hasJsonEnv: Boolean(credJson),
+    jsonEnvValid,
+    jsonType,
+    credFile,
+    credFileExists: credFile ? existsSync(credFile) : false,
+  };
+}
 
 // In-container Vertex AI smoke test. The standalone Docker image ships neither
 // tsx nor scripts/, so `npm run test:vertex` can't run there — this route does
@@ -36,6 +64,7 @@ export async function GET(req: Request) {
     project: process.env.GCP_PROJECT_ID ?? null,
     location: process.env.GCP_LOCATION ?? null,
     configured: isVertexConfigured(),
+    auth: authDiagnostics(),
   };
 
   if (!isVertexConfigured()) {
