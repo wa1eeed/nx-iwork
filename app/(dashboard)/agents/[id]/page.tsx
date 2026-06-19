@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { AgentForm, type AgentFormValues } from '@/components/dashboard/agent-form';
 import { ArchiveAgentButton } from '@/components/dashboard/archive-agent-button';
+import { AgentSchedules } from '@/components/dashboard/agent-schedules';
 
 export default async function EditAgentPage({
   params,
@@ -17,7 +18,7 @@ export default async function EditAgentPage({
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
 
-  const [agent, departments, managers] = await Promise.all([
+  const [agent, departments, managers, schedules, settings] = await Promise.all([
     db.agent.findFirst({ where: { id, companyId } }),
     db.department.findMany({
       where: { companyId },
@@ -28,6 +29,23 @@ export default async function EditAgentPage({
       where: { companyId, status: { not: 'ARCHIVED' }, NOT: { id } },
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
+    }),
+    db.agentSchedule.findMany({
+      where: { agentId: id, companyId },
+      orderBy: { createdAt: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        taskTemplate: true,
+        cronExpression: true,
+        isActive: true,
+        nextRunAt: true,
+        runCount: true,
+      },
+    }),
+    db.businessSettings.findUnique({
+      where: { companyId },
+      select: { timezone: true },
     }),
   ]);
 
@@ -61,6 +79,22 @@ export default async function EditAgentPage({
       </div>
       <h1 className="text-2xl font-semibold">تعديل الموظف</h1>
       <AgentForm departments={departments} managers={managers} initial={initial} />
+
+      <div className="mx-auto max-w-2xl">
+        <AgentSchedules
+          agentId={agent.id}
+          timezone={settings?.timezone ?? 'Asia/Riyadh'}
+          schedules={schedules.map((s) => ({
+            id: s.id,
+            name: s.name,
+            taskTemplate: s.taskTemplate,
+            cronExpression: s.cronExpression,
+            isActive: s.isActive,
+            nextRunAt: s.nextRunAt?.toISOString() ?? null,
+            runCount: s.runCount,
+          }))}
+        />
+      </div>
     </div>
   );
 }

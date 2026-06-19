@@ -1,0 +1,218 @@
+'use client';
+
+import { useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
+import { Plus, Loader2, Trash2, Clock, Power } from 'lucide-react';
+import { toast } from 'sonner';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
+import { Switch } from '@/components/ui/switch';
+import { Card, CardContent } from '@/components/ui/card';
+import { createSchedule, toggleSchedule, deleteSchedule } from '@/lib/actions/schedules';
+
+export interface ScheduleRow {
+  id: string;
+  name: string;
+  taskTemplate: string;
+  cronExpression: string;
+  isActive: boolean;
+  nextRunAt: string | null;
+  runCount: number;
+}
+
+type Freq = 'hourly' | 'daily' | 'weekly';
+
+const DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+
+// Turn the friendly picker into a 5-field cron expression.
+function toCron(freq: Freq, hour: number, day: number): string {
+  if (freq === 'hourly') return '0 * * * *';
+  if (freq === 'daily') return `0 ${hour} * * *`;
+  return `0 ${hour} * * ${day}`;
+}
+
+function humanWhen(freq: Freq, hour: number, day: number): string {
+  const hh = `${String(hour).padStart(2, '0')}:00`;
+  if (freq === 'hourly') return 'كل ساعة';
+  if (freq === 'daily') return `كل يوم الساعة ${hh}`;
+  return `كل ${DAYS[day]} الساعة ${hh}`;
+}
+
+const selectCls = 'h-10 rounded-md border border-input bg-background px-3 text-sm';
+
+export function AgentSchedules({
+  agentId,
+  schedules,
+  timezone,
+}: {
+  agentId: string;
+  schedules: ScheduleRow[];
+  timezone: string;
+}) {
+  const router = useRouter();
+  const [adding, setAdding] = useState(false);
+  const [name, setName] = useState('');
+  const [taskTemplate, setTaskTemplate] = useState('');
+  const [freq, setFreq] = useState<Freq>('daily');
+  const [hour, setHour] = useState(9);
+  const [day, setDay] = useState(0);
+  const [pending, start] = useTransition();
+
+  function submit() {
+    if (!name.trim()) return toast.error('اسم الجدولة مطلوب.');
+    if (!taskTemplate.trim()) return toast.error('اكتب المهمة المطلوب تكرارها.');
+    start(async () => {
+      const res = await createSchedule(agentId, {
+        name: name.trim(),
+        taskTemplate: taskTemplate.trim(),
+        cronExpression: toCron(freq, hour, day),
+        timezone,
+        isActive: true,
+      });
+      if (res.ok) {
+        toast.success('تمت إضافة الجدولة.');
+        setName('');
+        setTaskTemplate('');
+        setAdding(false);
+        router.refresh();
+      } else {
+        toast.error(res.error === 'bad_cron' ? 'توقيت غير صحيح.' : 'تعذّرت الإضافة.');
+      }
+    });
+  }
+
+  function toggle(id: string, isActive: boolean) {
+    start(async () => {
+      const res = await toggleSchedule(id, isActive);
+      if (res.ok) router.refresh();
+      else toast.error('تعذّر التحديث.');
+    });
+  }
+
+  function remove(id: string) {
+    if (!window.confirm('حذف هذه الجدولة؟')) return;
+    start(async () => {
+      const res = await deleteSchedule(id);
+      if (res.ok) {
+        toast.success('تم الحذف.');
+        router.refresh();
+      } else {
+        toast.error('تعذّر الحذف.');
+      }
+    });
+  }
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 pt-6">
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-medium">الأتمتة والجدولة</p>
+            <p className="text-xs text-muted-foreground">
+              خلِّ هذا الموظف ينفّذ مهمة متكررة تلقائياً في وقتها.
+            </p>
+          </div>
+          {!adding && (
+            <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
+              <Plus className="me-1 h-4 w-4" />
+              جدولة
+            </Button>
+          )}
+        </div>
+
+        {adding && (
+          <div className="space-y-3 rounded-lg border p-4">
+            <div className="space-y-2">
+              <Label>اسم الجدولة</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثل: تقرير المبيعات الأسبوعي" />
+            </div>
+            <div className="space-y-2">
+              <Label>المهمة المطلوب تكرارها</Label>
+              <Textarea
+                rows={2}
+                value={taskTemplate}
+                onChange={(e) => setTaskTemplate(e.target.value)}
+                placeholder="اقرأ مبيعات الأسبوع من الـ CRM واكتب تقريراً موجزاً."
+              />
+            </div>
+            <div className="flex flex-wrap items-end gap-3">
+              <div className="space-y-1">
+                <Label className="text-xs">التكرار</Label>
+                <select className={selectCls} value={freq} onChange={(e) => setFreq(e.target.value as Freq)}>
+                  <option value="hourly">كل ساعة</option>
+                  <option value="daily">يومياً</option>
+                  <option value="weekly">أسبوعياً</option>
+                </select>
+              </div>
+              {freq === 'weekly' && (
+                <div className="space-y-1">
+                  <Label className="text-xs">اليوم</Label>
+                  <select className={selectCls} value={day} onChange={(e) => setDay(Number(e.target.value))}>
+                    {DAYS.map((d, i) => (
+                      <option key={i} value={i}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              {freq !== 'hourly' && (
+                <div className="space-y-1">
+                  <Label className="text-xs">الساعة</Label>
+                  <select className={selectCls} value={hour} onChange={(e) => setHour(Number(e.target.value))}>
+                    {Array.from({ length: 24 }, (_, h) => (
+                      <option key={h} value={h}>
+                        {String(h).padStart(2, '0')}:00
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" size="sm" onClick={() => setAdding(false)} disabled={pending}>
+                إلغاء
+              </Button>
+              <Button size="sm" onClick={submit} disabled={pending}>
+                {pending && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
+                حفظ
+              </Button>
+            </div>
+          </div>
+        )}
+
+        <div className="space-y-2">
+          {schedules.length === 0 && !adding && (
+            <p className="text-sm text-muted-foreground">لا جدولة بعد.</p>
+          )}
+          {schedules.map((s) => (
+            <div key={s.id} className="flex items-center gap-3 rounded-lg border p-3">
+              <Clock className="h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-medium">{s.name}</p>
+                <p className="truncate text-xs text-muted-foreground">
+                  <span dir="ltr">{s.cronExpression}</span> · نُفّذت {s.runCount} مرة
+                  {s.nextRunAt ? ` · التالي ${new Date(s.nextRunAt).toLocaleString('ar')}` : ''}
+                </p>
+              </div>
+              <span title={s.isActive ? 'مفعّلة' : 'متوقفة'}>
+                <Power className={s.isActive ? 'h-4 w-4 text-emerald-500' : 'h-4 w-4 text-muted-foreground'} />
+              </span>
+              <Switch checked={s.isActive} onCheckedChange={(c) => toggle(s.id, c)} disabled={pending} />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => remove(s.id)}
+                className="text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
