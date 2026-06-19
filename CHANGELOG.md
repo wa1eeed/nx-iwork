@@ -34,6 +34,38 @@ Versioning: [Semantic Versioning](https://semver.org/)
   `companies/{companyId}/…` and sanitises paths.
 - Env: `R2_*` in `.env.example` (replaces the old unused `S3_*` placeholders).
 
+### Added — Agent memory (semantic long-term recall)
+
+- **Embeddings layer** (`lib/ai/embeddings.ts`): platform-level OpenAI
+  `text-embedding-3-small` (1536 dims — matches the existing `AgentMemory.embedding`
+  vector(1536), no migration). Decoupled from BYOK chat provider (Claude has no
+  embeddings). Unset key → semantic memory disabled, recall falls back to
+  importance-ranked.
+- **Memory module** (`lib/agent/memory.ts`): `saveMemory` (embed + store via raw
+  pgvector SQL) and `recallMemories` (cosine-nearest via `<=>`, graceful
+  fallback). `recallMemoryBlock` injects relevant facts into the system prompt.
+- **`save_memory` tool**: the agent itself decides what's worth remembering
+  (customer preferences, decisions, recurring facts). Recall runs each chat/task
+  turn, so agents stop starting from zero.
+
+### Added — Core agent system (workforce, tasks, automation)
+
+- **Departments + Agents management**: full CRUD with a persona builder (role,
+  department assignment, persona/system-prompt, model tier, creativity, manager
+  hierarchy). Agents grid grouped by department. Archive = soft-delete.
+- **Task execution engine** (`lib/agent/task.ts`): agents perform real tasks
+  via the shared agent-loop core (`lib/agent/core.ts`, reused by chat) — drives
+  PENDING→WORKING→DONE/FAILED with TaskAttempt rows, TimelineEvents, and agent
+  stats. `/tasks` UI assigns, runs, and tracks; `POST /api/tasks/[id]/run`.
+- **Scheduler / triggers** (`lib/agent/scheduler.ts` + `scripts/scheduler.ts`):
+  a single-instance worker polls due `AgentSchedule`s each minute, turns each
+  into a task, runs it, and advances the next cron tick. Per-agent automation UI
+  with friendly presets (hourly/daily/weekly). This makes agents move on their
+  own — no human in the loop.
+  - Deploy as a SECOND Coolify service on the same image with command
+    `npm run scheduler` (one instance — avoids duplicate fires across web
+    replicas). Needs the same `DATABASE_URL` + AI/encryption env.
+
 ### Added — Priority 1: Agent Loop + Chat (multi-provider AI)
 
 - **Provider-agnostic AI layer** (`lib/ai/`): neutral `AiProvider` interface with

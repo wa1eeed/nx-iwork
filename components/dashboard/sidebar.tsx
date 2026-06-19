@@ -16,11 +16,11 @@ import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
   { href: '/overview', icon: LayoutDashboard, labelKey: 'overview', sprint: null },
-  { href: '/agents', icon: Users, labelKey: 'agents', sprint: 2 },
-  { href: '/departments', icon: Building2, labelKey: 'departments', sprint: 2 },
+  { href: '/agents', icon: Users, labelKey: 'agents', sprint: null },
+  { href: '/departments', icon: Building2, labelKey: 'departments', sprint: null },
   { href: '/products', icon: Package, labelKey: 'products', sprint: null },
-  { href: '/tasks', icon: ListChecks, labelKey: 'tasks', sprint: 4 },
-  { href: '/chat', icon: MessageSquare, labelKey: 'chat', sprint: 3 },
+  { href: '/tasks', icon: ListChecks, labelKey: 'tasks', sprint: null },
+  { href: '/chat', icon: MessageSquare, labelKey: 'chat', sprint: null },
   { href: '/settings', icon: Settings, labelKey: 'settings', sprint: null },
 ] as const;
 

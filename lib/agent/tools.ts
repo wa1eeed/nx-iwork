@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import type { AiTool } from '@/lib/ai';
+import { saveMemory } from './memory';
 
 export interface ToolContext {
   companyId: string;
@@ -112,6 +113,23 @@ export const AGENT_TOOLS: AiTool[] = [
       required: ['title'],
     },
   },
+  {
+    name: 'save_memory',
+    description:
+      'احفظ حقيقة مهمة لتتذكّرها مستقبلاً (تفضيل عميل، قرار، معلومة متكررة، شيء تعلّمته). استخدمها عند معرفة شيء يستحق التذكّر.',
+    parameters: {
+      type: 'object',
+      properties: {
+        summary: { type: 'string', description: 'الحقيقة باختصار وبصياغة قابلة للاسترجاع' },
+        importance: { type: 'number', description: 'الأهمية من 1 إلى 10' },
+        category: {
+          type: 'string',
+          enum: ['customer', 'product', 'decision', 'learning', 'other'],
+        },
+      },
+      required: ['summary'],
+    },
+  },
 ];
 
 // ---- Executors -------------------------------------------------------------
@@ -149,6 +167,12 @@ const createTaskArgs = z.object({
   dueAt: z.string().trim().optional(),
   startAt: z.string().trim().optional(),
   endAt: z.string().trim().optional(),
+});
+
+const saveMemoryArgs = z.object({
+  summary: z.string().trim().min(1).max(2000),
+  importance: z.coerce.number().int().min(1).max(10).optional(),
+  category: z.enum(['customer', 'product', 'decision', 'learning', 'other']).optional(),
 });
 
 function ok(data: unknown): string {
@@ -318,6 +342,18 @@ export async function executeTool(
           select: { id: true, title: true, kind: true },
         });
         return ok({ task, message: 'تمت إضافة البند للجدول.' });
+      }
+
+      case 'save_memory': {
+        const args = saveMemoryArgs.parse(rawArgs);
+        await saveMemory({
+          agentId: ctx.agentId,
+          companyId: ctx.companyId,
+          summary: args.summary,
+          importance: args.importance,
+          category: args.category,
+        });
+        return ok({ message: 'تم الحفظ في الذاكرة.' });
       }
 
       default:

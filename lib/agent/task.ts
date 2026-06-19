@@ -1,0 +1,171 @@
+// Task execution engine: an agent performs a real task (not just chat).
+//
+// Lifecycle: PENDING/WORKING -> run the shared tool-loop with the task as the
+// instruction -> DONE or FAILED, with a TaskAttempt row, a TimelineEvent, and
+// agent stats updated. Invoked manually now ("run now") and by the scheduler
+// later — same engine either way.
+
+import { db } from '@/lib/db';
+import { getProviderForCompany } from '@/lib/ai';
+import type { AiMessage } from '@/lib/ai';
+import { buildSystemPrompt } from './prompt';
+import { loadAgentWithContext, runToolLoop } from './core';
+import { recallMemoryBlock } from './memory';
+
+export type RunTaskResult =
+  | { ok: true; result: string; tokensUsed: number }
+  | {
+      ok: false;
+      reason: 'task_not_found' | 'no_agent' | 'no_key' | 'no_settings' | 'decrypt_failed' | 'provider_error';
+      message?: string;
+    };
+
+// Frames the task for the agent: it's executing an assigned job, and should end
+// with a concise report of what it did.
+function buildTaskInstruction(title: string, description: string): string {
+  return [
+    'لديك المهمة التالية لتنفيذها الآن. استخدم أدواتك عند الحاجة (الكتالوج، الـ CRM، إنشاء المهام).',
+    `العنوان: ${title}`,
+    description && description !== title ? `التفاصيل: ${description}` : '',
+    'نفّذ المهمة، ثم اكتب تقريراً موجزاً بما أنجزته.',
+  ]
+    .filter(Boolean)
+    .join('\n');
+}
+
+export async function runAgentTask(
+  taskId: string,
+  companyId: string
+): Promise<RunTaskResult> {
+  const task = await db.task.findFirst({
+    where: { id: taskId, companyId },
+    select: { id: true, agentId: true, title: true, description: true, status: true },
+  });
+  if (!task) return { ok: false, reason: 'task_not_found' };
+  if (!task.agentId) return { ok: false, reason: 'no_agent' };
+
+  const agent = await loadAgentWithContext(task.agentId, companyId);
+  if (!agent) return { ok: false, reason: 'no_agent' };
+
+  const providerResult = await getProviderForCompany(companyId);
+  if (!providerResult.ok) return { ok: false, reason: providerResult.reason };
+
+  // Mark working + open an attempt.
+  const attemptNumber =
+    (await db.taskAttempt.count({ where: { taskId } })) + 1;
+  const startedAt = new Date();
+  await db.$transaction([
+    db.task.update({
+      where: { id: taskId },
+      data: { status: 'WORKING', startedAt, progress: 10 },
+    }),
+    db.taskAttempt.create({
+      data: {
+        taskId,
+        agentId: agent.id,
+        companyId,
+        attemptNumber,
+        status: 'RUNNING',
+        startedAt,
+      },
+    }),
+  ]);
+
+  let system = buildSystemPrompt({
+    agent,
+    company: agent.company,
+    dna: agent.company.companyDNA,
+    settings: agent.company.settings,
+  });
+  const memoryBlock = await recallMemoryBlock(
+    agent.id,
+    companyId,
+    `${task.title}\n${task.description}`
+  );
+  if (memoryBlock) system += `\n\n${memoryBlock}`;
+
+  const messages: AiMessage[] = [
+    { role: 'user', content: buildTaskInstruction(task.title, task.description) },
+  ];
+
+  try {
+    const { reply, tokensUsed } = await runToolLoop({
+      provider: providerResult.provider,
+      system,
+      messages,
+      tier: agent.model,
+      temperature: agent.temperature,
+      maxTokens: agent.maxTokens,
+      ctx: { companyId, agentId: agent.id },
+    });
+
+    const endedAt = new Date();
+    await db.$transaction([
+      db.task.update({
+        where: { id: taskId },
+        data: {
+          status: 'DONE',
+          result: reply,
+          progress: 100,
+          completedAt: endedAt,
+          tokensUsed: { increment: tokensUsed },
+        },
+      }),
+      db.taskAttempt.updateMany({
+        where: { taskId, attemptNumber },
+        data: { status: 'SUCCEEDED', endedAt, tokensUsed },
+      }),
+      db.agent.update({
+        where: { id: agent.id },
+        data: {
+          tasksCompleted: { increment: 1 },
+          totalTokensUsed: { increment: tokensUsed },
+        },
+      }),
+      db.timelineEvent.create({
+        data: {
+          companyId,
+          agentId: agent.id,
+          type: 'TASK_COMPLETED',
+          title: `أنجز ${agent.name} مهمة: ${task.title}`,
+        },
+      }),
+    ]);
+
+    return { ok: true, result: reply, tokensUsed };
+  } catch (err) {
+    const message = err instanceof Error ? err.message : 'unknown';
+    console.error('runAgentTask failed', { taskId, companyId, err });
+    const endedAt = new Date();
+    await db.$transaction([
+      db.task.update({
+        where: { id: taskId },
+        data: { status: 'FAILED', notes: message.slice(0, 500) },
+      }),
+      db.taskAttempt.updateMany({
+        where: { taskId, attemptNumber },
+        data: {
+          status: 'FAILED',
+          endedAt,
+          errorReason: message.slice(0, 500),
+          errorType: 'PROVIDER_ERROR',
+        },
+      }),
+      db.agent.update({
+        where: { id: agent.id },
+        data: { tasksFailed: { increment: 1 } },
+      }),
+      db.timelineEvent.create({
+        data: {
+          companyId,
+          agentId: agent.id,
+          type: 'TASK_FAILED',
+          title: `فشلت مهمة ${task.title}`,
+          description: message.slice(0, 500),
+        },
+      }),
+    ]);
+
+    return { ok: false, reason: 'provider_error', message };
+  }
+}
