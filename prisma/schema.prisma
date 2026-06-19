@@ -133,6 +133,8 @@ model Company {
   products            Product[]
   orders              Order[]
   customers           Customer[]
+  faqItems            FaqItem[]
+  eventTriggers       EventTrigger[]
   publicConversations PublicConversation[]
 
   createdAt DateTime @default(now())
@@ -276,6 +278,9 @@ model Agent {
 
   // CRM leads this agent owns/handles
   assignedCustomers Customer[] @relation("AgentCustomers")
+
+  // Event triggers that wake this agent
+  eventTriggers     EventTrigger[]
   
   // Activity
   status            AgentStatus @default(ONLINE)
@@ -707,6 +712,63 @@ model Customer {
   @@index([companyId, status])
   @@index([assignedAgentId])
   @@index([phone])
+}
+
+// ========================================
+// KNOWLEDGE BASE (FAQ) — structured, agent-readable
+// ========================================
+
+// Question/answer pairs the agents read via the search_faq tool. Structured
+// (not PDF) so answers are exact and cheap on tokens.
+model FaqItem {
+  id        String   @id @default(cuid())
+  companyId String
+  company   Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  question  String
+  answer    String   @db.Text
+  category  String?
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+// ========================================
+// EVENT TRIGGERS (proactive automation)
+// ========================================
+
+enum TriggerEvent {
+  LEAD_CREATED      // عميل جديد دخل الـ CRM
+  ORDER_CREATED     // طلب جديد
+  ORDER_PAID        // فاتورة مدفوعة
+}
+
+// "When EVENT happens, wake AGENT with this task." The dispatcher (lib/agent/
+// events.ts) creates a PENDING task for the agent; the scheduler/cron runs it.
+model EventTrigger {
+  id           String       @id @default(cuid())
+  companyId    String
+  company      Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentId      String
+  agent        Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  event        TriggerEvent
+  name         String
+  taskTemplate String       @db.Text
+  isActive     Boolean      @default(true)
+
+  lastFiredAt  DateTime?
+  fireCount    Int          @default(0)
+
+  createdAt    DateTime     @default(now())
+  updatedAt    DateTime     @updatedAt
+
+  @@index([companyId, event])
+  @@index([agentId])
 }
 
 // ========================================

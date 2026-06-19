@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import {
   Building2,
+  BookOpen,
   LayoutDashboard,
   ListChecks,
   MessageSquare,
@@ -19,6 +20,7 @@ const NAV_ITEMS = [
   { href: '/agents', icon: Users, labelKey: 'agents' },
   { href: '/departments', icon: Building2, labelKey: 'departments' },
   { href: '/products', icon: Package, labelKey: 'products' },
+  { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
   { href: '/tasks', icon: ListChecks, labelKey: 'tasks' },
   { href: '/chat', icon: MessageSquare, labelKey: 'chat' },
   { href: '/settings', icon: Settings, labelKey: 'settings' },

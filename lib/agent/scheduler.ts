@@ -75,3 +75,28 @@ export async function runDueSchedules(now: Date = new Date()): Promise<Scheduler
 
   return { due: due.length, ran, failed };
 }
+
+// Runs PENDING tasks created by event triggers (lib/agent/events.ts). Kept
+// separate from schedules so the cron tick handles both proactive sources.
+export async function runPendingEventTasks(limit = 50): Promise<SchedulerRunSummary> {
+  const pending = await db.task.findMany({
+    where: { status: 'PENDING', triggerType: 'EVENT', agentId: { not: null } },
+    select: { id: true, companyId: true },
+    orderBy: { createdAt: 'asc' },
+    take: limit,
+  });
+
+  let ran = 0;
+  let failed = 0;
+  for (const t of pending) {
+    try {
+      const result = await runAgentTask(t.id, t.companyId);
+      if (result.ok) ran += 1;
+      else failed += 1;
+    } catch (err) {
+      failed += 1;
+      console.error('Pending event task errored', { taskId: t.id, err });
+    }
+  }
+  return { due: pending.length, ran, failed };
+}

@@ -9,6 +9,22 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — FAQ knowledge base + event triggers (proactive automation)
+
+Migration `20260619210000_faq_event_triggers` (additive).
+
+- **FAQ knowledge base** (`FaqItem`): structured Q&A the agents read via the new
+  **`search_faq`** tool — exact answers on policies/hours/shipping without PDF
+  token bloat. Managed at `/knowledge`.
+- **Event triggers** (`EventTrigger` + `lib/agent/events.ts`): "when EVENT
+  happens, wake AGENT with this task". `dispatchEvent()` creates a PENDING task
+  for the target agent; `runPendingEventTasks()` (in the scheduler, called by
+  `/api/cron/run` + the worker) executes them. Wired: `create_lead` →
+  `LEAD_CREATED`. Managed at `/knowledge`.
+- New nav item **المعرفة** (`/knowledge`) with FAQ + trigger managers.
+- Clarification: time-based scheduling (cron) was already built; this adds the
+  *event-based* triggers that were deferred.
+
 ### Changed — Customer UX for managed mode (no keys; task visibility)
 
 - **Settings: API-key tab hidden in managed mode** — the platform supplies AI

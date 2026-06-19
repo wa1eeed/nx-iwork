@@ -73,7 +73,8 @@
     "openSettingsCta": "افتح الإعدادات",
     "byokWarningTitle": "أكمل الإعداد",
     "byokWarningBody": "أضف مفتاح Anthropic API عشان موظفينك يقدرون يفكّرون.",
-    "byokWarningCta": "أضف المفتاح"
+    "byokWarningCta": "أضف المفتاح",
+    "knowledge": "المعرفة"
   },
   "onboarding": {
     "title": "أهلاً، خلّنا نبني شركتك",

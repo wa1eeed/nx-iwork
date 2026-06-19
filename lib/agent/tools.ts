@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import type { AiTool } from '@/lib/ai';
 import { saveMemory } from './memory';
+import { dispatchEvent } from './events';
 
 export interface ToolContext {
   companyId: string;
@@ -36,6 +37,17 @@ export const AGENT_TOOLS: AiTool[] = [
           enum: ['service', 'product', 'all'],
           description: 'نوع ما تبحث عنه. الافتراضي all.',
         },
+      },
+    },
+  },
+  {
+    name: 'search_faq',
+    description:
+      'ابحث في الأسئلة الشائعة وسياسات الشركة للإجابة بدقة (مواعيد العمل، الشحن، الاسترجاع...). استخدمها قبل التخمين.',
+    parameters: {
+      type: 'object',
+      properties: {
+        query: { type: 'string', description: 'كلمة البحث في الأسئلة/السياسات. فارغة = عرض الكل.' },
       },
     },
   },
@@ -137,6 +149,10 @@ export const AGENT_TOOLS: AiTool[] = [
 const searchCatalogArgs = z.object({
   query: z.string().trim().optional(),
   kind: z.enum(['service', 'product', 'all']).optional(),
+});
+
+const searchFaqArgs = z.object({
+  query: z.string().trim().optional(),
 });
 
 const findCustomerArgs = z.object({
@@ -256,6 +272,24 @@ export async function executeTool(
         });
       }
 
+      case 'search_faq': {
+        const args = searchFaqArgs.parse(rawArgs);
+        const contains = args.query
+          ? { contains: args.query, mode: Prisma.QueryMode.insensitive }
+          : undefined;
+        const items = await db.faqItem.findMany({
+          where: {
+            companyId: ctx.companyId,
+            isActive: true,
+            ...(contains ? { OR: [{ question: contains }, { answer: contains }] } : {}),
+          },
+          take: 10,
+          orderBy: { sortOrder: 'asc' },
+          select: { question: true, answer: true, category: true },
+        });
+        return ok({ faq: items });
+      }
+
       case 'find_customer': {
         const args = findCustomerArgs.parse(rawArgs);
         if (!args.phone && !args.name) {
@@ -290,6 +324,11 @@ export async function executeTool(
             customFields: (args.customFields as Prisma.InputJsonValue) ?? undefined,
           },
           select: { id: true, name: true, status: true },
+        });
+        // Fire LEAD_CREATED so any configured agent (e.g. sales) wakes up.
+        await dispatchEvent(ctx.companyId, 'LEAD_CREATED', {
+          summary: `عميل جديد: ${customer.name}`,
+          metadata: { customerId: customer.id },
         });
         return ok({ customer, message: 'تم إنشاء سجل العميل.' });
       }

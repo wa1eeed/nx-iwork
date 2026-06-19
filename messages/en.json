@@ -73,7 +73,8 @@
     "openSettingsCta": "Open settings",
     "byokWarningTitle": "Finish setup",
     "byokWarningBody": "Add your Anthropic API key so your agents can think.",
-    "byokWarningCta": "Add key"
+    "byokWarningCta": "Add key",
+    "knowledge": "Knowledge"
   },
   "onboarding": {
     "title": "Welcome — let's set up your company",

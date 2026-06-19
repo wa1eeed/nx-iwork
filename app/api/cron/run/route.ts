@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
-import { runDueSchedules } from '@/lib/agent/scheduler';
+import { runDueSchedules, runPendingEventTasks } from '@/lib/agent/scheduler';
 
 // Cron trigger for the scheduler, callable from inside the production image
 // (it's part of the Next build, unlike scripts/scheduler.ts which needs tsx +
@@ -38,8 +38,11 @@ async function handle(req: Request) {
   }
 
   try {
-    const summary = await runDueSchedules();
-    return NextResponse.json({ ok: true, ...summary });
+    const [schedules, events] = await Promise.all([
+      runDueSchedules(),
+      runPendingEventTasks(),
+    ]);
+    return NextResponse.json({ ok: true, schedules, events });
   } catch (err) {
     console.error('cron run failed', err);
     return NextResponse.json({ ok: false, reason: 'error' }, { status: 500 });
