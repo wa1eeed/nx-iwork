@@ -59,33 +59,36 @@ scripts/test-vertex.ts← فحص اتصال حيّ (npm run test:vertex)
 
 ## 4. الاعتماد (Credentials) — 🔴 لا تُرفع على Git أبداً
 
-ملف الـ Service Account JSON **سرّ**. `.gitignore` يستثني `ai-config/` و`*.sa.json`.
-**لا تضعه في الـ Docker image ولا في الكود.**
+الاعتماد **سرّ**. `.gitignore` يستثني `.env` و`ai-config/` و`*.sa.json`. لا تضعه
+في الـ Docker image ولا الكود. الكود يقرأ الاعتماد من `lib/ai/gcp-auth.ts`
+بأولوية: **متغيّرات بيئة inline** ← ثم **ملف ADC** (fallback).
 
-### محلياً (تطوير + `test:vertex`)
-ضع الملف في `./ai-config/` ووجّه إليه:
+### ✅ الطريقة المعتمدة: متغيّرات بيئة inline (تبديل الحساب = نسخ/لصق)
+افتح ملف الـ JSON كنص، وانسخ قيمتين فقط:
+
 ```bash
-# .env (غير مرفوع)
-AI_MODE=managed
 GCP_PROJECT_ID=bznss-one
 GCP_LOCATION=us-central1
-GOOGLE_APPLICATION_CREDENTIALS=./ai-config/vps-manager-bznss-one.json
+GCP_CLIENT_EMAIL=...@bznss-one.iam.gserviceaccount.com   # = JSON.client_email
+GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"  # = JSON.private_key (سطر واحد، \n كما هي، بين "")
 ```
 
-### في الإنتاج (Docker / Coolify) — Mount لا Copy
-لا تنسخ الملف داخل الصورة. بدلاً من ذلك **ركّبه (mount)** في الحاوية:
+- **محلياً:** في `.env`. **في Coolify:** في Environment Variables.
+- **تبديل حساب جوجل مستقبلاً:** الصق `GCP_CLIENT_EMAIL` و`GCP_PRIVATE_KEY`
+  الجديدين واضغط Restart — **بدون رفع ملفات ولا mounts**.
+- `GCP_PRIVATE_KEY` يُخزَّن بسطر واحد مع `\n` حرفية؛ الكود يحوّلها لأسطر حقيقية
+  (`gcp-auth.ts`). لفّه بعلامتي اقتباس.
 
-1. في Coolify → خدمة التطبيق → **Storages / Persistent Storage** → أضف ملفاً:
-   - **Mount Path:** `/app/ai-config/service-account.json`
-   - الصق محتوى الـ JSON (أو اربطه كملف على الـ VPS).
-2. في **Environment Variables**:
-   ```
-   GOOGLE_APPLICATION_CREDENTIALS=/app/ai-config/service-account.json
-   ```
-   (مسار **مطلق** داخل الحاوية — لا تستخدم `./` في الإنتاج.)
+> 🔒 المفتاح سرّ من الدرجة الأولى — لا يُطبع في اللوقات ولا يُرفع على Git. عند
+> أي تسريب **دوّر المفتاح** من GCP (Keys → احذف القديم → أنشئ جديد).
 
-> البديل: ضع الملف على الـ VPS (مثلاً `/etc/nx/sa.json`) واعمل bind-mount للحاوية،
-> ثم وجّه `GOOGLE_APPLICATION_CREDENTIALS` لمساره. المبدأ: **السرّ خارج الصورة والـ Git.**
+### الطريقة البديلة: ملف JSON مُركّب (ADC)
+إن فضّلت ملفاً: ركّبه (mount) في الحاوية ووجّه إليه — **لا تنسخه في الصورة**:
+1. Coolify → الخدمة → **Storages** → ملف على مسار مطلق مثل
+   `/app/ai-config/service-account.json`.
+2. `GOOGLE_APPLICATION_CREDENTIALS=/app/ai-config/service-account.json`.
+
+> الكود يستخدم المتغيّرات inline إن وُجدت، وإلا يرجع للملف تلقائياً.
 
 ---
 
@@ -96,7 +99,11 @@ GOOGLE_APPLICATION_CREDENTIALS=./ai-config/vps-manager-bznss-one.json
 | `AI_MODE` | نعم | `managed` | `byok` لتعطيل Vertex والرجوع لمفاتيح العملاء |
 | `GCP_PROJECT_ID` | نعم | `bznss-one` | معرّف مشروع GCP |
 | `GCP_LOCATION` | نعم | `us-central1` | منطقة Vertex |
-| `GOOGLE_APPLICATION_CREDENTIALS` | نعم | مسار الـ JSON | مطلق في الإنتاج |
+| `GCP_CLIENT_EMAIL` | نعم* | `…@bznss-one.iam…` | من JSON.client_email (الطريقة المعتمدة) |
+| `GCP_PRIVATE_KEY` | نعم* | `"-----BEGIN…\n…"` | من JSON.private_key، سطر واحد بين "" |
+| `GOOGLE_APPLICATION_CREDENTIALS` | بديل | مسار الـ JSON | fallback فقط لو لم تُضبط المتغيّرات أعلاه |
+
+> *إجباري واحد من: (`GCP_CLIENT_EMAIL` + `GCP_PRIVATE_KEY`) **أو** `GOOGLE_APPLICATION_CREDENTIALS`.
 | `VERTEX_MODEL_FAST` | لا | `gemini-2.5-flash` | تجاوز نموذج المستوى السريع |
 | `VERTEX_MODEL_BALANCED` | لا | `gemini-2.5-flash` | المتوازن |
 | `VERTEX_MODEL_ADVANCED` | لا | `gemini-2.5-pro` | المتقدّم |

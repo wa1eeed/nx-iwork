@@ -11,6 +11,7 @@
 // Unconfigured → semantic memory disabled; recall falls back to importance.
 
 import { GoogleAuth } from 'google-auth-library';
+import { getGcpCredentials, hasGcpAuth } from './gcp-auth';
 
 const MODEL = process.env.VERTEX_EMBEDDINGS_MODEL ?? 'gemini-embedding-001';
 const SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
@@ -18,23 +19,25 @@ const SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
 export const EMBEDDING_DIMS = 1536;
 
 // One GoogleAuth client per process; it caches/refreshes the access token.
+// Uses inline env credentials when present, else ADC (mounted JSON).
 let auth: GoogleAuth | null = null;
 function getAuth(): GoogleAuth {
-  auth ??= new GoogleAuth({ scopes: SCOPE });
+  if (!auth) {
+    const credentials = getGcpCredentials();
+    auth = new GoogleAuth({ scopes: SCOPE, ...(credentials ? { credentials } : {}) });
+  }
   return auth;
 }
 
 export function isEmbeddingsConfigured(): boolean {
-  return Boolean(
-    process.env.GCP_PROJECT_ID && process.env.GOOGLE_APPLICATION_CREDENTIALS
-  );
+  return Boolean(process.env.GCP_PROJECT_ID && hasGcpAuth());
 }
 
 // Returns the embedding vector, or null when embeddings aren't configured or the
 // call fails (callers degrade to non-vector behaviour).
 export async function getEmbedding(text: string): Promise<number[] | null> {
   const project = process.env.GCP_PROJECT_ID;
-  if (!project || !process.env.GOOGLE_APPLICATION_CREDENTIALS) return null;
+  if (!project || !hasGcpAuth()) return null;
   const location = process.env.GCP_LOCATION ?? 'us-central1';
 
   try {

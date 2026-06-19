@@ -9,6 +9,7 @@
 
 import { VertexAI, type Content, type Part } from '@google-cloud/vertexai';
 import { resolveModel } from '../models';
+import { getGcpCredentials, hasGcpAuth } from '../gcp-auth';
 import type {
   AiCompletion,
   AiCompletionRequest,
@@ -23,18 +24,19 @@ function getClient(): VertexAI {
   if (client) return client;
   const project = process.env.GCP_PROJECT_ID;
   if (!project) throw new Error('GCP_PROJECT_ID is not set');
+  const credentials = getGcpCredentials();
   client = new VertexAI({
     project,
     location: process.env.GCP_LOCATION ?? 'us-central1',
-    // Credentials come from GOOGLE_APPLICATION_CREDENTIALS (service account JSON).
+    // Inline env credentials when present; otherwise the SDK uses ADC
+    // (GOOGLE_APPLICATION_CREDENTIALS file).
+    ...(credentials ? { googleAuthOptions: { credentials } } : {}),
   });
   return client;
 }
 
 export function isVertexConfigured(): boolean {
-  return Boolean(
-    process.env.GCP_PROJECT_ID && process.env.GOOGLE_APPLICATION_CREDENTIALS
-  );
+  return Boolean(process.env.GCP_PROJECT_ID && hasGcpAuth());
 }
 
 function toVertexContents(messages: AiMessage[]): Content[] {

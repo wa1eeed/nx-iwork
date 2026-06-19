@@ -9,6 +9,19 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Changed — Vertex credentials via env (swap accounts without file mounts)
+
+- **Inline env credentials** (`lib/ai/gcp-auth.ts`): `GCP_CLIENT_EMAIL` +
+  `GCP_PRIVATE_KEY` (copied from the service-account JSON) are now the preferred
+  auth — passed to the Vertex SDK (`googleAuthOptions.credentials`) and to
+  google-auth-library for embeddings. `GOOGLE_APPLICATION_CREDENTIALS` (mounted
+  JSON) remains an automatic fallback. Swapping Google accounts is now a
+  paste-and-restart in Coolify — no file mounts, no redeploy of paths.
+- Private key stored one-line with escaped `\n`; restored to real newlines at
+  runtime. **Verified live** with env-only credentials (file unset): chat +
+  embeddings green.
+- Docs (`AI_VERTEX.md` §4/§5) + `.env.example` updated to lead with env creds.
+
 ### Verified — Vertex AI live (service account) + model fix
 
 - **Live smoke test passes** on `bznss-one` / `us-central1`: service-account
