@@ -17,7 +17,7 @@ const NAV_ITEMS = [
   { href: '/overview', icon: LayoutDashboard, labelKey: 'overview', sprint: null },
   { href: '/agents', icon: Users, labelKey: 'agents', sprint: null },
   { href: '/departments', icon: Building2, labelKey: 'departments', sprint: null },
-  { href: '/tasks', icon: ListChecks, labelKey: 'tasks', sprint: 4 },
+  { href: '/tasks', icon: ListChecks, labelKey: 'tasks', sprint: null },
   { href: '/chat', icon: MessageSquare, labelKey: 'chat', sprint: null },
   { href: '/settings', icon: Settings, labelKey: 'settings', sprint: null },
 ] as const;

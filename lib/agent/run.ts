@@ -1,27 +1,16 @@
-// The Agent Loop (v2): the beating heart of an AI employee.
-//
-// Flow: load agent + company context -> build system prompt -> pull recent
-// conversation (working memory) -> call the company's AI provider in a
-// tool-use loop (the model may call catalog/CRM/task tools, we run them and
-// feed results back) until it produces a final reply -> persist the turn and
-// update token stats.
-//
-// The episodic + semantic memory layers plug into this same function later
-// without changing its callers.
+// Agent chat turn. Loads the agent's working-memory history, runs the shared
+// tool-loop, and persists the human message + final reply. The "how an agent
+// thinks" logic lives in lib/agent/core.ts (shared with task execution).
 
 import { db } from '@/lib/db';
 import { getProviderForCompany } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { buildSystemPrompt } from './prompt';
-import { AGENT_TOOLS, executeTool } from './tools';
+import { loadAgentWithContext, runToolLoop } from './core';
 
 // How many recent messages form the agent's "working memory". Kept small to
 // bound token cost; older context will come from episodic/semantic memory.
 const WORKING_MEMORY_LIMIT = 20;
-
-// Safety cap on tool round-trips per turn, so a confused model can't loop
-// forever (and rack up tokens).
-const MAX_TOOL_ROUNDS = 5;
 
 export type RunAgentResult =
   | { ok: true; reply: string; tokensUsed: number }
@@ -45,37 +34,11 @@ export async function runAgentChat(
 ): Promise<RunAgentResult> {
   const { agentId, companyId, userMessage, userId } = input;
 
-  const agent = await db.agent.findFirst({
-    // findFirst with companyId enforces tenant isolation: an agent id alone is
-    // never enough to reach across companies.
-    where: { id: agentId, companyId },
-    include: {
-      company: {
-        select: {
-          name: true,
-          nameEn: true,
-          brandVoice: true,
-          industry: true,
-          companyDNA: {
-            select: {
-              aboutUs: true,
-              policies: true,
-              tone: true,
-              targetAudience: true,
-            },
-          },
-          settings: { select: { primaryLanguage: true } },
-        },
-      },
-    },
-  });
-
+  const agent = await loadAgentWithContext(agentId, companyId);
   if (!agent) return { ok: false, reason: 'agent_not_found' };
 
   const providerResult = await getProviderForCompany(companyId);
-  if (!providerResult.ok) {
-    return { ok: false, reason: providerResult.reason };
-  }
+  if (!providerResult.ok) return { ok: false, reason: providerResult.reason };
 
   // Working memory: last N messages for this agent, oldest-first for the model.
   const history = await db.chatMessage.findMany({
@@ -102,50 +65,18 @@ export async function runAgentChat(
     settings: agent.company.settings,
   });
 
-  const ctx = { companyId, agentId };
-  let reply = '';
-  let tokensUsed = 0;
-
+  let reply: string;
+  let tokensUsed: number;
   try {
-    for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-      const completion = await providerResult.provider.complete({
-        system,
-        messages,
-        tier: agent.model,
-        temperature: agent.temperature,
-        maxTokens: agent.maxTokens,
-        tools: AGENT_TOOLS,
-      });
-      tokensUsed += completion.usage.inputTokens + completion.usage.outputTokens;
-
-      if (!completion.needsTools || completion.toolCalls.length === 0) {
-        reply = completion.text.trim();
-        break;
-      }
-
-      // Record the model's tool-call turn, run each tool, and feed results back.
-      messages.push({
-        role: 'assistant',
-        content: completion.text,
-        toolCalls: completion.toolCalls,
-      });
-      for (const call of completion.toolCalls) {
-        const result = await executeTool(call.name, call.args, ctx);
-        messages.push({
-          role: 'tool',
-          toolCallId: call.id,
-          name: call.name,
-          content: result,
-        });
-      }
-
-      // Out of rounds but the model still wants tools: fall back to its text.
-      if (round === MAX_TOOL_ROUNDS) {
-        reply =
-          completion.text.trim() ||
-          'تعذّر إكمال الطلب بالكامل الآن. حوّلني لزميل بشري إن احتجت.';
-      }
-    }
+    ({ reply, tokensUsed } = await runToolLoop({
+      provider: providerResult.provider,
+      system,
+      messages,
+      tier: agent.model,
+      temperature: agent.temperature,
+      maxTokens: agent.maxTokens,
+      ctx: { companyId, agentId },
+    }));
   } catch (err) {
     console.error('Agent provider error', { agentId, companyId, err });
     return {
