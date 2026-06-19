@@ -2,6 +2,13 @@
 
 > **مرحباً Claude Code! هذا المشروع معد خصيصاً لك لتبنيه.**
 
+> ✅ **تحديث (2026):** النواة الأساسية **مبنية ومنشورة** على [bznss.one](https://bznss.one/):
+> طبقة AI محايدة (Gemini افتراضي + Claude)، محادثة الوكلاء + الأدوات، CRM ونموذج مرن،
+> إدارة الأقسام/الوكلاء، محرّك تنفيذ المهام، الجدولة التلقائية، والذاكرة الدلالية.
+> **المتبقّي:** اللاندنغ بيج العامة + ودجت الوكيل، ثم التكاملات (Sentry/Tap/API عام).
+> راجع `docs/PROJECT.md §10` لحالة التنفيذ، و`CHANGELOG.md` للتفاصيل.
+> خطة Sprint أدناه **تاريخية** — تعكس التخطيط الأولي لا الحالة الحالية.
+
 ---
 
 ## 📋 المهمة
@@ -78,10 +85,12 @@
 ## 🛠️ Tech Stack المتفق عليه
 
 - **Frontend:** Next.js 15 + TypeScript + Tailwind + shadcn/ui
-- **Backend:** Next.js API Routes + Prisma + PostgreSQL
+- **Backend:** Next.js API Routes + Prisma + PostgreSQL + pgvector
 - **Auth:** NextAuth.js v5
-- **AI:** Anthropic Claude (BYOK من العميل)
-- **Email:** Resend
+- **AI:** **Provider-agnostic BYOK** — Google Gemini (افتراضي) أو Anthropic Claude، طبقة محايدة في `lib/ai/`
+- **Storage:** Cloudflare R2 (S3-compatible, presigned)
+- **Email/SMS:** Resend + Twilio (`lib/notifications/`)
+- **Scheduler:** worker مستقل (`npm run scheduler`)
 - **Deployment:** Docker + Coolify على VPS
 - **Reverse Proxy:** Caddy (auto SSL)
 

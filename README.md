@@ -95,10 +95,15 @@ claude
 - **Function Calling / tools** (`lib/agent/tools.ts`) — catalog, CRM, tasks
 - 3-Layer Memory System (working / episodic / semantic via pgvector)
 
+### Integrations (طبقات محايدة معزولة)
+- **Cloudflare R2** — تخزين (S3-compatible، رفع presigned) ✅
+- **Resend** (إيميل) + **Twilio** (SMS) ✅
+- **Tap.company** (اشتراكات) · **Sentry** (مراقبة) · **API عام v1** — مخطّط
+
 ### DevOps
-- Docker + Coolify
+- Docker + Coolify (الويب + خدمة `scheduler` منفصلة)
 - Caddy (auto SSL)
-- VPS (Hostinger/etc.)
+- VPS (Hostinger/etc.) — قابل للنقل لـ AWS/Cloud Run/Alibaba
 
 ---
 
@@ -114,10 +119,18 @@ nx-iwork/
 │   │   ├── providers/         ← anthropic.ts / google.ts
 │   │   └── models.ts          ← خريطة النماذج لكل مزوّد
 │   ├── agent/                 ⭐ القلب التقني
-│   │   ├── run.ts             ← Agent Loop (مع حلقة استدعاء الأدوات)
+│   │   ├── core.ts            ← النواة المشتركة (تحميل السياق + حلقة الأدوات)
+│   │   ├── run.ts             ← محادثة الوكيل
+│   │   ├── task.ts            ← محرّك تنفيذ المهام
+│   │   ├── scheduler.ts       ← الجدولة (يستدعيه scripts/scheduler.ts)
+│   │   ├── memory.ts          ← الذاكرة الدلالية (pgvector)
 │   │   ├── prompt.ts          ← بناء شخصية الموظف + سياق الشركة
-│   │   └── tools.ts           ← أدوات الوكيل (catalog, CRM, tasks)
+│   │   └── tools.ts           ← أدوات الوكيل (catalog, CRM, tasks, memory)
+│   ├── storage/               ← تخزين R2 (presigned مباشر)
+│   ├── notifications/         ← Resend (إيميل) + Twilio (SMS)
 │   └── actions/               ← Server Actions
+├── scripts/
+│   └── scheduler.ts           ← worker الجدولة (npm run scheduler)
 ├── prisma/
 │   ├── schema.prisma          ← المخطط الكامل (CRM, مهام مرنة, BYOK)
 │   └── migrations/

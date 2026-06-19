@@ -25,13 +25,21 @@
 │               THE AGENT LOOP                   │
 │                                                │
 │  1. TRIGGER → يستيقظ                          │
-│  2. LOAD CONTEXT → يحمّل ذاكرته                │
-│  3. THINK → يفكر مع Claude                    │
-│  4. ACT → ينفذ                                │
-│  5. REMEMBER → يحفظ                           │
+│  2. LOAD CONTEXT → يحمّل ذاكرته (+ recall)     │
+│  3. THINK → يفكر مع مزوّد الشركة (Gemini/Claude)│
+│  4. ACT → ينفذ عبر الأدوات (tool loop)         │
+│  5. REMEMBER → يحفظ (save_memory)             │
 │  6. SLEEP → ينام (حتى التريقر التالي)          │
 └────────────────────────────────────────────────┘
 ```
+
+> ✅ **حالة التنفيذ:** النواة مبنية عبر طبقة AI محايدة (`lib/ai/`, Gemini افتراضي + Claude).
+> النواة المشتركة `lib/agent/core.ts` (تحميل السياق + حلقة الأدوات) تستخدمها المحادثة
+> (`run.ts`) وتنفيذ المهام (`task.ts`). الأدوات المُنفَّذة: `search_catalog`, `find_customer`,
+> `create_lead`, `update_lead`, `create_task`, `save_memory` (`lib/agent/tools.ts`).
+> الجدولة عبر `lib/agent/scheduler.ts` + worker `scripts/scheduler.ts`. الذاكرة الدلالية
+> عبر `lib/agent/memory.ts` (pgvector). **n8n أدناه اختياري/لاحق** — الأدوات الأساسية
+> داخلية ومباشرة، لا تعتمد على n8n.
 
 ---
 

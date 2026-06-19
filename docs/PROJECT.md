@@ -55,11 +55,14 @@
 - **استدعاء الدوال (Function Calling):** الوكلاء ينفّذون أدوات (كتالوج، CRM، مهام) بدل الاكتفاء بالمحادثة — قراءة منظمة بدل PDF لتوفير التوكنز
 - Model tiers مجرّدة (Fast/Balanced/Advanced) تُترجم لمعرّف نموذج لكل مزوّد (`lib/ai/models.ts`)
 
-### Integrations
-- Resend (Email)
-- n8n (External workflows - lazy load)
-- Moyasar (Payment للـ SaaS phase)
-- Cloudflare R2 / S3-compatible (file storage)
+### Integrations (طبقات محايدة معزولة — تطوير أي واحدة لا يلمس الباقي)
+- **Cloudflare R2** (تخزين S3-compatible، رفع presigned مباشر بلا مرور على الـ VPS) — `lib/storage/` ✅
+- **Resend** (إيميل) + **Twilio** (SMS) — `lib/notifications/` ✅
+- **Embeddings** (OpenAI) للذاكرة الدلالية — `lib/ai/embeddings.ts` ✅
+- **Tap.company** (بوابة دفع اشتراكات SaaS) — مخطّط
+- **Sentry** (مراقبة وتتبّع أخطاء) — مخطّط
+- **API عام v1** لتكامل أطراف ثالثة — مخطّط
+- n8n (workflows خارجية معقّدة) — اختياري/لاحق
 
 ### DevOps
 - Docker (multi-stage)
@@ -276,9 +279,32 @@ nx-iwork/
 
 ---
 
-## 10. روابط مهمة
+## 10. حالة التنفيذ (مُنجز)
+
+النواة الأساسية للمنصة **مكتملة ومنشورة**:
+
+| القدرة | الحالة | المكان |
+|---|---|---|
+| طبقة AI محايدة (Gemini افتراضي + Claude) BYOK | ✅ | `lib/ai/` |
+| محادثة الوكيل + استدعاء الأدوات (catalog/CRM/tasks/memory) | ✅ | `lib/agent/run.ts`, `tools.ts` |
+| نموذج بيانات مرن: CRM (Customer) + customFields + Task موحّد | ✅ | `prisma/schema.prisma` |
+| إدارة الأقسام والوكلاء + بناء الشخصية | ✅ | `app/(dashboard)/agents`, `departments` |
+| محرّك تنفيذ المهام (دورة حياة + محاولات + Timeline) | ✅ | `lib/agent/task.ts`, `core.ts` |
+| المشغّلات والجدولة (worker مستقل) | ✅ | `lib/agent/scheduler.ts`, `scripts/scheduler.ts` |
+| الذاكرة (semantic via pgvector + fallback) | ✅ | `lib/agent/memory.ts`, `lib/ai/embeddings.ts` |
+| تخزين R2 + كتالوج المنتجات | ✅ | `lib/storage/`, `app/(dashboard)/products` |
+| الإشعارات (Resend + Twilio) | ✅ | `lib/notifications/` |
+| اللاندنغ بيج العامة + ودجت الوكيل | ⬜ التالي | `app/[slug]` |
+| التكامل (Sentry / Tap / API عام) | ⬜ لاحقاً | — |
+
+**التشغيل:** الويب عبر `Dockerfile` (يشغّل `prisma migrate deploy` تلقائياً)، والجدولة كخدمة ثانية `npm run scheduler` (نسخة واحدة).
+
+---
+
+## 11. روابط مهمة
 
 - **Anthropic Docs:** https://docs.claude.com
+- **Google Gemini API:** https://ai.google.dev/docs
 - **Next.js Docs:** https://nextjs.org/docs
 - **Prisma Docs:** https://www.prisma.io/docs
 - **Coolify Docs:** https://coolify.io/docs
