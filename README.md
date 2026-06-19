@@ -1,186 +1,136 @@
 # NX iWork 🤖
 
-> منصة SaaS لبناء شركات ذاتية التشغيل بالذكاء الاصطناعي. صُممت للسوق السعودي أولاً، عالمية في الجوهر.
+> منصة SaaS تتيح لرواد الأعمال بناء **شركة كاملة من موظفي ذكاء اصطناعي** — أقسام،
+> موظفون بشخصيات وذاكرة، ينفّذون المهام ويتحركون تلقائياً. صُممت للسوق السعودي
+> أولاً، عالمية في الجوهر.
 
-[![Status](https://img.shields.io/badge/status-live%20MVP-brightgreen)](https://bznss.one/)
+[![Status](https://img.shields.io/badge/status-live-brightgreen)](https://bznss.one/)
+[![AI](https://img.shields.io/badge/AI-Google%20Vertex%20(Gemini%202.5)-4285F4)](.)
 [![License](https://img.shields.io/badge/license-proprietary-red)](.)
-[![Built with](https://img.shields.io/badge/built%20with-Next.js-black)](.)
 
 🌐 **Live:** [bznss.one](https://bznss.one/)
 
 ---
 
-## 🎯 ما هو NX iWork؟
+## 🎯 ما هي المنصة؟
 
-منصة تتيح لأي صاحب بزنس بناء **شركة كاملة من موظفين ذكاء اصطناعي**:
+تتيح لأي صاحب بزنس بناء **طاقم عمل افتراضي** ذكي:
 
-- 🤖 **موظفين أذكياء حقيقيين** بشخصيات وذاكرة طويلة المدى
-- 🛠️ **يُنفّذون لا يدردشون فقط** — عبر استدعاء الدوال (Function Calling): يقرأون الكتالوج، يسجّلون العملاء في الـ CRM، ينشئون المهام والمواعيد
-- 📊 **مخطط تنظيمي حي** (أقسام، مديرين، موظفين)
-- 🗂️ **CRM مدمج** + جدول مهام/تقويم موحّد + فواتير
-- 🧩 **مرن لأي نشاط** — حقول مخصّصة (customFields) لكل نشاط دون تعديل كود
-- 💬 **محادثات طبيعية** مع كل موظف
-- 🌐 **موقع عام** للبزنس مع chat widget للزوار
-- 🇸🇦 **سياق سعودي** (زاتكا، واتساب، الدارجة)
-- 🔑 **BYOK متعدد المزوّدين** — كل عميل يختار **Google Gemini** (افتراضي، أوفر) أو **Anthropic Claude** بمفتاحه الخاص
-
----
-
-## 💼 النموذج التجاري المزدوج
-
-### المرحلة 1 (الشهور 1-2): بيع نسخ مرخصة
-| الباقة | السعر | المحتوى |
-|---|---|---|
-| **Starter License** | 25,000 SAR | المنصة + تركيب + تدريب |
-| **Pro License** | 50,000 SAR | + تخصيص ألوان وشعار |
-| **Enterprise** | 100,000 SAR | + ميزات مخصصة + دعم سنوي |
-
-**الهدف:** 200,000+ SAR في أول شهرين.
-
-### المرحلة 2 (الشهر 3+): إطلاق SaaS
-| الباقة | السعر | الميزات |
-|---|---|---|
-| **Free** | 0 | موظف واحد، محدودة |
-| **Starter** | 99 SAR/شهر | 3 موظفين |
-| **Growth** | 299 SAR/شهر | 10 موظفين، Custom domain |
-| **Scale** | 799 SAR/شهر | غير محدود + API |
+- 🤖 **موظفون أذكياء حقيقيون** — شخصية، مستوى نموذج، ومدير، وذاكرة طويلة المدى
+- 🛠️ **ينفّذون لا يدردشون فقط** — عبر Function Calling: يقرأون الكتالوج والأسئلة
+  الشائعة، يسجّلون العملاء في الـ CRM، ينشئون المهام والحجوزات
+- ⏰ **يتحركون تلقائياً** — جدولة زمنية (Cron) + **مشغّلات أحداث** (عميل جديد → يصحى
+  وكيل المبيعات)
+- 🧠 **يتذكّرون** — ذاكرة دلالية عبر pgvector
+- 🧩 **معمارية نمطية** — موديولات تُفعَّل حسب النشاط (تجارة / حجوزات / خدمات)،
+  والوكيل يحصل **أدوات الموديولات المفعّلة فقط**
+- 🗂️ **أنظمة مدمجة** — CRM، مهام/تقويم، كتالوج، قاعدة معرفة (FAQ)
+- 🌐 **صفحة عامة لكل بزنس** (`/{slug}`) مع **ودجت شات** يكلّم وكيل خدمة العملاء
+- 🇸🇦 سياق سعودي (عربي/إنجليزي، Tajawal، RTL)
 
 ---
 
-## 🚀 كيف تبدأ؟
+## 🧠 طبقة الذكاء — Managed (افتراضي) عبر Google Vertex AI
 
-### للقراءة:
-1. **[START_HERE.md](./START_HERE.md)** ⭐ ابدأ هنا
-2. **[docs/PROJECT.md](./docs/PROJECT.md)** - دستور المشروع
-3. **[docs/AGENT_SYSTEM.md](./docs/AGENT_SYSTEM.md)** - قلب المنصة التقني
-3.1. **[docs/AI_VERTEX.md](./docs/AI_VERTEX.md)** - مرجع Vertex AI (managed، service account، بنك التوكنز)
-4. **[docs/ROADMAP.md](./docs/ROADMAP.md)** - خارطة الطريق
-5. **[docs/DATABASE.md](./docs/DATABASE.md)** - مخطط البيانات
-6. **[docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md)** - دليل النشر
+المنصة تعمل بوضعين عبر `AI_MODE`:
 
-### للبناء (مع Claude Code):
-```bash
-# 1. ثبّت Claude Code
-npm install -g @anthropic-ai/claude-code
+| الوضع | الوصف | الفوترة |
+|---|---|---|
+| **`managed`** (افتراضي) | المنصة تتصل بـ **Vertex AI** (Gemini 2.5) عبر **service account واحد** | **بنك توكنز** لكل شركة (`Company.tokenBalance`) — المنصة تدفع لجوجل |
+| `byok` (اختياري) | كل شركة تجلب مفتاحها (Gemini/Claude) | العميل يدفع مباشرة |
 
-# 2. ادخل المجلد
-cd nx-iwork
-
-# 3. شغّل Claude Code
-claude
-
-# 4. قل له:
-# "اقرأ START_HERE.md و docs/* وأعطني خطة Sprint 0"
-```
+- **مصادقة Keyless (ADC):** لا مفاتيح API (سياسة جوجل 2026). على VPS، يُلصق محتوى
+  ملف ADC كمتغيّر `GOOGLE_APPLICATION_CREDENTIALS_JSON` ويُكتب لملف مؤقت تلقائياً.
+- **طبقة محايدة** (`lib/ai/`): واجهة `AiProvider` واحدة + محوّلات (Vertex / Google
+  AI Studio / Anthropic). تبديل المزوّد = ملف واحد.
+- **embeddings** عبر Vertex (`gemini-embedding-001` @ 1536).
+- المرجع الكامل: **[docs/AI_VERTEX.md](./docs/AI_VERTEX.md)**.
 
 ---
 
 ## 🏗️ Tech Stack
 
-### Frontend
-- Next.js 15 (App Router)
-- TypeScript (strict)
-- Tailwind CSS + shadcn/ui
-- Tajawal + Inter fonts
-- next-intl للترجمة
-
-### Backend
-- Next.js API Routes
-- Prisma ORM
-- PostgreSQL 16 + pgvector
-- NextAuth.js v5
-
-### AI
-- **Provider-agnostic layer** (`lib/ai/`) — one neutral interface, vendor adapters
-- **Google Gemini** (default) + **Anthropic Claude**, both BYOK
-- **Function Calling / tools** (`lib/agent/tools.ts`) — catalog, CRM, tasks
-- 3-Layer Memory System (working / episodic / semantic via pgvector)
-
-### Integrations (طبقات محايدة معزولة)
-- **Cloudflare R2** — تخزين (S3-compatible، رفع presigned) ✅
-- **Resend** (إيميل) + **Twilio** (SMS) ✅
-- **Tap.company** (اشتراكات) · **Sentry** (مراقبة) · **API عام v1** — مخطّط
-
-### DevOps
-- Docker + Coolify (الويب + خدمة `scheduler` منفصلة)
-- Caddy (auto SSL)
-- VPS (Hostinger/etc.) — قابل للنقل لـ AWS/Cloud Run/Alibaba
+- **Frontend:** Next.js 16 (App Router) · TypeScript · Tailwind + shadcn/ui ·
+  next-intl (ar/en, RTL) · Tajawal/Inter
+- **Backend:** Next.js API Routes + Server Actions · Prisma · PostgreSQL 16 + pgvector · NextAuth v5
+- **AI:** Google **Vertex AI** (Gemini 2.5 flash/pro) + embeddings · Function Calling · ذاكرة 3 طبقات
+- **التكاملات:** Cloudflare R2 (تخزين، presigned) · Resend + Twilio (إشعارات)
+- **DevOps:** Docker + Coolify على VPS (Hostinger) · Caddy (auto SSL) · قابل للنقل لـ Cloud Run/ECS/OSS
 
 ---
 
 ## 📂 هيكل المشروع
 
 ```
-nx-iwork/
-├── app/                       ← Next.js App Router (auth, dashboard, api)
-│   └── api/agents/[id]/chat/  ← endpoint محادثة الوكيل
-├── components/                ← واجهات (chat, settings, dashboard)
-├── lib/
-│   ├── ai/                    ⭐ طبقة الذكاء المحايدة (Gemini + Claude)
-│   │   ├── providers/         ← anthropic.ts / google.ts
-│   │   └── models.ts          ← خريطة النماذج لكل مزوّد
-│   ├── agent/                 ⭐ القلب التقني
-│   │   ├── core.ts            ← النواة المشتركة (تحميل السياق + حلقة الأدوات)
-│   │   ├── run.ts             ← محادثة الوكيل
-│   │   ├── task.ts            ← محرّك تنفيذ المهام
-│   │   ├── scheduler.ts       ← الجدولة (يستدعيه scripts/scheduler.ts)
-│   │   ├── memory.ts          ← الذاكرة الدلالية (pgvector)
-│   │   ├── prompt.ts          ← بناء شخصية الموظف + سياق الشركة
-│   │   └── tools.ts           ← أدوات الوكيل (catalog, CRM, tasks, memory)
-│   ├── storage/               ← تخزين R2 (presigned مباشر)
-│   ├── notifications/         ← Resend (إيميل) + Twilio (SMS)
-│   └── actions/               ← Server Actions
-├── scripts/
-│   └── scheduler.ts           ← worker الجدولة (npm run scheduler)
-├── prisma/
-│   ├── schema.prisma          ← المخطط الكامل (CRM, مهام مرنة, BYOK)
-│   └── migrations/
-├── messages/                  ← ترجمات ar/en
-├── docs/                      ← الوثائق (PROJECT, DATABASE, ROADMAP, ...)
-└── Dockerfile                 ← يشغّل `prisma migrate deploy` قبل التطبيق
+app/
+├── (dashboard)/            ← لوحة تحكم رائد الأعمال
+│   ├── overview · agents · departments · products · bookings
+│   ├── knowledge (FAQ + triggers) · tasks · chat · modules · settings
+├── (public)/[slug]/        ← الصفحة العامة لكل بزنس + ودجت الوكيل
+├── (auth)/ · (onboarding)/
+└── api/
+    ├── agents/[id]/chat · tasks/[id]/run
+    ├── public/[slug]/chat  ← محادثة الزوار
+    ├── cron/run · ai/health (محميان بـ CRON_SECRET)
+lib/
+├── ai/                     ⭐ الطبقة المحايدة (vertex/google/anthropic) + embeddings + gcp-auth (ADC)
+├── agent/                  ⭐ القلب: core · run · task · scheduler · events · memory · tools · prompt
+├── billing/tokens.ts       ← بنك التوكنز (managed)
+├── storage/ · notifications/ · actions/
+prisma/schema.prisma · scripts/scheduler.ts · docs/
 ```
+
+---
+
+## ⚙️ التشغيل والنشر (Managed)
+
+**متغيّرات البيئة (Coolify):**
+```bash
+DATABASE_URL=...            NEXTAUTH_SECRET=...     ENCRYPTION_KEY=...   # 64-hex
+AI_MODE=managed
+GCP_PROJECT_ID=<مشروع فيه Vertex AI API + Billing>
+GCP_LOCATION=us-central1
+GOOGLE_APPLICATION_CREDENTIALS_JSON=<محتوى ملف ADC كاملاً>   # من gcloud auth application-default login
+CRON_SECRET=<سر عشوائي>
+# اختياري: R2_* · RESEND_API_KEY/EMAIL_FROM · TWILIO_*
+```
+
+**النشر:** الـ `Dockerfile` يشغّل `prisma migrate deploy` تلقائياً ثم التطبيق.
+
+**الأتمتة (الوكلاء يتحركون تلقائياً):** أضف Scheduled Task في Coolify كل دقيقة:
+```bash
+curl -fsS -X POST -H "x-cron-secret: $CRON_SECRET" https://<domain>/api/cron/run
+```
+
+**التحقق من الذكاء (داخل الخادم):**
+```bash
+curl -H "x-cron-secret: $CRON_SECRET" https://<domain>/api/ai/health   # متوقّع {"ok":true,...dims:1536}
+```
+
+---
+
+## 📚 الوثائق
+
+| ملف | المحتوى |
+|---|---|
+| [docs/AI_VERTEX.md](./docs/AI_VERTEX.md) | **مرجع طبقة الذكاء** (Vertex، ADC، بنك التوكنز، النماذج، الاختبار) |
+| [docs/PROJECT.md](./docs/PROJECT.md) | دستور المشروع + حالة التنفيذ |
+| [docs/AGENT_SYSTEM.md](./docs/AGENT_SYSTEM.md) | قلب نظام الوكلاء |
+| [docs/DATABASE.md](./docs/DATABASE.md) | مخطط البيانات |
+| [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) | النشر |
+| [docs/TODO.md](./docs/TODO.md) | المهام القادمة (لوحة Super Admin، Tap، إلخ) |
+| [CHANGELOG.md](./CHANGELOG.md) | سجل التغييرات |
 
 ---
 
 ## 🔒 الأمن
 
-- ✅ بيانات مشفّرة at-rest
-- ✅ AES-256-GCM للـ BYOK API keys
-- ✅ SSL إجباري
-- ✅ 2FA للأدمن
-- ✅ Multi-tenant isolation كامل
-- ✅ Audit logs لكل عملية
-- ✅ Rate limiting
+- ✅ Keyless ADC (لا مفاتيح API) · أسرار في env فقط (لا تُرفع على Git)
+- ✅ تشفير BYOK keys (AES-256-GCM) عند استخدام BYOK
+- ✅ عزل Multi-tenant (`companyId`) في كل استعلام
+- ✅ بنك توكنز يحدّ استهلاك managed (HTTP 402 عند النفاد)
+- ✅ endpoints حسّاسة محمية (CRON_SECRET) · محادثة الزوار بـ rate limiting
 
 ---
 
-## 📊 الأهداف
-
-### Phase 1 (شهرين):
-- 🎯 200,000+ SAR من بيع النسخ
-- 🎯 5 عملاء راضين
-- 🎯 منصة جاهزة للإطلاق العام
-
-### Phase 2 (6 أشهر):
-- 🎯 100+ مشترك SaaS
-- 🎯 30,000 SAR MRR
-- 🎯 إطلاق Skills Marketplace
-
-### Phase 3 (سنة):
-- 🎯 500+ مشترك
-- 🎯 150,000 SAR MRR
-- 🎯 توسع لدول الخليج
-
----
-
----
-
-## 📄 الترخيص
-
-© 2026 NX iWork. جميع الحقوق محفوظة.
-
-لا يُسمح بالنسخ أو التوزيع أو الاستخدام التجاري دون إذن صريح من المالك.
-
----
-
-**صُمّم بحبٍ في 🇸🇦 السعودية**
+© 2026 NX iWork — جميع الحقوق محفوظة. **صُمّم بحبٍ في 🇸🇦**

@@ -1,6 +1,7 @@
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
+import { getAiMode } from '@/lib/ai';
 import { ChatClient } from '@/components/dashboard/chat-client';
 import { ChatEmptyState } from '@/components/dashboard/chat-empty-state';
 
@@ -35,15 +36,14 @@ export default async function ChatPage() {
     }),
   ]);
 
+  // Managed mode: the platform supplies AI — agents are always ready, no key.
+  const managed = getAiMode() === 'managed';
+  const keyReady = managed || !!apiSettings?.byokVerified;
+  const provider = managed ? 'google' : apiSettings?.byokProvider ?? 'anthropic';
+
   if (agents.length === 0) {
-    return <ChatEmptyState hasCompany keyReady={!!apiSettings?.byokVerified} />;
+    return <ChatEmptyState hasCompany keyReady={keyReady} />;
   }
 
-  return (
-    <ChatClient
-      agents={agents}
-      keyReady={!!apiSettings?.byokVerified}
-      provider={apiSettings?.byokProvider ?? 'anthropic'}
-    />
-  );
+  return <ChatClient agents={agents} keyReady={keyReady} provider={provider} />;
 }

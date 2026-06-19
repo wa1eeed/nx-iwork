@@ -1,0 +1,146 @@
+'use client';
+
+import { useEffect, useRef, useState } from 'react';
+import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { cn } from '@/lib/utils';
+
+interface Msg {
+  id: string;
+  role: 'user' | 'agent';
+  content: string;
+}
+
+// Floating customer-service chat for the public landing page. Talks to
+// /api/public/[slug]/chat. Visitor identity is a random id kept in localStorage.
+export function ChatWidget({
+  slug,
+  agentName,
+  greeting,
+  primaryColor,
+}: {
+  slug: string;
+  agentName: string;
+  greeting: string;
+  primaryColor?: string | null;
+}) {
+  const [open, setOpen] = useState(false);
+  const [messages, setMessages] = useState<Msg[]>([]);
+  const [input, setInput] = useState('');
+  const [sending, setSending] = useState(false);
+  const [visitorId, setVisitorId] = useState('');
+  const scrollRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let id = localStorage.getItem('nx_visitor_id');
+    if (!id) {
+      id = `v_${Math.random().toString(36).slice(2)}${Date.now().toString(36)}`;
+      localStorage.setItem('nx_visitor_id', id);
+    }
+    setVisitorId(id);
+  }, []);
+
+  useEffect(() => {
+    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight });
+  }, [messages.length, sending]);
+
+  const color = primaryColor || undefined;
+
+  async function send() {
+    const text = input.trim();
+    if (!text || sending || !visitorId) return;
+    setMessages((m) => [...m, { id: `u${Date.now()}`, role: 'user', content: text }]);
+    setInput('');
+    setSending(true);
+    try {
+      const res = await fetch(`/api/public/${slug}/chat`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ message: text, visitorId }),
+      });
+      const data = await res.json();
+      const reply = data.ok
+        ? data.reply
+        : data.reason === 'rate_limited'
+          ? 'لحظة من فضلك، أرسلت رسائل كثيرة بسرعة.'
+          : 'تعذّر الرد الآن. حاول بعد قليل.';
+      setMessages((m) => [...m, { id: `a${Date.now()}`, role: 'agent', content: reply }]);
+    } catch {
+      setMessages((m) => [...m, { id: `a${Date.now()}`, role: 'agent', content: 'فشل الاتصال.' }]);
+    } finally {
+      setSending(false);
+    }
+  }
+
+  return (
+    <>
+      {/* Launcher */}
+      <button
+        onClick={() => setOpen((o) => !o)}
+        className="fixed bottom-5 end-5 z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition hover:scale-105"
+        style={{ backgroundColor: color ?? '#06b6d4' }}
+        aria-label="المحادثة"
+      >
+        {open ? <X className="h-6 w-6" /> : <MessageCircle className="h-6 w-6" />}
+      </button>
+
+      {/* Panel */}
+      {open && (
+        <div className="fixed bottom-24 end-5 z-50 flex h-[28rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl dark:bg-neutral-900">
+          <header className="flex items-center gap-2 p-3 text-white" style={{ backgroundColor: color ?? '#06b6d4' }}>
+            <MessageCircle className="h-5 w-5" />
+            <span className="text-sm font-semibold">{agentName}</span>
+          </header>
+
+          <div ref={scrollRef} className="flex-1 space-y-3 overflow-y-auto p-3">
+            <div className="rounded-2xl bg-neutral-100 px-3 py-2 text-sm dark:bg-neutral-800">{greeting}</div>
+            {messages.map((m) => (
+              <div key={m.id} className={cn('flex', m.role === 'user' ? 'justify-end' : 'justify-start')}>
+                <div
+                  className={cn(
+                    'max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed',
+                    m.role === 'user' ? 'text-white' : 'bg-neutral-100 dark:bg-neutral-800'
+                  )}
+                  style={m.role === 'user' ? { backgroundColor: color ?? '#06b6d4' } : undefined}
+                >
+                  <div className="[&_a]:underline [&_p]:my-0.5">
+                    <ReactMarkdown>{m.content}</ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            ))}
+            {sending && (
+              <div className="flex items-center gap-2 text-sm text-neutral-500">
+                <Loader2 className="h-4 w-4 animate-spin" /> يكتب…
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-end gap-2 border-t p-2">
+            <textarea
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  send();
+                }
+              }}
+              rows={1}
+              placeholder="اكتب رسالتك…"
+              className="max-h-24 min-h-[2.5rem] flex-1 resize-none rounded-lg border bg-transparent px-3 py-2 text-sm outline-none"
+            />
+            <button
+              onClick={send}
+              disabled={sending || !input.trim()}
+              className="flex h-10 w-10 items-center justify-center rounded-lg text-white disabled:opacity-50"
+              style={{ backgroundColor: color ?? '#06b6d4' }}
+            >
+              <Send className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}

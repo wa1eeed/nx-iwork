@@ -9,6 +9,25 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Public landing page + agent widget; dashboard polish
+
+- **Public business page** (`app/(public)/[slug]`): renders the company's
+  WebsiteConfig (hero/about/contact) + catalog (services/products, shown per
+  enabled module) + an **embedded chat widget**. Live at `/{slug}`.
+- **Public chat** (`/api/public/[slug]/chat` + `lib/agent/public-chat.ts`):
+  visitors talk to the company's designated widget agent — unauthenticated,
+  rate-limited, logged to `PublicConversation`/`PublicMessage`, token-bank aware.
+- **Agent profile = live timeline**: `/agents/[id]` activity tab is now an
+  auto-refreshing vertical timeline (in-progress / done / scheduled) with a
+  status dot, label, and timestamps per task + countdowns for scheduled runs;
+  header shows status + completed/failed/token stats.
+- **Overview dashboard rebuilt**: real stats (agents, departments, tasks,
+  CRM, schedules, bookings), token-balance card (managed), recent-activity feed.
+- **No more API-key messaging** in managed mode: the BYOK warning is gone from
+  the overview, and chat no longer asks for a key (platform supplies AI).
+- `docs/TODO.md` added (Super Admin SaaS console, Tap payments, …). README
+  fully rewritten for the managed Vertex/ADC architecture (was BYOK).
+
 ### Added — ADC via env JSON (VPS-friendly) + in-container AI health check
 
 - **`GOOGLE_APPLICATION_CREDENTIALS_JSON`**: paste the whole ADC/service-account
