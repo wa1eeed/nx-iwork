@@ -11,7 +11,7 @@
 // Unconfigured → semantic memory disabled; recall falls back to importance.
 
 import { GoogleAuth } from 'google-auth-library';
-import { getGcpCredentials, isGcpConfigured } from './gcp-auth';
+import { getGcpCredentials, isGcpConfigured, ensureAdcFromEnv } from './gcp-auth';
 
 const MODEL = process.env.VERTEX_EMBEDDINGS_MODEL ?? 'gemini-embedding-001';
 const SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
@@ -24,6 +24,7 @@ let auth: GoogleAuth | null = null;
 function getAuth(): GoogleAuth {
   if (!auth) {
     const credentials = getGcpCredentials();
+    if (!credentials) ensureAdcFromEnv(); // materialize JSON env into an ADC file
     auth = new GoogleAuth({ scopes: SCOPE, ...(credentials ? { credentials } : {}) });
   }
   return auth;

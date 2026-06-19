@@ -9,6 +9,20 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — ADC via env JSON (VPS-friendly) + in-container AI health check
+
+- **`GOOGLE_APPLICATION_CREDENTIALS_JSON`**: paste the whole ADC/service-account
+  JSON (e.g. from `gcloud auth application-default login --no-browser` on the
+  VPS) as one env var. `ensureAdcFromEnv()` writes it to a temp file (perms 600)
+  and points `GOOGLE_APPLICATION_CREDENTIALS` at it — no file mounts. Works for
+  authorized_user and service_account credential types. Resolution order:
+  inline creds → JSON env → file path → ambient ADC.
+  - Verified locally: the temp file materializes and the SDK authenticates to
+    Google (the request reaches Vertex; only an invalid project 403s).
+- **`GET /api/ai/health`** (protected by `CRON_SECRET`): in-container Vertex
+  smoke test (auth + chat + embeddings) — the standalone image can't run
+  `tsx scripts/test-vertex.ts`, so curl this on the server instead.
+
 ### Changed — Keyless Vertex auth (ADC-first)
 
 - Vertex/embeddings now resolve auth via **Application Default Credentials**

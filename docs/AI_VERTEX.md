@@ -86,16 +86,23 @@ GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n" 
 
 > 🔒 عند أي تسريب لمفتاح **دوّره** من GCP. مع ADC لا حاجة لمفاتيح أصلاً.
 
-### النشر على VPS غير تابع لجوجل (Hostinger + Coolify)
+### النشر على VPS غير تابع لجوجل (Hostinger + Coolify) — ADC عبر env
 ⚠️ ADC **بلا اعتماد** (metadata server) يعمل فقط على حوسبة GCP (Cloud Run/GCE/GKE).
-على VPS عادي **لا يوجد metadata server**، فلا بد من اعتماد. الأنسب لـ Coolify:
-- **موصى (بلا ملفات):** ضع `GCP_CLIENT_EMAIL` + `GCP_PRIVATE_KEY` في Environment
-  Variables. الأسرار في env فقط، ولا mounts. والكود يرجع لـ ADC الحقيقي تلقائياً
-  لو نُقل لاحقاً لـ Cloud Run.
-- **بديل:** ملف JSON مُركّب + `GOOGLE_APPLICATION_CREDENTIALS=/مسار/مطلق`.
+على VPS عادي لا بد من اعتماد. الطريقة المعتمدة (سياسة جوجل 2026 تحظر API keys):
+1. على الخادم: `gcloud auth application-default login --no-browser` → يولّد
+   `~/.config/gcloud/application_default_credentials.json`.
+2. `cat` الملف وانسخ كل الـ JSON.
+3. في Coolify Environment Variables أضف **`GOOGLE_APPLICATION_CREDENTIALS_JSON`**
+   = نص الـ JSON كاملاً. الكود يكتبه لملف مؤقت (`tmpdir/gcp-adc.json`, perms 600)
+   ويوجّه `GOOGLE_APPLICATION_CREDENTIALS` إليه — **بلا mounts**. (`ensureAdcFromEnv`).
 
-شرط مستقل عن المصادقة: المشروع يحتاج **Vertex AI API + الفوترة مفعّلين**، وحساب
-الخدمة له دور **Vertex AI User**. تحقّق داخل الحاوية بـ `npm run test:vertex`.
+ترتيب حل المصادقة: inline (`GCP_CLIENT_EMAIL`+`GCP_PRIVATE_KEY`) ← ملف JSON عبر env
+(`GOOGLE_APPLICATION_CREDENTIALS_JSON`) ← `GOOGLE_APPLICATION_CREDENTIALS` (ملف) ←
+ADC المحيط (gcloud / metadata).
+
+شرط مستقل عن المصادقة: المشروع يحتاج **Vertex AI API + الفوترة مفعّلين** + دور
+**Vertex AI User**. تحقّق داخل الحاوية (الصورة لا تحوي tsx) عبر:
+`curl -H "x-cron-secret: $CRON_SECRET" http://127.0.0.1:3000/api/ai/health`
 (خطأ `CONSUMER_INVALID` = فوترة/مشروع، لا الكود.)
 
 ---

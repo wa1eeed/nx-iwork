@@ -9,7 +9,7 @@
 
 import { VertexAI, type Content, type Part } from '@google-cloud/vertexai';
 import { resolveModel } from '../models';
-import { getGcpCredentials, isGcpConfigured } from '../gcp-auth';
+import { getGcpCredentials, isGcpConfigured, ensureAdcFromEnv } from '../gcp-auth';
 import type {
   AiCompletion,
   AiCompletionRequest,
@@ -25,11 +25,13 @@ function getClient(): VertexAI {
   const project = process.env.GCP_PROJECT_ID;
   if (!project) throw new Error('GCP_PROJECT_ID is not set');
   const credentials = getGcpCredentials();
+  if (!credentials) ensureAdcFromEnv(); // materialize GOOGLE_APPLICATION_CREDENTIALS_JSON if set
   client = new VertexAI({
     project,
     location: process.env.GCP_LOCATION ?? 'us-central1',
-    // Inline env credentials when present; otherwise the SDK uses ADC
-    // (GOOGLE_APPLICATION_CREDENTIALS file).
+    // Inline env credentials when present; otherwise the SDK uses ADC (a
+    // GOOGLE_APPLICATION_CREDENTIALS file, the JSON we just materialized, or the
+    // ambient metadata server on GCP).
     ...(credentials ? { googleAuthOptions: { credentials } } : {}),
   });
   return client;
