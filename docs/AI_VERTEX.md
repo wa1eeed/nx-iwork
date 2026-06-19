@@ -86,6 +86,18 @@ GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n" 
 
 > 🔒 عند أي تسريب لمفتاح **دوّره** من GCP. مع ADC لا حاجة لمفاتيح أصلاً.
 
+### النشر على VPS غير تابع لجوجل (Hostinger + Coolify)
+⚠️ ADC **بلا اعتماد** (metadata server) يعمل فقط على حوسبة GCP (Cloud Run/GCE/GKE).
+على VPS عادي **لا يوجد metadata server**، فلا بد من اعتماد. الأنسب لـ Coolify:
+- **موصى (بلا ملفات):** ضع `GCP_CLIENT_EMAIL` + `GCP_PRIVATE_KEY` في Environment
+  Variables. الأسرار في env فقط، ولا mounts. والكود يرجع لـ ADC الحقيقي تلقائياً
+  لو نُقل لاحقاً لـ Cloud Run.
+- **بديل:** ملف JSON مُركّب + `GOOGLE_APPLICATION_CREDENTIALS=/مسار/مطلق`.
+
+شرط مستقل عن المصادقة: المشروع يحتاج **Vertex AI API + الفوترة مفعّلين**، وحساب
+الخدمة له دور **Vertex AI User**. تحقّق داخل الحاوية بـ `npm run test:vertex`.
+(خطأ `CONSUMER_INVALID` = فوترة/مشروع، لا الكود.)
+
 ---
 
 ## 5. متغيّرات البيئة
