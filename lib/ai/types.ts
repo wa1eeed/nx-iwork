@@ -16,7 +16,7 @@ import type { ClaudeModel } from '@prisma/client';
 //   OPUS   -> most capable      (research, complex multi-step tasks)
 export type ModelTier = ClaudeModel;
 
-export type AiProviderId = 'anthropic' | 'google';
+export type AiProviderId = 'anthropic' | 'google' | 'vertex';
 
 export type AiRole = 'user' | 'assistant';
 

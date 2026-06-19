@@ -30,7 +30,13 @@ export async function POST(
     return NextResponse.json({ ok: true, result: result.result, tokensUsed: result.tokensUsed });
   }
   const status =
-    result.reason === 'task_not_found' ? 404 : result.reason === 'provider_error' ? 502 : 400;
+    result.reason === 'task_not_found'
+      ? 404
+      : result.reason === 'billing_limit'
+        ? 402
+        : result.reason === 'provider_error'
+          ? 502
+          : 400;
   return NextResponse.json(
     { ok: false, reason: result.reason, message: result.message },
     { status }

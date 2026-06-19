@@ -7,7 +7,7 @@ const baseConfig: NextConfig = {
   output: 'standalone',
   reactStrictMode: true,
   poweredByHeader: false,
-  serverExternalPackages: ['@prisma/client', 'bcryptjs'],
+  serverExternalPackages: ['@prisma/client', 'bcryptjs', '@google-cloud/vertexai'],
   images: {
     remotePatterns: [{ protocol: 'https', hostname: '**' }],
   },

@@ -58,9 +58,11 @@ export async function POST(
   const status =
     result.reason === 'agent_not_found'
       ? 404
-      : result.reason === 'provider_error'
-        ? 502
-        : 400;
+      : result.reason === 'billing_limit'
+        ? 402
+        : result.reason === 'provider_error'
+          ? 502
+          : 400;
   return NextResponse.json(
     { ok: false, reason: result.reason, message: result.message },
     { status }

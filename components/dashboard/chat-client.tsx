@@ -25,6 +25,8 @@ interface ChatMessage {
 
 const ERROR_LABELS: Record<string, string> = {
   no_key: 'لم يتم إضافة مفتاح الذكاء الاصطناعي بعد. أضفه من الإعدادات.',
+  billing_limit: 'انتهى رصيد التوكنز. جدّد باقتك للاستمرار.',
+  vertex_not_configured: 'خدمة الذكاء (Vertex) غير مهيأة. تواصل مع الدعم.',
   no_settings: 'إعدادات الذكاء الاصطناعي غير مهيأة.',
   decrypt_failed: 'تعذّر قراءة المفتاح. أعد إدخاله من الإعدادات.',
   provider_error: 'حدث خطأ من مزوّد الذكاء الاصطناعي. حاول مرة أخرى.',

@@ -22,6 +22,16 @@ const GOOGLE_MODELS: TierMap = {
   OPUS: process.env.GOOGLE_MODEL_ADVANCED ?? 'gemini-2.5-pro',
 };
 
+// Vertex model ids differ slightly from AI Studio and are region-dependent —
+// keep them overridable.
+const VERTEX_MODELS: TierMap = {
+  HAIKU: process.env.VERTEX_MODEL_FAST ?? 'gemini-2.0-flash-001',
+  SONNET: process.env.VERTEX_MODEL_BALANCED ?? 'gemini-2.0-flash-001',
+  OPUS: process.env.VERTEX_MODEL_ADVANCED ?? 'gemini-2.5-pro',
+};
+
 export function resolveModel(provider: AiProviderId, tier: ModelTier): string {
-  return provider === 'google' ? GOOGLE_MODELS[tier] : ANTHROPIC_MODELS[tier];
+  if (provider === 'vertex') return VERTEX_MODELS[tier];
+  if (provider === 'google') return GOOGLE_MODELS[tier];
+  return ANTHROPIC_MODELS[tier];
 }

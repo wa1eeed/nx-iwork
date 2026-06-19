@@ -99,6 +99,12 @@ model Company {
   status          CompanyStatus @default(TRIAL)
   trialEndsAt     DateTime?
 
+  // Managed billing (AI_MODE=managed): prepaid AI token credits. The platform
+  // pays the provider and decrements this per request; at <= 0 requests are
+  // blocked. Ignored in BYOK mode (the company's own key is billed directly).
+  // Default is a small trial grant so new managed tenants can try immediately.
+  tokenBalance    Int           @default(100000)
+
   // Custom domain support
   customDomain         String?  @unique
   customDomainVerified Boolean  @default(false)

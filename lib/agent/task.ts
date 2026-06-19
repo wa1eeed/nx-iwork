@@ -8,6 +8,7 @@
 import { db } from '@/lib/db';
 import { getProviderForCompany } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
+import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop } from './core';
 import { recallMemoryBlock } from './memory';
@@ -16,7 +17,15 @@ export type RunTaskResult =
   | { ok: true; result: string; tokensUsed: number }
   | {
       ok: false;
-      reason: 'task_not_found' | 'no_agent' | 'no_key' | 'no_settings' | 'decrypt_failed' | 'provider_error';
+      reason:
+        | 'task_not_found'
+        | 'no_agent'
+        | 'no_key'
+        | 'no_settings'
+        | 'decrypt_failed'
+        | 'vertex_not_configured'
+        | 'billing_limit'
+        | 'provider_error';
       message?: string;
     };
 
@@ -49,6 +58,10 @@ export async function runAgentTask(
 
   const providerResult = await getProviderForCompany(companyId);
   if (!providerResult.ok) return { ok: false, reason: providerResult.reason };
+
+  // Managed mode: refuse before spending if the token bank is empty.
+  const budget = await checkTokenBudget(companyId);
+  if (!budget.ok) return { ok: false, reason: budget.reason };
 
   // Mark working + open an attempt.
   const attemptNumber =
@@ -131,6 +144,9 @@ export async function runAgentTask(
         },
       }),
     ]);
+
+    // Managed mode: bill the token bank (no-op in BYOK).
+    await chargeTokens(companyId, tokensUsed);
 
     return { ok: true, result: reply, tokensUsed };
   } catch (err) {

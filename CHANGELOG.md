@@ -9,6 +9,25 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Managed mode: Vertex AI + token bank
+
+Optional alternative to BYOK, toggled by `AI_MODE=managed` (default stays `byok`).
+
+- **Vertex AI provider** (`lib/ai/providers/vertex.ts`): official
+  `@google-cloud/vertexai` SDK with service-account auth (`GCP_PROJECT_ID` +
+  `GOOGLE_APPLICATION_CREDENTIALS`). Implements the same neutral `AiProvider`
+  interface, so the agent loop / tools / token extraction are unchanged. Added
+  `vertex` to the provider id + model map.
+- **Managed factory**: in managed mode `getProviderForCompany` returns the
+  platform Vertex provider for every tenant (no per-company key).
+- **Token bank** (`lib/billing/tokens.ts`): `Company.tokenBalance` (migration
+  `20260619190000_managed_token_bank`, default 100k trial grant). `checkTokenBudget`
+  blocks a request at `<= 0` (HTTP 402 "billing limit reached"); `chargeTokens`
+  atomically decrements by `usageMetadata` (prompt + candidate) tokens after each
+  chat/task turn. Both are no-ops in BYOK mode, so callers are unconditional.
+- Env: `AI_MODE`, `GCP_PROJECT_ID`, `GCP_LOCATION`, `GOOGLE_APPLICATION_CREDENTIALS`,
+  `VERTEX_MODEL_*`.
+
 ### Added — Notifications layer (Resend email + Twilio SMS)
 
 - **Provider-agnostic notifications** (`lib/notifications/`): neutral

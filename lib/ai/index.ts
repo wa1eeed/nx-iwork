@@ -6,14 +6,23 @@ import { db } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
 import { createAnthropicProvider } from './providers/anthropic';
 import { createGoogleProvider } from './providers/google';
+import { createVertexProvider, isVertexConfigured } from './providers/vertex';
 import type { AiProvider, AiProviderId } from './types';
 
 export * from './types';
 export { resolveModel } from './models';
 
+export type AiMode = 'byok' | 'managed';
+
+// Managed = platform pays via Vertex (one service account) + token bank.
+// BYOK = each company brings its own key. Default BYOK.
+export function getAiMode(): AiMode {
+  return process.env.AI_MODE === 'managed' ? 'managed' : 'byok';
+}
+
 export type GetProviderResult =
   | { ok: true; provider: AiProvider }
-  | { ok: false; reason: 'no_settings' | 'no_key' | 'decrypt_failed' };
+  | { ok: false; reason: 'no_settings' | 'no_key' | 'decrypt_failed' | 'vertex_not_configured' };
 
 function buildProvider(providerId: string, apiKey: string): AiProvider {
   // CompanyApiSettings.byokProvider is a free-text column; normalise it.
@@ -26,6 +35,13 @@ function buildProvider(providerId: string, apiKey: string): AiProvider {
 export async function getProviderForCompany(
   companyId: string
 ): Promise<GetProviderResult> {
+  // Managed mode: every company uses the platform's Vertex credentials. No
+  // per-company key is needed; spend is gated by the token bank instead.
+  if (getAiMode() === 'managed') {
+    if (!isVertexConfigured()) return { ok: false, reason: 'vertex_not_configured' };
+    return { ok: true, provider: createVertexProvider() };
+  }
+
   const settings = await db.companyApiSettings.findUnique({
     where: { companyId },
     select: { byokApiKey: true, byokProvider: true },

@@ -1,0 +1,125 @@
+// Google Cloud Vertex AI adapter (official @google-cloud/vertexai SDK).
+//
+// Used in managed mode: the PLATFORM authenticates with a service account
+// (Application Default Credentials via GOOGLE_APPLICATION_CREDENTIALS) and pays
+// for inference — one set of creds for all tenants, metered by the token bank.
+//
+// Implements the same neutral AiProvider interface as the REST adapters, so the
+// agent loop / tools / token tracking are identical regardless of provider.
+
+import { VertexAI, type Content, type Part } from '@google-cloud/vertexai';
+import { resolveModel } from '../models';
+import type {
+  AiCompletion,
+  AiCompletionRequest,
+  AiMessage,
+  AiProvider,
+  AiToolCall,
+} from '../types';
+
+// One client per process (creds + project are process-wide).
+let client: VertexAI | null = null;
+function getClient(): VertexAI {
+  if (client) return client;
+  const project = process.env.GCP_PROJECT_ID;
+  if (!project) throw new Error('GCP_PROJECT_ID is not set');
+  client = new VertexAI({
+    project,
+    location: process.env.GCP_LOCATION ?? 'us-central1',
+    // Credentials come from GOOGLE_APPLICATION_CREDENTIALS (service account JSON).
+  });
+  return client;
+}
+
+export function isVertexConfigured(): boolean {
+  return Boolean(
+    process.env.GCP_PROJECT_ID && process.env.GOOGLE_APPLICATION_CREDENTIALS
+  );
+}
+
+function toVertexContents(messages: AiMessage[]): Content[] {
+  return messages.map((m): Content => {
+    if (m.role === 'tool') {
+      return {
+        role: 'user',
+        parts: [
+          { functionResponse: { name: m.name, response: { result: m.content } } },
+        ],
+      };
+    }
+    if (m.role === 'assistant') {
+      const parts: Part[] = [];
+      if (m.content) parts.push({ text: m.content });
+      for (const tc of m.toolCalls ?? []) {
+        parts.push({ functionCall: { name: tc.name, args: tc.args } });
+      }
+      if (parts.length === 0) parts.push({ text: '' });
+      return { role: 'model', parts };
+    }
+    return { role: 'user', parts: [{ text: m.content }] };
+  });
+}
+
+export function createVertexProvider(): AiProvider {
+  return {
+    id: 'vertex',
+    async complete(req: AiCompletionRequest): Promise<AiCompletion> {
+      const modelId = resolveModel('vertex', req.tier);
+
+      const model = getClient().getGenerativeModel({
+        model: modelId,
+        systemInstruction: { role: 'system', parts: [{ text: req.system }] },
+        generationConfig: {
+          temperature: req.temperature ?? 0.7,
+          maxOutputTokens: req.maxTokens ?? 4096,
+        },
+        ...(req.tools?.length
+          ? {
+              tools: [
+                {
+                  functionDeclarations: req.tools.map((t) => ({
+                    name: t.name,
+                    description: t.description,
+                    // SDK types use its own Schema type; our JSON-Schema subset
+                    // is compatible at runtime.
+                    parameters: t.parameters as never,
+                  })),
+                },
+              ],
+            }
+          : {}),
+      });
+
+      const result = await model.generateContent({
+        contents: toVertexContents(req.messages),
+      });
+
+      const resp = result.response;
+      const parts: Part[] = resp.candidates?.[0]?.content?.parts ?? [];
+
+      const text = parts
+        .filter((p): p is Part & { text: string } => typeof p.text === 'string')
+        .map((p) => p.text)
+        .join('');
+
+      const toolCalls: AiToolCall[] = parts
+        .filter((p) => p.functionCall)
+        .map((p, i) => ({
+          id: `${p.functionCall!.name}__${i}`,
+          name: p.functionCall!.name,
+          args: (p.functionCall!.args ?? {}) as Record<string, unknown>,
+        }));
+
+      return {
+        text,
+        toolCalls,
+        needsTools: toolCalls.length > 0,
+        model: modelId,
+        usage: {
+          inputTokens: resp.usageMetadata?.promptTokenCount ?? 0,
+          outputTokens: resp.usageMetadata?.candidatesTokenCount ?? 0,
+        },
+      };
+    },
+  };
+}
