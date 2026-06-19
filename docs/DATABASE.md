@@ -119,7 +119,8 @@ const decrypted = decrypt(stored, process.env.ENCRYPTION_KEY);
 
 ### 4. Vector Memory
 
-`AgentMemory.embedding` نوعه `vector(1536)` (متوافق مع OpenAI/Voyage embeddings).
+`AgentMemory.embedding` نوعه `vector(1536)` — يُملأ من Google Gemini
+`gemini-embedding-001` بـ `outputDimensionality: 1536` (`lib/ai/embeddings.ts`).
 
 ```sql
 CREATE INDEX agent_memory_embedding_idx 

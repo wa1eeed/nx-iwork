@@ -58,7 +58,7 @@
 ### Integrations (طبقات محايدة معزولة — تطوير أي واحدة لا يلمس الباقي)
 - **Cloudflare R2** (تخزين S3-compatible، رفع presigned مباشر بلا مرور على الـ VPS) — `lib/storage/` ✅
 - **Resend** (إيميل) + **Twilio** (SMS) — `lib/notifications/` ✅
-- **Embeddings** (OpenAI) للذاكرة الدلالية — `lib/ai/embeddings.ts` ✅
+- **Embeddings** (Google Gemini `gemini-embedding-001` @ 1536) للذاكرة الدلالية — `lib/ai/embeddings.ts` ✅
 - **Tap.company** (بوابة دفع اشتراكات SaaS) — مخطّط
 - **Sentry** (مراقبة وتتبّع أخطاء) — مخطّط
 - **API عام v1** لتكامل أطراف ثالثة — مخطّط

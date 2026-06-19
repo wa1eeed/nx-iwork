@@ -36,11 +36,12 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ### Added — Agent memory (semantic long-term recall)
 
-- **Embeddings layer** (`lib/ai/embeddings.ts`): platform-level OpenAI
-  `text-embedding-3-small` (1536 dims — matches the existing `AgentMemory.embedding`
-  vector(1536), no migration). Decoupled from BYOK chat provider (Claude has no
-  embeddings). Unset key → semantic memory disabled, recall falls back to
-  importance-ranked.
+- **Embeddings layer** (`lib/ai/embeddings.ts`): Google Gemini
+  `gemini-embedding-001` at `outputDimensionality` 1536 — matches the existing
+  `AgentMemory.embedding` vector(1536) (no migration) and stays on the platform's
+  Google free tier (`GOOGLE_AI_API_KEY`). Platform-level so memory works even for
+  companies whose chat provider is Claude. Unset key → semantic memory disabled,
+  recall falls back to importance-ranked.
 - **Memory module** (`lib/agent/memory.ts`): `saveMemory` (embed + store via raw
   pgvector SQL) and `recallMemories` (cosine-nearest via `<=>`, graceful
   fallback). `recallMemoryBlock` injects relevant facts into the system prompt.
