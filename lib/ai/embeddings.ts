@@ -1,52 +1,71 @@
-// Embeddings for semantic memory — via Google Gemini, consistent with the
-// platform's Google-first direction (uses an AI Studio key / the free tier).
+// Embeddings for semantic memory — via Google Cloud Vertex AI, authenticated
+// with the platform Service Account (Application Default Credentials). No AI
+// Studio API key: the whole AI surface (chat + embeddings) goes through Vertex.
 //
-// gemini-embedding-001 supports Matryoshka output dims, so we request 1536 to
-// match AgentMemory.embedding's vector(1536) column — no migration. Cosine
+// Model gemini-embedding-001 supports outputDimensionality, so we request 1536
+// to match AgentMemory.embedding's vector(1536) column — no migration. Cosine
 // distance (pgvector `<=>`) is scale-invariant, so reduced-dim vectors rank
 // correctly without manual normalisation.
 //
-// Configure with GOOGLE_AI_API_KEY (platform-level, decoupled from each
-// company's BYOK chat provider — so memory works even for Claude-on-chat
-// companies). Unset → semantic memory disabled; recall falls back to
-// importance-ranked.
+// Configured by GCP_PROJECT_ID + GOOGLE_APPLICATION_CREDENTIALS (+ GCP_LOCATION).
+// Unconfigured → semantic memory disabled; recall falls back to importance.
 
-const BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
-const MODEL = process.env.GOOGLE_EMBEDDINGS_MODEL ?? 'gemini-embedding-001';
+import { GoogleAuth } from 'google-auth-library';
+
+const MODEL = process.env.VERTEX_EMBEDDINGS_MODEL ?? 'gemini-embedding-001';
+const SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
 
 export const EMBEDDING_DIMS = 1536;
 
+// One GoogleAuth client per process; it caches/refreshes the access token.
+let auth: GoogleAuth | null = null;
+function getAuth(): GoogleAuth {
+  auth ??= new GoogleAuth({ scopes: SCOPE });
+  return auth;
+}
+
 export function isEmbeddingsConfigured(): boolean {
-  return Boolean(process.env.GOOGLE_AI_API_KEY);
+  return Boolean(
+    process.env.GCP_PROJECT_ID && process.env.GOOGLE_APPLICATION_CREDENTIALS
+  );
 }
 
 // Returns the embedding vector, or null when embeddings aren't configured or the
 // call fails (callers degrade to non-vector behaviour).
 export async function getEmbedding(text: string): Promise<number[] | null> {
-  const key = process.env.GOOGLE_AI_API_KEY;
-  if (!key) return null;
-
-  const url = `${BASE}/${MODEL}:embedContent?key=${encodeURIComponent(key)}`;
+  const project = process.env.GCP_PROJECT_ID;
+  if (!project || !process.env.GOOGLE_APPLICATION_CREDENTIALS) return null;
+  const location = process.env.GCP_LOCATION ?? 'us-central1';
 
   try {
+    const token = await getAuth().getAccessToken();
+    if (!token) return null;
+
+    const url =
+      `https://${location}-aiplatform.googleapis.com/v1/projects/${project}` +
+      `/locations/${location}/publishers/google/models/${MODEL}:predict`;
+
     const res = await fetch(url, {
       method: 'POST',
-      headers: { 'content-type': 'application/json' },
+      headers: {
+        authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
       body: JSON.stringify({
-        content: { parts: [{ text: text.slice(0, 8000) }] },
-        outputDimensionality: EMBEDDING_DIMS,
+        instances: [{ content: text.slice(0, 8000) }],
+        parameters: { outputDimensionality: EMBEDDING_DIMS },
       }),
       signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) {
-      console.error('Embeddings error', res.status, await res.text().catch(() => ''));
+      console.error('Vertex embeddings error', res.status, await res.text().catch(() => ''));
       return null;
     }
     const data = await res.json();
-    const vec: number[] | undefined = data.embedding?.values;
+    const vec: number[] | undefined = data.predictions?.[0]?.embeddings?.values;
     return Array.isArray(vec) ? vec : null;
   } catch (err) {
-    console.error('Embeddings request failed', err);
+    console.error('Vertex embeddings request failed', err);
     return null;
   }
 }

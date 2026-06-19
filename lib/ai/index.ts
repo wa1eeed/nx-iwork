@@ -14,10 +14,12 @@ export { resolveModel } from './models';
 
 export type AiMode = 'byok' | 'managed';
 
-// Managed = platform pays via Vertex (one service account) + token bank.
-// BYOK = each company brings its own key. Default BYOK.
+// Managed (default) = platform pays via Vertex AI (one service account) + token
+// bank. BYOK = each company brings its own AI Studio/Anthropic key (opt-in via
+// AI_MODE=byok). Vertex is the standard path; BYOK adapters are kept only as an
+// optional fallback.
 export function getAiMode(): AiMode {
-  return process.env.AI_MODE === 'managed' ? 'managed' : 'byok';
+  return process.env.AI_MODE === 'byok' ? 'byok' : 'managed';
 }
 
 export type GetProviderResult =

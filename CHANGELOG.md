@@ -9,6 +9,18 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Changed — Vertex AI is now the default AI path (strict, service-account)
+
+- **`AI_MODE` defaults to `managed`** (was `byok`): the platform authenticates to
+  Vertex AI with one service account for all tenants. BYOK is now opt-in only
+  (`AI_MODE=byok`). The AI Studio API-key method is no longer used by default.
+- **Embeddings moved to Vertex** (`lib/ai/embeddings.ts`): `gemini-embedding-001`
+  via the Vertex predict endpoint, authenticated with the same service account
+  (google-auth-library / ADC) — dropped the standalone `GOOGLE_AI_API_KEY`.
+- ⚠️ **Deploy prerequisite:** managed mode needs `GCP_PROJECT_ID` +
+  `GOOGLE_APPLICATION_CREDENTIALS` (mounted service-account JSON). Until set,
+  agent chat/tasks return `vertex_not_configured` and embeddings are disabled.
+
 ### Added — Managed mode: Vertex AI + token bank
 
 Optional alternative to BYOK, toggled by `AI_MODE=managed` (default stays `byok`).

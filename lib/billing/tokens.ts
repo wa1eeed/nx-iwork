@@ -7,8 +7,9 @@
 
 import { db } from '@/lib/db';
 
+// Managed is the default; BYOK is opt-in (kept aligned with getAiMode in lib/ai).
 export function isManagedMode(): boolean {
-  return process.env.AI_MODE === 'managed';
+  return process.env.AI_MODE !== 'byok';
 }
 
 export type BudgetCheck = { ok: true } | { ok: false; reason: 'billing_limit' };
