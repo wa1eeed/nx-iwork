@@ -11,7 +11,7 @@
 // Unconfigured → semantic memory disabled; recall falls back to importance.
 
 import { GoogleAuth } from 'google-auth-library';
-import { getGcpCredentials, hasGcpAuth } from './gcp-auth';
+import { getGcpCredentials, isGcpConfigured } from './gcp-auth';
 
 const MODEL = process.env.VERTEX_EMBEDDINGS_MODEL ?? 'gemini-embedding-001';
 const SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
@@ -30,14 +30,14 @@ function getAuth(): GoogleAuth {
 }
 
 export function isEmbeddingsConfigured(): boolean {
-  return Boolean(process.env.GCP_PROJECT_ID && hasGcpAuth());
+  return isGcpConfigured();
 }
 
 // Returns the embedding vector, or null when embeddings aren't configured or the
 // call fails (callers degrade to non-vector behaviour).
 export async function getEmbedding(text: string): Promise<number[] | null> {
   const project = process.env.GCP_PROJECT_ID;
-  if (!project || !hasGcpAuth()) return null;
+  if (!project) return null;
   const location = process.env.GCP_LOCATION ?? 'us-central1';
 
   try {

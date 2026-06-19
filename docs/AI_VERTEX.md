@@ -57,38 +57,34 @@ scripts/test-vertex.ts← فحص اتصال حيّ (npm run test:vertex)
 
 ---
 
-## 4. الاعتماد (Credentials) — 🔴 لا تُرفع على Git أبداً
+## 4. الاعتماد (Credentials) — Keyless أولاً
 
-الاعتماد **سرّ**. `.gitignore` يستثني `.env` و`ai-config/` و`*.sa.json`. لا تضعه
-في الـ Docker image ولا الكود. الكود يقرأ الاعتماد من `lib/ai/gcp-auth.ts`
-بأولوية: **متغيّرات بيئة inline** ← ثم **ملف ADC** (fallback).
+الكود يحلّ المصادقة من `lib/ai/gcp-auth.ts` بأولوية: **متغيّرات inline (إن وُجدت)
+← ADC تلقائياً**. لا نشترط وجود مفتاح — يكفي `GCP_PROJECT_ID`.
 
-### ✅ الطريقة المعتمدة: متغيّرات بيئة inline (تبديل الحساب = نسخ/لصق)
-افتح ملف الـ JSON كنص، وانسخ قيمتين فقط:
-
+### ✅ الطريقة المعتمدة: Keyless عبر ADC (بلا أسرار)
+لا مفاتيح ولا ملفات في `.env` — فقط:
 ```bash
-GCP_PROJECT_ID=bznss-one
+AI_MODE=managed
+GCP_PROJECT_ID=...        # معرّف مشروعك في GCP
 GCP_LOCATION=us-central1
-GCP_CLIENT_EMAIL=...@bznss-one.iam.gserviceaccount.com   # = JSON.client_email
-GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"  # = JSON.private_key (سطر واحد، \n كما هي، بين "")
 ```
+والمصادقة تُحلّ تلقائياً:
+- **محلياً:** `gcloud auth application-default login` (مرة واحدة).
+- **على GCP / VPS:** Service Account مرتبط / Workload Identity.
 
-- **محلياً:** في `.env`. **في Coolify:** في Environment Variables.
-- **تبديل حساب جوجل مستقبلاً:** الصق `GCP_CLIENT_EMAIL` و`GCP_PRIVATE_KEY`
-  الجديدين واضغط Restart — **بدون رفع ملفات ولا mounts**.
-- `GCP_PRIVATE_KEY` يُخزَّن بسطر واحد مع `\n` حرفية؛ الكود يحوّلها لأسطر حقيقية
-  (`gcp-auth.ts`). لفّه بعلامتي اقتباس.
+> آمن وبسيط: لا أسرار تُرفع ولا تُسرّب. تبديل الحساب = إعادة `gcloud auth ...login`
+> أو تغيير الهوية المرتبطة بالخادم.
 
-> 🔒 المفتاح سرّ من الدرجة الأولى — لا يُطبع في اللوقات ولا يُرفع على Git. عند
-> أي تسريب **دوّر المفتاح** من GCP (Keys → احذف القديم → أنشئ جديد).
+### بديل اختياري: مفاتيح inline (لأجهزة بلا ADC)
+إن لم يتوفّر ADC، الصق من ملف الـ JSON (سرّ — `.gitignore` يستثني `.env`/`ai-config/`):
+```bash
+GCP_CLIENT_EMAIL=...@PROJECT.iam.gserviceaccount.com   # = JSON.client_email
+GCP_PRIVATE_KEY="-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----\n"  # سطر واحد، \n كما هي، بين ""
+```
+أو ملف مُركّب: `GOOGLE_APPLICATION_CREDENTIALS=/مسار/مطلق/sa.json` (mount لا copy).
 
-### الطريقة البديلة: ملف JSON مُركّب (ADC)
-إن فضّلت ملفاً: ركّبه (mount) في الحاوية ووجّه إليه — **لا تنسخه في الصورة**:
-1. Coolify → الخدمة → **Storages** → ملف على مسار مطلق مثل
-   `/app/ai-config/service-account.json`.
-2. `GOOGLE_APPLICATION_CREDENTIALS=/app/ai-config/service-account.json`.
-
-> الكود يستخدم المتغيّرات inline إن وُجدت، وإلا يرجع للملف تلقائياً.
+> 🔒 عند أي تسريب لمفتاح **دوّره** من GCP. مع ADC لا حاجة لمفاتيح أصلاً.
 
 ---
 

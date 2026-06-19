@@ -9,6 +9,16 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Changed — Keyless Vertex auth (ADC-first)
+
+- Vertex/embeddings now resolve auth via **Application Default Credentials**
+  when no inline key is set — `gcloud auth application-default login` locally, or
+  the attached service account / Workload Identity on a host. `isVertexConfigured`/
+  `isEmbeddingsConfigured` gate on `GCP_PROJECT_ID` only (no key required), so
+  pure-ADC setups work. Inline env creds + mounted JSON remain optional overrides.
+- `.env` for managed mode is now just `AI_MODE` + `GCP_PROJECT_ID` + `GCP_LOCATION`
+  — no secrets. Docs (`AI_VERTEX.md` §4) + `.env.example` updated to ADC-first.
+
 ### Added — Modular architecture (per-business modules + dynamic tools)
 
 Migration `20260619230000_modular_bookings` (additive).

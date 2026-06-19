@@ -9,7 +9,7 @@
 
 import { VertexAI, type Content, type Part } from '@google-cloud/vertexai';
 import { resolveModel } from '../models';
-import { getGcpCredentials, hasGcpAuth } from '../gcp-auth';
+import { getGcpCredentials, isGcpConfigured } from '../gcp-auth';
 import type {
   AiCompletion,
   AiCompletionRequest,
@@ -36,7 +36,7 @@ function getClient(): VertexAI {
 }
 
 export function isVertexConfigured(): boolean {
-  return Boolean(process.env.GCP_PROJECT_ID && hasGcpAuth());
+  return isGcpConfigured();
 }
 
 function toVertexContents(messages: AiMessage[]): Content[] {
