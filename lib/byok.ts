@@ -50,6 +50,58 @@ export async function testAnthropicKey(apiKey: string): Promise<ByokTestResult> 
   }
 }
 
+// Tests a Google (Gemini) AI Studio / Generative Language key with a 1-token
+// generateContent call — the same surface the runtime uses, so "verified" means
+// the key can actually generate, not just authenticate.
+export async function testGoogleKey(apiKey: string): Promise<ByokTestResult> {
+  if (!apiKey || typeof apiKey !== 'string' || apiKey.trim().length < 10) {
+    return { ok: false, reason: 'invalid_format' };
+  }
+
+  const model = process.env.GOOGLE_MODEL_FAST ?? 'gemini-2.0-flash';
+  const url =
+    `https://generativelanguage.googleapis.com/v1beta/models/${model}` +
+    `:generateContent?key=${encodeURIComponent(apiKey)}`;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ role: 'user', parts: [{ text: 'ping' }] }],
+        generationConfig: { maxOutputTokens: 1 },
+      }),
+      signal: AbortSignal.timeout(10_000),
+    });
+
+    if (res.ok) return { ok: true };
+    // Google returns 400 with API_KEY_INVALID for bad keys.
+    if (res.status === 400 || res.status === 401 || res.status === 403) {
+      return { ok: false, reason: 'unauthorized', status: res.status };
+    }
+    if (res.status === 429) {
+      return { ok: false, reason: 'rate_limited', status: res.status };
+    }
+    return { ok: false, reason: 'api_error', status: res.status };
+  } catch (err) {
+    if (err instanceof DOMException && err.name === 'TimeoutError') {
+      return { ok: false, reason: 'timeout' };
+    }
+    return { ok: false, reason: 'network_error' };
+  }
+}
+
+// Dispatches to the right key-test by provider. Defaults to anthropic to match
+// CompanyApiSettings.byokProvider's default.
+export function testKey(
+  provider: string,
+  apiKey: string
+): Promise<ByokTestResult> {
+  return provider === 'google'
+    ? testGoogleKey(apiKey)
+    : testAnthropicKey(apiKey);
+}
+
 export function maskApiKey(key: string): string {
   if (!key) return '';
   const last4 = key.slice(-4);

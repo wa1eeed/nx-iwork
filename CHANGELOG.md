@@ -9,6 +9,44 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Priority 1: Agent Loop + Chat (multi-provider AI)
+
+- **Provider-agnostic AI layer** (`lib/ai/`): neutral `AiProvider` interface with
+  Anthropic (Claude) and Google (Gemini) adapters, plus a per-company factory
+  (`getProviderForCompany`) that decrypts the BYOK key and picks the engine. The
+  rest of the app never imports a vendor SDK.
+- **Agent Loop v1** (`lib/agent/run.ts`): loads agent persona + CompanyDNA,
+  pulls working-memory history, calls the company's provider, persists the turn
+  and updates token stats. Tool use and deeper memory layers plug in here later.
+- **Chat**: real chat UI (`/chat`) replacing the stub, chat API
+  (`/api/agents/[agentId]/chat`), and a one-click "first AI employee" bootstrap.
+- **BYOK is now multi-provider**: Settings lets each company choose Gemini or
+  Claude (Gemini default for cost). Key-testing dispatches per provider
+  (`testKey`), and `byokProvider` is persisted.
+
+### Added — Priority 2: Function Calling + flexible data model
+
+- **Flexible-for-any-business schema** (migration `20260619130000_crm_flexible_tasks`):
+  - New **`Customer`** model (CRM lead pipeline: `LeadStatus` NEW→INTERESTED→
+    NEGOTIATING→WON/LOST, assignable to an agent). Closes the gap where leads
+    had no home.
+  - **`customFields` (JSON)** on `Service`, `Product`, `Customer`, `Task` — any
+    vertical adds its own attributes (bedrooms, check-in time, budget) without a
+    schema change.
+  - **Unified `Task`** via `TaskKind` (AGENT_TASK / APPOINTMENT / REMINDER) plus
+    `startAt`/`endAt` for calendar use and an optional `customerId`. `agentId` is
+    now nullable (appointments/reminders need no agent).
+- **Tool use across both providers**: `AiTool`/`AiToolCall` in the neutral
+  interface; Anthropic (`tool_use`/`tool_result`) and Gemini
+  (`functionDeclarations`/`functionCall`) adapters.
+- **Agent tools** (`lib/agent/tools.ts`, all company-scoped): `search_catalog`
+  (structured data instead of PDF — big token saving), `find_customer`,
+  `create_lead`, `update_lead`, `create_task`. The agent loop now runs a bounded
+  tool-execution loop (`MAX_TOOL_ROUNDS`).
+
+> Note: tool-calling wire formats are typechecked but need a live smoke test
+> with a real Gemini/Claude key before launch.
+
 ---
 
 ## [0.1.1] - 2026-04-27

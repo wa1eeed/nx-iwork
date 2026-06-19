@@ -4,6 +4,23 @@
 
 ---
 
+## 🆕 تحديثات v0.2 (CRM + مرونة الأنشطة + الأدوات)
+
+migration: `20260619130000_crm_flexible_tasks`
+
+- **`Customer`** (CRM): سجل العميل/Lead مع `LeadStatus` (NEW → INTERESTED →
+  NEGOTIATING → WON/LOST)، يُسند لوكيل (`assignedAgentId`)، ويرتبط بالمهام والطلبات.
+- **`customFields` (JSONB)** على `Service` و`Product` و`Customer` و`Task` — أي نشاط
+  يضيف خصائصه دون تعديل schema.
+- **`Task` موحّد:** `TaskKind` (AGENT_TASK / APPOINTMENT / REMINDER) + `startAt`/`endAt`
+  للتقويم + `customerId`. صار `agentId` اختيارياً (مواعيد/تذكيرات بلا وكيل، onDelete: SetNull).
+- **`Order.customerId`** يربط الطلب بسجل CRM دائم (اختياري).
+- **`CompanyApiSettings.byokProvider`** يُستخدم فعلياً الآن لاختيار المحرك (Gemini/Claude).
+
+> الطبقة المحايدة في `lib/ai/` وأدوات الوكيل في `lib/agent/tools.ts` تقرأ/تكتب على هذه الجداول.
+
+---
+
 ## 🎯 التغييرات عن المشروع الأصلي
 
 ### حذفنا (لأن BYOK):

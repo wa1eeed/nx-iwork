@@ -2,9 +2,11 @@
 
 > منصة SaaS لبناء شركات ذاتية التشغيل بالذكاء الاصطناعي. صُممت للسوق السعودي أولاً، عالمية في الجوهر.
 
-[![Status](https://img.shields.io/badge/status-planning-yellow)](.)
+[![Status](https://img.shields.io/badge/status-live%20MVP-brightgreen)](https://bznss.one/)
 [![License](https://img.shields.io/badge/license-proprietary-red)](.)
-[![Built with](https://img.shields.io/badge/built%20with-Next.js%2015-black)](.)
+[![Built with](https://img.shields.io/badge/built%20with-Next.js-black)](.)
+
+🌐 **Live:** [bznss.one](https://bznss.one/)
 
 ---
 
@@ -13,13 +15,14 @@
 منصة تتيح لأي صاحب بزنس بناء **شركة كاملة من موظفين ذكاء اصطناعي**:
 
 - 🤖 **موظفين أذكياء حقيقيين** بشخصيات وذاكرة طويلة المدى
+- 🛠️ **يُنفّذون لا يدردشون فقط** — عبر استدعاء الدوال (Function Calling): يقرأون الكتالوج، يسجّلون العملاء في الـ CRM، ينشئون المهام والمواعيد
 - 📊 **مخطط تنظيمي حي** (أقسام، مديرين، موظفين)
+- 🗂️ **CRM مدمج** + جدول مهام/تقويم موحّد + فواتير
+- 🧩 **مرن لأي نشاط** — حقول مخصّصة (customFields) لكل نشاط دون تعديل كود
 - 💬 **محادثات طبيعية** مع كل موظف
-- ✅ **مهام تلقائية** تُنفّذ في الخلفية
 - 🌐 **موقع عام** للبزنس مع chat widget للزوار
 - 🇸🇦 **سياق سعودي** (زاتكا، واتساب، الدارجة)
-- 🔌 **n8n integrations** للأدوات الخارجية
-- 🔑 **BYOK** (العميل يستخدم مفتاحه الخاص)
+- 🔑 **BYOK متعدد المزوّدين** — كل عميل يختار **Google Gemini** (افتراضي، أوفر) أو **Anthropic Claude** بمفتاحه الخاص
 
 ---
 
@@ -87,9 +90,10 @@ claude
 - NextAuth.js v5
 
 ### AI
-- Anthropic Claude (BYOK)
-- Voyage AI (embeddings)
-- 3-Layer Memory System
+- **Provider-agnostic layer** (`lib/ai/`) — one neutral interface, vendor adapters
+- **Google Gemini** (default) + **Anthropic Claude**, both BYOK
+- **Function Calling / tools** (`lib/agent/tools.ts`) — catalog, CRM, tasks
+- 3-Layer Memory System (working / episodic / semantic via pgvector)
 
 ### DevOps
 - Docker + Coolify
@@ -102,24 +106,24 @@ claude
 
 ```
 nx-iwork/
-├── START_HERE.md              ← ابدأ هنا!
-├── README.md                  
-├── CHANGELOG.md
-│
-├── docs/                      ← كل الوثائق
-│   ├── PROJECT.md
-│   ├── DATABASE.md
-│   ├── AGENT_SYSTEM.md       ⭐ القلب التقني
-│   ├── ROADMAP.md
-│   └── DEPLOYMENT.md
-│
-└── starter-files/             ← ملفات جاهزة للنسخ
-    ├── package.json
-    ├── Dockerfile
-    ├── .env.example
-    ├── .gitignore
-    └── prisma/
-        └── schema.prisma
+├── app/                       ← Next.js App Router (auth, dashboard, api)
+│   └── api/agents/[id]/chat/  ← endpoint محادثة الوكيل
+├── components/                ← واجهات (chat, settings, dashboard)
+├── lib/
+│   ├── ai/                    ⭐ طبقة الذكاء المحايدة (Gemini + Claude)
+│   │   ├── providers/         ← anthropic.ts / google.ts
+│   │   └── models.ts          ← خريطة النماذج لكل مزوّد
+│   ├── agent/                 ⭐ القلب التقني
+│   │   ├── run.ts             ← Agent Loop (مع حلقة استدعاء الأدوات)
+│   │   ├── prompt.ts          ← بناء شخصية الموظف + سياق الشركة
+│   │   └── tools.ts           ← أدوات الوكيل (catalog, CRM, tasks)
+│   └── actions/               ← Server Actions
+├── prisma/
+│   ├── schema.prisma          ← المخطط الكامل (CRM, مهام مرنة, BYOK)
+│   └── migrations/
+├── messages/                  ← ترجمات ar/en
+├── docs/                      ← الوثائق (PROJECT, DATABASE, ROADMAP, ...)
+└── Dockerfile                 ← يشغّل `prisma migrate deploy` قبل التطبيق
 ```
 
 ---

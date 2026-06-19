@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
-import { testAnthropicKey } from '@/lib/byok';
+import { testKey } from '@/lib/byok';
 
 // Re-tests an already-stored BYOK key. We keep this as a route handler (not a
 // Server Action) because (a) it's a verb-style operation rather than a data
@@ -24,7 +24,7 @@ export async function POST() {
 
   const apiSettings = await db.companyApiSettings.findUnique({
     where: { companyId: user.companyId },
-    select: { byokApiKey: true },
+    select: { byokApiKey: true, byokProvider: true },
   });
   if (!apiSettings?.byokApiKey) {
     return NextResponse.json({ ok: false, reason: 'no_key' }, { status: 400 });
@@ -42,7 +42,7 @@ export async function POST() {
     );
   }
 
-  const result = await testAnthropicKey(plaintext);
+  const result = await testKey(apiSettings.byokProvider, plaintext);
 
   await db.companyApiSettings.update({
     where: { companyId: user.companyId },

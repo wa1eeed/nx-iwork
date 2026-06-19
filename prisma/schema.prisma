@@ -126,6 +126,7 @@ model Company {
   services            Service[]
   products            Product[]
   orders              Order[]
+  customers           Customer[]
   publicConversations PublicConversation[]
 
   createdAt DateTime @default(now())
@@ -263,9 +264,12 @@ model Agent {
   
   // Memory
   memories     AgentMemory[]
-  
+
   // Schedules
   schedules    AgentSchedule[]
+
+  // CRM leads this agent owns/handles
+  assignedCustomers Customer[] @relation("AgentCustomers")
   
   // Activity
   status            AgentStatus @default(ONLINE)
@@ -463,25 +467,51 @@ enum TaskPriority {
   URGENT
 }
 
+// One unified table backs three things the UI renders as a list or a calendar:
+//   AGENT_TASK  - work an AI employee performs (default)
+//   APPOINTMENT - a customer-facing booking/meeting (uses startAt/endAt)
+//   REMINDER    - a simple dated nudge for the owner/team
+enum TaskKind {
+  AGENT_TASK
+  APPOINTMENT
+  REMINDER
+}
+
 model Task {
   id            String       @id @default(cuid())
   companyId     String
   company       Company      @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  agentId       String
-  agent         Agent        @relation(fields: [agentId], references: [id], onDelete: Cascade)
-  
+
+  // Optional: APPOINTMENT/REMINDER kinds may not belong to any agent. When an
+  // agent is deleted its tasks survive (SetNull) so history/calendar stay intact.
+  agentId       String?
+  agent         Agent?       @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  kind          TaskKind     @default(AGENT_TASK)
+
+  // Optional link to the CRM record this task/appointment is about.
+  customerId    String?
+  customer      Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
   title         String
   description   String       @db.Text
   notes         String?      @db.Text
-  
+
   status        TaskStatus   @default(PENDING)
   priority      TaskPriority @default(MEDIUM)
   progress      Int          @default(0)
-  
+
   // Trigger source
   triggerType   String       // USER_MESSAGE, TASK_ASSIGNMENT, SCHEDULE, WEBHOOK, INTER_AGENT
   triggerSource Json?
-  
+
+  // Calendar window (used by APPOINTMENT; optional for others).
+  startAt       DateTime?
+  endAt         DateTime?
+
+  // Activity-specific attributes (e.g. location, party_size, channel).
+  customFields  Json?
+
   // Execution
   startedAt     DateTime?
   dueAt         DateTime?
@@ -507,9 +537,12 @@ model Task {
   updatedAt DateTime @updatedAt
 
   @@index([companyId])
+  @@index([companyId, kind])
   @@index([agentId])
+  @@index([customerId])
   @@index([status])
   @@index([dueAt])
+  @@index([startAt])
   @@index([parentTaskId])
 }
 
@@ -623,6 +656,54 @@ model ChatMessage {
 }
 
 // ========================================
+// CRM (Customers / Leads)
+// ========================================
+
+enum LeadStatus {
+  NEW         // جديد
+  INTERESTED  // مهتم
+  NEGOTIATING // قيد التفاوض
+  WON         // اشترى / تم
+  LOST        // مفقود
+}
+
+// A human customer/lead of the business. Distinct from User (platform accounts)
+// and from the inline customer fields on Order — this is the persistent CRM
+// record agents create and update as they talk to people.
+model Customer {
+  id        String     @id @default(cuid())
+  companyId String
+  company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name   String
+  email  String?
+  phone  String?
+
+  status LeadStatus @default(NEW)
+  source String?    // 'chat_widget' | 'manual' | 'agent' | 'public_form' | ...
+
+  notes  String?    @db.Text
+
+  // Activity-specific attributes (e.g. budget, preferred_district, party_size).
+  // Same flexible-field strategy as Service/Product.
+  customFields Json?
+
+  // The agent responsible for this lead, if any.
+  assignedAgentId String?
+  assignedAgent   Agent?  @relation("AgentCustomers", fields: [assignedAgentId], references: [id], onDelete: SetNull)
+
+  tasks  Task[]
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status])
+  @@index([assignedAgentId])
+  @@index([phone])
+}
+
+// ========================================
 // PUBLIC FRONTEND (Services, Products, Orders)
 // ========================================
 
@@ -644,12 +725,17 @@ model Service {
   
   ctaText       String   @default("اطلب الخدمة")
   ctaTextEn     String   @default("Request Service")
-  
+
+  // Activity-specific attributes the agent can read/filter on (e.g. duration,
+  // area_sqm, bedrooms, check_in_time). Keeps the platform fit-for-any-business
+  // without a schema change per vertical. Shape: { "key": value, ... }.
+  customFields  Json?
+
   isActive      Boolean  @default(true)
   sortOrder     Int      @default(0)
-  
+
   orders        Order[]
-  
+
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -673,10 +759,14 @@ model Product {
   
   sku           String?
   stock         Int      @default(-1)  // -1 = unlimited
-  
+
+  // See Service.customFields — same purpose for products (e.g. color, size,
+  // warranty_months, model_year).
+  customFields  Json?
+
   isActive      Boolean  @default(true)
   sortOrder     Int      @default(0)
-  
+
   orderItems    OrderItem[]
   
   createdAt     DateTime @default(now())
@@ -714,7 +804,10 @@ model Order {
   
   type         OrderType
   
-  // Customer info
+  // Customer info (kept inline so an order is self-contained even with no CRM
+  // record; customerId links to the persistent CRM Customer when one exists).
+  customerId    String?
+  customer      Customer?    @relation(fields: [customerId], references: [id], onDelete: SetNull)
   customerName  String
   customerEmail String?
   customerPhone String?
@@ -744,6 +837,7 @@ model Order {
   updatedAt    DateTime      @updatedAt
 
   @@index([companyId])
+  @@index([customerId])
   @@index([status])
   @@index([orderNumber])
 }

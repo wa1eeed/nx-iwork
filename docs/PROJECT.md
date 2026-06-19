@@ -48,10 +48,12 @@
 - NextAuth.js v5
 - bcryptjs
 
-### AI
-- Anthropic SDK (`@anthropic-ai/sdk`)
-- BYOK مفتاح من العميل
-- Models: Haiku (سريع/رخيص) / Sonnet (متوسط) / Opus (متقدم)
+### AI (Provider-Agnostic)
+- **طبقة محايدة** (`lib/ai/`) — واجهة موحّدة، وباقي الكود لا يستورد أي SDK مزوّد
+- **مزوّدان (BYOK):** Google Gemini (افتراضي — أوفر + طبقة AI Studio المجانية) و Anthropic Claude
+- كل شركة تختار مزوّدها ومفتاحها من الإعدادات (`CompanyApiSettings.byokProvider`)
+- **استدعاء الدوال (Function Calling):** الوكلاء ينفّذون أدوات (كتالوج، CRM، مهام) بدل الاكتفاء بالمحادثة — قراءة منظمة بدل PDF لتوفير التوكنز
+- Model tiers مجرّدة (Fast/Balanced/Advanced) تُترجم لمعرّف نموذج لكل مزوّد (`lib/ai/models.ts`)
 
 ### Integrations
 - Resend (Email)
@@ -153,9 +155,17 @@
 **القرار:** Shared Database, Shared Schema with `companyId` isolation
 **ليش:** يدعم النموذج المزدوج (نسخ + SaaS) بنفس الكود
 
-### قرار 2: BYOK فقط
-**القرار:** كل عميل يضع مفتاح Claude الخاص به (مشفّر AES-256-GCM)
-**ليش:** يلغي تعقيد credits/billing API، ويوفر 4-5 sprints
+### قرار 2: BYOK متعدد المزوّدين
+**القرار:** كل عميل يضع مفتاحه الخاص (مشفّر AES-256-GCM) ويختار المزوّد (Gemini افتراضياً أو Claude)
+**ليش:** يلغي تعقيد credits/billing API، ويعطي مرونة في التكلفة والقدرة. ملاحظة: في BYOK التكلفة على العميل لا على المنصة — فاختيار المحرك عن القدرة/تكلفة-العميل لا فاتورة المالك.
+
+### قرار 2-ب: نموذج بيانات مرن لأي نشاط
+**القرار:** جداول أساسية ثابتة (Customer/Service/Product/Task) + حقل `customFields` (JSON) في كل منها
+**ليش:** نشاط واحد (عقار/حجوزات/خدمات/متاجر) يضيف خصائصه (عدد الغرف، وقت الوصول، الميزانية) دون أي تعديل على الـ schema أو الكود.
+
+### قرار 2-ج: نظام مهام موحّد (قائمة/تقويم)
+**القرار:** جدول `Task` واحد بأنواع (`TaskKind`: AGENT_TASK / APPOINTMENT / REMINDER) + `startAt/endAt`
+**ليش:** يخدم مهام الوكلاء ومواعيد العملاء والتذكيرات معاً، يُعرض كقائمة أو تقويم، ويربط بالـ CRM.
 
 ### قرار 3: Agent Loop المتقدم
 **القرار:** كل موظف له:

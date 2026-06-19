@@ -30,6 +30,9 @@ export const companyInfoSchema = z.object({
 
 export const apiKeySchema = z.object({
   apiKey: z.string().trim().min(10).max(500),
+  // Which AI engine this key belongs to. Defaults to anthropic to match
+  // CompanyApiSettings.byokProvider's column default.
+  provider: z.enum(['anthropic', 'google']).default('anthropic'),
 });
 
 export type LocalizationInput = z.infer<typeof localizationSchema>;

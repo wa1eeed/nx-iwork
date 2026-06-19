@@ -190,8 +190,8 @@
       "brandVoiceHelp": "How your brand speaks to customers (formal, friendly, playful...)"
     },
     "api": {
-      "title": "Anthropic API key (BYOK)",
-      "subtitle": "Your agents call Anthropic with your key — billed directly to you.",
+      "title": "AI provider key (BYOK)",
+      "subtitle": "Pick your engine (Gemini or Claude) and add your key. Your agents call it with your key — billed directly to you.",
       "currentKey": "Current key",
       "noKey": "No key added yet",
       "newKey": "Add or update key",

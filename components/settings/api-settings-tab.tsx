@@ -20,9 +20,32 @@ import { saveApiKey, removeApiKey } from '@/lib/actions/settings';
 export type ApiSettingsForClient = {
   hasKey: boolean;
   masked: string | null;
+  provider: string;
   verified: boolean;
   lastTested: string | null;
 };
+
+export type AiProviderChoice = 'anthropic' | 'google';
+
+const PROVIDERS: {
+  id: AiProviderChoice;
+  label: string;
+  hint: string;
+  placeholder: string;
+}[] = [
+  {
+    id: 'google',
+    label: 'Google Gemini',
+    hint: 'الأوفر — فيه طبقة مجانية عبر AI Studio. مناسب للتجربة والإطلاق.',
+    placeholder: 'AIza...',
+  },
+  {
+    id: 'anthropic',
+    label: 'Anthropic Claude',
+    hint: 'الأقوى في المهام المعقّدة واستدعاء الأدوات.',
+    placeholder: 'sk-ant-api03-...',
+  },
+];
 
 export function ApiSettingsTab({ initial }: { initial: ApiSettingsForClient }) {
   const router = useRouter();
@@ -30,6 +53,11 @@ export function ApiSettingsTab({ initial }: { initial: ApiSettingsForClient }) {
   const ta = useTranslations('settings.api');
   const tErr = useTranslations('settings.api.errors');
   const [newKey, setNewKey] = useState('');
+  // Default the selector to the stored provider, or Gemini for a fresh setup
+  // (the platform's cost-friendly default).
+  const [provider, setProvider] = useState<AiProviderChoice>(
+    initial.provider === 'anthropic' ? 'anthropic' : 'google'
+  );
   const [isSaving, startSave] = useTransition();
   const [isTesting, startTest] = useTransition();
   const [isDeleting, startDelete] = useTransition();
@@ -40,7 +68,7 @@ export function ApiSettingsTab({ initial }: { initial: ApiSettingsForClient }) {
       return;
     }
     startSave(async () => {
-      const res = await saveApiKey({ apiKey: newKey.trim() });
+      const res = await saveApiKey({ apiKey: newKey.trim(), provider });
       if (res.ok) {
         toast.success(t('saved'));
         setNewKey('');
@@ -172,13 +200,40 @@ export function ApiSettingsTab({ initial }: { initial: ApiSettingsForClient }) {
         )}
 
         <div className="space-y-2">
+          <Label>محرّك الذكاء الاصطناعي</Label>
+          <div className="grid grid-cols-2 gap-2">
+            {PROVIDERS.map((p) => (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => setProvider(p.id)}
+                className={
+                  'rounded-lg border p-3 text-right transition ' +
+                  (provider === p.id
+                    ? 'border-primary bg-primary/5 ring-1 ring-primary'
+                    : 'hover:bg-muted')
+                }
+              >
+                <span className="block text-sm font-medium">{p.label}</span>
+                <span className="mt-1 block text-xs text-muted-foreground">
+                  {p.hint}
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="space-y-2">
           <Label htmlFor="new-api-key">{ta('newKey')}</Label>
           <Input
             id="new-api-key"
             type="password"
             value={newKey}
             onChange={(e) => setNewKey(e.target.value)}
-            placeholder={ta('newKeyPlaceholder')}
+            placeholder={
+              PROVIDERS.find((p) => p.id === provider)?.placeholder ??
+              ta('newKeyPlaceholder')
+            }
             dir="ltr"
             className="font-mono"
             autoComplete="off"

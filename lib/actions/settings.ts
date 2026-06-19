@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { encrypt } from '@/lib/encryption';
-import { testAnthropicKey } from '@/lib/byok';
+import { testKey } from '@/lib/byok';
 import {
   localizationSchema,
   brandingSchema,
@@ -96,7 +96,7 @@ export async function saveApiKey(raw: ApiKeyInput): Promise<Result> {
   const parsed = apiKeySchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: 'invalid_format' };
 
-  const test = await testAnthropicKey(parsed.data.apiKey);
+  const test = await testKey(parsed.data.provider, parsed.data.apiKey);
   if (!test.ok) {
     return { ok: false, error: test.reason, status: test.status };
   }
@@ -106,6 +106,7 @@ export async function saveApiKey(raw: ApiKeyInput): Promise<Result> {
     where: { companyId },
     data: {
       byokApiKey: encrypted,
+      byokProvider: parsed.data.provider,
       byokVerified: true,
       byokLastTest: new Date(),
     },

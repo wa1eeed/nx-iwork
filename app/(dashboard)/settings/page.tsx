@@ -44,6 +44,7 @@ export default async function SettingsPage() {
       where: { companyId: user.companyId },
       select: {
         byokApiKey: true,
+        byokProvider: true,
         byokVerified: true,
         byokLastTest: true,
       },
@@ -65,6 +66,7 @@ export default async function SettingsPage() {
     masked: apiSettings.byokApiKey
       ? maskApiKey(apiSettings.byokApiKey)
       : null,
+    provider: apiSettings.byokProvider,
     verified: apiSettings.byokVerified,
     lastTested: apiSettings.byokLastTest?.toISOString() ?? null,
   };
