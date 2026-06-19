@@ -10,6 +10,7 @@ import { getProviderForCompany } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop } from './core';
+import { recallMemoryBlock } from './memory';
 
 export type RunTaskResult =
   | { ok: true; result: string; tokensUsed: number }
@@ -70,12 +71,19 @@ export async function runAgentTask(
     }),
   ]);
 
-  const system = buildSystemPrompt({
+  let system = buildSystemPrompt({
     agent,
     company: agent.company,
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
   });
+  const memoryBlock = await recallMemoryBlock(
+    agent.id,
+    companyId,
+    `${task.title}\n${task.description}`
+  );
+  if (memoryBlock) system += `\n\n${memoryBlock}`;
+
   const messages: AiMessage[] = [
     { role: 'user', content: buildTaskInstruction(task.title, task.description) },
   ];

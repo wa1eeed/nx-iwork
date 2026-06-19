@@ -7,6 +7,7 @@ import { getProviderForCompany } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop } from './core';
+import { recallMemoryBlock } from './memory';
 
 // How many recent messages form the agent's "working memory". Kept small to
 // bound token cost; older context will come from episodic/semantic memory.
@@ -58,12 +59,16 @@ export async function runAgentChat(
     );
   messages.push({ role: 'user', content: userMessage });
 
-  const system = buildSystemPrompt({
+  let system = buildSystemPrompt({
     agent,
     company: agent.company,
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
   });
+
+  // Inject relevant long-term memories for this turn (empty when none/disabled).
+  const memoryBlock = await recallMemoryBlock(agentId, companyId, userMessage);
+  if (memoryBlock) system += `\n\n${memoryBlock}`;
 
   let reply: string;
   let tokensUsed: number;

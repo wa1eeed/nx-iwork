@@ -9,6 +9,20 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Agent memory (semantic long-term recall)
+
+- **Embeddings layer** (`lib/ai/embeddings.ts`): platform-level OpenAI
+  `text-embedding-3-small` (1536 dims — matches the existing `AgentMemory.embedding`
+  vector(1536), no migration). Decoupled from BYOK chat provider (Claude has no
+  embeddings). Unset key → semantic memory disabled, recall falls back to
+  importance-ranked.
+- **Memory module** (`lib/agent/memory.ts`): `saveMemory` (embed + store via raw
+  pgvector SQL) and `recallMemories` (cosine-nearest via `<=>`, graceful
+  fallback). `recallMemoryBlock` injects relevant facts into the system prompt.
+- **`save_memory` tool**: the agent itself decides what's worth remembering
+  (customer preferences, decisions, recurring facts). Recall runs each chat/task
+  turn, so agents stop starting from zero.
+
 ### Added — Core agent system (workforce, tasks, automation)
 
 - **Departments + Agents management**: full CRUD with a persona builder (role,
