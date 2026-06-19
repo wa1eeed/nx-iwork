@@ -12,6 +12,7 @@ import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop } from './core';
 import { recallMemoryBlock } from './memory';
+import { getToolsForCompany } from './tools';
 
 export type RunTaskResult =
   | { ok: true; result: string; tokensUsed: number }
@@ -109,6 +110,7 @@ export async function runAgentTask(
       tier: agent.model,
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
+      tools: getToolsForCompany(agent.company),
       ctx: { companyId, agentId: agent.id },
     });
 

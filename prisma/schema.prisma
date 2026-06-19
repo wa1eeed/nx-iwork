@@ -105,6 +105,12 @@ model Company {
   // Default is a small trial grant so new managed tenants can try immediately.
   tokenBalance    Int           @default(100000)
 
+  // Modular architecture: the owner enables only the modules their business
+  // needs. Drives the sidebar, pages, and which AI tools the agents receive.
+  hasEcommerce    Boolean       @default(true)   // Product catalog + cart
+  hasServices     Boolean       @default(true)   // On-demand services
+  hasBookings     Boolean       @default(false)  // Appointments / availability
+
   // Custom domain support
   customDomain         String?  @unique
   customDomainVerified Boolean  @default(false)
@@ -131,6 +137,7 @@ model Company {
   agentSchedules      AgentSchedule[]
   services            Service[]
   products            Product[]
+  bookings            Booking[]
   orders              Order[]
   customers           Customer[]
   faqItems            FaqItem[]
@@ -703,8 +710,9 @@ model Customer {
   assignedAgentId String?
   assignedAgent   Agent?  @relation("AgentCustomers", fields: [assignedAgentId], references: [id], onDelete: SetNull)
 
-  tasks  Task[]
-  orders Order[]
+  tasks    Task[]
+  orders   Order[]
+  bookings Booking[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -712,6 +720,41 @@ model Customer {
   @@index([companyId, status])
   @@index([assignedAgentId])
   @@index([phone])
+}
+
+// ========================================
+// BOOKINGS MODULE (appointments / availability)
+// ========================================
+
+enum BookingStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  COMPLETED
+}
+
+// A customer booking a time slot. Enabled per company via Company.hasBookings.
+model Booking {
+  id         String        @id @default(cuid())
+  companyId  String
+  company    Company       @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  customerId String?
+  customer   Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  title      String
+  startAt    DateTime
+  endAt      DateTime?
+  status     BookingStatus @default(CONFIRMED)
+  notes      String?       @db.Text
+
+  // Activity-specific attributes (resource, party_size, service_type, …).
+  customFields Json?
+
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+
+  @@index([companyId, startAt])
+  @@index([customerId])
 }
 
 // ========================================

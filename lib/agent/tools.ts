@@ -18,6 +18,26 @@ export interface ToolContext {
   agentId: string;
 }
 
+// Which modules a company has enabled — controls which tools the agent receives.
+export interface CompanyModules {
+  hasEcommerce: boolean;
+  hasServices: boolean;
+  hasBookings: boolean;
+}
+
+const CATALOG_TOOLS = new Set(['search_catalog']);
+const BOOKING_TOOLS = new Set(['check_availability', 'create_booking']);
+
+// Dynamic tools: only hand the model the tools for the modules this company has
+// enabled (cheaper context + the agent never offers what the business can't do).
+export function getToolsForCompany(m: CompanyModules): AiTool[] {
+  return AGENT_TOOLS.filter((t) => {
+    if (CATALOG_TOOLS.has(t.name)) return m.hasEcommerce || m.hasServices;
+    if (BOOKING_TOOLS.has(t.name)) return m.hasBookings;
+    return true; // core tools (CRM, FAQ, tasks, memory) always available
+  });
+}
+
 // ---- Tool catalogue (schemas advertised to the model) ----------------------
 
 export const AGENT_TOOLS: AiTool[] = [
@@ -38,6 +58,34 @@ export const AGENT_TOOLS: AiTool[] = [
           description: 'نوع ما تبحث عنه. الافتراضي all.',
         },
       },
+    },
+  },
+  {
+    name: 'check_availability',
+    description:
+      'تحقّق من المواعيد المحجوزة في يوم/فترة قبل تأكيد حجز جديد (موديول الحجوزات).',
+    parameters: {
+      type: 'object',
+      properties: {
+        from: { type: 'string', description: 'بداية الفترة ISO 8601' },
+        to: { type: 'string', description: 'نهاية الفترة ISO 8601' },
+      },
+      required: ['from', 'to'],
+    },
+  },
+  {
+    name: 'create_booking',
+    description: 'أنشئ حجزاً/موعداً لعميل (موديول الحجوزات). تحقّق بـ check_availability أولاً.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'وصف الحجز (مثل: موعد كشف)' },
+        startAt: { type: 'string', description: 'وقت البداية ISO 8601' },
+        endAt: { type: 'string', description: 'وقت النهاية ISO 8601 (اختياري)' },
+        customerId: { type: 'string', description: 'معرّف العميل من الـ CRM إن وُجد' },
+        notes: { type: 'string' },
+      },
+      required: ['title', 'startAt'],
     },
   },
   {
@@ -155,6 +203,19 @@ const searchFaqArgs = z.object({
   query: z.string().trim().optional(),
 });
 
+const checkAvailabilityArgs = z.object({
+  from: z.string().trim(),
+  to: z.string().trim(),
+});
+
+const createBookingArgs = z.object({
+  title: z.string().trim().min(1).max(300),
+  startAt: z.string().trim(),
+  endAt: z.string().trim().optional(),
+  customerId: z.string().trim().optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
+
 const findCustomerArgs = z.object({
   phone: z.string().trim().optional(),
   name: z.string().trim().optional(),
@@ -270,6 +331,57 @@ export async function executeTool(
             available: p.stock !== 0,
           })),
         });
+      }
+
+      case 'check_availability': {
+        const args = checkAvailabilityArgs.parse(rawArgs);
+        const from = parseDate(args.from);
+        const to = parseDate(args.to);
+        if (!from || !to) return fail('صيغة التاريخ غير صحيحة. استخدم ISO 8601.');
+        const booked = await db.booking.findMany({
+          where: {
+            companyId: ctx.companyId,
+            status: { in: ['PENDING', 'CONFIRMED'] },
+            startAt: { gte: from, lt: to },
+          },
+          orderBy: { startAt: 'asc' },
+          take: 50,
+          select: { title: true, startAt: true, endAt: true },
+        });
+        return ok({
+          booked: booked.map((b) => ({
+            title: b.title,
+            startAt: b.startAt.toISOString(),
+            endAt: b.endAt?.toISOString() ?? null,
+          })),
+          count: booked.length,
+        });
+      }
+
+      case 'create_booking': {
+        const args = createBookingArgs.parse(rawArgs);
+        const startAt = parseDate(args.startAt);
+        const endAt = parseDate(args.endAt);
+        if (!startAt || endAt === null) return fail('صيغة التاريخ غير صحيحة. استخدم ISO 8601.');
+        if (args.customerId) {
+          const exists = await db.customer.findFirst({
+            where: { id: args.customerId, companyId: ctx.companyId },
+            select: { id: true },
+          });
+          if (!exists) return fail('العميل المرتبط غير موجود.');
+        }
+        const booking = await db.booking.create({
+          data: {
+            companyId: ctx.companyId,
+            customerId: args.customerId,
+            title: args.title,
+            startAt,
+            endAt: endAt ?? undefined,
+            notes: args.notes,
+          },
+          select: { id: true, title: true, startAt: true },
+        });
+        return ok({ booking: { ...booking, startAt: booking.startAt.toISOString() }, message: 'تم تأكيد الحجز.' });
       }
 
       case 'search_faq': {

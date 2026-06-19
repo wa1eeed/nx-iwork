@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
+import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
@@ -20,9 +21,19 @@ export default async function DashboardLayout({
     redirect('/onboarding');
   }
 
+  const company = await db.company.findUnique({
+    where: { id: companyId },
+    select: { hasEcommerce: true, hasBookings: true },
+  });
+
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <Sidebar
+        modules={{
+          hasEcommerce: company?.hasEcommerce ?? true,
+          hasBookings: company?.hasBookings ?? false,
+        }}
+      />
       <div className="flex flex-1 flex-col">
         <Topbar
           userName={session.user.name ?? ''}

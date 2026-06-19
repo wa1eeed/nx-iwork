@@ -74,7 +74,9 @@
     "byokWarningTitle": "أكمل الإعداد",
     "byokWarningBody": "أضف مفتاح Anthropic API عشان موظفينك يقدرون يفكّرون.",
     "byokWarningCta": "أضف المفتاح",
-    "knowledge": "المعرفة"
+    "knowledge": "المعرفة",
+    "bookings": "الحجوزات",
+    "modules": "الموديولات"
   },
   "onboarding": {
     "title": "أهلاً، خلّنا نبني شركتك",

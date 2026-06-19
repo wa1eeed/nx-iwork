@@ -74,7 +74,9 @@
     "byokWarningTitle": "Finish setup",
     "byokWarningBody": "Add your Anthropic API key so your agents can think.",
     "byokWarningCta": "Add key",
-    "knowledge": "Knowledge"
+    "knowledge": "Knowledge",
+    "bookings": "Bookings",
+    "modules": "Modules"
   },
   "onboarding": {
     "title": "Welcome — let's set up your company",

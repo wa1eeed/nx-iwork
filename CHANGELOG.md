@@ -9,6 +9,24 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Modular architecture (per-business modules + dynamic tools)
+
+Migration `20260619230000_modular_bookings` (additive).
+
+- **Module flags on `Company`**: `hasEcommerce` (default on), `hasServices`
+  (default on), `hasBookings` (default off). Managed at `/modules` — the owner
+  enables only what their business needs.
+- **Dynamic sidebar**: Products shows only with E-commerce, Bookings only with
+  Bookings — each business gets a clean dashboard.
+- **Dynamic AI tools** (`getToolsForCompany`): agents receive only the tools for
+  enabled modules (catalog tools require e-commerce/services; booking tools
+  require bookings). Cheaper context + the agent never offers what the business
+  can't do. Wired through the shared agent loop.
+- **Bookings module**: new `Booking` model + `check_availability` /
+  `create_booking` tools (gated by `hasBookings`) + a `/bookings` page.
+- Deliberately deferred the "unified knowledge bridge" (write-amplification /
+  sync cost) — per-module search tools cover it (YAGNI).
+
 ### Added — FAQ knowledge base + event triggers (proactive automation)
 
 Migration `20260619210000_faq_event_triggers` (additive).

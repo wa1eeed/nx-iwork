@@ -9,6 +9,7 @@ import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop } from './core';
 import { recallMemoryBlock } from './memory';
+import { getToolsForCompany } from './tools';
 
 // How many recent messages form the agent's "working memory". Kept small to
 // bound token cost; older context will come from episodic/semantic memory.
@@ -92,6 +93,7 @@ export async function runAgentChat(
       tier: agent.model,
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
+      tools: getToolsForCompany(agent.company),
       ctx: { companyId, agentId },
     }));
   } catch (err) {

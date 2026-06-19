@@ -4,8 +4,8 @@
 // they source the prompt and persist the outcome.
 
 import { db } from '@/lib/db';
-import type { AiMessage, AiProvider } from '@/lib/ai';
-import { AGENT_TOOLS, executeTool, type ToolContext } from './tools';
+import type { AiMessage, AiProvider, AiTool } from '@/lib/ai';
+import { executeTool, type ToolContext } from './tools';
 
 // Safety cap on tool round-trips per turn — a confused model can't loop forever.
 export const MAX_TOOL_ROUNDS = 5;
@@ -22,6 +22,9 @@ export function loadAgentWithContext(agentId: string, companyId: string) {
           nameEn: true,
           brandVoice: true,
           industry: true,
+          hasEcommerce: true,
+          hasServices: true,
+          hasBookings: true,
           companyDNA: {
             select: { aboutUs: true, policies: true, tone: true, targetAudience: true },
           },
@@ -39,6 +42,8 @@ export interface ToolLoopArgs {
   tier: 'HAIKU' | 'SONNET' | 'OPUS';
   temperature: number;
   maxTokens: number;
+  /** The tools to offer — already filtered to the company's enabled modules. */
+  tools: AiTool[];
   ctx: ToolContext;
 }
 
@@ -51,7 +56,7 @@ export interface ToolLoopResult {
 // round cap is hit). Throws on provider error; callers map that to their own
 // failure shape.
 export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
-  const { provider, system, messages, tier, temperature, maxTokens, ctx } = args;
+  const { provider, system, messages, tier, temperature, maxTokens, tools, ctx } = args;
   let reply = '';
   let tokensUsed = 0;
 
@@ -62,7 +67,7 @@ export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
       tier,
       temperature,
       maxTokens,
-      tools: AGENT_TOOLS,
+      tools,
     });
     tokensUsed += completion.usage.inputTokens + completion.usage.outputTokens;
 
