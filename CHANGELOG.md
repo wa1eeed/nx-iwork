@@ -9,6 +9,19 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Notifications layer (Resend email + Twilio SMS)
+
+- **Provider-agnostic notifications** (`lib/notifications/`): neutral
+  `EmailProvider`/`SmsProvider` interfaces + Resend (email) and Twilio (SMS)
+  REST adapters. Same pattern as the AI/storage layers — swapping a channel is
+  one new file, business code is untouched.
+- `notifyEmail()`/`notifySms()` degrade gracefully (return a clear
+  `*_not_configured` result) when a channel's env isn't set, so dev/staging
+  flows never crash on a missing key.
+- Env: `TWILIO_*` added; `RESEND_*` documented as the email channel.
+- Wiring points (next): signup verification email, agent `send_sms` tool
+  (gated behind rate limiting), billing receipts.
+
 ### Added — Storage layer (Cloudflare R2, portable)
 
 - **Provider-agnostic storage** (`lib/storage/`): neutral `StorageProvider`
