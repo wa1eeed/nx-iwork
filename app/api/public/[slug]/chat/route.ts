@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { runPublicAgentChat } from '@/lib/agent/public-chat';
+import { detectComplaint } from '@/lib/agent/sentiment';
+import { dispatchEvent } from '@/lib/agent/events';
+import { sendTelegram } from '@/lib/notify/telegram';
 
 export const dynamic = 'force-dynamic';
 
@@ -82,7 +85,31 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     },
   });
 
-  if (result.ok) return NextResponse.json({ ok: true, reply: result.reply });
+  if (result.ok) {
+    // Sentiment-based escalation: if the customer message is an angry complaint,
+    // fire COMPLAINT_RECEIVED (waking any configured agent) and ping the owner's
+    // Telegram. Best-effort and non-fatal to the chat response.
+    void handleComplaint(company.id, message).catch((err) =>
+      console.error('complaint escalation failed', err)
+    );
+    return NextResponse.json({ ok: true, reply: result.reply });
+  }
   const status = result.reason === 'billing_limit' ? 402 : result.reason === 'provider_error' ? 502 : 404;
   return NextResponse.json({ ok: false, reason: result.reason }, { status });
+}
+
+async function handleComplaint(companyId: string, message: string): Promise<void> {
+  const verdict = await detectComplaint(companyId, message);
+  if (!verdict.isComplaint) return;
+
+  await dispatchEvent(companyId, 'COMPLAINT_RECEIVED', {
+    summary: verdict.summary || message.slice(0, 200),
+    metadata: { anger: verdict.anger },
+  });
+
+  const pct = Math.round(verdict.anger * 100);
+  await sendTelegram(
+    companyId,
+    `🚨 <b>Customer complaint</b> (anger ${pct}%)\n\n${verdict.summary || message.slice(0, 300)}\n\n<i>Message:</i> ${message.slice(0, 500)}`
+  );
 }

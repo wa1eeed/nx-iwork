@@ -236,6 +236,7 @@
       "branding": "Theme & branding",
       "storefront": "Storefront",
       "domain": "Custom domain",
+      "escalation": "Alerts",
       "company": "Company info",
       "api": "API keys"
     },
@@ -255,6 +256,19 @@
       "heroSubtitlePlaceholder": "A short line about what you offer.",
       "heroSubtitleAlt": "Subheadline (alternate language)",
       "viewSite": "View public page"
+    },
+    "escalation": {
+      "title": "Alerts & escalation",
+      "subtitle": "Connect a Telegram bot so agents can escalate angry customers and urgent issues to you instantly.",
+      "botToken": "Telegram bot token",
+      "botTokenHelp": "Create a bot with @BotFather and paste its token.",
+      "chatId": "Chat ID",
+      "chatIdHelp": "Your numeric chat ID (message @userinfobot to get it).",
+      "test": "Send test message",
+      "testSent": "Test message sent — check Telegram.",
+      "testFailed": "Couldn't send. Check the token and chat ID.",
+      "howTitle": "How it works",
+      "howBody": "When a customer message is detected as an angry complaint, the assigned agent is woken with a task and you get an instant Telegram alert with a summary."
     },
     "domain": {
       "title": "Custom domain",

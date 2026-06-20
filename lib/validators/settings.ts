@@ -40,6 +40,11 @@ export const customDomainSchema = z.object({
     .refine((v) => v === '' || HOSTNAME.test(v), 'invalid_domain'),
 });
 
+export const escalationSchema = z.object({
+  telegramBotToken: z.string().trim().max(120).optional().nullable().or(z.literal('')),
+  telegramChatId: z.string().trim().max(60).optional().nullable().or(z.literal('')),
+});
+
 export const storefrontSchema = z.object({
   logo: z.string().trim().url().max(2048).optional().nullable().or(z.literal('')),
   heroTitle: z.string().trim().max(120).optional().nullable(),
@@ -61,3 +66,4 @@ export type CompanyInfoInput = z.infer<typeof companyInfoSchema>;
 export type ApiKeyInput = z.infer<typeof apiKeySchema>;
 export type CustomDomainInput = z.infer<typeof customDomainSchema>;
 export type StorefrontInput = z.infer<typeof storefrontSchema>;
+export type EscalationInput = z.infer<typeof escalationSchema>;

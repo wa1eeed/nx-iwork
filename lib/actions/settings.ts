@@ -6,6 +6,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { encrypt } from '@/lib/encryption';
 import { testKey } from '@/lib/byok';
+import { sendTelegramTest } from '@/lib/notify/telegram';
 import {
   localizationSchema,
   brandingSchema,
@@ -13,12 +14,14 @@ import {
   apiKeySchema,
   customDomainSchema,
   storefrontSchema,
+  escalationSchema,
   type LocalizationInput,
   type BrandingInput,
   type CompanyInfoInput,
   type ApiKeyInput,
   type CustomDomainInput,
   type StorefrontInput,
+  type EscalationInput,
 } from '@/lib/validators/settings';
 
 type Result<T = void> =
@@ -165,6 +168,36 @@ export async function updateCustomDomain(raw: CustomDomainInput): Promise<Result
   }
   revalidatePath('/settings');
   return { ok: true };
+}
+
+// Escalation: the owner's Telegram bot for human-in-the-loop alerts.
+export async function updateEscalation(raw: EscalationInput): Promise<Result> {
+  const companyId = await authedCompanyId();
+  if (!companyId) return { ok: false, error: 'unauthenticated' };
+
+  const parsed = escalationSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: 'validation' };
+
+  await db.businessSettings.update({
+    where: { companyId },
+    data: {
+      telegramBotToken: parsed.data.telegramBotToken || null,
+      telegramChatId: parsed.data.telegramChatId || null,
+    },
+  });
+  revalidatePath('/settings');
+  return { ok: true };
+}
+
+export async function testEscalation(raw: EscalationInput): Promise<Result> {
+  const companyId = await authedCompanyId();
+  if (!companyId) return { ok: false, error: 'unauthenticated' };
+  const parsed = escalationSchema.safeParse(raw);
+  if (!parsed.success || !parsed.data.telegramBotToken || !parsed.data.telegramChatId) {
+    return { ok: false, error: 'validation' };
+  }
+  const ok = await sendTelegramTest(parsed.data.telegramBotToken, parsed.data.telegramChatId);
+  return ok ? { ok: true } : { ok: false, error: 'telegram_failed' };
 }
 
 // Storefront: logo + hero copy that render on the public landing page.
