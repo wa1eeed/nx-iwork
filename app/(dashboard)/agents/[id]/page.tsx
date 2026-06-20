@@ -11,6 +11,7 @@ import { ArchiveAgentButton } from '@/components/dashboard/archive-agent-button'
 import { AgentSchedules } from '@/components/dashboard/agent-schedules';
 import { AgentActivity } from '@/components/dashboard/agent-activity';
 import { getToolsForCompany } from '@/lib/agent/tools';
+import { AgentScenarios } from '@/components/dashboard/agent-scenarios';
 import { Sparkles } from 'lucide-react';
 
 const STATUS_LABEL: Record<string, string> = {
@@ -30,7 +31,7 @@ export default async function AgentProfilePage({
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
 
-  const [agent, departments, managers, schedules, settings, tasks, company] = await Promise.all([
+  const [agent, departments, managers, schedules, settings, tasks, company, scenarios] = await Promise.all([
     db.agent.findFirst({
       where: { id, companyId },
       include: { department: { select: { name: true, color: true } } },
@@ -71,6 +72,11 @@ export default async function AgentProfilePage({
     db.company.findUnique({
       where: { id: companyId },
       select: { hasEcommerce: true, hasServices: true, hasBookings: true },
+    }),
+    db.eventTrigger.findMany({
+      where: { agentId: id, companyId },
+      orderBy: { createdAt: 'asc' },
+      select: { id: true, event: true, name: true, isActive: true, fireCount: true },
     }),
   ]);
 
@@ -200,6 +206,7 @@ export default async function AgentProfilePage({
 
         <TabsContent value="settings" className="space-y-6">
           <AgentForm departments={departments} managers={managers} initial={initial} />
+          <AgentScenarios agentId={agent.id} scenarios={scenarios} />
           <AgentSchedules
             agentId={agent.id}
             timezone={settings?.timezone ?? 'Asia/Riyadh'}

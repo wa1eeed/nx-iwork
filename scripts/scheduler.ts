@@ -10,7 +10,7 @@
 // self-scheduling (sleep AFTER each tick completes) so a long agent run can't
 // overlap the next tick.
 
-import { runDueSchedules, runPendingEventTasks } from '@/lib/agent/scheduler';
+import { runDueSchedules, runDueTasks } from '@/lib/agent/scheduler';
 
 const POLL_MS = 60_000;
 let stopping = false;
@@ -22,7 +22,7 @@ function sleep(ms: number): Promise<void> {
 async function tick(): Promise<void> {
   try {
     const s = await runDueSchedules();
-    const e = await runPendingEventTasks();
+    const e = await runDueTasks();
     if (s.due > 0 || e.due > 0) {
       console.log(
         `[scheduler] schedules(due=${s.due} ran=${s.ran} failed=${s.failed}) ` +

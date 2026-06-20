@@ -9,6 +9,22 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Per-agent scenarios + autonomous task execution
+
+- **Tasks never get ignored**: the scheduler now runs ANY due PENDING
+  agent-initiated task (`runDueTasks`) — a request the owner makes in chat (the
+  agent logs it via `create_task`, triggerType AGENT_TOOL) or an event trigger
+  (EVENT) executes autonomously, even while the agent is busy. Owner tasks from
+  the /tasks form stay manual; future-dated tasks wait. (Was: only EVENT tasks.)
+- **Per-agent scenarios** (`AgentScenarios` on the profile settings tab):
+  configure how *this* agent reacts to business events ("when a new lead/order
+  arrives → do X"). Backed by the existing EventTrigger.
+- Prompt: agents must log any owner request via `create_task` and confirm it —
+  never ignore it, even mid-task.
+
+> ⚠️ Autonomous execution requires the cron Scheduled Task hitting
+> `/api/cron/run` every minute (Coolify) — otherwise tasks queue but don't run.
+
 ### Added — CRM pages + interactive UX (animations + action sounds)
 
 - **CRM**: `/customers` (pipeline-filtered list, quick status change, manual add)

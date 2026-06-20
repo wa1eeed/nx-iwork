@@ -76,11 +76,20 @@ export async function runDueSchedules(now: Date = new Date()): Promise<Scheduler
   return { due: due.length, ran, failed };
 }
 
-// Runs PENDING tasks created by event triggers (lib/agent/events.ts). Kept
-// separate from schedules so the cron tick handles both proactive sources.
-export async function runPendingEventTasks(limit = 50): Promise<SchedulerRunSummary> {
+// Runs any PENDING agent-initiated task that's due — so a request the owner
+// makes in chat (the agent logs it via create_task → triggerType AGENT_TOOL) or
+// an event trigger (triggerType EVENT) gets executed autonomously and is never
+// ignored, even while the agent is busy with something else. Owner tasks created
+// from the /tasks form (TASK_ASSIGNMENT) stay manual ("run" button). Tasks with
+// a future dueAt wait until then.
+export async function runDueTasks(now: Date = new Date(), limit = 50): Promise<SchedulerRunSummary> {
   const pending = await db.task.findMany({
-    where: { status: 'PENDING', triggerType: 'EVENT', agentId: { not: null } },
+    where: {
+      status: 'PENDING',
+      triggerType: { in: ['EVENT', 'AGENT_TOOL'] },
+      agentId: { not: null },
+      OR: [{ dueAt: null }, { dueAt: { lte: now } }],
+    },
     select: { id: true, companyId: true },
     orderBy: { createdAt: 'asc' },
     take: limit,
