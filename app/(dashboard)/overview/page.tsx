@@ -13,6 +13,7 @@ import {
   Activity,
 } from 'lucide-react';
 import type { TaskStatus } from '@prisma/client';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getAiMode } from '@/lib/ai';
@@ -21,13 +22,13 @@ import { Card, CardContent } from '@/components/ui/card';
 
 const IN_PROGRESS: TaskStatus[] = ['PENDING', 'WORKING', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'BLOCKED'];
 
-function fmt(d: Date): string {
-  return d.toLocaleString('ar', { dateStyle: 'medium', timeStyle: 'short' });
-}
-
 export default async function OverviewPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
+
+  const t = await getTranslations('overview');
+  const locale = await getLocale();
+  const fmt = (d: Date) => d.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
@@ -55,14 +56,14 @@ export default async function OverviewPage() {
     ]);
 
   const stats = [
-    { label: 'الموظفون', value: agents, icon: Users, href: '/agents' },
-    { label: 'الأقسام', value: departments, icon: Building2, href: '/departments' },
-    { label: 'مهام قيد التنفيذ', value: tasksActive, icon: ListChecks, href: '/tasks' },
-    { label: 'مهام منجزة', value: tasksDone, icon: CheckCircle2, href: '/tasks' },
-    { label: 'العملاء (CRM)', value: customers, icon: UserPlus, href: '/customers' },
-    { label: 'جدولة نشطة', value: schedules, icon: CalendarCheck, href: '/knowledge' },
+    { label: t('stats.employees'), value: agents, icon: Users, href: '/agents' },
+    { label: t('stats.departments'), value: departments, icon: Building2, href: '/departments' },
+    { label: t('stats.tasksActive'), value: tasksActive, icon: ListChecks, href: '/tasks' },
+    { label: t('stats.tasksDone'), value: tasksDone, icon: CheckCircle2, href: '/tasks' },
+    { label: t('stats.customers'), value: customers, icon: UserPlus, href: '/customers' },
+    { label: t('stats.activeSchedules'), value: schedules, icon: CalendarCheck, href: '/knowledge' },
     ...(user.company.hasBookings
-      ? [{ label: 'الحجوزات', value: bookings, icon: CalendarCheck, href: '/bookings' }]
+      ? [{ label: t('stats.bookings'), value: bookings, icon: CalendarCheck, href: '/bookings' }]
       : []),
   ];
 
@@ -70,15 +71,15 @@ export default async function OverviewPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold">مرحباً، {session.user.name ?? ''}</h1>
-          <p className="text-sm text-muted-foreground">لوحة تحكم {user.company.name}</p>
+          <h1 className="text-2xl font-semibold">{t('greeting', { name: session.user.name ?? '' })}</h1>
+          <p className="text-sm text-muted-foreground">{t('companyDashboard', { company: user.company.name })}</p>
         </div>
         <div className="flex gap-2">
           <Button asChild variant="outline" size="sm">
-            <Link href="/agents/new"><Plus className="me-1 h-4 w-4" />موظف</Link>
+            <Link href="/agents/new"><Plus className="me-1 h-4 w-4" />{t('newAgent')}</Link>
           </Button>
           <Button asChild size="sm">
-            <Link href="/chat">محادثة وكيل</Link>
+            <Link href="/chat">{t('chatAgent')}</Link>
           </Button>
         </div>
       </div>
@@ -90,14 +91,14 @@ export default async function OverviewPage() {
               <Coins className="h-6 w-6" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-muted-foreground">رصيد التوكنز المتبقّي</p>
+              <p className="text-sm text-muted-foreground">{t('tokensRemaining')}</p>
               <p className="text-2xl font-semibold tabular-nums">
-                {user.company.tokenBalance.toLocaleString('ar')}
+                {user.company.tokenBalance.toLocaleString(locale)}
               </p>
             </div>
             {user.company.tokenBalance <= 0 && (
               <span className="rounded-full bg-destructive/15 px-3 py-1 text-xs text-destructive">
-                انتهى الرصيد — جدّد باقتك
+                {t('outOfTokens')}
               </span>
             )}
           </CardContent>
@@ -126,15 +127,15 @@ export default async function OverviewPage() {
       <div>
         <h2 className="mb-3 flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Activity className="h-4 w-4" />
-          آخر النشاط
+          {t('recentActivity')}
         </h2>
         {timeline.length === 0 ? (
           <Card>
             <CardContent className="py-10 text-center text-sm text-muted-foreground">
-              لا نشاط بعد. أنشئ وكيلاً وكلّفه بمهمة لتبدأ.
+              {t('noActivity')}
               <div className="mt-3">
                 <Button asChild size="sm" variant="outline">
-                  <Link href="/agents/new">أنشئ أول موظف <ArrowRight className="ms-1 h-3.5 w-3.5 rtl:rotate-180" /></Link>
+                  <Link href="/agents/new">{t('createFirstAgent')} <ArrowRight className="ms-1 h-3.5 w-3.5 rtl:rotate-180" /></Link>
                 </Button>
               </div>
             </CardContent>

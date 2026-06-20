@@ -78,7 +78,34 @@
     "bookings": "الحجوزات",
     "modules": "الموديولات",
     "customers": "العملاء",
-    "orders": "الطلبات"
+    "orders": "الطلبات",
+    "sections": {
+      "workspace": "مساحة العمل",
+      "team": "الفريق",
+      "sales": "المبيعات",
+      "knowledge": "المعرفة والأتمتة",
+      "configure": "الإعدادات"
+    }
+  },
+  "overview": {
+    "greeting": "مرحباً، {name}",
+    "companyDashboard": "لوحة تحكم {company}",
+    "newAgent": "موظف",
+    "chatAgent": "محادثة وكيل",
+    "tokensRemaining": "رصيد التوكنز المتبقّي",
+    "outOfTokens": "انتهى الرصيد — جدّد باقتك",
+    "stats": {
+      "employees": "الموظفون",
+      "departments": "الأقسام",
+      "tasksActive": "مهام قيد التنفيذ",
+      "tasksDone": "مهام منجزة",
+      "customers": "العملاء (CRM)",
+      "activeSchedules": "جدولة نشطة",
+      "bookings": "الحجوزات"
+    },
+    "recentActivity": "آخر النشاط",
+    "noActivity": "لا نشاط بعد. أنشئ وكيلاً وكلّفه بمهمة لتبدأ.",
+    "createFirstAgent": "أنشئ أول موظف"
   },
   "onboarding": {
     "title": "أهلاً، خلّنا نبني شركتك",

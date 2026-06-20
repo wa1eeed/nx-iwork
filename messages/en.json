@@ -78,7 +78,34 @@
     "bookings": "Bookings",
     "modules": "Modules",
     "customers": "Customers",
-    "orders": "Orders"
+    "orders": "Orders",
+    "sections": {
+      "workspace": "Workspace",
+      "team": "Team",
+      "sales": "Sales",
+      "knowledge": "Knowledge & automation",
+      "configure": "Configure"
+    }
+  },
+  "overview": {
+    "greeting": "Hi, {name}",
+    "companyDashboard": "{company} dashboard",
+    "newAgent": "Agent",
+    "chatAgent": "Chat with an agent",
+    "tokensRemaining": "Tokens remaining",
+    "outOfTokens": "Out of credits — renew your plan",
+    "stats": {
+      "employees": "Employees",
+      "departments": "Departments",
+      "tasksActive": "Tasks in progress",
+      "tasksDone": "Tasks completed",
+      "customers": "Customers (CRM)",
+      "activeSchedules": "Active schedules",
+      "bookings": "Bookings"
+    },
+    "recentActivity": "Recent activity",
+    "noActivity": "No activity yet. Create an agent and assign a task to get started.",
+    "createFirstAgent": "Create your first agent"
   },
   "onboarding": {
     "title": "Welcome — let's set up your company",
