@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Loader2, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -10,9 +11,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { feedback } from '@/lib/ui/feedback';
 import { updateCustomer, deleteCustomer } from '@/lib/actions/customers';
-import { STATUS } from '@/components/dashboard/customer-manager';
+import { STATUS_ORDER } from '@/components/dashboard/customer-manager';
 
-const ORDER = ['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST'] as const;
 const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
 
 export interface CustomerEditValues {
@@ -25,6 +25,8 @@ export interface CustomerEditValues {
 }
 
 export function CustomerEditor({ initial }: { initial: CustomerEditValues }) {
+  const t = useTranslations('crm');
+  const tc = useTranslations('common');
   const router = useRouter();
   const [v, setV] = useState(initial);
   const [saving, startSave] = useTransition();
@@ -35,34 +37,34 @@ export function CustomerEditor({ initial }: { initial: CustomerEditValues }) {
   }
 
   function save() {
-    if (!v.name.trim()) return feedback('error', 'الاسم مطلوب.');
+    if (!v.name.trim()) return feedback('error', t('nameRequired'));
     startSave(async () => {
       const res = await updateCustomer(v.id, {
         name: v.name.trim(),
         phone: v.phone.trim() || null,
         email: v.email.trim() || null,
-        status: v.status as (typeof ORDER)[number],
+        status: v.status as (typeof STATUS_ORDER)[number],
         notes: v.notes.trim() || null,
       });
       if (res.ok) {
-        feedback(v.status === 'WON' ? 'success' : 'info', 'تم حفظ بيانات العميل.');
+        feedback(v.status === 'WON' ? 'success' : 'info', t('saved'));
         router.refresh();
       } else {
-        feedback('error', 'تعذّر الحفظ.');
+        feedback('error', t('saveFailed'));
       }
     });
   }
 
   function remove() {
-    if (!window.confirm('حذف هذا العميل نهائياً؟')) return;
+    if (!window.confirm(t('deleteConfirm'))) return;
     startDelete(async () => {
       const res = await deleteCustomer(v.id);
       if (res.ok) {
-        feedback('success', 'تم حذف العميل.');
+        feedback('success', t('deleted'));
         router.push('/customers');
         router.refresh();
       } else {
-        feedback('error', 'تعذّر الحذف.');
+        feedback('error', t('deleteFailed'));
       }
     });
   }
@@ -72,36 +74,36 @@ export function CustomerEditor({ initial }: { initial: CustomerEditValues }) {
       <CardContent className="space-y-4 pt-6">
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1">
-            <Label>الاسم</Label>
-            <Input value={v.name} onChange={(e) => set('name', e.target.value)} />
+            <Label>{t('name')}</Label>
+            <Input value={v.name} onChange={(e) => set('name', e.target.value)} dir="auto" />
           </div>
           <div className="space-y-1">
-            <Label>الحالة</Label>
+            <Label>{t('statusAria')}</Label>
             <select className={selectCls} value={v.status} onChange={(e) => set('status', e.target.value)}>
-              {ORDER.map((s) => (
-                <option key={s} value={s}>{STATUS[s].label}</option>
+              {STATUS_ORDER.map((s) => (
+                <option key={s} value={s}>{t(`status.${s}`)}</option>
               ))}
             </select>
           </div>
           <div className="space-y-1">
-            <Label>الجوال</Label>
+            <Label>{t('phone')}</Label>
             <Input dir="ltr" value={v.phone} onChange={(e) => set('phone', e.target.value)} />
           </div>
           <div className="space-y-1">
-            <Label>البريد</Label>
+            <Label>{t('email')}</Label>
             <Input dir="ltr" value={v.email} onChange={(e) => set('email', e.target.value)} />
           </div>
         </div>
         <div className="space-y-1">
-          <Label>ملاحظات</Label>
-          <Textarea rows={3} value={v.notes} onChange={(e) => set('notes', e.target.value)} />
+          <Label>{t('notes')}</Label>
+          <Textarea rows={3} value={v.notes} onChange={(e) => set('notes', e.target.value)} dir="auto" />
         </div>
         <div className="flex items-center justify-between">
           <Button variant="ghost" size="sm" onClick={remove} disabled={deleting} className="text-destructive hover:text-destructive">
-            {deleting ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Trash2 className="me-1 h-4 w-4" />}حذف
+            {deleting ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Trash2 className="me-1 h-4 w-4" />}{tc('delete')}
           </Button>
           <Button onClick={save} disabled={saving}>
-            {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}حفظ
+            {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}{tc('save')}
           </Button>
         </div>
       </CardContent>

@@ -1,19 +1,19 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { ArrowRight, ShoppingBag, CalendarCheck, ListChecks } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { Card, CardContent } from '@/components/ui/card';
 import { CustomerEditor } from '@/components/dashboard/customer-editor';
-import { STATUS } from '@/components/dashboard/customer-manager';
-
-function fmt(d: Date): string {
-  return d.toLocaleString('ar', { dateStyle: 'medium', timeStyle: 'short' });
-}
+import { STATUS_CLS } from '@/components/dashboard/customer-manager';
 
 export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
+  const t = await getTranslations('crm');
+  const locale = await getLocale();
+  const fmt = (d: Date) => d.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
@@ -23,6 +23,12 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     include: { assignedAgent: { select: { name: true } } },
   });
   if (!customer) notFound();
+
+  const settings = await db.businessSettings.findUnique({
+    where: { companyId },
+    select: { currencySymbol: true },
+  });
+  const currency = settings?.currencySymbol ?? 'SAR';
 
   const [orders, bookings, tasks] = await Promise.all([
     db.order.findMany({
@@ -45,13 +51,11 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     }),
   ]);
 
-  const st = STATUS[customer.status];
-
   return (
     <div className="space-y-6">
       <Link href="/customers" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-        <ArrowRight className="h-4 w-4" />
-        العملاء
+        <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+        {t('backToList')}
       </Link>
 
       <div className="flex flex-wrap items-center gap-3">
@@ -68,9 +72,9 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             {customer.name}
           </h1>
           <p className="text-sm text-muted-foreground">
-            <span className={`rounded-full px-2 py-0.5 text-xs ${st?.cls}`}>{st?.label}</span>
-            {customer.assignedAgent?.name ? ` · مسؤول: ${customer.assignedAgent.name}` : ''}
-            {customer.source ? ` · المصدر: ${customer.source}` : ''}
+            <span className={`rounded-full px-2 py-0.5 text-xs ${STATUS_CLS[customer.status]}`}>{t(`status.${customer.status}`)}</span>
+            {customer.assignedAgent?.name ? ` · ${t('assignedTo')}: ${customer.assignedAgent.name}` : ''}
+            {customer.source ? ` · ${t('source')}: ${customer.source}` : ''}
           </p>
         </div>
       </div>
@@ -88,19 +92,19 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
 
       {/* History */}
       <div className="grid gap-4 lg:grid-cols-3">
-        <HistoryCard icon={ShoppingBag} title="الطلبات" empty="لا طلبات">
+        <HistoryCard icon={ShoppingBag} title={t('orders')} empty={t('noOrders')}>
           {orders.map((o) => (
-            <Row key={o.id} title={`#${o.orderNumber}`} sub={`${o.total.toString()} ر.س · ${o.status}`} when={fmt(o.createdAt)} />
+            <Row key={o.id} title={`#${o.orderNumber}`} sub={`${o.total.toString()} ${currency} · ${o.status}`} when={fmt(o.createdAt)} />
           ))}
         </HistoryCard>
-        <HistoryCard icon={CalendarCheck} title="الحجوزات" empty="لا حجوزات">
+        <HistoryCard icon={CalendarCheck} title={t('bookings')} empty={t('noBookings')}>
           {bookings.map((b) => (
             <Row key={b.id} title={b.title} sub={b.status} when={fmt(b.startAt)} />
           ))}
         </HistoryCard>
-        <HistoryCard icon={ListChecks} title="المهام المرتبطة" empty="لا مهام">
-          {tasks.map((t) => (
-            <Row key={t.id} title={t.title} sub={t.status} when={fmt(t.createdAt)} />
+        <HistoryCard icon={ListChecks} title={t('relatedTasks')} empty={t('noTasks')}>
+          {tasks.map((tk) => (
+            <Row key={tk.id} title={tk.title} sub={tk.status} when={fmt(tk.createdAt)} />
           ))}
         </HistoryCard>
       </div>

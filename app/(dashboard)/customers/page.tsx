@@ -1,9 +1,11 @@
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { CustomerManager } from '@/components/dashboard/customer-manager';
 
 export default async function CustomersPage() {
+  const t = await getTranslations('crm');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
@@ -27,10 +29,8 @@ export default async function CustomersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">العملاء (CRM)</h1>
-        <p className="text-sm text-muted-foreground">
-          عملاؤك وحالتهم في مسار البيع — يسجّلهم وكلاؤك تلقائياً وتتابعهم هنا.
-        </p>
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <CustomerManager

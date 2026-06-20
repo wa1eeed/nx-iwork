@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Loader2, Phone, Mail, UserPlus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -23,17 +24,22 @@ export interface CustomerRow {
   agentName: string | null;
 }
 
-export const STATUS: Record<string, { label: string; cls: string }> = {
-  NEW: { label: 'جديد', cls: 'bg-sky-500/15 text-sky-600 dark:text-sky-400' },
-  INTERESTED: { label: 'مهتم', cls: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400' },
-  NEGOTIATING: { label: 'تفاوض', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
-  WON: { label: 'اشترى', cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
-  LOST: { label: 'مفقود', cls: 'bg-muted text-muted-foreground' },
+// Pipeline status → badge classes. Labels are localized via the `crm.status.*`
+// message keys (see STATUS_ORDER for the canonical order).
+export const STATUS_CLS: Record<string, string> = {
+  NEW: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
+  INTERESTED: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400',
+  NEGOTIATING: 'bg-amber-500/15 text-amber-600 dark:text-amber-400',
+  WON: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
+  LOST: 'bg-muted text-muted-foreground',
 };
-const ORDER = ['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST'] as const;
+export const STATUS_ORDER = ['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST'] as const;
+
 const selectCls = 'h-8 rounded-md border border-input bg-background px-2 text-xs';
 
 export function CustomerManager({ customers }: { customers: CustomerRow[] }) {
+  const t = useTranslations('crm');
+  const tc = useTranslations('common');
   const router = useRouter();
   const [filter, setFilter] = useState<string>('ALL');
   const [adding, setAdding] = useState(false);
@@ -44,29 +50,29 @@ export function CustomerManager({ customers }: { customers: CustomerRow[] }) {
   const shown = filter === 'ALL' ? customers : customers.filter((c) => c.status === filter);
 
   function add() {
-    if (!name.trim()) return feedback('error', 'اسم العميل مطلوب.');
+    if (!name.trim()) return feedback('error', t('nameRequired'));
     start(async () => {
       const res = await createCustomer({ name: name.trim(), phone: phone.trim() || null, email: null, status: 'NEW', notes: null });
       if (res.ok) {
-        feedback('success', 'تمت إضافة العميل.');
+        feedback('success', t('added'));
         setName('');
         setPhone('');
         setAdding(false);
         router.refresh();
       } else {
-        feedback('error', 'تعذّرت الإضافة.');
+        feedback('error', t('addFailed'));
       }
     });
   }
 
   function changeStatus(id: string, status: string) {
     start(async () => {
-      const res = await setCustomerStatus(id, status as (typeof ORDER)[number]);
+      const res = await setCustomerStatus(id, status as (typeof STATUS_ORDER)[number]);
       if (res.ok) {
-        feedback(status === 'WON' ? 'success' : 'info', 'تم تحديث حالة العميل.');
+        feedback(status === 'WON' ? 'success' : 'info', t('statusUpdated'));
         router.refresh();
       } else {
-        feedback('error', 'تعذّر التحديث.');
+        feedback('error', t('updateFailed'));
       }
     });
   }
@@ -78,9 +84,9 @@ export function CustomerManager({ customers }: { customers: CustomerRow[] }) {
           onClick={() => setFilter('ALL')}
           className={cn('rounded-full px-3 py-1 text-xs', filter === 'ALL' ? 'bg-primary text-primary-foreground' : 'bg-muted')}
         >
-          الكل ({customers.length})
+          {t('all')} ({customers.length})
         </button>
-        {ORDER.map((s) => {
+        {STATUS_ORDER.map((s) => {
           const n = customers.filter((c) => c.status === s).length;
           return (
             <button
@@ -88,7 +94,7 @@ export function CustomerManager({ customers }: { customers: CustomerRow[] }) {
               onClick={() => setFilter(s)}
               className={cn('rounded-full px-3 py-1 text-xs', filter === s ? 'bg-primary text-primary-foreground' : 'bg-muted')}
             >
-              {STATUS[s].label} ({n})
+              {t(`status.${s}`)} ({n})
             </button>
           );
         })}
@@ -96,7 +102,7 @@ export function CustomerManager({ customers }: { customers: CustomerRow[] }) {
         {!adding && (
           <Button size="sm" onClick={() => setAdding(true)}>
             <Plus className="me-1 h-4 w-4" />
-            عميل جديد
+            {t('newCustomer')}
           </Button>
         )}
       </div>
@@ -105,16 +111,16 @@ export function CustomerManager({ customers }: { customers: CustomerRow[] }) {
         <Card>
           <CardContent className="flex flex-wrap items-end gap-3 pt-5">
             <div className="flex-1 space-y-1">
-              <Label>الاسم *</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="اسم العميل" />
+              <Label>{t('name')} *</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('namePlaceholder')} />
             </div>
             <div className="flex-1 space-y-1">
-              <Label>الجوال</Label>
+              <Label>{t('phone')}</Label>
               <Input dir="ltr" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="+9665..." />
             </div>
-            <Button variant="ghost" onClick={() => setAdding(false)} disabled={saving}>إلغاء</Button>
+            <Button variant="ghost" onClick={() => setAdding(false)} disabled={saving}>{tc('cancel')}</Button>
             <Button onClick={add} disabled={saving}>
-              {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}حفظ
+              {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}{tc('save')}
             </Button>
           </CardContent>
         </Card>
@@ -124,7 +130,7 @@ export function CustomerManager({ customers }: { customers: CustomerRow[] }) {
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-14 text-center text-sm text-muted-foreground">
             <UserPlus className="h-8 w-8" />
-            لا عملاء في هذا التصنيف. وكلاؤك يسجّلونهم تلقائياً، أو أضِف يدوياً.
+            {t('empty')}
           </CardContent>
         </Card>
       ) : (
@@ -148,18 +154,18 @@ export function CustomerManager({ customers }: { customers: CustomerRow[] }) {
                       {c.agentName && <span>· {c.agentName}</span>}
                     </p>
                   </Link>
-                  <span className={cn('rounded-full px-2 py-0.5 text-xs', STATUS[c.status]?.cls)}>
-                    {STATUS[c.status]?.label ?? c.status}
+                  <span className={cn('rounded-full px-2 py-0.5 text-xs', STATUS_CLS[c.status])}>
+                    {t(`status.${c.status}`)}
                   </span>
                   <select
                     className={selectCls}
                     value={c.status}
                     onChange={(e) => changeStatus(c.id, e.target.value)}
                     disabled={saving}
-                    aria-label="الحالة"
+                    aria-label={t('statusAria')}
                   >
-                    {ORDER.map((s) => (
-                      <option key={s} value={s}>{STATUS[s].label}</option>
+                    {STATUS_ORDER.map((s) => (
+                      <option key={s} value={s}>{t(`status.${s}`)}</option>
                     ))}
                   </select>
                 </CardContent>

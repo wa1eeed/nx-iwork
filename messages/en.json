@@ -6,6 +6,7 @@
     "error": "Something went wrong",
     "save": "Save",
     "cancel": "Cancel",
+    "delete": "Delete",
     "submit": "Submit",
     "confirm": "Confirm",
     "back": "Back",
@@ -332,6 +333,45 @@
         "timeout": "Connection timed out",
         "network_error": "Network error"
       }
+    }
+  },
+  "crm": {
+    "title": "Customers (CRM)",
+    "subtitle": "Your customers and where they sit in the pipeline — your agents log them automatically and you follow up here.",
+    "all": "All",
+    "newCustomer": "New customer",
+    "name": "Name",
+    "namePlaceholder": "Customer name",
+    "phone": "Phone",
+    "email": "Email",
+    "notes": "Notes",
+    "empty": "No customers in this segment. Your agents log them automatically, or add one manually.",
+    "added": "Customer added.",
+    "addFailed": "Couldn't add the customer.",
+    "nameRequired": "Customer name is required.",
+    "statusUpdated": "Customer status updated.",
+    "updateFailed": "Update failed.",
+    "saved": "Customer saved.",
+    "saveFailed": "Couldn't save.",
+    "deleteConfirm": "Delete this customer permanently?",
+    "deleted": "Customer deleted.",
+    "deleteFailed": "Couldn't delete.",
+    "backToList": "Customers",
+    "assignedTo": "Assigned",
+    "source": "Source",
+    "orders": "Orders",
+    "noOrders": "No orders",
+    "bookings": "Bookings",
+    "noBookings": "No bookings",
+    "relatedTasks": "Related tasks",
+    "noTasks": "No tasks",
+    "statusAria": "Status",
+    "status": {
+      "NEW": "New",
+      "INTERESTED": "Interested",
+      "NEGOTIATING": "Negotiating",
+      "WON": "Won",
+      "LOST": "Lost"
     }
   }
 }
