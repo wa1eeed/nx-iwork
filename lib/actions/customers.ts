@@ -5,6 +5,7 @@ import type { LeadStatus } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
+import { nextRef } from '@/lib/refs';
 import { customerSchema, type CustomerInput } from '@/lib/validators/customers';
 
 export type CustomerResult =
@@ -26,6 +27,7 @@ export async function createCustomer(raw: CustomerInput): Promise<CustomerResult
     const c = await db.customer.create({
       data: {
         companyId: cid,
+        ref: await nextRef(cid, 'customer'),
         name: parsed.data.name,
         phone: parsed.data.phone || null,
         email: parsed.data.email || null,

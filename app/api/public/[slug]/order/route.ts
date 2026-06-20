@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { dispatchEvent } from '@/lib/agent/events';
+import { nextRef } from '@/lib/refs';
 
 export const dynamic = 'force-dynamic';
 
@@ -80,7 +81,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     customerId =
       existing?.id ??
       (await db.customer.create({
-        data: { companyId: company.id, name: customerName, phone: customerPhone, status: 'INTERESTED', source: 'public_form' },
+        data: { companyId: company.id, ref: await nextRef(company.id, 'customer'), name: customerName, phone: customerPhone, status: 'INTERESTED', source: 'public_form' },
         select: { id: true },
       })).id;
   }

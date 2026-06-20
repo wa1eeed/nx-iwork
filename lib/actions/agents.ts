@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { ensureDefaultAgent } from '@/lib/agent/seed';
+import { nextRef } from '@/lib/refs';
 import { agentSchema, type AgentInput } from '@/lib/validators/agents';
 
 export type CreateDefaultAgentResult =
@@ -63,6 +64,7 @@ export async function createAgent(raw: AgentInput): Promise<AgentActionResult> {
     const agent = await db.agent.create({
       data: {
         companyId: cid,
+        ref: await nextRef(cid, 'agent'),
         departmentId: d.departmentId,
         parentId: d.parentId || null,
         name: d.name,

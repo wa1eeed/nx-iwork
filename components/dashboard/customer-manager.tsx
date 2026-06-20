@@ -15,6 +15,7 @@ import { createCustomer, setCustomerStatus } from '@/lib/actions/customers';
 
 export interface CustomerRow {
   id: string;
+  ref: string | null;
   name: string;
   phone: string | null;
   email: string | null;
@@ -133,7 +134,14 @@ export function CustomerManager({ customers }: { customers: CustomerRow[] }) {
               <Card className="transition hover:border-primary/50">
                 <CardContent className="flex flex-wrap items-center gap-3 p-3">
                   <Link href={`/customers/${c.id}`} className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{c.name}</p>
+                    <p className="flex items-center gap-2 truncate font-medium">
+                      {c.ref && (
+                        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground" dir="ltr">
+                          {c.ref}
+                        </span>
+                      )}
+                      {c.name}
+                    </p>
                     <p className="flex flex-wrap gap-3 text-xs text-muted-foreground">
                       {c.phone && (<span className="inline-flex items-center gap-1" dir="ltr"><Phone className="h-3 w-3" />{c.phone}</span>)}
                       {c.email && (<span className="inline-flex items-center gap-1" dir="ltr"><Mail className="h-3 w-3" />{c.email}</span>)}

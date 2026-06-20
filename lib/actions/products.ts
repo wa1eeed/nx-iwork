@@ -5,6 +5,7 @@ import { Prisma } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
+import { nextRef } from '@/lib/refs';
 import { productSchema, type ProductInput } from '@/lib/validators/products';
 
 export type ProductActionResult =
@@ -35,6 +36,7 @@ export async function createProduct(raw: ProductInput): Promise<ProductActionRes
     const product = await db.product.create({
       data: {
         companyId: cid,
+        ref: await nextRef(cid, 'product'),
         title: d.title,
         titleEn: d.titleEn || null,
         description: d.description,

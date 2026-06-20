@@ -48,6 +48,7 @@ export default async function BookingsPage() {
     take: 200,
     select: {
       id: true,
+      ref: true,
       title: true,
       startAt: true,
       endAt: true,
@@ -81,7 +82,14 @@ export default async function BookingsPage() {
                 <CardContent className="flex items-center gap-4 p-4">
                   <CalendarCheck className="h-5 w-5 shrink-0 text-primary" />
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium">{b.title}</p>
+                    <p className="flex items-center gap-2 font-medium">
+                      {b.ref && (
+                        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground" dir="ltr">
+                          {b.ref}
+                        </span>
+                      )}
+                      {b.title}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       {b.customer?.name ? `${b.customer.name} · ` : ''}
                       {fmt(b.startAt)}

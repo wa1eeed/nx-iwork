@@ -29,9 +29,13 @@ export async function ensureDefaultAgent(companyId: string) {
       select: { id: true },
     });
 
+    // Seed the agent ref counter to 1 so later agents continue AGT-002, …
+    await tx.refCounter.create({ data: { companyId, entity: 'agent', value: 1 } });
+
     return tx.agent.create({
       data: {
         companyId,
+        ref: 'AGT-001',
         departmentId: dept.id,
         name: 'سُهى',
         nameEn: 'Suha',

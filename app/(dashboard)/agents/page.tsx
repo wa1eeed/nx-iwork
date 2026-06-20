@@ -32,6 +32,7 @@ export default async function AgentsPage() {
               orderBy: { createdAt: 'asc' },
               select: {
                 id: true,
+                ref: true,
                 name: true,
                 initial: true,
                 role: true,
@@ -108,7 +109,14 @@ export default async function AgentsPage() {
                             {a.initial}
                           </span>
                           <div className="min-w-0">
-                            <p className="truncate font-medium">{a.name}</p>
+                            <p className="flex items-center gap-2 truncate font-medium">
+                              {a.ref && (
+                                <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground" dir="ltr">
+                                  {a.ref}
+                                </span>
+                              )}
+                              {a.name}
+                            </p>
                             <p className="truncate text-xs text-muted-foreground">{a.role}</p>
                           </div>
                         </div>

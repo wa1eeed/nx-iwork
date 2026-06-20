@@ -59,7 +59,14 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           {Array.from(customer.name)[0] ?? '؟'}
         </span>
         <div className="min-w-0 flex-1">
-          <h1 className="text-xl font-semibold">{customer.name}</h1>
+          <h1 className="flex items-center gap-2 text-xl font-semibold">
+            {customer.ref && (
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground" dir="ltr">
+                {customer.ref}
+              </span>
+            )}
+            {customer.name}
+          </h1>
           <p className="text-sm text-muted-foreground">
             <span className={`rounded-full px-2 py-0.5 text-xs ${st?.cls}`}>{st?.label}</span>
             {customer.assignedAgent?.name ? ` · مسؤول: ${customer.assignedAgent.name}` : ''}

@@ -14,6 +14,7 @@ export default async function CustomersPage() {
         take: 300,
         select: {
           id: true,
+          ref: true,
           name: true,
           phone: true,
           email: true,
@@ -35,6 +36,7 @@ export default async function CustomersPage() {
       <CustomerManager
         customers={customers.map((c) => ({
           id: c.id,
+          ref: c.ref,
           name: c.name,
           phone: c.phone,
           email: c.email,

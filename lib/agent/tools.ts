@@ -10,6 +10,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import type { AiTool } from '@/lib/ai';
+import { nextRef } from '@/lib/refs';
 import { saveMemory } from './memory';
 import { dispatchEvent } from './events';
 
@@ -438,6 +439,7 @@ export async function executeTool(
         const booking = await db.booking.create({
           data: {
             companyId: ctx.companyId,
+            ref: await nextRef(ctx.companyId, 'booking'),
             customerId: args.customerId,
             title: args.title,
             startAt,
@@ -491,6 +493,7 @@ export async function executeTool(
         const customer = await db.customer.create({
           data: {
             companyId: ctx.companyId,
+            ref: await nextRef(ctx.companyId, 'customer'),
             assignedAgentId: ctx.agentId,
             name: args.name,
             phone: args.phone,

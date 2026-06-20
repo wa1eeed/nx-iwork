@@ -19,6 +19,7 @@ export default async function ProductsPage() {
         orderBy: { createdAt: 'desc' },
         select: {
           id: true,
+          ref: true,
           title: true,
           price: true,
           stock: true,
@@ -73,7 +74,14 @@ export default async function ProductsPage() {
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">{p.title}</p>
+                    <p className="flex items-center gap-2 truncate font-medium">
+                      {p.ref && (
+                        <span className="shrink-0 rounded bg-muted px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground" dir="ltr">
+                          {p.ref}
+                        </span>
+                      )}
+                      {p.title}
+                    </p>
                     <p className="text-sm text-muted-foreground">
                       {p.price.toString()} · {p.stock === -1 ? 'غير محدود' : `${p.stock} متوفر`}
                     </p>

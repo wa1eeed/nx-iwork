@@ -142,6 +142,7 @@ model Company {
   customers           Customer[]
   faqItems            FaqItem[]
   eventTriggers       EventTrigger[]
+  refCounters         RefCounter[]
   publicConversations PublicConversation[]
 
   createdAt DateTime @default(now())
@@ -256,6 +257,7 @@ model Agent {
   nameEn       String?
   avatar       String?
   initial      String
+  ref          String?     // AGT-001 (per-company)
   
   role         String
   roleEn       String?
@@ -693,6 +695,7 @@ model Customer {
   companyId String
   company   Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
 
+  ref    String?     // CUS-001 (per-company)
   name   String
   email  String?
   phone  String?
@@ -741,6 +744,7 @@ model Booking {
   customerId String?
   customer   Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
 
+  ref        String?       // BKG-001 (per-company)
   title      String
   startAt    DateTime
   endAt      DateTime?
@@ -755,6 +759,23 @@ model Booking {
 
   @@index([companyId, startAt])
   @@index([customerId])
+}
+
+// ========================================
+// HUMAN-READABLE REFERENCE CODES (per-tenant sequential)
+// ========================================
+
+// Per-company, per-entity counter for friendly codes like CUS-001, PRD-014.
+// The real primary keys stay globally-unique cuids; `ref` is a display code that
+// never collides because it's namespaced by company + entity and sequential.
+model RefCounter {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  entity    String  // 'customer' | 'product' | 'service' | 'booking' | 'agent'
+  value     Int     @default(0)
+
+  @@unique([companyId, entity])
 }
 
 // ========================================
@@ -822,7 +843,8 @@ model Service {
   id            String   @id @default(cuid())
   companyId     String
   company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+
+  ref           String?  // SRV-001 (per-company)
   title         String
   titleEn       String?
   description   String   @db.Text
@@ -857,7 +879,8 @@ model Product {
   id            String   @id @default(cuid())
   companyId     String
   company       Company  @relation(fields: [companyId], references: [id], onDelete: Cascade)
-  
+
+  ref           String?  // PRD-001 (per-company)
   title         String
   titleEn       String?
   description   String   @db.Text

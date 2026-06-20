@@ -137,7 +137,14 @@ export default async function AgentProfilePage({
             {agent.initial}
           </span>
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-semibold">{agent.name}</h1>
+            <h1 className="flex items-center gap-2 text-xl font-semibold">
+              {agent.ref && (
+                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground" dir="ltr">
+                  {agent.ref}
+                </span>
+              )}
+              {agent.name}
+            </h1>
             <p className="text-sm text-muted-foreground">
               {agent.role} · <span style={{ color: agent.department.color }}>{agent.department.name}</span> ·{' '}
               <span className="inline-flex items-center gap-1">
