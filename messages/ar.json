@@ -77,7 +77,8 @@
     "knowledge": "المعرفة",
     "bookings": "الحجوزات",
     "modules": "الموديولات",
-    "customers": "العملاء"
+    "customers": "العملاء",
+    "orders": "الطلبات"
   },
   "onboarding": {
     "title": "أهلاً، خلّنا نبني شركتك",

@@ -3,6 +3,7 @@ import Image from 'next/image';
 import { Phone, Mail, MessageCircle } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ChatWidget } from '@/components/public/chat-widget';
+import { OrderButton } from '@/components/public/order-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -111,6 +112,7 @@ export default async function PublicBusinessPage({
                     {s.priceLabel || `${s.price} ر.س`}
                   </p>
                 )}
+                <OrderButton slug={slug} serviceId={s.id} label="اطلب الخدمة" color={accent} />
               </div>
             ))}
           </div>
@@ -134,6 +136,7 @@ export default async function PublicBusinessPage({
                   <p className="mt-1 text-sm font-semibold" style={{ color: accent }}>
                     {p.price.toString()} ر.س
                   </p>
+                  <OrderButton slug={slug} productId={p.id} label="اطلب الآن" color={accent} />
                 </div>
               </div>
             ))}

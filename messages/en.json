@@ -77,7 +77,8 @@
     "knowledge": "Knowledge",
     "bookings": "Bookings",
     "modules": "Modules",
-    "customers": "Customers"
+    "customers": "Customers",
+    "orders": "Orders"
   },
   "onboarding": {
     "title": "Welcome — let's set up your company",

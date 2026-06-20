@@ -9,6 +9,19 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Public order flow (visitor → CRM → agent handles)
+
+Closes the autonomy loop: a visitor orders from the public page → it's recorded
+and the responsible agent follows up automatically.
+
+- **`POST /api/public/[slug]/order`**: visitor places an order (product/service)
+  → finds/creates a CRM customer (by phone) → records the `Order` → fires
+  `ORDER_CREATED` so a configured agent follows up. Rate-limited, unauthenticated.
+- **Landing page**: "اطلب الآن / اطلب الخدمة" buttons on products & services open
+  an order form (`OrderButton`).
+- **Dashboard `/orders`**: incoming orders list with status pipeline + quick
+  status change + link to the CRM customer. Nav + i18n added.
+
 ### Added — Agents as real operators + persistent per-agent chat
 
 - **Saved chat history per agent**: the dashboard chat now loads each agent's
