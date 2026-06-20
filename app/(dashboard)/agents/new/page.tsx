@@ -1,15 +1,22 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { ArrowRight } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
-import { AgentForm } from '@/components/dashboard/agent-form';
+import { getActiveTemplates } from '@/lib/agent/templates';
+import { AgentCreator, type TemplateCard } from '@/components/dashboard/agent-creator';
+
+function len(v: unknown): number {
+  return Array.isArray(v) ? v.length : 0;
+}
 
 export default async function NewAgentPage() {
+  const t = await getTranslations('agentCreate');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
-  const [departments, managers] = companyId
+  const [departments, managers, templates] = companyId
     ? await Promise.all([
         db.department.findMany({
           where: { companyId },
@@ -21,8 +28,24 @@ export default async function NewAgentPage() {
           orderBy: { name: 'asc' },
           select: { id: true, name: true },
         }),
+        getActiveTemplates(),
       ])
-    : [[], []];
+    : [[], [], []];
+
+  const cards: TemplateCard[] = templates.map((tpl) => ({
+    templateType: tpl.templateType,
+    roleName: tpl.roleName,
+    roleNameEn: tpl.roleNameEn,
+    department: tpl.department,
+    departmentEn: tpl.departmentEn,
+    roleDescription: tpl.roleDescription,
+    roleDescriptionEn: tpl.roleDescriptionEn,
+    icon: tpl.icon,
+    accent: tpl.accent,
+    kpiCount: len(tpl.defaultKpis),
+    scenarioCount: len(tpl.ifThenScenarios),
+    toolCount: len(tpl.defaultPermissions),
+  }));
 
   return (
     <div className="space-y-6">
@@ -30,11 +53,11 @@ export default async function NewAgentPage() {
         href="/agents"
         className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
       >
-        <ArrowRight className="h-4 w-4" />
-        الموظفون
+        <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+        {t('back')}
       </Link>
-      <h1 className="text-2xl font-semibold">موظف جديد</h1>
-      <AgentForm departments={departments} managers={managers} />
+      <h1 className="text-2xl font-semibold">{t('title')}</h1>
+      <AgentCreator templates={cards} departments={departments} managers={managers} />
     </div>
   );
 }

@@ -2,7 +2,8 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { Loader2 } from 'lucide-react';
+import { useTranslations } from 'next-intl';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createAgent, updateAgent } from '@/lib/actions/agents';
 import type { AgentInput } from '@/lib/validators/agents';
+import type { ConflictResult } from '@/lib/agent/conflict-check';
 
 export interface AgentFormValues {
   id?: string;
@@ -25,12 +27,6 @@ export interface AgentFormValues {
   temperature: number;
   systemPrompt: string;
 }
-
-const MODELS: { value: AgentFormValues['model']; label: string; hint: string }[] = [
-  { value: 'HAIKU', label: 'سريع واقتصادي', hint: 'الأفضل لخدمة العملاء والردود السريعة' },
-  { value: 'SONNET', label: 'متوازن', hint: 'تفكير أعمق واستخدام الأدوات' },
-  { value: 'OPUS', label: 'متقدم', hint: 'المهام المعقّدة والتحليل' },
-];
 
 const DEFAULTS: AgentFormValues = {
   name: '',
@@ -54,22 +50,31 @@ export function AgentForm({
   managers: { id: string; name: string }[];
   initial?: AgentFormValues;
 }) {
+  const t = useTranslations('agentForm');
+  const tc = useTranslations('common');
   const router = useRouter();
   const [v, setV] = useState<AgentFormValues>(
     initial ?? { ...DEFAULTS, departmentId: departments[0]?.id ?? '' }
   );
   const [saving, startSave] = useTransition();
+  const [conflict, setConflict] = useState<ConflictResult | null>(null);
   const isEdit = Boolean(initial?.id);
+
+  const MODELS: { value: AgentFormValues['model']; label: string; hint: string }[] = [
+    { value: 'HAIKU', label: t('models.haiku'), hint: t('models.haikuHint') },
+    { value: 'SONNET', label: t('models.sonnet'), hint: t('models.sonnetHint') },
+    { value: 'OPUS', label: t('models.opus'), hint: t('models.opusHint') },
+  ];
 
   function set<K extends keyof AgentFormValues>(k: K, val: AgentFormValues[K]) {
     setV((p) => ({ ...p, [k]: val }));
   }
 
-  function submit() {
-    if (!v.name.trim()) return toast.error('اسم الموظف مطلوب.');
-    if (!v.role.trim()) return toast.error('المسمّى الوظيفي مطلوب.');
-    if (!v.departmentId) return toast.error('اختر القسم.');
-    if (!v.persona.trim()) return toast.error('اكتب شخصية الموظف.');
+  function submit(force = false) {
+    if (!v.name.trim()) return toast.error(t('nameRequired'));
+    if (!v.role.trim()) return toast.error(t('roleRequired'));
+    if (!v.departmentId) return toast.error(t('deptRequired'));
+    if (!v.persona.trim()) return toast.error(t('personaRequired'));
 
     const payload: AgentInput = {
       name: v.name.trim(),
@@ -88,58 +93,53 @@ export function AgentForm({
     startSave(async () => {
       const res = isEdit
         ? await updateAgent(initial!.id!, payload)
-        : await createAgent(payload);
+        : await createAgent(payload, { force });
       if (res.ok) {
-        toast.success(isEdit ? 'تم حفظ الموظف.' : 'تم إنشاء الموظف.');
+        toast.success(isEdit ? t('saved') : t('created'));
         router.push('/agents');
         router.refresh();
+      } else if (res.error === 'conflict') {
+        setConflict(res.conflict);
       } else if (res.error === 'bad_department') {
-        toast.error('القسم أو المدير غير صحيح.');
+        toast.error(t('badDept'));
       } else {
-        toast.error('تعذّر الحفظ.');
+        toast.error(t('saveFailed'));
       }
     });
   }
 
-  const selectCls =
-    'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
+  const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">الهوية</CardTitle>
+          <CardTitle className="text-lg">{t('identity')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>الاسم *</Label>
-              <Input value={v.name} onChange={(e) => set('name', e.target.value)} placeholder="مثل: سُهى" />
+              <Label>{t('name')} *</Label>
+              <Input value={v.name} onChange={(e) => set('name', e.target.value)} placeholder={t('namePlaceholder')} dir="auto" />
             </div>
             <div className="space-y-2">
-              <Label>الاسم بالإنجليزية</Label>
+              <Label>{t('nameEn')}</Label>
               <Input dir="ltr" value={v.nameEn} onChange={(e) => set('nameEn', e.target.value)} />
             </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>المسمّى الوظيفي *</Label>
-              <Input value={v.role} onChange={(e) => set('role', e.target.value)} placeholder="مثل: موظف مبيعات" />
+              <Label>{t('role')} *</Label>
+              <Input value={v.role} onChange={(e) => { set('role', e.target.value); setConflict(null); }} placeholder={t('rolePlaceholder')} dir="auto" />
             </div>
             <div className="space-y-2">
-              <Label>القسم *</Label>
+              <Label>{t('department')} *</Label>
               {departments.length === 0 ? (
-                <p className="pt-2 text-sm text-destructive">أنشئ قسماً أولاً.</p>
+                <p className="pt-2 text-sm text-destructive">{t('needDept')}</p>
               ) : (
-                <select
-                  className={selectCls}
-                  value={v.departmentId}
-                  onChange={(e) => set('departmentId', e.target.value)}
-                >
+                <select className={selectCls} value={v.departmentId} onChange={(e) => set('departmentId', e.target.value)}>
                   {departments.map((d) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name}
-                    </option>
+                    <option key={d.id} value={d.id}>{d.name}</option>
                   ))}
                 </select>
               )}
@@ -150,40 +150,28 @@ export function AgentForm({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">الشخصية والسلوك</CardTitle>
+          <CardTitle className="text-lg">{t('personalitySection')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>الشخصية والأسلوب *</Label>
-            <Textarea
-              rows={5}
-              value={v.persona}
-              onChange={(e) => set('persona', e.target.value)}
-              placeholder="من هو هذا الموظف؟ كيف يتكلّم؟ ما الذي يهتم به؟ مثال: موظفة خدمة عملاء ودودة، تجيب باختصار ووضوح، وتحرص على راحة العميل."
-            />
-            <p className="text-xs text-muted-foreground">
-              هذي شخصيته الأساسية. كلما كانت أوضح، كان أداؤه أدق.
-            </p>
+            <Label>{t('persona')} *</Label>
+            <Textarea rows={5} value={v.persona} onChange={(e) => set('persona', e.target.value)} placeholder={t('personaPlaceholder')} dir="auto" />
+            <p className="text-xs text-muted-foreground">{t('personaHelp')}</p>
           </div>
           <div className="space-y-2">
-            <Label>تعليمات إضافية (اختياري)</Label>
-            <Textarea
-              rows={3}
-              value={v.systemPrompt}
-              onChange={(e) => set('systemPrompt', e.target.value)}
-              placeholder="قواعد أو ممنوعات محددة، مثل: لا تعطِ خصومات أكثر من 10%."
-            />
+            <Label>{t('extraInstructions')}</Label>
+            <Textarea rows={3} value={v.systemPrompt} onChange={(e) => set('systemPrompt', e.target.value)} placeholder={t('extraPlaceholder')} dir="auto" />
           </div>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">الذكاء والإعدادات</CardTitle>
+          <CardTitle className="text-lg">{t('intelligence')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label>مستوى النموذج</Label>
+            <Label>{t('modelLevel')}</Label>
             <div className="grid gap-2 sm:grid-cols-3">
               {MODELS.map((m) => (
                 <button
@@ -191,10 +179,8 @@ export function AgentForm({
                   type="button"
                   onClick={() => set('model', m.value)}
                   className={
-                    'rounded-lg border p-3 text-right ' +
-                    (v.model === m.value
-                      ? 'border-primary bg-primary/5 ring-1 ring-primary'
-                      : 'hover:bg-muted')
+                    'rounded-lg border p-3 text-start ' +
+                    (v.model === m.value ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted')
                   }
                 >
                   <span className="block text-sm font-medium">{m.label}</span>
@@ -205,48 +191,45 @@ export function AgentForm({
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
-              <Label>الإبداع ({v.temperature})</Label>
-              <input
-                type="range"
-                min={0}
-                max={1}
-                step={0.1}
-                value={v.temperature}
-                onChange={(e) => set('temperature', Number(e.target.value))}
-                className="w-full"
-              />
-              <p className="text-xs text-muted-foreground">
-                أقل = دقيق وثابت · أعلى = أكثر تنوّعاً
-              </p>
+              <Label>{t('creativity', { value: v.temperature })}</Label>
+              <input type="range" min={0} max={1} step={0.1} value={v.temperature} onChange={(e) => set('temperature', Number(e.target.value))} className="w-full" />
+              <p className="text-xs text-muted-foreground">{t('creativityHelp')}</p>
             </div>
             <div className="space-y-2">
-              <Label>المدير المباشر (اختياري)</Label>
-              <select
-                className={selectCls}
-                value={v.parentId}
-                onChange={(e) => set('parentId', e.target.value)}
-              >
-                <option value="">بدون</option>
-                {managers
-                  .filter((m) => m.id !== initial?.id)
-                  .map((m) => (
-                    <option key={m.id} value={m.id}>
-                      {m.name}
-                    </option>
-                  ))}
+              <Label>{t('manager')}</Label>
+              <select className={selectCls} value={v.parentId} onChange={(e) => set('parentId', e.target.value)}>
+                <option value="">{t('none')}</option>
+                {managers.filter((m) => m.id !== initial?.id).map((m) => (
+                  <option key={m.id} value={m.id}>{m.name}</option>
+                ))}
               </select>
             </div>
           </div>
         </CardContent>
       </Card>
 
+      {conflict && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="flex items-start gap-3 p-4">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-500" />
+            <div className="flex-1">
+              <p className="text-sm font-medium">{t('conflictTitle')}</p>
+              <p className="text-sm text-muted-foreground">{conflict.reason}</p>
+              <Button size="sm" variant="outline" className="mt-2" onClick={() => submit(true)} disabled={saving}>
+                {t('createAnyway')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="flex justify-end gap-2">
         <Button variant="ghost" onClick={() => router.push('/agents')} disabled={saving}>
-          إلغاء
+          {tc('cancel')}
         </Button>
-        <Button onClick={submit} disabled={saving || departments.length === 0}>
+        <Button onClick={() => submit(false)} disabled={saving || departments.length === 0}>
           {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
-          {isEdit ? 'حفظ' : 'إنشاء الموظف'}
+          {isEdit ? tc('save') : t('create')}
         </Button>
       </div>
     </div>

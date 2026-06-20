@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowRight } from 'lucide-react';
+import { getLocale, getTranslations } from 'next-intl/server';
+import { ArrowRight, Sparkles, Gauge, Brain } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
@@ -12,14 +13,7 @@ import { AgentSchedules } from '@/components/dashboard/agent-schedules';
 import { AgentActivity } from '@/components/dashboard/agent-activity';
 import { getToolsForCompany } from '@/lib/agent/tools';
 import { AgentScenarios } from '@/components/dashboard/agent-scenarios';
-import { Sparkles } from 'lucide-react';
-
-const STATUS_LABEL: Record<string, string> = {
-  ONLINE: 'متصل',
-  WORKING: 'يعمل',
-  PAUSED: 'متوقف',
-  OFFLINE: 'غير متصل',
-};
+import type { AgentKpi } from '@/lib/agent/templates';
 
 export default async function AgentProfilePage({
   params,
@@ -27,11 +21,14 @@ export default async function AgentProfilePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const t = await getTranslations('agentProfile');
+  const ta = await getTranslations('pages.agents');
+  const locale = await getLocale();
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
 
-  const [agent, departments, managers, schedules, settings, tasks, company, scenarios] = await Promise.all([
+  const [agent, departments, managers, schedules, settings, tasks, company, scenarios, memories] = await Promise.all([
     db.agent.findFirst({
       where: { id, companyId },
       include: { department: { select: { name: true, color: true } } },
@@ -78,9 +75,17 @@ export default async function AgentProfilePage({
       orderBy: { createdAt: 'asc' },
       select: { id: true, event: true, name: true, isActive: true, fireCount: true },
     }),
+    db.agentMemory.findMany({
+      where: { agentId: id, companyId },
+      orderBy: [{ importance: 'desc' }, { createdAt: 'desc' }],
+      take: 50,
+      select: { id: true, summary: true, importance: true, category: true, createdAt: true },
+    }),
   ]);
 
   if (!agent) notFound();
+
+  const kpis = (agent.kpis as unknown as AgentKpi[] | null) ?? [];
 
   // Capabilities this agent has = the tools it receives (driven by enabled modules).
   const tools = getToolsForCompany({
@@ -89,18 +94,18 @@ export default async function AgentProfilePage({
     hasBookings: company?.hasBookings ?? false,
   });
   const TOOL_LABELS: Record<string, string> = {
-    search_catalog: 'البحث في الكتالوج',
-    check_availability: 'فحص التوافر',
-    create_booking: 'إنشاء حجز',
-    search_faq: 'الأسئلة الشائعة',
-    find_customer: 'البحث عن عميل',
-    create_lead: 'تسجيل عميل',
-    update_lead: 'تحديث عميل',
-    create_order: 'تسجيل طلب',
-    update_booking: 'تعديل حجز',
-    update_task_status: 'تحديث حالة مهمة',
-    create_task: 'إنشاء مهمة',
-    save_memory: 'الحفظ في الذاكرة',
+    search_catalog: 'Search catalog',
+    check_availability: 'Check availability',
+    create_booking: 'Create booking',
+    search_faq: 'Search FAQ',
+    find_customer: 'Find customer',
+    create_lead: 'Create lead',
+    update_lead: 'Update lead',
+    create_order: 'Create order',
+    update_booking: 'Update booking',
+    update_task_status: 'Update task status',
+    create_task: 'Create task',
+    save_memory: 'Save memory',
   };
 
   const initial: AgentFormValues = {
@@ -124,8 +129,8 @@ export default async function AgentProfilePage({
           href="/agents"
           className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
         >
-          <ArrowRight className="h-4 w-4" />
-          الموظفون
+          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+          {t('back')}
         </Link>
         <ArchiveAgentButton id={agent.id} />
       </div>
@@ -149,31 +154,34 @@ export default async function AgentProfilePage({
               {agent.role} · <span style={{ color: agent.department.color }}>{agent.department.name}</span> ·{' '}
               <span className="inline-flex items-center gap-1">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {STATUS_LABEL[agent.status] ?? agent.status}
+                {ta(`status.${agent.status}`)}
               </span>
             </p>
           </div>
           <div className="flex gap-6 text-center">
             <div>
               <p className="text-lg font-semibold text-emerald-500">{agent.tasksCompleted}</p>
-              <p className="text-[11px] text-muted-foreground">منجزة</p>
+              <p className="text-[11px] text-muted-foreground">{t('completed')}</p>
             </div>
             <div>
               <p className="text-lg font-semibold text-destructive">{agent.tasksFailed}</p>
-              <p className="text-[11px] text-muted-foreground">فشل</p>
+              <p className="text-[11px] text-muted-foreground">{t('failed')}</p>
             </div>
             <div>
-              <p className="text-lg font-semibold">{agent.totalTokensUsed.toLocaleString('ar')}</p>
-              <p className="text-[11px] text-muted-foreground">توكنز</p>
+              <p className="text-lg font-semibold">{agent.totalTokensUsed.toLocaleString(locale)}</p>
+              <p className="text-[11px] text-muted-foreground">{t('tokens')}</p>
             </div>
           </div>
         </CardContent>
       </Card>
 
       <Tabs defaultValue="activity">
-        <TabsList>
-          <TabsTrigger value="activity">النشاط والمهام</TabsTrigger>
-          <TabsTrigger value="settings">الإعدادات</TabsTrigger>
+        <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="activity">{t('tabs.activity')}</TabsTrigger>
+          <TabsTrigger value="scenarios">{t('tabs.scenarios')}</TabsTrigger>
+          <TabsTrigger value="kpis">{t('tabs.kpis')}</TabsTrigger>
+          <TabsTrigger value="memory">{t('tabs.memory')}</TabsTrigger>
+          <TabsTrigger value="settings">{t('tabs.settings')}</TabsTrigger>
         </TabsList>
 
         <TabsContent value="activity" className="space-y-4">
@@ -181,18 +189,16 @@ export default async function AgentProfilePage({
             <CardContent className="p-4">
               <p className="mb-2 flex items-center gap-2 text-sm font-medium">
                 <Sparkles className="h-4 w-4 text-primary" />
-                قدرات الموظف (الأدوات)
+                {t('capabilities')}
               </p>
               <div className="flex flex-wrap gap-2">
-                {tools.map((t) => (
-                  <span key={t.name} className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
-                    {TOOL_LABELS[t.name] ?? t.name}
+                {tools.map((tool) => (
+                  <span key={tool.name} className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
+                    {TOOL_LABELS[tool.name] ?? tool.name}
                   </span>
                 ))}
               </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">
-                تتغيّر حسب الموديولات المفعّلة لشركتك.
-              </p>
+              <p className="mt-2 text-[11px] text-muted-foreground">{t('capabilitiesNote')}</p>
             </CardContent>
           </Card>
 
@@ -214,9 +220,96 @@ export default async function AgentProfilePage({
           />
         </TabsContent>
 
+        <TabsContent value="scenarios" className="space-y-4">
+          <AgentScenarios agentId={agent.id} scenarios={scenarios} />
+        </TabsContent>
+
+        <TabsContent value="kpis" className="space-y-4">
+          <Card>
+            <CardContent className="flex items-center gap-4 p-5">
+              <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+                <Gauge className="h-6 w-6" />
+              </span>
+              <div className="flex-1">
+                <p className="text-sm text-muted-foreground">{t('performanceScore')}</p>
+                <p className="text-2xl font-semibold tabular-nums">
+                  {agent.performanceScore.toFixed(0)}<span className="text-base text-muted-foreground">/100</span>
+                </p>
+              </div>
+              <div className="flex gap-6 text-center">
+                <div>
+                  <p className="text-lg font-semibold text-emerald-500">{agent.tasksCompleted}</p>
+                  <p className="text-[11px] text-muted-foreground">{t('completed')}</p>
+                </div>
+                <div>
+                  <p className="text-lg font-semibold text-destructive">{agent.tasksFailed}</p>
+                  <p className="text-[11px] text-muted-foreground">{t('failed')}</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="space-y-3 p-5">
+              <p className="text-sm font-medium">{t('kpiTargets')}</p>
+              {kpis.length === 0 ? (
+                <p className="py-6 text-center text-sm text-muted-foreground">{t('noKpis')}</p>
+              ) : (
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {kpis.map((k) => (
+                    <div key={k.key} className="flex items-center justify-between rounded-lg border p-3">
+                      <span className="text-sm">{k.label}</span>
+                      <span className="font-mono text-sm font-semibold tabular-nums" dir="ltr">
+                        {k.target}{k.unit}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="memory" className="space-y-4">
+          <Card>
+            <CardContent className="space-y-3 p-5">
+              <div>
+                <p className="flex items-center gap-2 text-sm font-medium">
+                  <Brain className="h-4 w-4 text-primary" />
+                  {t('memoryTitle')}
+                </p>
+                <p className="text-xs text-muted-foreground">{t('memorySubtitle')}</p>
+              </div>
+              {memories.length === 0 ? (
+                <p className="py-8 text-center text-sm text-muted-foreground">{t('noMemory')}</p>
+              ) : (
+                <ul className="space-y-2">
+                  {memories.map((m) => (
+                    <li key={m.id} className="rounded-lg border p-3">
+                      <div className="mb-1 flex items-center gap-2">
+                        {m.category && (
+                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
+                            {m.category}
+                          </span>
+                        )}
+                        <span className="text-[10px] text-muted-foreground">
+                          {t('importance')}: {m.importance}/10
+                        </span>
+                        <span className="ms-auto text-[10px] text-muted-foreground">
+                          {m.createdAt.toLocaleDateString(locale)}
+                        </span>
+                      </div>
+                      <p className="whitespace-pre-wrap text-sm text-foreground/90">{m.summary}</p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
         <TabsContent value="settings" className="space-y-6">
           <AgentForm departments={departments} managers={managers} initial={initial} />
-          <AgentScenarios agentId={agent.id} scenarios={scenarios} />
           <AgentSchedules
             agentId={agent.id}
             timezone={settings?.timezone ?? 'Asia/Riyadh'}
