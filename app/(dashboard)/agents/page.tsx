@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { Plus, Users, MessageSquare } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -6,15 +7,10 @@ import { getUserCompany } from '@/lib/companies';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
-const STATUS_LABEL: Record<string, string> = {
-  ONLINE: 'متصل',
-  WORKING: 'يعمل',
-  PAUSED: 'متوقف',
-  OFFLINE: 'غير متصل',
-};
-
 // The AI Office: every employee, grouped by department.
 export default async function AgentsPage() {
+  const t = await getTranslations('pages.agents');
+  const tc = await getTranslations('common');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
@@ -53,16 +49,14 @@ export default async function AgentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">الموظفون</h1>
-          <p className="text-sm text-muted-foreground">
-            فريقك من موظفي الذكاء الاصطناعي، موزّعين على الأقسام.
-          </p>
+          <h1 className="text-2xl font-semibold">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
         {hasDept > 0 && (
           <Button asChild>
             <Link href="/agents/new">
               <Plus className="me-1 h-4 w-4" />
-              موظف جديد
+              {t('new')}
             </Link>
           </Button>
         )}
@@ -72,11 +66,9 @@ export default async function AgentsPage() {
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Users className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">
-              أنشئ قسماً أولاً، ثم عيّن فيه موظفين.
-            </p>
+            <p className="text-sm text-muted-foreground">{t('needDept')}</p>
             <Button asChild variant="outline">
-              <Link href="/departments">إنشاء قسم</Link>
+              <Link href="/departments">{t('createDept')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -84,9 +76,9 @@ export default async function AgentsPage() {
         <Card>
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Users className="h-10 w-10 text-muted-foreground" />
-            <p className="text-sm text-muted-foreground">لا موظفين بعد.</p>
+            <p className="text-sm text-muted-foreground">{t('empty')}</p>
             <Button asChild variant="outline">
-              <Link href="/agents/new">أنشئ أول موظف</Link>
+              <Link href="/agents/new">{t('addFirst')}</Link>
             </Button>
           </CardContent>
         </Card>
@@ -123,13 +115,13 @@ export default async function AgentsPage() {
                         <div className="flex items-center justify-between text-xs text-muted-foreground">
                           <span className="inline-flex items-center gap-1">
                             <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                            {STATUS_LABEL[a.status] ?? a.status}
+                            {t(`status.${a.status}`)}
                           </span>
-                          <span>{a.tasksCompleted} مهمة منجزة</span>
+                          <span>{t('tasksDone', { n: a.tasksCompleted })}</span>
                         </div>
                         <div className="flex gap-2">
                           <Button asChild variant="outline" size="sm" className="flex-1">
-                            <Link href={`/agents/${a.id}`}>تعديل</Link>
+                            <Link href={`/agents/${a.id}`}>{tc('edit')}</Link>
                           </Button>
                           <Button asChild variant="ghost" size="sm">
                             <Link href="/chat">

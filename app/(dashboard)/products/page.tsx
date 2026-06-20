@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { getTranslations } from 'next-intl/server';
 import { Plus, Package } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -10,6 +11,7 @@ import { Card, CardContent } from '@/components/ui/card';
 // Catalog list. This same data is what the sales agent reads via the
 // search_catalog tool — one source of truth for dashboard + agents + public page.
 export default async function ProductsPage() {
+  const t = await getTranslations('pages.products');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
@@ -33,15 +35,13 @@ export default async function ProductsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">المنتجات</h1>
-          <p className="text-sm text-muted-foreground">
-            الكتالوج الذي يقرأ منه وكلاؤك ويُعرض في صفحتك العامة.
-          </p>
+          <h1 className="text-2xl font-semibold">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
         <Button asChild>
           <Link href="/products/new">
             <Plus className="me-1 h-4 w-4" />
-            منتج جديد
+            {t('new')}
           </Link>
         </Button>
       </div>
@@ -52,9 +52,9 @@ export default async function ProductsPage() {
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10 text-primary">
               <Package className="h-7 w-7" />
             </div>
-            <p className="text-sm text-muted-foreground">لا منتجات بعد.</p>
+            <p className="text-sm text-muted-foreground">{t('empty')}</p>
             <Button asChild variant="outline">
-              <Link href="/products/new">أضف أول منتج</Link>
+              <Link href="/products/new">{t('addFirst')}</Link>
             </Button>
           </CardContent>
         </Card>

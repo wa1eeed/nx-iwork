@@ -1,9 +1,11 @@
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { OrderManager } from '@/components/dashboard/order-manager';
 
 export default async function OrdersPage() {
+  const t = await getTranslations('pages.orders');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
@@ -28,10 +30,8 @@ export default async function OrdersPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">الطلبات</h1>
-        <p className="text-sm text-muted-foreground">
-          الطلبات الواردة من صفحتك العامة أو التي يسجّلها وكلاؤك — يعالجها الوكيل المسؤول تلقائياً.
-        </p>
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <OrderManager

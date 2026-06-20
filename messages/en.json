@@ -7,6 +7,7 @@
     "save": "Save",
     "cancel": "Cancel",
     "delete": "Delete",
+    "edit": "Edit",
     "submit": "Submit",
     "confirm": "Confirm",
     "back": "Back",
@@ -333,6 +334,68 @@
         "timeout": "Connection timed out",
         "network_error": "Network error"
       }
+    }
+  },
+  "pages": {
+    "products": {
+      "title": "Products",
+      "subtitle": "The catalog your agents read from and that appears on your public page.",
+      "new": "New product",
+      "empty": "No products yet.",
+      "addFirst": "Add your first product"
+    },
+    "orders": {
+      "title": "Orders",
+      "subtitle": "Orders from your public page or logged by your agents — handled automatically by the responsible agent."
+    },
+    "bookings": {
+      "title": "Bookings",
+      "subtitle": "Appointments your agents create or your customers book.",
+      "empty": "No bookings yet.",
+      "moduleOff": "The bookings module isn't enabled.",
+      "enableFromModules": "Enable it from Modules",
+      "status": {
+        "PENDING": "Pending confirmation",
+        "CONFIRMED": "Confirmed",
+        "CANCELLED": "Cancelled",
+        "COMPLETED": "Completed"
+      }
+    },
+    "departments": {
+      "title": "Departments",
+      "subtitle": "Organize your company into departments, then assign AI employees to each."
+    },
+    "agents": {
+      "title": "Employees",
+      "subtitle": "Your team of AI employees, organized by department.",
+      "new": "New employee",
+      "empty": "No employees yet.",
+      "needDept": "Create a department first, then assign employees to it.",
+      "createDept": "Create a department",
+      "addFirst": "Create your first employee",
+      "tasksDone": "{n} tasks done",
+      "status": {
+        "ONLINE": "Online",
+        "WORKING": "Working",
+        "PAUSED": "Paused",
+        "OFFLINE": "Offline"
+      }
+    },
+    "modules": {
+      "title": "Modules",
+      "subtitle": "Enable only what your business needs — its tools appear in the menu and your agents use them automatically."
+    },
+    "knowledge": {
+      "title": "Knowledge & triggers",
+      "subtitle": "Define your business answers so agents respond accurately, and make them act automatically on events.",
+      "faqTitle": "Knowledge base (FAQ)",
+      "faqDesc": "Agents read this via the search_faq tool — accurate answers instead of guessing.",
+      "triggersTitle": "Automatic triggers",
+      "triggersDesc": "\"On event → an agent wakes up and runs a task\" — requires the scheduler running on the server."
+    },
+    "tasks": {
+      "title": "Tasks",
+      "subtitle": "Everything your employees are working on: in progress, completed, and scheduled — with dates and run counts."
     }
   },
   "crm": {

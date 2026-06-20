@@ -1,9 +1,11 @@
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { TaskManager } from '@/components/dashboard/task-manager';
 
 export default async function TasksPage() {
+  const t = await getTranslations('pages.tasks');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
@@ -48,10 +50,8 @@ export default async function TasksPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">المهام</h1>
-        <p className="text-sm text-muted-foreground">
-          كل ما يعمل عليه موظفوك: قيد التنفيذ، منجزة، ومجدولة — بتواريخها وعدّاد التشغيل.
-        </p>
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <TaskManager

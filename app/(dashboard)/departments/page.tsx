@@ -1,9 +1,11 @@
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { DepartmentManager } from '@/components/dashboard/department-manager';
 
 export default async function DepartmentsPage() {
+  const t = await getTranslations('pages.departments');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
@@ -26,10 +28,8 @@ export default async function DepartmentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">الأقسام</h1>
-        <p className="text-sm text-muted-foreground">
-          نظّم شركتك في أقسام، ثم عيّن موظفي الذكاء الاصطناعي في كل قسم.
-        </p>
+        <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
       <DepartmentManager

@@ -1,3 +1,4 @@
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
@@ -9,6 +10,7 @@ import { TriggerManager } from '@/components/dashboard/trigger-manager';
 //  - FAQ: structured knowledge the agents read (search_faq)
 //  - Event triggers: "when X happens, wake agent Y"
 export default async function KnowledgePage() {
+  const tk = await getTranslations('pages.knowledge');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
@@ -42,18 +44,14 @@ export default async function KnowledgePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold">المعرفة والمشغّلات</h1>
-        <p className="text-sm text-muted-foreground">
-          عرّف أسئلة عملك ليجيب عنها الوكلاء بدقة، واجعلهم يتحركون تلقائياً عند الأحداث.
-        </p>
+        <h1 className="text-2xl font-semibold">{tk('title')}</h1>
+        <p className="text-sm text-muted-foreground">{tk('subtitle')}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">قاعدة المعرفة (الأسئلة الشائعة)</CardTitle>
-          <CardDescription>
-            يقرأ منها الوكلاء عبر أداة search_faq — إجابات دقيقة بدل التخمين.
-          </CardDescription>
+          <CardTitle className="text-lg">{tk('faqTitle')}</CardTitle>
+          <CardDescription>{tk('faqDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <FaqManager
@@ -69,10 +67,8 @@ export default async function KnowledgePage() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">المشغّلات التلقائية (Triggers)</CardTitle>
-          <CardDescription>
-            "عند حدث → يصحى وكيل وينفّذ مهمة" — تتطلب تفعيل مُشغّل الجدولة في الخادم.
-          </CardDescription>
+          <CardTitle className="text-lg">{tk('triggersTitle')}</CardTitle>
+          <CardDescription>{tk('triggersDesc')}</CardDescription>
         </CardHeader>
         <CardContent>
           <TriggerManager
