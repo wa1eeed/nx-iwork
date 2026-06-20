@@ -28,6 +28,26 @@ export const companyInfoSchema = z.object({
   brandVoice: z.string().trim().max(2000).optional().nullable(),
 });
 
+// A bare hostname like "shop.acme.com" (no scheme/path). Empty string clears it.
+const HOSTNAME = /^(?=.{1,253}$)([a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?\.)+[a-z]{2,}$/;
+
+export const customDomainSchema = z.object({
+  customDomain: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .max(253)
+    .refine((v) => v === '' || HOSTNAME.test(v), 'invalid_domain'),
+});
+
+export const storefrontSchema = z.object({
+  logo: z.string().trim().url().max(2048).optional().nullable().or(z.literal('')),
+  heroTitle: z.string().trim().max(120).optional().nullable(),
+  heroTitleEn: z.string().trim().max(120).optional().nullable(),
+  heroSubtitle: z.string().trim().max(400).optional().nullable(),
+  heroSubtitleEn: z.string().trim().max(400).optional().nullable(),
+});
+
 export const apiKeySchema = z.object({
   apiKey: z.string().trim().min(10).max(500),
   // Which AI engine this key belongs to. Defaults to anthropic to match
@@ -39,3 +59,5 @@ export type LocalizationInput = z.infer<typeof localizationSchema>;
 export type BrandingInput = z.infer<typeof brandingSchema>;
 export type CompanyInfoInput = z.infer<typeof companyInfoSchema>;
 export type ApiKeyInput = z.infer<typeof apiKeySchema>;
+export type CustomDomainInput = z.infer<typeof customDomainSchema>;
+export type StorefrontInput = z.infer<typeof storefrontSchema>;

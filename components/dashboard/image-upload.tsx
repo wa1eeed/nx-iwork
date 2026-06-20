@@ -13,10 +13,12 @@ export function ImageUpload({
   value,
   onChange,
   max = 8,
+  purpose = 'products',
 }: {
   value: string[];
   onChange: (urls: string[]) => void;
   max?: number;
+  purpose?: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -25,7 +27,7 @@ export function ImageUpload({
     const signRes = await fetch('/api/uploads/sign', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ contentType: file.type, purpose: 'products' }),
+      body: JSON.stringify({ contentType: file.type, purpose }),
     });
     const signed = await signRes.json();
     if (!signed.ok) {

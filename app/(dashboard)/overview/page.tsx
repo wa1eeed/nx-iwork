@@ -19,6 +19,7 @@ import { db } from '@/lib/db';
 import { getAiMode } from '@/lib/ai';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
 
 const IN_PROGRESS: TaskStatus[] = ['PENDING', 'WORKING', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'BLOCKED'];
 
@@ -32,13 +33,26 @@ export default async function OverviewPage() {
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },
-    select: { companyId: true, company: { select: { name: true, tokenBalance: true, hasBookings: true } } },
+    select: {
+      companyId: true,
+      company: {
+        select: {
+          name: true,
+          tokenBalance: true,
+          hasBookings: true,
+          logo: true,
+          customDomain: true,
+          settings: { select: { primaryColor: true } },
+          websiteConfig: { select: { heroTitle: true } },
+        },
+      },
+    },
   });
   if (!user?.companyId || !user.company) redirect('/onboarding');
   const companyId = user.companyId;
   const managed = getAiMode() === 'managed';
 
-  const [agents, departments, customers, tasksDone, tasksActive, bookings, schedules, timeline] =
+  const [agents, departments, customers, tasksDone, tasksActive, bookings, schedules, faqCount, timeline] =
     await Promise.all([
       db.agent.count({ where: { companyId, status: { not: 'ARCHIVED' } } }),
       db.department.count({ where: { companyId } }),
@@ -47,6 +61,7 @@ export default async function OverviewPage() {
       db.task.count({ where: { companyId, status: { in: IN_PROGRESS } } }),
       user.company.hasBookings ? db.booking.count({ where: { companyId } }) : Promise.resolve(0),
       db.agentSchedule.count({ where: { companyId, isActive: true } }),
+      db.faqItem.count({ where: { companyId } }),
       db.timelineEvent.findMany({
         where: { companyId },
         orderBy: { createdAt: 'desc' },
@@ -54,6 +69,16 @@ export default async function OverviewPage() {
         select: { id: true, title: true, type: true, createdAt: true },
       }),
     ]);
+
+  // Setup completion checklist — drives the dashboard nudge until each step done.
+  const checklist = [
+    { key: 'agent', href: '/agents/new', done: agents > 0 },
+    { key: 'theme', href: '/settings', done: (user.company.settings?.primaryColor ?? '#06b6d4') !== '#06b6d4' },
+    { key: 'logo', href: '/settings', done: !!user.company.logo },
+    { key: 'hero', href: '/settings', done: !!user.company.websiteConfig?.heroTitle },
+    { key: 'faq', href: '/knowledge', done: faqCount > 0 },
+    { key: 'domain', href: '/settings', done: !!user.company.customDomain },
+  ];
 
   const stats = [
     { label: t('stats.employees'), value: agents, icon: Users, href: '/agents' },
@@ -83,6 +108,8 @@ export default async function OverviewPage() {
           </Button>
         </div>
       </div>
+
+      <OnboardingChecklist items={checklist} />
 
       {managed && (
         <Card className="border-primary/30 bg-primary/5">

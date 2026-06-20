@@ -105,7 +105,19 @@
     },
     "recentActivity": "Recent activity",
     "noActivity": "No activity yet. Create an agent and assign a task to get started.",
-    "createFirstAgent": "Create your first agent"
+    "createFirstAgent": "Create your first agent",
+    "checklist": {
+      "title": "Finish setting up",
+      "subtitle": "{done} of {total} done — a few steps to a complete, on-brand presence.",
+      "done": "All set! Your workspace is fully configured.",
+      "dismiss": "Dismiss",
+      "logo": "Add your logo",
+      "hero": "Write your landing headline",
+      "theme": "Pick your brand color",
+      "faq": "Add a few FAQs",
+      "agent": "Create your first AI employee",
+      "domain": "Connect a custom domain"
+    }
   },
   "onboarding": {
     "title": "Welcome — let's set up your company",
@@ -220,6 +232,8 @@
     "tabs": {
       "localization": "Language & region",
       "branding": "Theme & branding",
+      "storefront": "Storefront",
+      "domain": "Custom domain",
       "company": "Company info",
       "api": "API keys"
     },
@@ -227,6 +241,38 @@
     "saveError": "Save failed, please try again",
     "saveCta": "Save changes",
     "saving": "Saving...",
+    "storefront": {
+      "title": "Storefront",
+      "subtitle": "What visitors see on your public landing page.",
+      "logo": "Logo",
+      "logoHelp": "Square image works best (PNG or SVG).",
+      "heroTitle": "Headline",
+      "heroTitlePlaceholder": "Welcome to {company}",
+      "heroTitleAlt": "Headline (alternate language)",
+      "heroSubtitle": "Subheadline",
+      "heroSubtitlePlaceholder": "A short line about what you offer.",
+      "heroSubtitleAlt": "Subheadline (alternate language)",
+      "viewSite": "View public page"
+    },
+    "domain": {
+      "title": "Custom domain",
+      "subtitle": "Serve your landing page on your own domain instead of {host}/{slug}.",
+      "domain": "Your domain",
+      "domainPlaceholder": "shop.yourbrand.com",
+      "connect": "Connect domain",
+      "clear": "Remove domain",
+      "statusPending": "Pending DNS verification",
+      "statusVerified": "Verified",
+      "dnsTitle": "Point your DNS here",
+      "dnsHelp": "Add one of these records at your domain registrar. Verification can take up to a few hours.",
+      "dnsType": "Type",
+      "dnsName": "Name / Host",
+      "dnsValue": "Value",
+      "cnameNote": "Use CNAME for a subdomain (e.g. shop.yourbrand.com).",
+      "aNote": "Use an A record for a root domain (e.g. yourbrand.com).",
+      "errorInvalid": "Enter a valid domain like shop.yourbrand.com",
+      "errorTaken": "That domain is already connected to another account"
+    },
     "localization": {
       "primaryLanguage": "Primary language",
       "primaryLanguageHelp": "Default language for the dashboard and public site.",
@@ -251,7 +297,8 @@
       },
       "primaryColor": "Primary color",
       "accentColor": "Accent color",
-      "logoNote": "Logo upload comes in Sprint 5."
+      "logoNote": "These colors drive your public landing page — buttons, prices, and the hero.",
+      "preview": "Preview"
     },
     "company": {
       "name": "Company name",

@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { Prisma } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { encrypt } from '@/lib/encryption';
@@ -10,10 +11,14 @@ import {
   brandingSchema,
   companyInfoSchema,
   apiKeySchema,
+  customDomainSchema,
+  storefrontSchema,
   type LocalizationInput,
   type BrandingInput,
   type CompanyInfoInput,
   type ApiKeyInput,
+  type CustomDomainInput,
+  type StorefrontInput,
 } from '@/lib/validators/settings';
 
 type Result<T = void> =
@@ -130,5 +135,64 @@ export async function removeApiKey(): Promise<Result> {
   });
   revalidatePath('/settings');
   revalidatePath('/overview');
+  return { ok: true };
+}
+
+// Connect (or clear) a custom domain. Saving a new value resets verification —
+// the owner points DNS at us, then verification/SSL is provisioned out of band.
+export async function updateCustomDomain(raw: CustomDomainInput): Promise<Result> {
+  const companyId = await authedCompanyId();
+  if (!companyId) return { ok: false, error: 'unauthenticated' };
+
+  const parsed = customDomainSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: 'invalid_domain' };
+
+  const domain = parsed.data.customDomain || null;
+  try {
+    await db.company.update({
+      where: { id: companyId },
+      data: {
+        customDomain: domain,
+        customDomainVerified: false,
+        customDomainSslReady: false,
+      },
+    });
+  } catch (err) {
+    if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === 'P2002') {
+      return { ok: false, error: 'domain_taken' };
+    }
+    throw err;
+  }
+  revalidatePath('/settings');
+  return { ok: true };
+}
+
+// Storefront: logo + hero copy that render on the public landing page.
+export async function updateStorefront(raw: StorefrontInput): Promise<Result> {
+  const companyId = await authedCompanyId();
+  if (!companyId) return { ok: false, error: 'unauthenticated' };
+
+  const parsed = storefrontSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: 'validation' };
+  const d = parsed.data;
+
+  const company = await db.company.update({
+    where: { id: companyId },
+    data: { logo: d.logo || null },
+    select: { slug: true },
+  });
+  await db.websiteConfig.update({
+    where: { companyId },
+    data: {
+      heroTitle: d.heroTitle || null,
+      heroTitleEn: d.heroTitleEn || null,
+      heroSubtitle: d.heroSubtitle || null,
+      heroSubtitleEn: d.heroSubtitleEn || null,
+    },
+  });
+
+  revalidatePath('/settings');
+  revalidatePath('/overview');
+  revalidatePath(`/${company.slug}`);
   return { ok: true };
 }

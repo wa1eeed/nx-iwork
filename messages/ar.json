@@ -105,7 +105,19 @@
     },
     "recentActivity": "آخر النشاط",
     "noActivity": "لا نشاط بعد. أنشئ وكيلاً وكلّفه بمهمة لتبدأ.",
-    "createFirstAgent": "أنشئ أول موظف"
+    "createFirstAgent": "أنشئ أول موظف",
+    "checklist": {
+      "title": "أكمل الإعداد",
+      "subtitle": "{done} من {total} مكتمل — خطوات قليلة لحضور كامل بهويتك.",
+      "done": "تم! مساحة عملك مهيأة بالكامل.",
+      "dismiss": "إخفاء",
+      "logo": "أضف شعارك",
+      "hero": "اكتب عنوان صفحتك",
+      "theme": "اختر لون هويتك",
+      "faq": "أضف بعض الأسئلة الشائعة",
+      "agent": "أنشئ أول موظف ذكاء اصطناعي",
+      "domain": "اربط نطاقاً مخصصاً"
+    }
   },
   "onboarding": {
     "title": "أهلاً، خلّنا نبني شركتك",
@@ -220,6 +232,8 @@
     "tabs": {
       "localization": "اللغة والمنطقة",
       "branding": "المظهر والهوية",
+      "storefront": "الواجهة",
+      "domain": "نطاق مخصص",
       "company": "بيانات الشركة",
       "api": "مفاتيح API"
     },
@@ -227,6 +241,38 @@
     "saveError": "فشل الحفظ، حاول مرة ثانية",
     "saveCta": "حفظ التغييرات",
     "saving": "جارٍ الحفظ...",
+    "storefront": {
+      "title": "واجهة المتجر",
+      "subtitle": "ما يراه الزوّار في صفحتك العامة.",
+      "logo": "الشعار",
+      "logoHelp": "الصورة المربعة أفضل (PNG أو SVG).",
+      "heroTitle": "العنوان الرئيسي",
+      "heroTitlePlaceholder": "أهلاً بك في {company}",
+      "heroTitleAlt": "العنوان (لغة بديلة)",
+      "heroSubtitle": "العنوان الفرعي",
+      "heroSubtitlePlaceholder": "سطر قصير عمّا تقدّمه.",
+      "heroSubtitleAlt": "العنوان الفرعي (لغة بديلة)",
+      "viewSite": "عرض الصفحة العامة"
+    },
+    "domain": {
+      "title": "نطاق مخصص",
+      "subtitle": "اعرض صفحتك على نطاقك الخاص بدلاً من {host}/{slug}.",
+      "domain": "نطاقك",
+      "domainPlaceholder": "shop.yourbrand.com",
+      "connect": "ربط النطاق",
+      "clear": "إزالة النطاق",
+      "statusPending": "بانتظار التحقق من DNS",
+      "statusVerified": "تم التحقق",
+      "dnsTitle": "وجّه DNS إلى هنا",
+      "dnsHelp": "أضِف أحد هذه السجلات عند مزوّد نطاقك. قد يستغرق التحقق بضع ساعات.",
+      "dnsType": "النوع",
+      "dnsName": "الاسم / المضيف",
+      "dnsValue": "القيمة",
+      "cnameNote": "استخدم CNAME للنطاق الفرعي (مثل shop.yourbrand.com).",
+      "aNote": "استخدم سجل A للنطاق الجذري (مثل yourbrand.com).",
+      "errorInvalid": "أدخل نطاقاً صحيحاً مثل shop.yourbrand.com",
+      "errorTaken": "هذا النطاق مرتبط بحساب آخر"
+    },
     "localization": {
       "primaryLanguage": "اللغة الأساسية",
       "primaryLanguageHelp": "اللغة الافتراضية للوحة التحكم وللموقع العام.",
@@ -251,7 +297,8 @@
       },
       "primaryColor": "اللون الأساسي",
       "accentColor": "لون التمييز",
-      "logoNote": "رفع الشعار يضاف في Sprint 5."
+      "logoNote": "هذه الألوان تتحكّم بصفحتك العامة — الأزرار والأسعار والواجهة.",
+      "preview": "معاينة"
     },
     "company": {
       "name": "اسم الشركة",

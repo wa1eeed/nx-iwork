@@ -11,9 +11,12 @@ import {
 } from '@/components/ui/tabs';
 import { LocalizationTab } from '@/components/settings/localization-tab';
 import { BrandingTab } from '@/components/settings/branding-tab';
+import { StorefrontTab } from '@/components/settings/storefront-tab';
+import { CustomDomainTab } from '@/components/settings/custom-domain-tab';
 import { CompanyInfoTab } from '@/components/settings/company-info-tab';
 import { ApiSettingsTab } from '@/components/settings/api-settings-tab';
 import { getAiMode } from '@/lib/ai';
+import { publicHost } from '@/lib/public-url';
 import type { INDUSTRIES } from '@/lib/validators/onboarding';
 
 export default async function SettingsPage() {
@@ -26,16 +29,20 @@ export default async function SettingsPage() {
   });
   if (!user?.companyId) redirect('/onboarding');
 
-  const [company, settings, apiSettings] = await Promise.all([
+  const [company, settings, apiSettings, websiteConfig] = await Promise.all([
     db.company.findUnique({
       where: { id: user.companyId },
       select: {
         name: true,
         nameEn: true,
+        slug: true,
+        logo: true,
         industry: true,
         mainGoal: true,
         vision: true,
         brandVoice: true,
+        customDomain: true,
+        customDomainVerified: true,
       },
     }),
     db.businessSettings.findUnique({
@@ -50,6 +57,15 @@ export default async function SettingsPage() {
         byokLastTest: true,
       },
     }),
+    db.websiteConfig.findUnique({
+      where: { companyId: user.companyId },
+      select: {
+        heroTitle: true,
+        heroTitleEn: true,
+        heroSubtitle: true,
+        heroSubtitleEn: true,
+      },
+    }),
   ]);
 
   const t = await getTranslations('settings');
@@ -59,6 +75,9 @@ export default async function SettingsPage() {
     // was deleted out-of-band. Bounce back through onboarding to recreate.
     redirect('/onboarding');
   }
+
+  const host = publicHost();
+  const appIp = process.env.NEXT_PUBLIC_APP_IP || 'YOUR_SERVER_IP';
 
   // Never send the encrypted ciphertext to the client. Only the masked label
   // and the verified flags travel down.
@@ -83,6 +102,8 @@ export default async function SettingsPage() {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="localization">{t('tabs.localization')}</TabsTrigger>
           <TabsTrigger value="branding">{t('tabs.branding')}</TabsTrigger>
+          <TabsTrigger value="storefront">{t('tabs.storefront')}</TabsTrigger>
+          <TabsTrigger value="domain">{t('tabs.domain')}</TabsTrigger>
           <TabsTrigger value="company">{t('tabs.company')}</TabsTrigger>
           {/* Managed mode: the platform supplies the AI centrally — the customer
               never deals with API keys. Only show the tab in BYOK mode. */}
@@ -118,6 +139,30 @@ export default async function SettingsPage() {
               primaryColor: settings.primaryColor,
               accentColor: settings.accentColor,
             }}
+          />
+        </TabsContent>
+
+        <TabsContent value="storefront">
+          <StorefrontTab
+            initial={{
+              logo: company.logo,
+              heroTitle: websiteConfig?.heroTitle ?? null,
+              heroTitleEn: websiteConfig?.heroTitleEn ?? null,
+              heroSubtitle: websiteConfig?.heroSubtitle ?? null,
+              heroSubtitleEn: websiteConfig?.heroSubtitleEn ?? null,
+            }}
+            publicUrl={`/${company.slug}`}
+          />
+        </TabsContent>
+
+        <TabsContent value="domain">
+          <CustomDomainTab
+            initial={{
+              customDomain: company.customDomain,
+              verified: company.customDomainVerified,
+            }}
+            host={host}
+            appIp={appIp}
           />
         </TabsContent>
 
