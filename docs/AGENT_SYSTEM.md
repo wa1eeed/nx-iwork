@@ -597,6 +597,56 @@ Sarah's response: [مثال جيد]
 
 ---
 
+## 🏛️ HR Agent — Lifecycle & Hiring Gateway (built 2026-06-20)
+
+Every digital employee is **hired through one gateway** —
+`hrAgent.onboardAndDeployAgent` in `lib/agent/hr-agent.ts`. **Never call
+`db.agent.create` directly**: that bypasses conflict-check, onboarding, scenario
+materialization, and the per-agent token cap.
+
+### The mandatory 7-step pipeline
+1. **Intake** — the add-agent UI (`/agents/new`) or `POST /api/hr/deploy` (so an
+   autonomous CEO agent can raise a strategic-hiring request).
+2. **Path resolution** — template vs custom (`resolvePayload`).
+3. **Conflict & redundancy check** — `lib/agent/conflict-check.ts`:
+   `gemini-2.5-flash` (via the Vertex provider) flags a >80%-overlap duplicate
+   role, names the existing employee, recommends modifying it. Fail-open; charges
+   managed tokens. Blocks with `HRConflictError` unless `force`.
+4. **Scenario & tool fine-tuning** — if-then scenarios → live `EventTrigger`s.
+5. **Hierarchy placement** — `direct_manager_id` = `parentId` (validated to tenant).
+6. **Cognitive onboarding** — `lib/agent/cognitive-onboarding.ts` seeds the new
+   agent's `AgentMemory` from business context + FAQ, embedded 1536-dim with
+   `gemini-embedding-001`, so it works knowledgeably from message one.
+7. **Activation** — status `ONBOARDING → ONLINE`; the agent appears on the org
+   chart. The create tx pins `app.current_tenant_id` (RLS hook, see DATABASE.md).
+
+### System templates (`AgentTemplate`)
+Nine platform-wide blueprints (seeded via migration): Sales, Support, Marketing,
+Operations, Finance, Appointments, Lead Qualifier (SDR), Social Media, Account
+Manager — each with `personalityProfile`, `coreInstructions`, `ifThenScenarios`,
+`defaultKpis`, `defaultPermissions`, `model`, `icon`, `accent`. Hybrid creation
+copies a blueprint into a tenant-scoped `Agent` (`isCustom=false`, `templateId`
+set, KPIs copied) and materializes its scenarios.
+
+### Per-agent token cap
+The HR service sets `Agent.tokenLimit` from the company plan
+(`lib/plans.ts` `AGENT_TOKEN_CAP`). `lib/billing/agent-tokens.ts`
+(`checkAgentBudget`/`chargeAgentTokens`, UTC monthly reset) enforces it in all
+three run paths so one agent can't drain the shared token bank.
+
+### Complaint escalation
+Inbound public-chat messages run `lib/agent/sentiment.ts` (free keyword gate →
+`gemini-2.5-flash` confirm). An angry complaint fires `COMPLAINT_RECEIVED` (waking
+the assigned agent) and pings the owner's Telegram (`lib/notify/telegram.ts`,
+per-company bot configured in Settings → Alerts).
+
+### UI surfaces
+- `/agents/new` — template browser + custom builder + HR advisory + scenario builder.
+- Agent profile tabs — Activity · Scenarios · **KPIs & performance** · **Memory** · Settings.
+- Employees page — Grid ⇄ **Org chart** (`components/dashboard/organization-chart.tsx`).
+
+---
+
 **هذا هو القلب التقني للمنصة.** بناء هذا الـ system بشكل صحيح = نجاح NX iWork.
 
 **نتيجة كل سطر هنا:** موظف ذكي حقيقي، مش chatbot.

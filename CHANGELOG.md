@@ -9,6 +9,90 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+<!-- ============================================================= -->
+<!-- 2026-06-20 — Reference codes, English-primary redesign,        -->
+<!-- and the HR Agent lifecycle system. See docs/CONTINUE_HERE.md.  -->
+<!-- ============================================================= -->
+
+### Added — Row-Level Security (defense-in-depth tenant isolation)
+
+- RLS **enabled + forced** on 26 tenant tables (`20260620170000_rls_policies`)
+  with a `tenant_isolation` policy that is **permissive when no tenant is pinned**
+  (`current_setting('app.current_tenant_id', true) IS NULL → allow`). Existing
+  queries set no GUC, so behaviour is unchanged and the app keeps working;
+  isolation is **enforced only inside a tx that pins the tenant**.
+- **`lib/db-tenant.ts` `withTenant(companyId, fn)`** runs a callback in a tx that
+  pins `app.current_tenant_id` (transaction-local, pooling-safe). The HR service
+  already pins on hire. **Adopt `withTenant` across queries to fully enforce.**
+- `User` excluded so auth always works. Rollback: `ALTER TABLE <t> DISABLE ROW
+  LEVEL SECURITY`.
+
+### Added — Per-agent monthly token cap by plan
+
+- `Agent.tokenLimit/periodTokensUsed/periodStartedAt`; the HR service sets the cap
+  from the company plan on hire (`lib/plans.ts` `AGENT_TOKEN_CAP`).
+- **`lib/billing/agent-tokens.ts`** `checkAgentBudget` + `chargeAgentTokens`
+  (UTC monthly reset); enforced in all three run paths (chat, task, public chat).
+  Usage bar on the profile KPIs tab.
+
+### Added — Sentiment-based complaint escalation → Telegram
+
+- **`lib/agent/sentiment.ts`** two-stage detection (free multilingual keyword gate
+  → `gemini-2.5-flash` confirm) on inbound public-chat messages.
+- On an angry complaint: fire `COMPLAINT_RECEIVED` (wakes the assigned agent) +
+  Telegram alert to the owner with an anger score + summary (best-effort).
+- New `TriggerEvent`s `CART_ABANDONED` + `COMPLAINT_RECEIVED`; shared
+  `lib/agent/events-catalog.ts`. **`lib/notify/telegram.ts`** per-company sender.
+- Settings **Alerts** tab: Telegram bot token + chat id + "send test".
+
+### Added — HR Agent lifecycle system (the single hiring gateway)
+
+All agent creation flows through **`hrAgent.onboardAndDeployAgent`**
+(`lib/agent/hr-agent.ts`) — the mandatory 7-step pipeline. **Never call
+`db.agent.create` directly.**
+
+- **9 system templates** (`AgentTemplate`, seeded via migration): Sales, Support,
+  Marketing, Operations, Finance, Appointments, Lead Qualifier (SDR), Social
+  Media, Account Manager — each with personality, core instructions, if-then
+  scenarios, KPIs, permissions.
+- **Hybrid creation** `/agents/new`: browse templates **or** build custom, with an
+  **HR Advisory** hint (closest template) and a **Visual If-Then scenario builder**.
+- **Conflict check** (`lib/agent/conflict-check.ts`): `gemini-2.5-flash` blocks a
+  >80%-overlap duplicate role (names the existing employee, recommends modifying
+  it). Fail-open; charges managed tokens.
+- **Cognitive onboarding** (`lib/agent/cognitive-onboarding.ts`): seeds new-agent
+  `AgentMemory` from business context + FAQ (1536-dim `gemini-embedding-001`).
+- **Lifecycle status** `ONBOARDING → ONLINE`; agents serve only after onboarding.
+- **Org chart** (`components/dashboard/organization-chart.tsx`) by `parentId`, with
+  a Grid ⇄ Org chart toggle on the Employees page.
+- **`POST /api/hr/deploy`** — hiring API (UI or an autonomous CEO agent); 409 on a
+  refused near-duplicate.
+- **Profile tabs**: Activity · Scenarios · KPIs & performance · Memory · Settings.
+- SDK note: Gemini runs via the official **`@google-cloud/vertexai`** provider
+  (managed Vertex + ADC), not `@google/genai`. Embeddings: `gemini-embedding-001`.
+
+### Added — Per-tenant human-readable reference codes
+
+- `CUS-001`, `AGT-001`, `PRD-…`, `SRV-…`, `BKG-…` via an atomic `RefCounter`
+  (`lib/refs.ts`); never collide across tenants. Backfilled existing rows. Shown
+  as a mono badge in CRM/products/bookings/agents lists + detail headers.
+
+### Changed — English-primary redesign (Arabic stays secondary)
+
+- **Default locale flipped to `en`** (`i18n/request.ts`); Arabic via the switcher.
+- **Sidebar** regrouped into Workspace / Team / Sales / Knowledge & automation /
+  Configure, with a brand mark.
+- **Onboarding** rebuilt: language → business data → plan → username (live
+  availability + reserved-name check via `/api/onboarding/slug-check`, previews the
+  landing URL). `Company.plan` records the choice (billing deferred).
+- **Settings** gained **Storefront** (logo + hero), **Custom domain** (CNAME/A-record
+  DNS guidance), and **Alerts** tabs. Theme color picker drives the landing page.
+- **Setup checklist** on the overview (logo, color, headline, FAQ, agent, domain).
+- **i18n migration** complete for: overview, full CRM (list/detail/editor), and all
+  section-page headers/empty-states/CTAs (products, orders, bookings, departments,
+  agents, modules, knowledge, tasks). Deep interactive components still pending —
+  see `docs/TODO.md`.
+
 ### Added — Public order flow (visitor → CRM → agent handles)
 
 Closes the autonomy loop: a visitor orders from the public page → it's recorded

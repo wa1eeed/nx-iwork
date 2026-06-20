@@ -867,3 +867,38 @@ CREATE INDEX ON companies (slug);
 **الخلاصة:** هذا الـ Schema يدعم النموذجين (Multi-Tenant SaaS + Single-Tenant) بنفس الكود، وفيه كل ما يحتاجه الموظف الذكي من ذاكرة وقدرات.
 
 النسخة الكاملة في `prisma/schema.prisma`. ✅
+
+---
+
+## 🔐 Row-Level Security (added 2026-06-20)
+
+RLS is **enabled + forced** on 26 tenant tables (`20260620170000_rls_policies`)
+as defense-in-depth over app-level `companyId` scoping. The `tenant_isolation`
+policy is **permissive when no tenant is pinned**:
+
+```sql
+USING (
+  current_setting('app.current_tenant_id', true) IS NULL
+  OR current_setting('app.current_tenant_id', true) = ''
+  OR "companyId" = current_setting('app.current_tenant_id', true)
+)  -- + identical WITH CHECK
+```
+
+So un-pinned queries (everything today, except the HR hire tx) behave exactly as
+before. To **pin** a tenant and get DB-enforced isolation, wrap work in
+`withTenant()` (`lib/db-tenant.ts`), which runs a tx that first calls
+`set_config('app.current_tenant_id', <companyId>, true)` (transaction-local,
+pooling-safe). `User` is excluded so auth always works. **To fully enforce:** adopt
+`withTenant` across tenant queries, then drop the permissive `IS NULL` fallback.
+Rollback: `ALTER TABLE <t> DISABLE ROW LEVEL SECURITY`.
+
+## 🆕 Schema additions (2026-06-20)
+
+- **`RefCounter`** — per-(company,entity) counter for human-readable refs (`CUS-001`).
+- **`AgentTemplate`** — 9 global hiring blueprints (personality, instructions,
+  scenarios, KPIs, permissions); `Agent.templateId/isCustom/kpis/performanceScore`.
+- **`Agent`** lifecycle/token fields — `AgentStatus` gains `ONBOARDING`;
+  `tokenLimit/periodTokensUsed/periodStartedAt` (per-agent monthly cap).
+- **`Company.plan`** (`PlanTier`) — onboarding plan choice.
+- **`TriggerEvent`** gains `CART_ABANDONED` + `COMPLAINT_RECEIVED`.
+- **`BusinessSettings.telegramBotToken/telegramChatId`** — escalation channel.
