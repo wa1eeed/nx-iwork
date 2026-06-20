@@ -1,11 +1,13 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import type { TriggerEvent } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { ensureDefaultAgent } from '@/lib/agent/seed';
 import { checkRoleConflict, type ConflictResult } from '@/lib/agent/conflict-check';
+import { isTriggerEvent } from '@/lib/agent/events-catalog';
 import { hrAgent, HRConflictError, HRValidationError } from '@/lib/agent/hr-agent';
 import { agentSchema, type AgentInput } from '@/lib/validators/agents';
 
@@ -90,13 +92,18 @@ function fromError(err: unknown): AgentActionResult {
 
 export async function createAgent(
   raw: AgentInput,
-  opts?: { force?: boolean }
+  opts?: { force?: boolean; scenarios?: { event: string; action: string }[] }
 ): Promise<AgentActionResult> {
   const cid = await companyId();
   if (!cid) return { ok: false, error: 'no_company' };
   const parsed = agentSchema.safeParse(raw);
   if (!parsed.success) return { ok: false, error: 'validation' };
   const d = parsed.data;
+
+  // Keep only well-formed scenarios with a known event.
+  const scenarios = (opts?.scenarios ?? [])
+    .filter((s) => isTriggerEvent(s.event) && s.action.trim())
+    .map((s) => ({ event: s.event as TriggerEvent, action: s.action.trim() }));
 
   try {
     const id = await hrAgent.onboardAndDeployAgent(cid, {
@@ -111,6 +118,7 @@ export async function createAgent(
       model: d.model,
       temperature: d.temperature,
       systemPrompt: d.systemPrompt || null,
+      scenarios,
       force: opts?.force,
     });
     revalidatePath('/agents');

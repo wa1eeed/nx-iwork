@@ -480,6 +480,14 @@
     "saveFailed": "Couldn't save.",
     "conflictTitle": "Possible role conflict",
     "createAnyway": "Create anyway",
+    "scenariosTitle": "Auto scenarios (If-Then)",
+    "scenariosHelp": "What this employee does automatically when a business event happens.",
+    "addScenario": "Add scenario",
+    "when": "When",
+    "thenDo": "Then the employee…",
+    "thenPlaceholder": "e.g. Welcome the customer and prepare a tailored offer.",
+    "advisory": "This looks like our {template} template — it comes ready with scenarios & KPIs.",
+    "useTemplate": "Use template",
     "models": {
       "haiku": "Fast & economical",
       "haikuHint": "Best for support and quick replies",
@@ -488,6 +496,13 @@
       "opus": "Advanced",
       "opusHint": "Complex tasks and analysis"
     }
+  },
+  "events": {
+    "LEAD_CREATED": "When a new lead/inquiry arrives",
+    "ORDER_CREATED": "When a new order arrives",
+    "ORDER_PAID": "When an invoice is paid",
+    "CART_ABANDONED": "When a cart is abandoned",
+    "COMPLAINT_RECEIVED": "When a complaint is received"
   },
   "crm": {
     "title": "Customers (CRM)",

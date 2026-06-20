@@ -851,9 +851,11 @@ model FaqItem {
 // ========================================
 
 enum TriggerEvent {
-  LEAD_CREATED      // عميل جديد دخل الـ CRM
-  ORDER_CREATED     // طلب جديد
-  ORDER_PAID        // فاتورة مدفوعة
+  LEAD_CREATED       // عميل جديد دخل الـ CRM
+  ORDER_CREATED      // طلب جديد
+  ORDER_PAID         // فاتورة مدفوعة
+  CART_ABANDONED     // سلة متروكة
+  COMPLAINT_RECEIVED // شكوى/غضب عميل
 }
 
 // "When EVENT happens, wake AGENT with this task." The dispatcher (lib/agent/

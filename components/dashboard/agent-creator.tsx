@@ -72,6 +72,19 @@ export function AgentCreator({
 }) {
   const t = useTranslations('agentCreate');
   const [mode, setMode] = useState<'template' | 'custom'>('template');
+  const [preselect, setPreselect] = useState<string | null>(null);
+
+  const hints = templates.map((tpl) => ({
+    templateType: tpl.templateType,
+    roleName: tpl.roleName,
+    roleNameEn: tpl.roleNameEn,
+  }));
+
+  // HR Advisory: jump from a custom role into the matching template.
+  function useTemplate(templateType: string) {
+    setPreselect(templateType);
+    setMode('template');
+  }
 
   return (
     <div className="space-y-6">
@@ -91,9 +104,9 @@ export function AgentCreator({
       </div>
 
       {mode === 'custom' ? (
-        <AgentForm departments={departments} managers={managers} />
+        <AgentForm departments={departments} managers={managers} templates={hints} onUseTemplate={useTemplate} />
       ) : (
-        <TemplateBrowser templates={templates} departments={departments} managers={managers} />
+        <TemplateBrowser templates={templates} departments={departments} managers={managers} initialSelected={preselect} />
       )}
     </div>
   );
@@ -103,15 +116,17 @@ function TemplateBrowser({
   templates,
   departments,
   managers,
+  initialSelected,
 }: {
   templates: TemplateCard[];
   departments: Dept[];
   managers: { id: string; name: string }[];
+  initialSelected?: string | null;
 }) {
   const t = useTranslations('agentCreate');
   const locale = useLocale();
   const router = useRouter();
-  const [selected, setSelected] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string | null>(initialSelected ?? null);
   const [deptId, setDeptId] = useState(departments[0]?.id ?? '');
   const [parentId, setParentId] = useState('');
   const [conflict, setConflict] = useState<ConflictResult | null>(null);

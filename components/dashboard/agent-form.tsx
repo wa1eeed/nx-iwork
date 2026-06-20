@@ -1,9 +1,9 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Loader2, AlertTriangle } from 'lucide-react';
+import { Loader2, AlertTriangle, Lightbulb, Plus, Trash2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -11,8 +11,19 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createAgent, updateAgent } from '@/lib/actions/agents';
+import { TRIGGER_EVENTS } from '@/lib/agent/events-catalog';
 import type { AgentInput } from '@/lib/validators/agents';
 import type { ConflictResult } from '@/lib/agent/conflict-check';
+
+export interface TemplateHint {
+  templateType: string;
+  roleName: string;
+  roleNameEn: string;
+}
+interface FormScenario {
+  event: string;
+  action: string;
+}
 
 export interface AgentFormValues {
   id?: string;
@@ -45,20 +56,51 @@ export function AgentForm({
   departments,
   managers,
   initial,
+  templates,
+  onUseTemplate,
 }: {
   departments: { id: string; name: string }[];
   managers: { id: string; name: string }[];
   initial?: AgentFormValues;
+  templates?: TemplateHint[];
+  onUseTemplate?: (templateType: string) => void;
 }) {
   const t = useTranslations('agentForm');
   const tc = useTranslations('common');
+  const te = useTranslations('events');
   const router = useRouter();
   const [v, setV] = useState<AgentFormValues>(
     initial ?? { ...DEFAULTS, departmentId: departments[0]?.id ?? '' }
   );
   const [saving, startSave] = useTransition();
   const [conflict, setConflict] = useState<ConflictResult | null>(null);
+  const [scenarios, setScenarios] = useState<FormScenario[]>([]);
+  const [draft, setDraft] = useState<FormScenario>({ event: TRIGGER_EVENTS[0], action: '' });
   const isEdit = Boolean(initial?.id);
+
+  // HR Advisory: surface the closest system template as a starting base.
+  const suggestion = useMemo(() => {
+    const q = v.role.trim().toLowerCase();
+    if (isEdit || q.length < 3 || !templates?.length) return null;
+    const words = q.split(/\s+/).filter((w) => w.length > 2);
+    let best: TemplateHint | null = null;
+    let bestScore = 0;
+    for (const tpl of templates) {
+      const hay = `${tpl.roleNameEn} ${tpl.roleName}`.toLowerCase();
+      const score = words.filter((w) => hay.includes(w)).length;
+      if (score > bestScore) {
+        bestScore = score;
+        best = tpl;
+      }
+    }
+    return bestScore > 0 ? best : null;
+  }, [v.role, templates, isEdit]);
+
+  function addScenario() {
+    if (!draft.action.trim()) return;
+    setScenarios((prev) => [...prev, { ...draft, action: draft.action.trim() }]);
+    setDraft({ event: TRIGGER_EVENTS[0], action: '' });
+  }
 
   const MODELS: { value: AgentFormValues['model']; label: string; hint: string }[] = [
     { value: 'HAIKU', label: t('models.haiku'), hint: t('models.haikuHint') },
@@ -93,7 +135,7 @@ export function AgentForm({
     startSave(async () => {
       const res = isEdit
         ? await updateAgent(initial!.id!, payload)
-        : await createAgent(payload, { force });
+        : await createAgent(payload, { force, scenarios });
       if (res.ok) {
         toast.success(isEdit ? t('saved') : t('created'));
         router.push('/agents');
@@ -131,6 +173,19 @@ export function AgentForm({
             <div className="space-y-2">
               <Label>{t('role')} *</Label>
               <Input value={v.role} onChange={(e) => { set('role', e.target.value); setConflict(null); }} placeholder={t('rolePlaceholder')} dir="auto" />
+              {suggestion && onUseTemplate && (
+                <div className="flex items-start gap-2 rounded-md bg-primary/5 p-2 text-xs">
+                  <Lightbulb className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+                  <div>
+                    <span className="text-muted-foreground">
+                      {t('advisory', { template: suggestion.roleNameEn })}
+                    </span>{' '}
+                    <button type="button" className="font-medium text-primary underline" onClick={() => onUseTemplate(suggestion.templateType)}>
+                      {t('useTemplate')}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
             <div className="space-y-2">
               <Label>{t('department')} *</Label>
@@ -207,6 +262,53 @@ export function AgentForm({
           </div>
         </CardContent>
       </Card>
+
+      {!isEdit && (
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Zap className="h-4 w-4 text-amber-500" />
+            {t('scenariosTitle')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t('scenariosHelp')}</p>
+
+          {scenarios.map((s, i) => (
+            <div key={i} className="flex items-center gap-2 rounded-lg border p-2 text-sm">
+              <Zap className="h-4 w-4 shrink-0 text-amber-500" />
+              <span className="min-w-0 flex-1">
+                <span className="font-medium">{te(s.event)}</span>
+                <span className="block truncate text-xs text-muted-foreground">{s.action}</span>
+              </span>
+              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setScenarios((p) => p.filter((_, j) => j !== i))}>
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+
+          <div className="space-y-2 rounded-lg border border-dashed p-3">
+            <div className="space-y-1">
+              <Label className="text-xs">{t('when')}</Label>
+              <select className={selectCls} value={draft.event} onChange={(e) => setDraft((d) => ({ ...d, event: e.target.value }))}>
+                {TRIGGER_EVENTS.map((ev) => (
+                  <option key={ev} value={ev}>{te(ev)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1">
+              <Label className="text-xs">{t('thenDo')}</Label>
+              <div className="flex gap-2">
+                <Input value={draft.action} onChange={(e) => setDraft((d) => ({ ...d, action: e.target.value }))} placeholder={t('thenPlaceholder')} dir="auto" />
+                <Button type="button" variant="outline" onClick={addScenario} disabled={!draft.action.trim()}>
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+      )}
 
       {conflict && (
         <Card className="border-amber-500/40 bg-amber-500/5">
