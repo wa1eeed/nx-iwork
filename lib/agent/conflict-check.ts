@@ -40,7 +40,7 @@ export async function checkRoleConflict(
 ): Promise<ConflictResult> {
   const existing = await db.agent.findMany({
     where: { companyId, status: { not: 'ARCHIVED' } },
-    select: { role: true, roleEn: true, department: { select: { name: true } } },
+    select: { name: true, role: true, roleEn: true, department: { select: { name: true } } },
   });
   // First hire can never conflict.
   if (existing.length === 0) return NONE;
@@ -49,18 +49,20 @@ export async function checkRoleConflict(
   if (!result.ok) return NONE; // fail-open when no AI is configured
 
   const roster = existing
-    .map((a, i) => `${i + 1}. ${a.roleEn || a.role} (dept: ${a.department.name})`)
+    .map((a, i) => `${i + 1}. ${a.name} — ${a.roleEn || a.role} (dept: ${a.department.name})`)
     .join('\n');
 
   const system =
-    'You are an HR org-design reviewer for a single company. Decide whether a NEW role ' +
-    'duplicates an existing role or creates a hard responsibility/permission conflict. ' +
-    'A different department or a clearly distinct scope is NOT a conflict. ' +
+    'You are the HR org-design gateway for a single company. Decide whether a NEW role ' +
+    'overlaps an existing employee in responsibilities/permissions by MORE THAN 80% ' +
+    '(a near-duplicate). A different department or a clearly distinct scope is NOT a conflict. ' +
+    'When it is a near-duplicate, recommend modifying the existing employee instead of hiring a ' +
+    'duplicate that drains AI credits, and NAME that employee in the reason. ' +
     'Respond with ONLY a JSON object: {"conflict":boolean,"severity":"none|warning|block","reason":"one short sentence"}. ' +
-    'Use "block" only for an almost-exact duplicate; "warning" for meaningful overlap; otherwise "none".';
+    'Use "block" for >80% overlap (near-duplicate); "warning" for meaningful-but-distinct overlap; otherwise "none".';
 
   const user =
-    `Existing roles:\n${roster}\n\n` +
+    `Existing employees:\n${roster}\n\n` +
     `New role to add: "${candidate.role}" in department "${candidate.department}".\n` +
     `Return the JSON verdict.`;
 

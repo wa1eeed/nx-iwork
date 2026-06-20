@@ -1,15 +1,12 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import type { Prisma, TriggerEvent } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { ensureDefaultAgent } from '@/lib/agent/seed';
-import { nextRef } from '@/lib/refs';
 import { checkRoleConflict, type ConflictResult } from '@/lib/agent/conflict-check';
-import { cognitiveOnboard } from '@/lib/agent/cognitive-onboarding';
-import { getTemplate, type IfThenScenario } from '@/lib/agent/templates';
+import { hrAgent, HRConflictError, HRValidationError } from '@/lib/agent/hr-agent';
 import { agentSchema, type AgentInput } from '@/lib/validators/agents';
 
 export type CreateDefaultAgentResult =
@@ -20,17 +17,6 @@ export type AgentActionResult =
   | { ok: true; id: string }
   | { ok: false; error: 'no_company' | 'validation' | 'not_found' | 'bad_department' | 'generic' }
   | { ok: false; error: 'conflict'; conflict: ConflictResult };
-
-// Maps a template's scenario event to a live TriggerEvent. Scenarios whose
-// event isn't (yet) a platform event are skipped — kept on the template for
-// reference until the event exists.
-const SCENARIO_EVENT_MAP: Record<string, TriggerEvent> = {
-  new_lead_captured: 'LEAD_CREATED',
-  lead_created: 'LEAD_CREATED',
-  new_order: 'ORDER_CREATED',
-  order_created: 'ORDER_CREATED',
-  order_paid: 'ORDER_PAID',
-};
 
 async function departmentName(cid: string, departmentId: string): Promise<string> {
   const d = await db.department.findFirst({
@@ -82,6 +68,26 @@ export async function previewConflict(role: string, departmentId: string): Promi
   return checkRoleConflict(cid, { role: role.trim(), department: dept });
 }
 
+// All hiring flows through the HR Agent gateway (the 7-step pipeline). These
+// actions are thin adapters that build a DeployPayload and translate the
+// service's typed errors into a UI-friendly result.
+function fromError(err: unknown): AgentActionResult {
+  if (err instanceof HRConflictError) {
+    return {
+      ok: false,
+      error: 'conflict',
+      conflict: { conflict: true, severity: 'block', reason: err.verdict.reason ?? '' },
+    };
+  }
+  if (err instanceof HRValidationError) {
+    if (err.code === 'no_template') return { ok: false, error: 'not_found' };
+    if (err.code === 'bad_department') return { ok: false, error: 'bad_department' };
+    return { ok: false, error: 'validation' };
+  }
+  console.error('agent deploy failed', err);
+  return { ok: false, error: 'generic' };
+}
+
 export async function createAgent(
   raw: AgentInput,
   opts?: { force?: boolean }
@@ -92,53 +98,29 @@ export async function createAgent(
   if (!parsed.success) return { ok: false, error: 'validation' };
   const d = parsed.data;
 
-  if (!(await assertRefs(cid, d.departmentId, d.parentId))) {
-    return { ok: false, error: 'bad_department' };
-  }
-
-  // HR gateway: block a near-exact duplicate role unless the owner overrides.
-  if (!opts?.force) {
-    const conflict = await checkRoleConflict(cid, {
-      role: d.role,
-      department: await departmentName(cid, d.departmentId),
-    });
-    if (conflict.severity === 'block') return { ok: false, error: 'conflict', conflict };
-  }
-
   try {
-    const agent = await db.agent.create({
-      data: {
-        companyId: cid,
-        ref: await nextRef(cid, 'agent'),
-        departmentId: d.departmentId,
-        parentId: d.parentId || null,
-        name: d.name,
-        nameEn: d.nameEn || null,
-        initial: initialOf(d.name),
-        role: d.role,
-        roleEn: d.roleEn || null,
-        persona: d.persona,
-        isCustom: true,
-        model: d.model,
-        temperature: d.temperature,
-        maxTokens: d.maxTokens,
-        systemPrompt: d.systemPrompt || null,
-      },
-      select: { id: true },
+    const id = await hrAgent.onboardAndDeployAgent(cid, {
+      source: 'custom',
+      departmentId: d.departmentId,
+      parentId: d.parentId || null,
+      name: d.name,
+      nameEn: d.nameEn || null,
+      role: d.role,
+      roleEn: d.roleEn || null,
+      persona: d.persona,
+      model: d.model,
+      temperature: d.temperature,
+      systemPrompt: d.systemPrompt || null,
+      force: opts?.force,
     });
-    // Seed long-term memory with the business context before first use.
-    await cognitiveOnboard(agent.id, cid);
     revalidatePath('/agents');
-    return { ok: true, id: agent.id };
+    return { ok: true, id };
   } catch (err) {
-    console.error('createAgent failed', err);
-    return { ok: false, error: 'generic' };
+    return fromError(err);
   }
 }
 
-// Hybrid creation from a system template: copies the blueprint into a
-// tenant-scoped agent, materializes its scenarios as live EventTriggers, runs
-// the conflict check, and cognitively onboards it.
+// Hybrid creation from a system template — same HR pipeline, template source.
 export async function createAgentFromTemplate(
   templateType: string,
   departmentId: string,
@@ -147,76 +129,18 @@ export async function createAgentFromTemplate(
   const cid = await companyId();
   if (!cid) return { ok: false, error: 'no_company' };
 
-  const tpl = await getTemplate(templateType);
-  if (!tpl) return { ok: false, error: 'not_found' };
-
-  if (!(await assertRefs(cid, departmentId, opts?.parentId ?? null))) {
-    return { ok: false, error: 'bad_department' };
-  }
-
-  if (!opts?.force) {
-    const conflict = await checkRoleConflict(cid, {
-      role: tpl.roleNameEn,
-      department: await departmentName(cid, departmentId),
-    });
-    if (conflict.severity === 'block') return { ok: false, error: 'conflict', conflict };
-  }
-
-  // Synthesize the persona prompt from the structured profile + instructions.
-  const profile = tpl.personalityProfile as { tone?: string; traits?: string[] } | null;
-  const personaParts = [
-    profile?.tone ? `Tone: ${profile.tone}.` : '',
-    profile?.traits?.length ? `Traits: ${profile.traits.join(', ')}.` : '',
-    tpl.coreInstructions,
-  ].filter(Boolean);
-
   try {
-    const agent = await db.agent.create({
-      data: {
-        companyId: cid,
-        ref: await nextRef(cid, 'agent'),
-        departmentId,
-        parentId: opts?.parentId || null,
-        templateId: tpl.id,
-        isCustom: false,
-        name: tpl.roleName,
-        nameEn: tpl.roleNameEn,
-        initial: initialOf(tpl.roleName),
-        role: tpl.roleName,
-        roleEn: tpl.roleNameEn,
-        persona: personaParts.join(' '),
-        kpis: tpl.defaultKpis as Prisma.InputJsonValue,
-        model: tpl.model,
-        systemPrompt: tpl.coreInstructions,
-      },
-      select: { id: true },
+    const id = await hrAgent.onboardAndDeployAgent(cid, {
+      source: 'template',
+      templateType,
+      departmentId,
+      parentId: opts?.parentId ?? null,
+      force: opts?.force,
     });
-
-    // Materialize template scenarios into live event triggers where the event
-    // exists on the platform today.
-    const scenarios = (tpl.ifThenScenarios as unknown as IfThenScenario[]) ?? [];
-    const triggers = scenarios
-      .map((s) => ({ event: SCENARIO_EVENT_MAP[s.event], action: s.action }))
-      .filter((t): t is { event: TriggerEvent; action: string } => Boolean(t.event));
-    if (triggers.length > 0) {
-      await db.eventTrigger.createMany({
-        data: triggers.map((t) => ({
-          companyId: cid,
-          agentId: agent.id,
-          event: t.event,
-          name: `${tpl.roleNameEn}: ${t.event}`,
-          taskTemplate: t.action,
-          isActive: true,
-        })),
-      });
-    }
-
-    await cognitiveOnboard(agent.id, cid);
     revalidatePath('/agents');
-    return { ok: true, id: agent.id };
+    return { ok: true, id };
   } catch (err) {
-    console.error('createAgentFromTemplate failed', err);
-    return { ok: false, error: 'generic' };
+    return fromError(err);
   }
 }
 

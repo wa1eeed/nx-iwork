@@ -374,7 +374,12 @@
       "createDept": "إنشاء قسم",
       "addFirst": "أنشئ أول موظف",
       "tasksDone": "{n} مهمة منجزة",
+      "gridView": "شبكة",
+      "chartView": "الهيكل",
+      "orgChartTitle": "الهيكل التنظيمي",
+      "orgChartEmpty": "وظّف موظفين لترى هيكلك التنظيمي يتشكّل.",
       "status": {
+        "ONBOARDING": "قيد التهيئة",
         "ONLINE": "متصل",
         "WORKING": "يعمل",
         "PAUSED": "متوقف",

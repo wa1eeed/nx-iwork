@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { AgentsView } from '@/components/dashboard/agents-view';
 
 // The AI Office: every employee, grouped by department.
 export default async function AgentsPage() {
@@ -34,6 +35,7 @@ export default async function AgentsPage() {
                 role: true,
                 status: true,
                 model: true,
+                parentId: true,
                 tasksCompleted: true,
               },
             },
@@ -44,6 +46,20 @@ export default async function AgentsPage() {
     : [[], 0];
 
   const totalAgents = departments.reduce((n, d) => n + d.agents.length, 0);
+
+  // Flat node list for the org chart (linked by direct_manager_id = parentId).
+  const orgNodes = departments.flatMap((d) =>
+    d.agents.map((a) => ({
+      id: a.id,
+      name: a.name,
+      role: a.role,
+      initial: a.initial,
+      ref: a.ref,
+      status: a.status,
+      parentId: a.parentId,
+      departmentColor: d.color,
+    }))
+  );
 
   return (
     <div className="space-y-6">
@@ -83,6 +99,7 @@ export default async function AgentsPage() {
           </CardContent>
         </Card>
       ) : (
+        <AgentsView orgNodes={orgNodes}>
         <div className="space-y-8">
           {departments
             .filter((d) => d.agents.length > 0)
@@ -136,6 +153,7 @@ export default async function AgentsPage() {
               </section>
             ))}
         </div>
+        </AgentsView>
       )}
     </div>
   );

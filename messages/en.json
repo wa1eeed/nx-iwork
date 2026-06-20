@@ -374,7 +374,12 @@
       "createDept": "Create a department",
       "addFirst": "Create your first employee",
       "tasksDone": "{n} tasks done",
+      "gridView": "Grid",
+      "chartView": "Org chart",
+      "orgChartTitle": "Organization chart",
+      "orgChartEmpty": "Hire employees to see your org chart take shape.",
       "status": {
+        "ONBOARDING": "Onboarding",
         "ONLINE": "Online",
         "WORKING": "Working",
         "PAUSED": "Paused",

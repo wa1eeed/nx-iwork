@@ -239,7 +239,8 @@ model Department {
 }
 
 enum AgentStatus {
-  ONLINE
+  ONBOARDING // being cognitively onboarded; not yet serving
+  ONLINE     // active
   WORKING
   PAUSED
   OFFLINE
