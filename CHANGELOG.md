@@ -9,6 +9,20 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — Agents as real operators + persistent per-agent chat
+
+- **Saved chat history per agent**: the dashboard chat now loads each agent's
+  stored `ChatMessage` history on open, so conversations persist across reloads
+  (each agent keeps its own thread).
+- **Expanded agent write tools** — agents now operate the platform, not just
+  read it:
+  - `update_lead` → full CRM edit (name/phone/email + status/notes).
+  - `create_order` → records an Order + fires `ORDER_CREATED` (sales loop).
+  - `update_booking` → reschedule/cancel.
+  - `update_task_status` → mark tasks done/cancelled.
+  - Gated by module (sales tools need e-commerce/services; booking tools need
+    bookings); capabilities panel updated.
+
 ### Added — Per-agent scenarios + autonomous task execution
 
 - **Tasks never get ignored**: the scheduler now runs ANY due PENDING

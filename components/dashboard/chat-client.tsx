@@ -38,15 +38,16 @@ export function ChatClient({
   agents,
   keyReady,
   provider,
+  initialThreads = {},
 }: {
   agents: AgentSummary[];
   keyReady: boolean;
   provider: string;
+  initialThreads?: Record<string, ChatMessage[]>;
 }) {
   const [activeId, setActiveId] = useState(agents[0].id);
-  // Threads are kept in memory per agent for the session; server-side history
-  // is the source of truth and reloads on refresh.
-  const [threads, setThreads] = useState<Record<string, ChatMessage[]>>({});
+  // Seeded from the saved ChatMessage history (per agent), then appended live.
+  const [threads, setThreads] = useState<Record<string, ChatMessage[]>>(initialThreads);
   const [input, setInput] = useState('');
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);

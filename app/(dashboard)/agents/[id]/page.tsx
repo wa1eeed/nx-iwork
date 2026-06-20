@@ -96,6 +96,9 @@ export default async function AgentProfilePage({
     find_customer: 'البحث عن عميل',
     create_lead: 'تسجيل عميل',
     update_lead: 'تحديث عميل',
+    create_order: 'تسجيل طلب',
+    update_booking: 'تعديل حجز',
+    update_task_status: 'تحديث حالة مهمة',
     create_task: 'إنشاء مهمة',
     save_memory: 'الحفظ في الذاكرة',
   };

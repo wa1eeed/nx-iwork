@@ -25,16 +25,17 @@ export interface CompanyModules {
   hasBookings: boolean;
 }
 
-const CATALOG_TOOLS = new Set(['search_catalog']);
-const BOOKING_TOOLS = new Set(['check_availability', 'create_booking']);
+// Sales/catalog tools need e-commerce or services; booking tools need bookings.
+const SALES_TOOLS = new Set(['search_catalog', 'create_order']);
+const BOOKING_TOOLS = new Set(['check_availability', 'create_booking', 'update_booking']);
 
 // Dynamic tools: only hand the model the tools for the modules this company has
 // enabled (cheaper context + the agent never offers what the business can't do).
 export function getToolsForCompany(m: CompanyModules): AiTool[] {
   return AGENT_TOOLS.filter((t) => {
-    if (CATALOG_TOOLS.has(t.name)) return m.hasEcommerce || m.hasServices;
+    if (SALES_TOOLS.has(t.name)) return m.hasEcommerce || m.hasServices;
     if (BOOKING_TOOLS.has(t.name)) return m.hasBookings;
-    return true; // core tools (CRM, FAQ, tasks, memory) always available
+    return true; // core (CRM, FAQ, tasks + status, memory) always available
   });
 }
 
@@ -137,18 +138,59 @@ export const AGENT_TOOLS: AiTool[] = [
   },
   {
     name: 'update_lead',
-    description: 'حدّث حالة أو ملاحظات عميل موجود في الـ CRM (مثلاً من مهتم إلى اشترى).',
+    description: 'حدّث بيانات عميل موجود في الـ CRM (الاسم، الجوال، الإيميل، الحالة، الملاحظات).',
     parameters: {
       type: 'object',
       properties: {
         customerId: { type: 'string', description: 'معرّف العميل من find_customer' },
-        status: {
-          type: 'string',
-          enum: ['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST'],
-        },
+        name: { type: 'string' },
+        phone: { type: 'string' },
+        email: { type: 'string' },
+        status: { type: 'string', enum: ['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST'] },
         notes: { type: 'string' },
       },
       required: ['customerId'],
+    },
+  },
+  {
+    name: 'update_task_status',
+    description: 'حدّث حالة مهمة (مثلاً علّمها منجزة أو ملغاة).',
+    parameters: {
+      type: 'object',
+      properties: {
+        taskId: { type: 'string' },
+        status: { type: 'string', enum: ['WORKING', 'DONE', 'CANCELLED', 'BLOCKED'] },
+      },
+      required: ['taskId', 'status'],
+    },
+  },
+  {
+    name: 'update_booking',
+    description: 'عدّل حجزاً: أعد جدولته (startAt/endAt) أو غيّر حالته (مثل CANCELLED).',
+    parameters: {
+      type: 'object',
+      properties: {
+        bookingId: { type: 'string' },
+        startAt: { type: 'string', description: 'ISO 8601' },
+        endAt: { type: 'string', description: 'ISO 8601' },
+        status: { type: 'string', enum: ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'] },
+      },
+      required: ['bookingId'],
+    },
+  },
+  {
+    name: 'create_order',
+    description: 'سجّل طلباً جديداً لعميل في النظام (وكيل المبيعات). يحفظه في الطلبات ويطلق متابعة تلقائية.',
+    parameters: {
+      type: 'object',
+      properties: {
+        customerName: { type: 'string' },
+        customerId: { type: 'string', description: 'اربطه بعميل CRM إن وُجد' },
+        total: { type: 'number', description: 'الإجمالي' },
+        type: { type: 'string', enum: ['SERVICE', 'PRODUCT'] },
+        notes: { type: 'string' },
+      },
+      required: ['customerName', 'total'],
     },
   },
   {
@@ -232,7 +274,30 @@ const createLeadArgs = z.object({
 
 const updateLeadArgs = z.object({
   customerId: z.string().trim().min(1),
+  name: z.string().trim().max(200).optional(),
+  phone: z.string().trim().max(40).optional(),
+  email: z.string().trim().max(200).optional(),
   status: z.enum(['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST']).optional(),
+  notes: z.string().trim().max(2000).optional(),
+});
+
+const updateTaskStatusArgs = z.object({
+  taskId: z.string().trim().min(1),
+  status: z.enum(['WORKING', 'DONE', 'CANCELLED', 'BLOCKED']),
+});
+
+const updateBookingArgs = z.object({
+  bookingId: z.string().trim().min(1),
+  startAt: z.string().trim().optional(),
+  endAt: z.string().trim().optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']).optional(),
+});
+
+const createOrderArgs = z.object({
+  customerName: z.string().trim().min(1).max(200),
+  customerId: z.string().trim().optional(),
+  total: z.coerce.number().nonnegative().max(99_999_999),
+  type: z.enum(['SERVICE', 'PRODUCT']).optional(),
   notes: z.string().trim().max(2000).optional(),
 });
 
@@ -451,12 +516,76 @@ export async function executeTool(
         const result = await db.customer.updateMany({
           where: { id: args.customerId, companyId: ctx.companyId },
           data: {
+            ...(args.name ? { name: args.name } : {}),
+            ...(args.phone ? { phone: args.phone } : {}),
+            ...(args.email ? { email: args.email } : {}),
             ...(args.status ? { status: args.status } : {}),
             ...(args.notes ? { notes: args.notes } : {}),
           },
         });
         if (result.count === 0) return fail('لم يُعثر على العميل.');
         return ok({ message: 'تم تحديث العميل.' });
+      }
+
+      case 'update_task_status': {
+        const args = updateTaskStatusArgs.parse(rawArgs);
+        const result = await db.task.updateMany({
+          where: { id: args.taskId, companyId: ctx.companyId },
+          data: {
+            status: args.status,
+            ...(args.status === 'DONE' ? { completedAt: new Date(), progress: 100 } : {}),
+          },
+        });
+        if (result.count === 0) return fail('لم يُعثر على المهمة.');
+        return ok({ message: 'تم تحديث حالة المهمة.' });
+      }
+
+      case 'update_booking': {
+        const args = updateBookingArgs.parse(rawArgs);
+        const startAt = parseDate(args.startAt);
+        const endAt = parseDate(args.endAt);
+        if (startAt === null || endAt === null) return fail('صيغة التاريخ غير صحيحة.');
+        const result = await db.booking.updateMany({
+          where: { id: args.bookingId, companyId: ctx.companyId },
+          data: {
+            ...(startAt ? { startAt } : {}),
+            ...(endAt ? { endAt } : {}),
+            ...(args.status ? { status: args.status } : {}),
+          },
+        });
+        if (result.count === 0) return fail('لم يُعثر على الحجز.');
+        return ok({ message: 'تم تحديث الحجز.' });
+      }
+
+      case 'create_order': {
+        const args = createOrderArgs.parse(rawArgs);
+        if (args.customerId) {
+          const exists = await db.customer.findFirst({
+            where: { id: args.customerId, companyId: ctx.companyId },
+            select: { id: true },
+          });
+          if (!exists) return fail('العميل المرتبط غير موجود.');
+        }
+        const order = await db.order.create({
+          data: {
+            companyId: ctx.companyId,
+            orderNumber: `ORD-${Date.now().toString(36).toUpperCase()}`,
+            type: args.type ?? 'SERVICE',
+            customerId: args.customerId,
+            customerName: args.customerName,
+            customerNotes: args.notes,
+            total: args.total,
+            subtotal: args.total,
+            agentId: ctx.agentId,
+          },
+          select: { id: true, orderNumber: true },
+        });
+        // Fire ORDER_CREATED so a configured agent follows up automatically.
+        await dispatchEvent(ctx.companyId, 'ORDER_CREATED', {
+          summary: `طلب جديد ${order.orderNumber} للعميل ${args.customerName}`,
+          metadata: { orderId: order.id },
+        });
+        return ok({ order, message: 'تم تسجيل الطلب.' });
       }
 
       case 'create_task': {
