@@ -43,6 +43,8 @@ export async function createCompanyAction(
       mainGoal: parsed.data.mainGoal ?? null,
       vision: parsed.data.vision ?? null,
       preferredSlug: parsed.data.slug ?? null,
+      plan: parsed.data.plan ?? null,
+      preferredLanguage: parsed.data.preferredLanguage ?? null,
     });
   } catch (err) {
     if (isUniqueConstraintError(err)) {

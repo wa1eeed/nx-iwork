@@ -99,6 +99,10 @@ model Company {
   status          CompanyStatus @default(TRIAL)
   trialEndsAt     DateTime?
 
+  // Plan the owner selected during onboarding. Recorded for now; real billing
+  // (Tap) is wired later. Everyone starts on managed token credits regardless.
+  plan            PlanTier      @default(STARTER)
+
   // Managed billing (AI_MODE=managed): prepaid AI token credits. The platform
   // pays the provider and decrements this per request; at <= 0 requests are
   // blocked. Ignored in BYOK mode (the company's own key is billed directly).

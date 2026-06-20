@@ -1,5 +1,6 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, type PlanTier } from '@prisma/client';
 import { db } from '@/lib/db';
+import { isReservedSlug } from '@/lib/reserved-slugs';
 
 const SLUG_MAX_LENGTH = 40;
 const SLUG_FALLBACK = 'company';
@@ -27,11 +28,10 @@ async function findUniqueSlug(base: string): Promise<string> {
   let suffix = 1;
   // Cap iterations defensively; collision storms here would indicate abuse.
   while (suffix < 1000) {
-    const existing = await db.company.findUnique({
-      where: { slug: candidate },
-      select: { id: true },
-    });
-    if (!existing) return candidate;
+    const taken =
+      isReservedSlug(candidate) ||
+      (await db.company.findUnique({ where: { slug: candidate }, select: { id: true } })) !== null;
+    if (!taken) return candidate;
     suffix += 1;
     candidate = `${base}-${suffix}`.slice(0, SLUG_MAX_LENGTH);
   }
@@ -47,11 +47,17 @@ export type CreateCompanyInput = {
   mainGoal?: string | null;
   vision?: string | null;
   preferredSlug?: string | null;
+  plan?: PlanTier | null;
+  preferredLanguage?: 'en' | 'ar' | null;
 };
 
 export async function createCompanyForUser(input: CreateCompanyInput) {
   const baseSlug = slugify(input.preferredSlug || input.nameEn || input.name);
   const slug = await findUniqueSlug(baseSlug);
+
+  // Order enabled languages so the chosen one is primary on the public site.
+  const lang = input.preferredLanguage ?? 'en';
+  const enabledLanguages = lang === 'ar' ? ['ar', 'en'] : ['en', 'ar'];
 
   return db.$transaction(async (tx) => {
     const company = await tx.company.create({
@@ -63,7 +69,8 @@ export async function createCompanyForUser(input: CreateCompanyInput) {
         teamSize: input.teamSize || null,
         mainGoal: input.mainGoal || null,
         vision: input.vision || null,
-        settings: { create: {} },
+        plan: input.plan ?? 'STARTER',
+        settings: { create: { primaryLanguage: lang, enabledLanguages } },
         websiteConfig: { create: {} },
         apiSettings: { create: {} },
       },

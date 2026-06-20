@@ -19,6 +19,9 @@ export const INDUSTRIES = [
 
 export const TEAM_SIZES = ['solo', 'small', 'medium', 'large'] as const;
 
+export const ONBOARDING_PLAN_TIERS = ['STARTER', 'GROWTH', 'SCALE'] as const;
+export const ONBOARDING_LANGUAGES = ['en', 'ar'] as const;
+
 export const onboardingSchema = z.object({
   name: z.string().trim().min(1).max(120),
   nameEn: z.string().trim().max(120).optional().nullable(),
@@ -34,6 +37,8 @@ export const onboardingSchema = z.object({
   teamSize: z.enum(TEAM_SIZES).optional().nullable(),
   mainGoal: z.string().trim().max(2000).optional().nullable(),
   vision: z.string().trim().max(2000).optional().nullable(),
+  plan: z.enum(ONBOARDING_PLAN_TIERS).optional().nullable(),
+  preferredLanguage: z.enum(ONBOARDING_LANGUAGES).optional().nullable(),
 });
 
 export type OnboardingInput = z.infer<typeof onboardingSchema>;
