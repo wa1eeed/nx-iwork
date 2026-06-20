@@ -59,7 +59,7 @@ export default async function OverviewPage() {
     { label: 'الأقسام', value: departments, icon: Building2, href: '/departments' },
     { label: 'مهام قيد التنفيذ', value: tasksActive, icon: ListChecks, href: '/tasks' },
     { label: 'مهام منجزة', value: tasksDone, icon: CheckCircle2, href: '/tasks' },
-    { label: 'العملاء (CRM)', value: customers, icon: UserPlus, href: '/tasks' },
+    { label: 'العملاء (CRM)', value: customers, icon: UserPlus, href: '/customers' },
     { label: 'جدولة نشطة', value: schedules, icon: CalendarCheck, href: '/knowledge' },
     ...(user.company.hasBookings
       ? [{ label: 'الحجوزات', value: bookings, icon: CalendarCheck, href: '/bookings' }]

@@ -22,6 +22,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import { Countdown } from '@/components/dashboard/countdown';
+import { feedback } from '@/lib/ui/feedback';
 import { createTask, deleteTask } from '@/lib/actions/tasks';
 
 export interface TaskRow {
@@ -98,13 +99,13 @@ export function TaskManager({
         priority: priority as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
       });
       if (res.ok) {
-        toast.success('تمت إضافة المهمة.');
+        feedback('scheduled', 'تمت إضافة المهمة لقائمة المهام.');
         setTitle('');
         setDescription('');
         setAdding(false);
         router.refresh();
       } else {
-        toast.error('تعذّرت الإضافة.');
+        feedback('error', 'تعذّرت الإضافة.');
       }
     });
   }
@@ -114,12 +115,12 @@ export function TaskManager({
     try {
       const res = await fetch(`/api/tasks/${id}/run`, { method: 'POST' });
       const data = await res.json();
-      if (data.ok) toast.success('نفّذ الموظف المهمة.');
-      else if (data.reason === 'billing_limit') toast.error('انتهى رصيد التوكنز.');
-      else if (data.reason === 'vertex_not_configured') toast.error('خدمة الذكاء غير مهيأة.');
-      else toast.error('تعذّر تنفيذ المهمة.');
+      if (data.ok) feedback('success', 'نفّذ الموظف المهمة بنجاح.');
+      else if (data.reason === 'billing_limit') feedback('approval', 'انتهى رصيد التوكنز — جدّد باقتك.');
+      else if (data.reason === 'vertex_not_configured') feedback('error', 'خدمة الذكاء غير مهيأة.');
+      else feedback('error', 'تعذّر تنفيذ المهمة.');
     } catch {
-      toast.error('فشل الاتصال بالخادم.');
+      feedback('error', 'فشل الاتصال بالخادم.');
     } finally {
       setRunningId(null);
       router.refresh();

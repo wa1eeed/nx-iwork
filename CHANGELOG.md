@@ -9,6 +9,20 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ## [Unreleased]
 
+### Added — CRM pages + interactive UX (animations + action sounds)
+
+- **CRM**: `/customers` (pipeline-filtered list, quick status change, manual add)
+  and `/customers/[id]` (editable details + order/booking/task history). Agents
+  populate it automatically via `create_lead`; owners manage it here.
+- **Agent capabilities panel** on the profile: shows the exact tools the agent
+  can use (driven by the company's enabled modules).
+- **Interactive feedback** (`lib/ui/feedback.ts`): synthesized action sounds
+  (success / error / scheduled / needs-approval) + toasts, wired into task run
+  and CRM actions. Muteable via localStorage.
+- **Motion** (`components/ui/motion.tsx`, framer-motion): tasteful staggered
+  entrance for lists/cards.
+- Nav: Customers added; overview CRM stat links to `/customers`.
+
 ### Added — Public landing page + agent widget; dashboard polish
 
 - **Public business page** (`app/(public)/[slug]`): renders the company's

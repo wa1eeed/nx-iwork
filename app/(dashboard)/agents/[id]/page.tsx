@@ -10,6 +10,8 @@ import { AgentForm, type AgentFormValues } from '@/components/dashboard/agent-fo
 import { ArchiveAgentButton } from '@/components/dashboard/archive-agent-button';
 import { AgentSchedules } from '@/components/dashboard/agent-schedules';
 import { AgentActivity } from '@/components/dashboard/agent-activity';
+import { getToolsForCompany } from '@/lib/agent/tools';
+import { Sparkles } from 'lucide-react';
 
 const STATUS_LABEL: Record<string, string> = {
   ONLINE: 'متصل',
@@ -28,7 +30,7 @@ export default async function AgentProfilePage({
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
 
-  const [agent, departments, managers, schedules, settings, tasks] = await Promise.all([
+  const [agent, departments, managers, schedules, settings, tasks, company] = await Promise.all([
     db.agent.findFirst({
       where: { id, companyId },
       include: { department: { select: { name: true, color: true } } },
@@ -66,9 +68,31 @@ export default async function AgentProfilePage({
       take: 100,
       select: { id: true, title: true, status: true, result: true, createdAt: true, completedAt: true },
     }),
+    db.company.findUnique({
+      where: { id: companyId },
+      select: { hasEcommerce: true, hasServices: true, hasBookings: true },
+    }),
   ]);
 
   if (!agent) notFound();
+
+  // Capabilities this agent has = the tools it receives (driven by enabled modules).
+  const tools = getToolsForCompany({
+    hasEcommerce: company?.hasEcommerce ?? true,
+    hasServices: company?.hasServices ?? true,
+    hasBookings: company?.hasBookings ?? false,
+  });
+  const TOOL_LABELS: Record<string, string> = {
+    search_catalog: 'البحث في الكتالوج',
+    check_availability: 'فحص التوافر',
+    create_booking: 'إنشاء حجز',
+    search_faq: 'الأسئلة الشائعة',
+    find_customer: 'البحث عن عميل',
+    create_lead: 'تسجيل عميل',
+    update_lead: 'تحديث عميل',
+    create_task: 'إنشاء مهمة',
+    save_memory: 'الحفظ في الذاكرة',
+  };
 
   const initial: AgentFormValues = {
     id: agent.id,
@@ -136,7 +160,26 @@ export default async function AgentProfilePage({
           <TabsTrigger value="settings">الإعدادات</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="activity">
+        <TabsContent value="activity" className="space-y-4">
+          <Card>
+            <CardContent className="p-4">
+              <p className="mb-2 flex items-center gap-2 text-sm font-medium">
+                <Sparkles className="h-4 w-4 text-primary" />
+                قدرات الموظف (الأدوات)
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {tools.map((t) => (
+                  <span key={t.name} className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
+                    {TOOL_LABELS[t.name] ?? t.name}
+                  </span>
+                ))}
+              </div>
+              <p className="mt-2 text-[11px] text-muted-foreground">
+                تتغيّر حسب الموديولات المفعّلة لشركتك.
+              </p>
+            </CardContent>
+          </Card>
+
           <AgentActivity
             tasks={tasks.map((t) => ({
               id: t.id,

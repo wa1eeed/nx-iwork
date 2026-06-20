@@ -8,6 +8,7 @@ const PROTECTED_PREFIXES = [
   '/overview',
   '/agents',
   '/departments',
+  '/customers',
   '/tasks',
   '/chat',
   '/orders',
