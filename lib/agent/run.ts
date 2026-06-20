@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { getProviderForCompany } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
+import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop } from './core';
 import { recallMemoryBlock } from './memory';
@@ -53,6 +54,9 @@ export async function runAgentChat(
   // Managed mode: refuse before spending if the token bank is empty.
   const budget = await checkTokenBudget(companyId);
   if (!budget.ok) return { ok: false, reason: budget.reason };
+  // …and if this agent has hit its monthly per-agent ceiling.
+  const agentBudget = await checkAgentBudget(agentId);
+  if (!agentBudget.ok) return { ok: false, reason: 'billing_limit' };
 
   // Working memory: last N messages for this agent, oldest-first for the model.
   const history = await db.chatMessage.findMany({
@@ -129,6 +133,7 @@ export async function runAgentChat(
 
   // Managed mode: bill the token bank for this turn (no-op in BYOK).
   await chargeTokens(companyId, tokensUsed);
+  await chargeAgentTokens(agentId, tokensUsed);
 
   return { ok: true, reply, tokensUsed };
 }

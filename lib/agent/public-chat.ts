@@ -7,6 +7,7 @@ import { db } from '@/lib/db';
 import { getProviderForCompany } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
+import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop } from './core';
 import { recallMemoryBlock } from './memory';
@@ -37,6 +38,8 @@ export async function runPublicAgentChat(input: PublicChatInput): Promise<Public
 
   const budget = await checkTokenBudget(companyId);
   if (!budget.ok) return { ok: false, reason: budget.reason };
+  const agentBudget = await checkAgentBudget(agentId);
+  if (!agentBudget.ok) return { ok: false, reason: 'billing_limit' };
 
   // One ongoing conversation per visitor per company.
   const conversation =
@@ -107,6 +110,7 @@ export async function runPublicAgentChat(input: PublicChatInput): Promise<Public
     db.agent.update({ where: { id: agentId }, data: { totalTokensUsed: { increment: tokensUsed } } }),
   ]);
   await chargeTokens(companyId, tokensUsed);
+  await chargeAgentTokens(agentId, tokensUsed);
 
   return { ok: true, reply };
 }

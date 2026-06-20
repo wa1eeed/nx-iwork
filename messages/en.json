@@ -454,6 +454,8 @@
     "capabilities": "Employee capabilities (tools)",
     "capabilitiesNote": "These change with the modules enabled for your company.",
     "performanceScore": "Performance score",
+    "monthlyTokens": "Monthly token usage",
+    "unlimited": "Unlimited",
     "kpiTargets": "KPI targets",
     "noKpis": "No KPIs set for this employee.",
     "target": "Target",

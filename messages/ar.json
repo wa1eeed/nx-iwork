@@ -454,6 +454,8 @@
     "capabilities": "قدرات الموظف (الأدوات)",
     "capabilitiesNote": "تتغيّر حسب الموديولات المفعّلة لشركتك.",
     "performanceScore": "درجة الأداء",
+    "monthlyTokens": "استهلاك التوكنز الشهري",
+    "unlimited": "بلا حدود",
     "kpiTargets": "أهداف المؤشرات",
     "noKpis": "لا مؤشرات محددة لهذا الموظف.",
     "target": "الهدف",

@@ -36,6 +36,20 @@ export const ONBOARDING_PLANS: OnboardingPlan[] = [
 
 export const DEFAULT_PLAN: OnboardingTier = 'STARTER';
 
+// Per-agent MONTHLY token ceiling by plan (managed mode). 0 = unlimited. Keeps a
+// single runaway agent from draining the shared company token bank.
+export const AGENT_TOKEN_CAP: Record<PlanTier, number> = {
+  FREE: 50_000,
+  STARTER: 100_000,
+  GROWTH: 500_000,
+  SCALE: 2_000_000,
+  ENTERPRISE: 0, // unlimited
+};
+
+export function agentTokenCap(plan: PlanTier): number {
+  return AGENT_TOKEN_CAP[plan] ?? 0;
+}
+
 export function isOnboardingPlan(value: string): value is PlanTier {
   return ONBOARDING_PLANS.some((p) => p.tier === value);
 }

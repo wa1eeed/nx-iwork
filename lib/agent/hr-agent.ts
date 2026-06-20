@@ -21,6 +21,7 @@ import { nextRef } from '@/lib/refs';
 import { checkRoleConflict } from '@/lib/agent/conflict-check';
 import { cognitiveOnboard } from '@/lib/agent/cognitive-onboarding';
 import { getTemplate, type IfThenScenario } from '@/lib/agent/templates';
+import { agentTokenCap } from '@/lib/plans';
 
 export interface DeployScenario {
   event: TriggerEvent;
@@ -119,6 +120,10 @@ export class HRAgentService {
       if (!parent) throw new HRValidationError('bad_department');
     }
 
+    // Per-agent monthly token ceiling, derived from the company's plan.
+    const company = await db.company.findUnique({ where: { id: companyId }, select: { plan: true } });
+    const tokenLimit = agentTokenCap(company?.plan ?? 'STARTER');
+
     if (payload.source === 'template') {
       if (!payload.templateType) throw new HRValidationError('invalid_payload');
       const tpl = await getTemplate(payload.templateType);
@@ -155,6 +160,7 @@ export class HRAgentService {
           kpis: tpl.defaultKpis as Prisma.InputJsonValue,
           model: tpl.model,
           systemPrompt: tpl.coreInstructions,
+          tokenLimit,
           status: 'ONBOARDING',
         },
       };
@@ -181,6 +187,7 @@ export class HRAgentService {
         model: payload.model ?? 'HAIKU',
         temperature: payload.temperature ?? 0.6,
         systemPrompt: payload.systemPrompt || null,
+        tokenLimit,
         status: 'ONBOARDING',
       },
     };

@@ -323,6 +323,12 @@ model Agent {
   tasksFailed      Int @default(0)
   totalTokensUsed  Int @default(0)
 
+  // Per-agent token guard (managed mode): a monthly ceiling derived from the
+  // company plan so one agent can't drain the whole token bank. 0 = unlimited.
+  tokenLimit       Int      @default(0)
+  periodTokensUsed Int      @default(0)
+  periodStartedAt  DateTime @default(now())
+
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
   archivedAt DateTime?

@@ -250,6 +250,26 @@ export default async function AgentProfilePage({
           </Card>
 
           <Card>
+            <CardContent className="space-y-2 p-5">
+              <div className="flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">{t('monthlyTokens')}</span>
+                <span className="font-mono tabular-nums" dir="ltr">
+                  {agent.periodTokensUsed.toLocaleString(locale)}
+                  {agent.tokenLimit > 0 ? ` / ${agent.tokenLimit.toLocaleString(locale)}` : ` · ${t('unlimited')}`}
+                </span>
+              </div>
+              {agent.tokenLimit > 0 && (
+                <div className="h-2 overflow-hidden rounded-full bg-muted">
+                  <div
+                    className="h-full rounded-full bg-primary"
+                    style={{ width: `${Math.min(100, (agent.periodTokensUsed / agent.tokenLimit) * 100)}%` }}
+                  />
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
             <CardContent className="space-y-3 p-5">
               <p className="text-sm font-medium">{t('kpiTargets')}</p>
               {kpis.length === 0 ? (
