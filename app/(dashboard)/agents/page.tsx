@@ -138,7 +138,7 @@ export default async function AgentsPage() {
                         </div>
                         <div className="flex gap-2">
                           <Button asChild variant="outline" size="sm" className="flex-1">
-                            <Link href={`/agents/${a.id}`}>{tc('edit')}</Link>
+                            <Link href={`/agents/${a.id}`}>{tc('details')}</Link>
                           </Button>
                           <Button asChild variant="ghost" size="sm">
                             <Link href="/chat">
