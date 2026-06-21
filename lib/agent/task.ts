@@ -93,6 +93,7 @@ export async function runAgentTask(
     company: agent.company,
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
+    audience: 'internal', // autonomous task on the business's behalf, not a customer chat
   });
   const memoryBlock = await recallMemoryBlock(
     agent.id,
@@ -151,8 +152,9 @@ export async function runAgentTask(
     ]);
 
     // Managed mode: bill the token bank (no-op in BYOK).
-    await chargeTokens(companyId, tokensUsed);
+    const remaining = await chargeTokens(companyId, tokensUsed);
     await chargeAgentTokens(agent.id, tokensUsed);
+    console.log(`[token-guard] task | tenant=${companyId} | agent=${agent.id} | used=${tokensUsed} | remaining=${remaining ?? 'BYOK'}`);
 
     return { ok: true, result: reply, tokensUsed };
   } catch (err) {

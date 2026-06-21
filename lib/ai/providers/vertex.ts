@@ -132,5 +132,70 @@ export function createVertexProvider(): AiProvider {
         usage: { inputTokens: prompt, outputTokens: output },
       };
     },
+
+    async *completeStream(req: AiCompletionRequest): AsyncGenerator<string, AiCompletion, void> {
+      const modelId = resolveModel('vertex', req.tier);
+      const model = getClient().getGenerativeModel({
+        model: modelId,
+        systemInstruction: req.system,
+        generationConfig: {
+          temperature: req.temperature ?? 0.7,
+          maxOutputTokens: req.maxTokens ?? 4096,
+        },
+        ...(req.tools?.length
+          ? {
+              tools: [
+                {
+                  functionDeclarations: req.tools.map((t) => ({
+                    name: t.name,
+                    description: t.description,
+                    parameters: t.parameters as never,
+                  })),
+                },
+              ],
+            }
+          : {}),
+      });
+
+      const streamResult = await withAiRetry(
+        () => model.generateContentStream({ contents: toVertexContents(req.messages) }),
+        { label: 'vertex.stream' }
+      );
+
+      // Emit text deltas as they arrive. Function-call parts don't stream as
+      // text — they surface in the final aggregated response below.
+      for await (const chunk of streamResult.stream) {
+        const cparts: Part[] = chunk.candidates?.[0]?.content?.parts ?? [];
+        for (const p of cparts) {
+          if (typeof p.text === 'string' && p.text) yield p.text;
+        }
+      }
+
+      const resp = await streamResult.response;
+      const parts: Part[] = resp.candidates?.[0]?.content?.parts ?? [];
+      const text = parts
+        .filter((p): p is Part & { text: string } => typeof p.text === 'string')
+        .map((p) => p.text)
+        .join('');
+      const toolCalls: AiToolCall[] = parts
+        .filter((p) => p.functionCall)
+        .map((p, i) => ({
+          id: `${p.functionCall!.name}__${i}`,
+          name: p.functionCall!.name,
+          args: (p.functionCall!.args ?? {}) as Record<string, unknown>,
+        }));
+      const prompt = resp.usageMetadata?.promptTokenCount ?? 0;
+      const total = resp.usageMetadata?.totalTokenCount ?? 0;
+      const candidates = resp.usageMetadata?.candidatesTokenCount ?? 0;
+      const output = total > prompt ? total - prompt : candidates;
+
+      return {
+        text,
+        toolCalls,
+        needsTools: toolCalls.length > 0,
+        model: modelId,
+        usage: { inputTokens: prompt, outputTokens: output },
+      };
+    },
   };
 }

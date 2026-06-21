@@ -32,10 +32,14 @@ export async function checkTokenBudget(companyId: string): Promise<BudgetCheck> 
 // BYOK mode or for non-positive amounts. The decrement is a single atomic SQL
 // UPDATE; the pre-check above can let a turn finish slightly into the negative
 // under heavy concurrency, which is acceptable (next request is blocked).
-export async function chargeTokens(companyId: string, amount: number): Promise<void> {
-  if (!isManagedMode() || amount <= 0) return;
-  await db.company.update({
+// Returns the remaining balance after the decrement (or null in BYOK/no-op), so
+// callers can log the exact deduction.
+export async function chargeTokens(companyId: string, amount: number): Promise<number | null> {
+  if (!isManagedMode() || amount <= 0) return null;
+  const updated = await db.company.update({
     where: { id: companyId },
     data: { tokenBalance: { decrement: amount } },
+    select: { tokenBalance: true },
   });
+  return updated.tokenBalance;
 }

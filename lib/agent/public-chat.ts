@@ -109,8 +109,9 @@ export async function runPublicAgentChat(input: PublicChatInput): Promise<Public
     db.publicConversation.update({ where: { id: conversation.id }, data: { lastMessageAt: new Date() } }),
     db.agent.update({ where: { id: agentId }, data: { totalTokensUsed: { increment: tokensUsed } } }),
   ]);
-  await chargeTokens(companyId, tokensUsed);
+  const remaining = await chargeTokens(companyId, tokensUsed);
   await chargeAgentTokens(agentId, tokensUsed);
+  console.log(`[token-guard] public-chat | tenant=${companyId} | used=${tokensUsed} | remaining=${remaining ?? 'BYOK'}`);
 
   return { ok: true, reply };
 }

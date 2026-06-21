@@ -38,33 +38,39 @@ export async function POST(
     return NextResponse.json({ ok: false, reason: 'message_too_long' }, { status: 400 });
   }
 
-  const result = await runAgentChat({
-    agentId,
-    companyId: user.companyId,
-    userMessage: message.trim(),
-    userId: session.user.id,
+  // Stream the reply token-by-token over SSE: the agent's text is emitted as it
+  // generates (onDelta); a final 'done' (or 'error') event closes the turn.
+  const companyId = user.companyId;
+  const userId = session.user.id;
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (obj: unknown) =>
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      try {
+        const result = await runAgentChat(
+          { agentId, companyId, userMessage: message.trim(), userId },
+          { onDelta: (delta) => send({ type: 'delta', text: delta }) }
+        );
+        if (result.ok) {
+          send({ type: 'done', reply: result.reply, tokensUsed: result.tokensUsed });
+        } else {
+          send({ type: 'error', reason: result.reason, message: result.message });
+        }
+      } catch (err) {
+        send({ type: 'error', reason: 'provider_error', message: err instanceof Error ? err.message : 'unknown' });
+      } finally {
+        controller.close();
+      }
+    },
   });
 
-  if (result.ok) {
-    return NextResponse.json({
-      ok: true,
-      reply: result.reply,
-      tokensUsed: result.tokensUsed,
-    });
-  }
-
-  // Map the loop's failure reasons to status codes. A missing/bad key is a
-  // setup problem the owner can fix, so surface it as 400 with a clear reason.
-  const status =
-    result.reason === 'agent_not_found'
-      ? 404
-      : result.reason === 'billing_limit'
-        ? 402
-        : result.reason === 'provider_error'
-          ? 502
-          : 400;
-  return NextResponse.json(
-    { ok: false, reason: result.reason, message: result.message },
-    { status }
-  );
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no', // disable proxy buffering so deltas flush live
+    },
+  });
 }

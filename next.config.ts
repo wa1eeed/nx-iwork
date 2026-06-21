@@ -11,6 +11,20 @@ const baseConfig: NextConfig = {
   images: {
     remotePatterns: [{ protocol: 'https', hostname: '**' }],
   },
+  // CDN-friendly headers. Behind Cloudflare these let the edge cache hashed
+  // static assets aggressively while leaving dynamic SSR pages uncached.
+  async headers() {
+    return [
+      {
+        source: '/_next/static/:path*',
+        headers: [{ key: 'Cache-Control', value: 'public, max-age=31536000, immutable' }],
+      },
+      {
+        source: '/:path*',
+        headers: [{ key: 'X-Content-Type-Options', value: 'nosniff' }],
+      },
+    ];
+  },
 };
 
 // next-intl@3's plugin writes its Turbopack alias under `experimental.turbo`,

@@ -104,10 +104,12 @@ model Company {
   plan            PlanTier      @default(STARTER)
 
   // Managed billing (AI_MODE=managed): prepaid AI token credits. The platform
-  // pays the provider and decrements this per request; at <= 0 requests are
-  // blocked. Ignored in BYOK mode (the company's own key is billed directly).
-  // Default is a small trial grant so new managed tenants can try immediately.
-  tokenBalance    Int           @default(100000)
+  // pays the provider and decrements this per request (by the real
+  // usageMetadata.totalTokenCount, incl. Gemini "thinking" tokens); at <= 0
+  // requests are blocked. Ignored in BYOK mode. Default is a generous starter
+  // grant — gemini-2.5-flash thinking tokens add up, so 100k ran out in a few
+  // chats; 5M gives real headroom for the trial.
+  tokenBalance    Int           @default(5000000)
 
   // Modular architecture: the owner enables only the modules their business
   // needs. Drives the sidebar, pages, and which AI tools the agents receive.

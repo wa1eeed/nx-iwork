@@ -77,4 +77,8 @@ export interface AiCompletion {
 export interface AiProvider {
   readonly id: AiProviderId;
   complete(req: AiCompletionRequest): Promise<AiCompletion>;
+  // Optional streaming variant: yields text deltas as they're generated and
+  // returns the full completion (text + toolCalls + usage). Providers without
+  // it fall back to the non-streaming path.
+  completeStream?(req: AiCompletionRequest): AsyncGenerator<string, AiCompletion, void>;
 }

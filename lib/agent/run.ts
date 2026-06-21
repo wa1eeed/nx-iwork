@@ -8,7 +8,7 @@ import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
-import { loadAgentWithContext, runToolLoop } from './core';
+import { loadAgentWithContext, runToolLoop, runToolLoopStream } from './core';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
 
@@ -41,7 +41,8 @@ export interface RunAgentChatInput {
 }
 
 export async function runAgentChat(
-  input: RunAgentChatInput
+  input: RunAgentChatInput,
+  opts?: { onDelta?: (delta: string) => void }
 ): Promise<RunAgentResult> {
   const { agentId, companyId, userMessage, userId } = input;
 
@@ -81,6 +82,7 @@ export async function runAgentChat(
     company: agent.company,
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
+    audience: 'internal', // dashboard chat: the owner is talking, not a customer
   });
 
   // Inject relevant long-term memories for this turn (empty when none/disabled).
@@ -90,7 +92,7 @@ export async function runAgentChat(
   let reply: string;
   let tokensUsed: number;
   try {
-    ({ reply, tokensUsed } = await runToolLoop({
+    const loopArgs = {
       provider: providerResult.provider,
       system,
       messages,
@@ -99,7 +101,10 @@ export async function runAgentChat(
       maxTokens: agent.maxTokens,
       tools: getToolsForAgent(agent.company, agent.permissions),
       ctx: { companyId, agentId },
-    }));
+    };
+    ({ reply, tokensUsed } = opts?.onDelta
+      ? await runToolLoopStream(loopArgs, opts.onDelta)
+      : await runToolLoop(loopArgs));
   } catch (err) {
     console.error('Agent provider error', { agentId, companyId, err });
     return {
@@ -132,8 +137,9 @@ export async function runAgentChat(
   ]);
 
   // Managed mode: bill the token bank for this turn (no-op in BYOK).
-  await chargeTokens(companyId, tokensUsed);
+  const remaining = await chargeTokens(companyId, tokensUsed);
   await chargeAgentTokens(agentId, tokensUsed);
+  console.log(`[token-guard] dashboard-chat | tenant=${companyId} | used=${tokensUsed} | remaining=${remaining ?? 'BYOK'}`);
 
   return { ok: true, reply, tokensUsed };
 }

@@ -16,6 +16,9 @@ export interface AgentPromptContext {
     'aboutUs' | 'policies' | 'tone' | 'targetAudience'
   > | null;
   settings?: Pick<BusinessSettings, 'primaryLanguage'> | null;
+  // Who the agent is talking to: a public 'customer' (widget) or, in the
+  // dashboard, the business 'internal' owner/manager. Changes the rules entirely.
+  audience?: 'customer' | 'internal';
 }
 
 export function buildSystemPrompt(ctx: AgentPromptContext): string {
@@ -40,24 +43,43 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
   const tone = dna?.tone || company.brandVoice;
   if (tone) sections.push(`نبرة الصوت المعتمدة: ${tone}`);
 
-  // Hard rules that keep the employee safe and on-brand.
-  sections.push(
-    [
-      'قواعد صارمة:',
-      '- التزم بمعلومات الشركة أعلاه فقط. لا تخترع أسعاراً أو سياسات غير موجودة.',
-      '- لمعرفة الأسعار أو الخدمات أو المنتجات، استخدم أداة search_catalog ولا تخمّن.',
-      '- للأسئلة عن السياسات/المواعيد/الشحن/الاسترجاع، استخدم أداة search_faq.',
-      '- إذا أبدى العميل اهتماماً أو ترك بياناته، سجّله في الـ CRM عبر create_lead (بعد find_customer).',
-      '- لحجز موعد أو إنشاء مهمة، استخدم create_task.',
-      '- إذا طلب منك صاحب العمل تنفيذ شيء، سجّله **فوراً** بـ create_task وأكّد له أنك سجّلته وستنفّذه — لا تتجاهل أي طلب حتى لو كنت مشغولاً بغيره (النظام ينفّذ المهام المسجّلة تلقائياً).',
-      '- إذا عرفت معلومة تستحق التذكّر (تفضيل عميل، قرار، حقيقة متكررة)، احفظها بـ save_memory.',
-      '- إذا لم تعرف الإجابة بدقة، قل ذلك بصدق واعرض تحويل العميل لزميل بشري.',
-      '- حافظ على نبرة الشركة في كل رد.',
-      lang === 'en'
-        ? '- Reply in the customer\'s language; default to English.'
-        : '- رد بنفس لغة العميل، والافتراضي هو العربية.',
-    ].join('\n')
-  );
+  // Hard rules — different depending on who the agent is talking to.
+  if ((ctx.audience ?? 'customer') === 'internal') {
+    // Dashboard: the interlocutor is the business OWNER/manager, not a customer.
+    sections.push(
+      [
+        'وضع داخلي: أنت الآن تتحدّث مع **صاحب العمل / مديرك** داخل لوحة التحكم — وليس عميلاً. تعامل معه كموظف لديه.',
+        'قواعد:',
+        '- نفّذ توجيهات صاحب العمل مباشرةً. إذا طلب إجراءً تملك أداته (تسجيل/تحديث طلب، تسجيل/تحديث عميل، إنشاء مهمة، فحص توفّر...)، نفّذه فوراً عبر الأداة المناسبة ثم أكّد بإيجاز ما فعلته وأي أرقام/مُعرّفات ناتجة.',
+        '- لا تعامله كعميل، ولا تسجّله في الـ CRM، ولا ترحّب به كزائر.',
+        '- للأسعار/المنتجات استخدم search_catalog، وللسياسات search_faq — لا تخمّن.',
+        '- إن طُلب منك عمل يستغرق وقتاً أو يعمل لاحقاً، سجّله بـ create_task وأكّد أنك ستنفّذه (النظام ينفّذ المهام المسجّلة تلقائياً).',
+        '- كن موجزاً ومهنياً كزميل عمل؛ قدّم تقريراً واضحاً بالنتائج لا ردّاً تسويقياً.',
+        '- إذا عرفت معلومة تستحق التذكّر (قرار، تفضيل، حقيقة متكررة) احفظها بـ save_memory.',
+        lang === 'en'
+          ? "- Reply in the owner's language; default to English."
+          : '- رد بلغة صاحب العمل، والافتراضي العربية.',
+      ].join('\n')
+    );
+  } else {
+    sections.push(
+      [
+        'قواعد صارمة:',
+        '- التزم بمعلومات الشركة أعلاه فقط. لا تخترع أسعاراً أو سياسات غير موجودة.',
+        '- لمعرفة الأسعار أو الخدمات أو المنتجات، استخدم أداة search_catalog ولا تخمّن.',
+        '- للأسئلة عن السياسات/المواعيد/الشحن/الاسترجاع، استخدم أداة search_faq.',
+        '- إذا أبدى العميل اهتماماً أو ترك بياناته، سجّله في الـ CRM عبر create_lead (بعد find_customer).',
+        '- لحجز موعد أو إنشاء مهمة، استخدم create_task.',
+        '- إذا طلب منك صاحب العمل تنفيذ شيء، سجّله **فوراً** بـ create_task وأكّد له أنك سجّلته وستنفّذه — لا تتجاهل أي طلب حتى لو كنت مشغولاً بغيره (النظام ينفّذ المهام المسجّلة تلقائياً).',
+        '- إذا عرفت معلومة تستحق التذكّر (تفضيل عميل، قرار، حقيقة متكررة)، احفظها بـ save_memory.',
+        '- إذا لم تعرف الإجابة بدقة، قل ذلك بصدق واعرض تحويل العميل لزميل بشري.',
+        '- حافظ على نبرة الشركة في كل رد.',
+        lang === 'en'
+          ? "- Reply in the customer's language; default to English."
+          : '- رد بنفس لغة العميل، والافتراضي هو العربية.',
+      ].join('\n')
+    );
+  }
 
   // The owner's custom override always wins, appended last so it has priority.
   if (agent.systemPrompt?.trim()) {

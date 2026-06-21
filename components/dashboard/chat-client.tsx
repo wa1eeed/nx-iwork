@@ -68,7 +68,19 @@ export function ChatClient({
       role: 'user',
       content: text,
     };
-    setThreads((t) => ({ ...t, [activeId]: [...(t[activeId] ?? []), userMsg] }));
+    const aId = `a-${Date.now()}`;
+    const setAgent = (content: string) =>
+      setThreads((t) => ({
+        ...t,
+        [activeId]: (t[activeId] ?? []).map((m) => (m.id === aId ? { ...m, content } : m)),
+      }));
+    const dropAgent = () =>
+      setThreads((t) => ({ ...t, [activeId]: (t[activeId] ?? []).filter((m) => m.id !== aId) }));
+
+    setThreads((t) => ({
+      ...t,
+      [activeId]: [...(t[activeId] ?? []), userMsg, { id: aId, role: 'agent', content: '' }],
+    }));
     setInput('');
     setSending(true);
 
@@ -78,20 +90,50 @@ export function ChatClient({
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ message: text }),
       });
-      const data = await res.json();
 
-      if (data.ok) {
-        setThreads((t) => ({
-          ...t,
-          [activeId]: [
-            ...(t[activeId] ?? []),
-            { id: `a-${Date.now()}`, role: 'agent', content: data.reply },
-          ],
-        }));
-      } else {
-        toast.error(ERROR_LABELS[data.reason] ?? 'تعذّر إرسال الرسالة.');
+      // Non-stream error (validation) → JSON body.
+      if (!res.body || !res.headers.get('content-type')?.includes('text/event-stream')) {
+        const data = await res.json().catch(() => null);
+        dropAgent();
+        toast.error(ERROR_LABELS[data?.reason] ?? 'تعذّر إرسال الرسالة.');
+        return;
       }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      let acc = '';
+      let errored = false;
+
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const events = buffer.split('\n\n');
+        buffer = events.pop() ?? '';
+        for (const ev of events) {
+          const line = ev.split('\n').find((l) => l.startsWith('data: '));
+          if (!line) continue;
+          let payload: { type: string; text?: string; reply?: string; reason?: string };
+          try {
+            payload = JSON.parse(line.slice(6));
+          } catch {
+            continue;
+          }
+          if (payload.type === 'delta') {
+            acc += payload.text ?? '';
+            setAgent(acc);
+          } else if (payload.type === 'done') {
+            setAgent(payload.reply ?? acc);
+          } else if (payload.type === 'error') {
+            errored = true;
+            toast.error(ERROR_LABELS[payload.reason ?? ''] ?? 'تعذّر إرسال الرسالة.');
+          }
+        }
+      }
+      if (errored && !acc) dropAgent();
     } catch {
+      dropAgent();
       toast.error('فشل الاتصال بالخادم.');
     } finally {
       setSending(false);
