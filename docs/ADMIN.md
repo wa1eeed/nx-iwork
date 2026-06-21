@@ -6,10 +6,12 @@
 
 ## Access & security
 
-- **Role:** `UserRole.SUPER_ADMIN` (in the session JWT — see `lib/auth.ts`).
+- **Role:** `UserRole.SUPER_ADMIN` (in the session JWT — see `lib/auth.ts`),
+  granted by the DB flag **or** the `SUPER_ADMIN_EMAILS` env allowlist (below).
 - **Guard:** `requireSuperAdmin()` / `isSuperAdmin()` in `lib/admin.ts` (a cheap
-  session check, no DB round-trip). The `app/(admin)/admin/layout.tsx` calls it
-  and `redirect('/overview')`s anyone who isn't a super admin.
+  session check, no DB round-trip) — honors both the role and the env allowlist.
+  The `app/(admin)/admin/layout.tsx` calls it and `redirect('/overview')`s anyone
+  who isn't a super admin.
 - **Middleware:** `/admin` is in `PROTECTED_PREFIXES` (auth-gated); the role gate
   lives in the layout.
 - **Routing in:** a company-less super admin hitting `/overview` is redirected to
@@ -18,12 +20,32 @@
 - **Every mutation is audited** → `AuditLog` (action, userId, companyId, metadata).
 
 ### Becoming a super admin
+
+Two paths — either grants access; pick whichever fits:
+
+**A) Env allowlist (recommended — editable, no DB write).** Add the email(s) to
+`SUPER_ADMIN_EMAILS` (comma-separated) and redeploy. On next login the account is
+elevated to `SUPER_ADMIN`. Editing the env later (add/remove) re-grants/revokes.
+```bash
+# .env / Coolify env
+SUPER_ADMIN_EMAILS="you@example.com,ops@bznss.one"
+```
+Logic: `lib/admin-allowlist.ts` → `isAllowlistedSuperAdmin()`, applied in
+`lib/auth.ts` (role at login) and OR-ed into the guards (`lib/admin.ts`) so it
+also works for sessions issued before the env changed.
+
+**B) DB role (permanent flag on the row).**
 ```bash
 npx tsx scripts/make-admin.ts you@example.com
 # or on the server's Postgres console:
 # UPDATE "User" SET role='SUPER_ADMIN' WHERE email='you@example.com';
 ```
-Then open `/admin` and sign in with that account (it keeps its own password).
+
+**Adding a brand-new admin email:** the account must exist first — sign that
+email up normally (it sets its own password), then add it to `SUPER_ADMIN_EMAILS`
+(A) or run the script (B). **Never put a password in env** — only emails. The
+allowlist decides *who* is admin; the account still authenticates with its own
+bcrypt-hashed password. Then open `/admin` and sign in.
 
 ## Pages
 

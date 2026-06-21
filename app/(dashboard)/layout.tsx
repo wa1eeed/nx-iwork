@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { auth } from '@/lib/auth';
+import { isAllowlistedSuperAdmin } from '@/lib/admin-allowlist';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { Sidebar } from '@/components/dashboard/sidebar';
@@ -16,7 +17,9 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
-  const isSuperAdmin = session.user.role === 'SUPER_ADMIN';
+  const isSuperAdmin =
+    session.user.role === 'SUPER_ADMIN' ||
+    isAllowlistedSuperAdmin(session.user.email);
 
   // Read companyId fresh from DB — the JWT can be stale right after onboarding.
   const companyId = await getUserCompany(session.user.id);

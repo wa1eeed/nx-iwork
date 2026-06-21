@@ -4,6 +4,7 @@ import bcrypt from 'bcryptjs';
 import type { UserRole } from '@prisma/client';
 import { db } from '@/lib/db';
 import authConfig from '@/lib/auth.config';
+import { isAllowlistedSuperAdmin } from '@/lib/admin-allowlist';
 
 export const { auth, handlers, signIn, signOut } = NextAuth({
   ...authConfig,
@@ -29,12 +30,17 @@ export const { auth, handlers, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.password);
         if (!valid) return null;
 
+        // Env allowlist can elevate an already-authenticated account to
+        // SUPER_ADMIN — editable via env without a DB migration/script. The
+        // password check above still gates entry; the allowlist only sets role.
+        const role = isAllowlistedSuperAdmin(user.email) ? 'SUPER_ADMIN' : user.role;
+
         return {
           id: user.id,
           email: user.email,
           name: user.name,
           image: user.image,
-          role: user.role,
+          role,
           companyId: user.companyId,
         };
       },
