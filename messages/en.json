@@ -36,8 +36,10 @@
       "how": "How it works",
       "pricing": "Pricing",
       "signin": "Sign in",
-      "getStarted": "Get started"
+      "getStarted": "Get started",
+      "account": "My account"
     },
+    "dashboard": "Go to dashboard",
     "hero": {
       "badge": "AI employees that run your business 24/7",
       "headline": "Build a self-running company with AI agents",

@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { useTranslations } from 'next-intl';
+import { getTranslations } from 'next-intl/server';
 import {
   Sparkles,
   Bot,
@@ -10,8 +10,10 @@ import {
   Gauge,
   ArrowRight,
   Check,
+  LayoutDashboard,
   type LucideIcon,
 } from 'lucide-react';
+import { auth } from '@/lib/auth';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { FadeIn, HoverLift } from '@/components/ui/motion';
@@ -30,9 +32,11 @@ const FEATURES: { key: string; icon: LucideIcon }[] = [
 
 const STEPS = ['s1', 's2', 's3'] as const;
 
-export default function LandingPage() {
-  const t = useTranslations('landing');
-  const tp = useTranslations('onboarding.plans');
+export default async function LandingPage() {
+  const t = await getTranslations('landing');
+  const tp = await getTranslations('onboarding.plans');
+  const session = await auth();
+  const isLoggedIn = Boolean(session?.user);
 
   return (
     <div className="relative min-h-screen overflow-x-hidden">
@@ -64,12 +68,23 @@ export default function LandingPage() {
           <div className="flex items-center gap-1">
             <ThemeToggle />
             <LanguageSwitcher />
-            <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
-              <Link href="/login">{t('nav.signin')}</Link>
-            </Button>
-            <Button asChild size="sm">
-              <Link href="/signup">{t('nav.getStarted')}</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button asChild size="sm">
+                <Link href="/overview">
+                  <LayoutDashboard className="size-4" />
+                  {t('nav.account')}
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild variant="ghost" size="sm" className="hidden sm:inline-flex">
+                  <Link href="/login">{t('nav.signin')}</Link>
+                </Button>
+                <Button asChild size="sm">
+                  <Link href="/signup">{t('nav.getStarted')}</Link>
+                </Button>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -86,17 +101,28 @@ export default function LandingPage() {
           </h1>
           <p className="max-w-2xl text-base text-muted-foreground sm:text-lg">{t('hero.lede')}</p>
           <div className="flex flex-wrap items-center justify-center gap-3">
-            <Button asChild size="lg">
-              <Link href="/signup">
-                {t('hero.ctaPrimary')}
-                <ArrowRight className="ms-1 size-4 rtl:rotate-180" />
-              </Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/login">{t('hero.ctaSecondary')}</Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button asChild size="lg">
+                <Link href="/overview">
+                  <LayoutDashboard className="size-4" />
+                  {t('dashboard')}
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Button asChild size="lg">
+                  <Link href="/signup">
+                    {t('hero.ctaPrimary')}
+                    <ArrowRight className="ms-1 size-4 rtl:rotate-180" />
+                  </Link>
+                </Button>
+                <Button asChild size="lg" variant="outline">
+                  <Link href="/login">{t('hero.ctaSecondary')}</Link>
+                </Button>
+              </>
+            )}
           </div>
-          <p className="text-xs text-muted-foreground">{t('hero.trust')}</p>
+          {!isLoggedIn && <p className="text-xs text-muted-foreground">{t('hero.trust')}</p>}
         </FadeIn>
       </section>
 
@@ -206,8 +232,8 @@ export default function LandingPage() {
             <h2 className="text-3xl font-bold tracking-tight">{t('cta.title')}</h2>
             <p className="max-w-md text-muted-foreground">{t('cta.subtitle')}</p>
             <Button asChild size="lg">
-              <Link href="/signup">
-                {t('cta.button')}
+              <Link href={isLoggedIn ? '/overview' : '/signup'}>
+                {isLoggedIn ? t('dashboard') : t('cta.button')}
                 <ArrowRight className="ms-1 size-4 rtl:rotate-180" />
               </Link>
             </Button>
