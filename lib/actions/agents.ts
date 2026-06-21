@@ -119,6 +119,7 @@ export async function createAgent(
       temperature: d.temperature,
       systemPrompt: d.systemPrompt || null,
       scenarios,
+      permissions: d.permissions ?? [],
       force: opts?.force,
     });
     revalidatePath('/agents');
@@ -177,6 +178,7 @@ export async function updateAgent(id: string, raw: AgentInput): Promise<AgentAct
         role: d.role,
         roleEn: d.roleEn || null,
         persona: d.persona,
+        ...(d.permissions ? { permissions: d.permissions } : {}),
         model: d.model,
         temperature: d.temperature,
         maxTokens: d.maxTokens,

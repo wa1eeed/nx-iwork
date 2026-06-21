@@ -10,6 +10,7 @@
 import { VertexAI, type Content, type Part } from '@google-cloud/vertexai';
 import { resolveModel } from '../models';
 import { getGcpCredentials, isGcpConfigured, ensureAdcFromEnv } from '../gcp-auth';
+import { withAiRetry } from '../retry';
 import type {
   AiCompletion,
   AiCompletionRequest,
@@ -94,9 +95,10 @@ export function createVertexProvider(): AiProvider {
           : {}),
       });
 
-      const result = await model.generateContent({
-        contents: toVertexContents(req.messages),
-      });
+      const result = await withAiRetry(
+        () => model.generateContent({ contents: toVertexContents(req.messages) }),
+        { label: 'vertex.complete' }
+      );
 
       const resp = result.response;
       const parts: Part[] = resp.candidates?.[0]?.content?.parts ?? [];

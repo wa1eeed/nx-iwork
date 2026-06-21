@@ -281,6 +281,11 @@ model Agent {
   kpis             Json?          // [{ key, label, target, unit }]
   performanceScore Float          @default(100)
 
+  // Explicit allow-list of tool ids this agent may call (function-calling
+  // permissions). Enforced in the runtime: the agent only receives tools that
+  // are BOTH module-enabled AND in this list. Empty = all module tools (legacy).
+  permissions      String[]       @default([])
+
   departmentId String
   department   Department  @relation(fields: [departmentId], references: [id], onDelete: Restrict)
   parentId     String?

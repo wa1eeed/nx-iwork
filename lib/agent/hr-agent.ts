@@ -45,6 +45,7 @@ export interface DeployPayload {
   temperature?: number;
   systemPrompt?: string | null;
   scenarios?: DeployScenario[];
+  permissions?: string[]; // explicit allow-list of tool ids (custom path)
 }
 
 export interface ConflictVerdict {
@@ -158,6 +159,7 @@ export class HRAgentService {
           roleEn: tpl.roleNameEn,
           persona,
           kpis: tpl.defaultKpis as Prisma.InputJsonValue,
+          permissions: ((tpl.defaultPermissions as unknown as string[]) ?? []),
           model: tpl.model,
           systemPrompt: tpl.coreInstructions,
           tokenLimit,
@@ -187,6 +189,7 @@ export class HRAgentService {
         model: payload.model ?? 'HAIKU',
         temperature: payload.temperature ?? 0.6,
         systemPrompt: payload.systemPrompt || null,
+        permissions: payload.permissions ?? [],
         tokenLimit,
         status: 'ONBOARDING',
       },

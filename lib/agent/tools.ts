@@ -40,6 +40,18 @@ export function getToolsForCompany(m: CompanyModules): AiTool[] {
   });
 }
 
+// Per-agent function-calling permissions. An agent receives a tool only if it is
+// BOTH module-enabled AND in the agent's explicit allow-list. An empty allow-list
+// means "all module tools" (backward compatible for agents created before
+// permissions existed). This is the hard gate: the model can never call a tool it
+// wasn't handed, so a tool outside its permissions is unreachable.
+export function getToolsForAgent(m: CompanyModules, permissions: string[]): AiTool[] {
+  const base = getToolsForCompany(m);
+  if (!permissions || permissions.length === 0) return base;
+  const allowed = new Set(permissions);
+  return base.filter((t) => allowed.has(t.name));
+}
+
 // ---- Tool catalogue (schemas advertised to the model) ----------------------
 
 export const AGENT_TOOLS: AiTool[] = [

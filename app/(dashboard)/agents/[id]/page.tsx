@@ -11,7 +11,8 @@ import { AgentForm, type AgentFormValues } from '@/components/dashboard/agent-fo
 import { ArchiveAgentButton } from '@/components/dashboard/archive-agent-button';
 import { AgentSchedules } from '@/components/dashboard/agent-schedules';
 import { AgentActivity } from '@/components/dashboard/agent-activity';
-import { getToolsForCompany } from '@/lib/agent/tools';
+import { getToolsForAgent } from '@/lib/agent/tools';
+import { TOOL_LABELS } from '@/lib/agent/tool-labels';
 import { AgentScenarios } from '@/components/dashboard/agent-scenarios';
 import type { AgentKpi } from '@/lib/agent/templates';
 
@@ -87,26 +88,15 @@ export default async function AgentProfilePage({
 
   const kpis = (agent.kpis as unknown as AgentKpi[] | null) ?? [];
 
-  // Capabilities this agent has = the tools it receives (driven by enabled modules).
-  const tools = getToolsForCompany({
-    hasEcommerce: company?.hasEcommerce ?? true,
-    hasServices: company?.hasServices ?? true,
-    hasBookings: company?.hasBookings ?? false,
-  });
-  const TOOL_LABELS: Record<string, string> = {
-    search_catalog: 'Search catalog',
-    check_availability: 'Check availability',
-    create_booking: 'Create booking',
-    search_faq: 'Search FAQ',
-    find_customer: 'Find customer',
-    create_lead: 'Create lead',
-    update_lead: 'Update lead',
-    create_order: 'Create order',
-    update_booking: 'Update booking',
-    update_task_status: 'Update task status',
-    create_task: 'Create task',
-    save_memory: 'Save memory',
-  };
+  // Capabilities = the tools it actually receives = module-enabled ∩ its permissions.
+  const tools = getToolsForAgent(
+    {
+      hasEcommerce: company?.hasEcommerce ?? true,
+      hasServices: company?.hasServices ?? true,
+      hasBookings: company?.hasBookings ?? false,
+    },
+    agent.permissions
+  );
 
   const initial: AgentFormValues = {
     id: agent.id,
@@ -120,6 +110,7 @@ export default async function AgentProfilePage({
     model: agent.model,
     temperature: agent.temperature,
     systemPrompt: agent.systemPrompt ?? '',
+    permissions: agent.permissions,
   };
 
   return (

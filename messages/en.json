@@ -640,6 +640,8 @@
     "saveFailed": "Couldn't save.",
     "conflictTitle": "Possible role conflict",
     "createAnyway": "Create anyway",
+    "permissionsTitle": "Tools & permissions",
+    "permissionsHelp": "The actions this employee may take in the system. It can never use a tool that's off. Leave all off to allow every tool your modules enable.",
     "scenariosTitle": "Auto scenarios (If-Then)",
     "scenariosHelp": "What this employee does automatically when a business event happens.",
     "addScenario": "Add scenario",

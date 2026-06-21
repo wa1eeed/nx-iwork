@@ -15,6 +15,8 @@ export const agentSchema = z.object({
   temperature: z.coerce.number().min(0).max(1).default(0.6),
   maxTokens: z.coerce.number().int().min(256).max(8192).default(4096),
   systemPrompt: z.string().trim().max(4000).optional().nullable(),
+  // Explicit tool-call allow-list. Empty = all module tools.
+  permissions: z.array(z.string().trim().max(60)).max(40).optional(),
 });
 
 export type AgentInput = z.infer<typeof agentSchema>;

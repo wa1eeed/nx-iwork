@@ -12,6 +12,7 @@
 
 import { GoogleAuth } from 'google-auth-library';
 import { getGcpCredentials, isGcpConfigured, ensureAdcFromEnv } from './gcp-auth';
+import { withAiRetry } from './retry';
 
 const MODEL = process.env.VERTEX_EMBEDDINGS_MODEL ?? 'gemini-embedding-001';
 const SCOPE = 'https://www.googleapis.com/auth/cloud-platform';
@@ -49,25 +50,34 @@ export async function getEmbedding(text: string): Promise<number[] | null> {
       `https://${location}-aiplatform.googleapis.com/v1/projects/${project}` +
       `/locations/${location}/publishers/google/models/${MODEL}:predict`;
 
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: {
-        authorization: `Bearer ${token}`,
-        'content-type': 'application/json',
+    return await withAiRetry(
+      async () => {
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: {
+            authorization: `Bearer ${token}`,
+            'content-type': 'application/json',
+          },
+          body: JSON.stringify({
+            instances: [{ content: text.slice(0, 8000) }],
+            parameters: { outputDimensionality: EMBEDDING_DIMS },
+          }),
+          signal: AbortSignal.timeout(15_000),
+        });
+        if (!res.ok) {
+          // Mark transient (429/5xx) so withAiRetry backs off; permanent errors
+          // propagate to the outer catch and return null.
+          const body = await res.text().catch(() => '');
+          const err = new Error(`Vertex embeddings ${res.status} ${body}`) as Error & { status: number };
+          err.status = res.status;
+          throw err;
+        }
+        const data = await res.json();
+        const vec: number[] | undefined = data.predictions?.[0]?.embeddings?.values;
+        return Array.isArray(vec) ? vec : null;
       },
-      body: JSON.stringify({
-        instances: [{ content: text.slice(0, 8000) }],
-        parameters: { outputDimensionality: EMBEDDING_DIMS },
-      }),
-      signal: AbortSignal.timeout(15_000),
-    });
-    if (!res.ok) {
-      console.error('Vertex embeddings error', res.status, await res.text().catch(() => ''));
-      return null;
-    }
-    const data = await res.json();
-    const vec: number[] | undefined = data.predictions?.[0]?.embeddings?.values;
-    return Array.isArray(vec) ? vec : null;
+      { label: 'vertex.embed', retries: 3 }
+    );
   } catch (err) {
     console.error('Vertex embeddings request failed', err);
     return null;

@@ -4,7 +4,8 @@ import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useTranslations } from 'next-intl';
-import { Loader2, AlertTriangle, Lightbulb, Plus, Trash2, Zap } from 'lucide-react';
+import { Loader2, AlertTriangle, Lightbulb, Plus, Trash2, Zap, Wrench } from 'lucide-react';
+import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -14,6 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createAgent, updateAgent } from '@/lib/actions/agents';
 import { celebrate } from '@/lib/ui/celebrate';
 import { TRIGGER_EVENTS } from '@/lib/agent/events-catalog';
+import { TOOL_CATALOG } from '@/lib/agent/tool-labels';
 import type { AgentInput } from '@/lib/validators/agents';
 import type { ConflictResult } from '@/lib/agent/conflict-check';
 
@@ -39,6 +41,7 @@ export interface AgentFormValues {
   model: 'HAIKU' | 'SONNET' | 'OPUS';
   temperature: number;
   systemPrompt: string;
+  permissions: string[];
 }
 
 const DEFAULTS: AgentFormValues = {
@@ -52,6 +55,7 @@ const DEFAULTS: AgentFormValues = {
   model: 'HAIKU',
   temperature: 0.6,
   systemPrompt: '',
+  permissions: [],
 };
 
 export function AgentForm({
@@ -105,6 +109,13 @@ export function AgentForm({
     setDraft({ event: TRIGGER_EVENTS[0], action: '' });
   }
 
+  function togglePerm(id: string) {
+    setV((p) => ({
+      ...p,
+      permissions: p.permissions.includes(id) ? p.permissions.filter((x) => x !== id) : [...p.permissions, id],
+    }));
+  }
+
   const MODELS: { value: AgentFormValues['model']; label: string; hint: string }[] = [
     { value: 'HAIKU', label: t('models.haiku'), hint: t('models.haikuHint') },
     { value: 'SONNET', label: t('models.sonnet'), hint: t('models.sonnetHint') },
@@ -133,6 +144,7 @@ export function AgentForm({
       temperature: v.temperature,
       maxTokens: 4096,
       systemPrompt: v.systemPrompt.trim() || null,
+      permissions: v.permissions,
     };
 
     startSave(async () => {
@@ -263,6 +275,36 @@ export function AgentForm({
                 ))}
               </select>
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <Wrench className="h-4 w-4 text-primary" />
+            {t('permissionsTitle')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <p className="text-xs text-muted-foreground">{t('permissionsHelp')}</p>
+          <div className="flex flex-wrap gap-2">
+            {TOOL_CATALOG.map((tool) => {
+              const on = v.permissions.includes(tool.id);
+              return (
+                <button
+                  key={tool.id}
+                  type="button"
+                  onClick={() => togglePerm(tool.id)}
+                  className={cn(
+                    'rounded-full border px-3 py-1 text-xs transition-colors',
+                    on ? 'border-primary bg-primary/10 text-primary' : 'border-input text-muted-foreground hover:bg-accent'
+                  )}
+                >
+                  {tool.label}
+                </button>
+              );
+            })}
           </div>
         </CardContent>
       </Card>
