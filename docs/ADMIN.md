@@ -25,22 +25,25 @@
 
 Three paths — any one grants access; pick whichever fits:
 
-**A) Full credentials from env (bootstrap — creates the account).** Set the
-admin's email + password as env vars; on **every server start** the account is
-created, or its password/role reconciled, as `SUPER_ADMIN`. Manage entirely from
-env: edit + redeploy and it takes effect (Coolify runs `node server.js`, which
-fires the boot hook). No prior signup needed.
+**A) Full credentials from env (bootstrap — creates the account).** The admin
+email defaults to **`waleed@nx.sa`** (override with `ADMIN_EMAIL`). Going live is
+two steps: **deploy**, then set **`ADMIN_PASSWORD`** in the host env and restart —
+on boot the account is created (or its password/role reconciled) as `SUPER_ADMIN`
+and you sign in normally at `/admin`. No prior signup needed; changing env +
+redeploy re-applies (Coolify runs `node server.js`, which fires the boot hook).
 ```bash
-# .env / Coolify env
-ADMIN_EMAIL="admin@bznss.one"
+# .env / Coolify env — only the password is required
 ADMIN_PASSWORD="set-a-strong-password"
-ADMIN_NAME="Administrator"        # optional, default "Administrator"
+# ADMIN_EMAIL="waleed@nx.sa"      # optional override; this is the default
+# ADMIN_NAME="Administrator"      # optional, default "Administrator"
 ```
 Logic: `instrumentation.ts` `register()` → `lib/seed-admin.ts`
-`seedAdminFromEnv()`. The password is stored **bcrypt-hashed** (rounds = 12,
-matching signup); it's only re-hashed when it actually changes. Because env is
-the source of truth, a UI password change on this account is overwritten on the
-next restart — expected for an env-managed bootstrap admin.
+`seedAdminFromEnv()`. **No default password** — the seed is a no-op until
+`ADMIN_PASSWORD` is set, so a fresh deploy never ships a guessable credential.
+The password is stored **bcrypt-hashed** (rounds = 12, matching signup) and only
+re-hashed when it actually changes. Because env is the source of truth, a UI
+password change on this account is overwritten on the next restart — expected
+for an env-managed bootstrap admin.
 
 **B) Env allowlist (elevate an existing account by email).** Add email(s) to
 `SUPER_ADMIN_EMAILS` (comma-separated) + redeploy; on next login that account is

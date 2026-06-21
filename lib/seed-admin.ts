@@ -1,25 +1,30 @@
 // Bootstrap / reconcile the platform super-admin from environment values.
 //
-// Set ADMIN_EMAIL + ADMIN_PASSWORD (optional ADMIN_NAME) and the account is
-// created — or its password/role reconciled — as SUPER_ADMIN on every server
-// start. The credentials are therefore fully managed from env: change them and
-// redeploy, and they take effect. Runs from instrumentation.ts (server boot).
+// The admin email defaults to DEFAULT_ADMIN_EMAIL (override with ADMIN_EMAIL),
+// so going live is a two-step: deploy, then set ADMIN_PASSWORD in the host env
+// and restart — the account is created as SUPER_ADMIN and you sign in normally.
+// On every server start the account is created, or its password/role reconciled,
+// so the credentials stay fully managed from env. Runs from instrumentation.ts.
 //
-// SECURITY: the password is stored bcrypt-hashed, never plaintext. Keep the env
-// value in a secrets manager and rotate by editing it. Because env is the source
-// of truth, a UI password change on this specific account is overwritten on the
-// next restart — that's expected for an env-managed bootstrap admin.
+// SECURITY: the password is stored bcrypt-hashed, never plaintext, and there is
+// NO default password — the seed is a no-op until ADMIN_PASSWORD is set (so a
+// fresh deploy never ships a guessable default credential). Keep the value in a
+// secrets manager and rotate by editing it. Because env is the source of truth,
+// a UI password change on this account is overwritten on the next restart —
+// expected for an env-managed bootstrap admin.
 
 import bcrypt from 'bcryptjs';
 import { db } from '@/lib/db';
 
 const BCRYPT_ROUNDS = 12; // matches the signup route
+const DEFAULT_ADMIN_EMAIL = 'waleed@nx.sa';
 
 export async function seedAdminFromEnv(): Promise<void> {
-  const email = process.env.ADMIN_EMAIL?.trim().toLowerCase();
+  const email = (process.env.ADMIN_EMAIL?.trim() || DEFAULT_ADMIN_EMAIL).toLowerCase();
   const password = process.env.ADMIN_PASSWORD;
-  // Opt-in: do nothing unless BOTH are provided.
-  if (!email || !password) return;
+  // Opt-in on the password: do nothing until ADMIN_PASSWORD is set. The email
+  // has a default, so only the password is required to bring the admin online.
+  if (!password) return;
 
   const name = process.env.ADMIN_NAME?.trim() || 'Administrator';
   const existing = await db.user.findUnique({
