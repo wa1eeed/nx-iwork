@@ -647,6 +647,59 @@ per-company bot configured in Settings → Alerts).
 
 ---
 
+## 🗣️ Conversation modes — customer vs owner (built 2026-06-21)
+
+The same agent talks to two very different people, so the system prompt
+(`buildSystemPrompt`, `lib/agent/prompt.ts`) branches on `audience`:
+
+- **`customer`** (default) — the **public chat widget** (`public-chat.ts`). The
+  interlocutor is a real customer: greet, answer from catalog/FAQ, capture leads
+  into the CRM, escalate. This is the customer-service stance.
+- **`internal`** — the **dashboard chat** (`run.ts`) **and autonomous task
+  execution** (`task.ts`). The interlocutor is the **business owner / manager**.
+  The agent acts as their employee: it takes directives, **executes actions via
+  its tools** (record/update an order, update a lead, create a task, check
+  availability…), and reports back concisely — it does **not** treat the owner as
+  a customer or log them into the CRM.
+
+This is the answer to "why did my agent reply to me like I'm a customer?" — the
+dashboard now runs in `internal` mode.
+
+**The hybrid principle this enforces:** customer-facing transactions (a visitor
+ordering on the public page) are **deterministic pure code** (`/api/public/[slug]/order`
+→ the `Order` table) — agents are NOT in that path. Agents are the augmentation
+layer: they *can* take the same actions via function-calling **when directed by
+the owner or by a scenario**, each within its role and permissions.
+
+## 🔐 Per-agent tool permissions (function-calling allow-list)
+
+`Agent.permissions` is an explicit allow-list of tool ids. The runtime gate is
+`getToolsForAgent(modules, permissions)` (`lib/agent/tools.ts`): an agent receives
+a tool only if it is **both module-enabled AND in its permissions** — the model
+can never call a tool it wasn't handed. **Empty list = all module tools**
+(backward compatible for agents created before permissions existed). Template
+hires get the template's `defaultPermissions`; custom agents pick via toggles in
+the agent form (create + edit). Shown on the profile as the agent's real
+capabilities.
+
+## 🛡️ Resilience & token accounting
+
+- **Rate limiter** (`lib/ai/retry.ts` `withAiRetry`) — exponential backoff + full
+  jitter on transient Gemini errors (429/RESOURCE_EXHAUSTED, 5xx, timeouts);
+  wraps `complete()`, `completeStream()`, and the embeddings call.
+- **Token accounting** — charged on the **real** `usageMetadata.totalTokenCount`
+  (input + output + Gemini "thinking" tokens), computed in the Vertex adapter as
+  `inputTokens = promptTokenCount`, `outputTokens = total − prompt`. No
+  compounding. The starter grant is **5,000,000** tokens (`Company.tokenBalance`;
+  100k drained in ~10 chats). Each chat logs `[token-guard] surface | tenant | used | remaining`.
+- **Streaming** — the dashboard chat streams the reply token-by-token over SSE
+  (`provider.completeStream` → `runToolLoopStream` → `onDelta` → SSE route →
+  client). Tool-using turns resolve first, then the final answer streams.
+- **Per-agent monthly cap** — `lib/billing/agent-tokens.ts` (by plan), on top of
+  the company bank.
+
+---
+
 **هذا هو القلب التقني للمنصة.** بناء هذا الـ system بشكل صحيح = نجاح NX iWork.
 
 **نتيجة كل سطر هنا:** موظف ذكي حقيقي، مش chatbot.

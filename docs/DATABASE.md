@@ -902,3 +902,15 @@ Rollback: `ALTER TABLE <t> DISABLE ROW LEVEL SECURITY`.
 - **`Company.plan`** (`PlanTier`) — onboarding plan choice.
 - **`TriggerEvent`** gains `CART_ABANDONED` + `COMPLAINT_RECEIVED`.
 - **`BusinessSettings.telegramBotToken/telegramChatId`** — escalation channel.
+
+## 🆕 Schema additions (2026-06-21)
+
+- **`Agent.permissions`** (`TEXT[]`) — explicit function-calling allow-list (tool
+  ids). Enforced in `getToolsForAgent` (module ∩ permissions; empty = all). Set
+  from the template's `defaultPermissions` or custom toggles.
+- **`Company.tokenBalance`** default `100000` → **`5000000`** (the 100k starter
+  grant drained in a few gemini-2.5-flash chats). Migration also restores any
+  account currently `< 5M` (test phase).
+- **`AgentMemory` vector index** ivfflat → **HNSW** (`vector_cosine_ops`).
+- Used by the Super Admin console (no new tables — `Plan`, `Subscription`,
+  `Invoice`, `AuditLog`, `PlatformSettings` already existed). See `docs/ADMIN.md`.

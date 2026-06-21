@@ -5,6 +5,21 @@ Tracked follow-ups beyond the current build. Newest first.
 
 ## 🔜 Planned
 
+### Infrastructure migration → Google Cloud Run (DECIDED) — strategic
+**Decision (2026-06-21):** the next infra home is **Google Cloud Run**, because
+the AI runs on Google Vertex (Gemini) — Cloud Run sits inside Google's network
+(low-latency Gemini/embeddings), authenticates to Vertex via **native ADC** (no
+key files), autoscales, and **scales to zero** (no traffic = no bill). Full plan
+and readiness checklist in **`docs/INFRA.md`**. Prep before going fully serverless:
+1. **Scheduler** → **Cloud Scheduler** → `POST /api/cron/run` (endpoint exists).
+2. **Rate-limit + queue** → **Memorystore (Redis)** (in-memory limiter is
+   single-instance today; needed across replicas + for a BullMQ worker at scale).
+3. **DB** → Cloud SQL Postgres (enable `vector`); **PgBouncer** (tx mode) for pooling.
+4. **Secrets/role** → Secret Manager + a least-privilege `Vertex AI User` SA.
+The app is already container-ready (`output: 'standalone'` + Dockerfile) and
+provider-portable (DB/storage/AI via env). Also do **CDN via Cloudflare** now
+(`docs/INFRA.md`): proxy `bznss.one`, R2 custom domain for assets.
+
 ### Deep-component i18n → English-primary — NEXT
 The redesign flipped the default to English and migrated the shell, onboarding,
 settings, overview, full CRM, and all section-page headers. **Remaining: the deep
@@ -61,3 +76,12 @@ create, conflict-check, cognitive onboarding, onboarding→active, org chart,
 `/api/hr/deploy`, advisory mode, scenario builder) · complaint sentiment +
 Telegram escalation · per-agent token cap by plan · RLS (permissive-fallback;
 adopt `withTenant` to fully enforce).
+
+**2026-06-21 arc** (see `CHANGELOG.md`, `docs/ADMIN.md`, `docs/AGENT_SYSTEM.md`,
+`docs/INFRA.md`): **Aurora design system** + responsive mobile nav + delight ·
+**professional conversion landing** (coded mockups, pricing, FAQ, JSON-LD/SEO,
+light-default, auth-aware nav) · **Super Admin console (core)** · production
+hardening (**AI rate-limiter**, **per-agent tool permissions**, HNSW vectors) ·
+**token-bank fix** (5M default + restore + diagnostic log) · **streaming chat (SSE)**
+· **internal vs customer conversation modes** · CDN headers + Cloudflare/Cloud-Run
+docs.

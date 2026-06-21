@@ -10,6 +10,55 @@ Versioning: [Semantic Versioning](https://semver.org/)
 ## [Unreleased]
 
 <!-- ============================================================= -->
+<!-- 2026-06-21 — Design overhaul, landing, admin console, prod      -->
+<!-- hardening, token fix, streaming, conversation modes.            -->
+<!-- ============================================================= -->
+
+### Fixed — Token bank drained after a few chats
+- `Company.tokenBalance` default **100k → 5,000,000** (gemini-2.5-flash "thinking"
+  tokens drained 100k in ~10 chats). Migration restores existing accounts < 5M.
+- Deduction confirmed correct: charges the real `usageMetadata.totalTokenCount`
+  (no compounding). `chargeTokens` now returns the remaining balance and every
+  chat logs `[token-guard] <surface> | tenant | used | remaining`.
+
+### Added — Streaming dashboard chat (SSE)
+- `AiProvider.completeStream` (Vertex) + `runToolLoopStream` + an `onDelta`
+  callback; the chat route streams text deltas as SSE; the client renders them
+  live. Tool-using turns resolve, then the final answer streams.
+
+### Added — Conversation modes (customer vs owner)
+- `buildSystemPrompt` gains `audience`: **`internal`** (dashboard + autonomous
+  tasks — the agent knows it's talking to the OWNER, acts as their employee,
+  executes via tools, reports) vs **`customer`** (public widget). Fixes "the agent
+  replies to me like I'm a customer" in the dashboard.
+
+### Added — Super Admin console (core)
+- `app/(admin)/admin` guarded by `SUPER_ADMIN` (`lib/admin.ts`): overview totals,
+  companies list+search, company detail (token top-up, change plan → re-applies
+  per-agent caps, suspend/activate), platform-settings editor. `signupEnabled`
+  gates `/api/auth/signup`. Mutations audited. See **`docs/ADMIN.md`**.
+  `scripts/make-admin.ts` promotes a user to super admin.
+
+### Added — Production hardening
+- **AI rate limiter** (`lib/ai/retry.ts`): exponential backoff + jitter on 429 /
+  RESOURCE_EXHAUSTED / 5xx / timeouts; wraps `complete`, `completeStream`, embeddings.
+- **Per-agent tool permissions** (`Agent.permissions`): explicit function-calling
+  allow-list, enforced in `getToolsForAgent` (module ∩ permissions; empty = all),
+  set from template defaults or custom toggles.
+- **Vector index** AgentMemory ivfflat → **HNSW** (cosine).
+- `DATABASE_URL` connection-pool / PgBouncer guidance; CDN cache headers.
+
+### Added — Design overhaul + marketing landing (Aurora)
+- **Aurora design system**: brand gradient (cyan→violet), glass chrome, soft/glow
+  shadows, spring motion (HoverLift/PageTransition/AnimatedCounter), **responsive
+  mobile drawer nav**, confetti + auto-animate. **Light theme by default.**
+- **Professional landing page** at `/`: code-built dashboard + website-widget
+  mockups, stats, 3-step how-it-works, per-department agents, pricing, FAQ, CTA;
+  **SEO** (`generateMetadata` + JSON-LD SoftwareApplication/FAQPage, single h1);
+  **auth-aware nav** (My account when signed in).
+- Strategic decision: next infra home is **Google Cloud Run** (`docs/INFRA.md`).
+
+<!-- ============================================================= -->
 <!-- 2026-06-20 — Reference codes, English-primary redesign,        -->
 <!-- and the HR Agent lifecycle system. See docs/CONTINUE_HERE.md.  -->
 <!-- ============================================================= -->

@@ -2,9 +2,10 @@
 
 > **Read this first when resuming.** It's the single source of "current state +
 > what's next". Detailed history is in `CHANGELOG.md`; backlog in `docs/TODO.md`;
-> architecture in `docs/AGENT_SYSTEM.md` and `docs/DATABASE.md`.
+> architecture in `docs/AGENT_SYSTEM.md`, `docs/DATABASE.md`; admin in
+> `docs/ADMIN.md`; infra/CDN/Cloud-Run in `docs/INFRA.md`.
 
-**Last updated:** 2026-06-20
+**Last updated:** 2026-06-21
 **Live:** https://bznss.one/ · repo `github.com/wa1eeed/nx-iwork`
 **Deploy:** `git push origin HEAD:main` → Coolify builds & runs
 `prisma migrate deploy && node server.js`. **`main` is the deploy branch**, not
@@ -35,6 +36,20 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
 5. **Per-agent token cap by plan** — `lib/billing/agent-tokens.ts`, `AGENT_TOKEN_CAP`.
 6. **RLS** — enabled+forced with a permissive-when-unset policy (see gotchas).
 
+### Then this arc (2026-06-21), all shipped to `main`
+7. **Aurora design system + marketing landing** — brand gradient, glass chrome,
+   spring motion, **responsive mobile nav**, confetti; **light theme default**;
+   pro conversion landing at `/` (coded mockups, pricing, FAQ, **SEO** JSON-LD,
+   **auth-aware nav**). See `CHANGELOG.md`.
+8. **Super Admin console (core)** — `app/(admin)/admin`, `SUPER_ADMIN`-guarded.
+   See **`docs/ADMIN.md`**. Become admin: `scripts/make-admin.ts <email>`.
+9. **Production hardening** — AI rate-limiter (429 backoff+jitter), **per-agent
+   tool permissions** (`Agent.permissions` + `getToolsForAgent`), HNSW vectors.
+10. **Token-bank fix** — default 5,000,000 (was 100k); diagnostic log per chat.
+11. **Streaming dashboard chat (SSE)** + **internal vs customer conversation
+    modes** (agent knows it's talking to the owner in the dashboard).
+12. **Decision:** next infra home = **Google Cloud Run** (`docs/INFRA.md`).
+
 ---
 
 ## 🔜 Next up (resume here, in priority order)
@@ -51,9 +66,13 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
 3. **`CART_ABANDONED` source** — the event + scenarios exist, but nothing dispatches
    it yet (no cart/checkout-intent model). Add a cart/checkout-intent capture (or an
    external integration) that calls `dispatchEvent(companyId, 'CART_ABANDONED', …)`.
-4. **Then the standing backlog** (`docs/TODO.md`): Super Admin SaaS console · Tap
-   payments (token top-ups + subscriptions) · Sentry · Public API v1 · bookings
-   calendar · least-privilege Vertex role (replace prod `Owner` grant).
+4. **Google Cloud Run migration** (decided target) — prep: Cloud Scheduler →
+   `/api/cron/run`, Redis for rate-limit/queue, Cloud SQL + PgBouncer, Secret
+   Manager + least-privilege Vertex SA. Do **Cloudflare CDN** now. See `docs/INFRA.md`.
+5. **Admin Phase 2** (`docs/ADMIN.md`): impersonate-for-support · audit-log viewer ·
+   usage/revenue charts · invoices · DB plan-catalog editor · maintenance-mode wiring · 2FA.
+6. **Then the standing backlog** (`docs/TODO.md`): Tap payments · Sentry · Public
+   API v1 · bookings calendar.
 
 ---
 
@@ -64,7 +83,20 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
   + `ar.json`); don't hardcode strings.
 - **All agent creation MUST go through the HR gateway** (`hrAgent.onboardAndDeployAgent`
   / `createAgent` / `createAgentFromTemplate`). Never `db.agent.create` directly —
-  you'd skip conflict-check, onboarding, scenarios, and the token cap.
+  you'd skip conflict-check, onboarding, scenarios, permissions, and the token cap.
+- **Conversation modes** (`buildSystemPrompt` `audience`): dashboard chat + tasks =
+  **`internal`** (agent talks to the OWNER as their employee); public widget =
+  **`customer`**. Don't make the dashboard treat the owner as a customer.
+- **Hybrid principle:** customer-facing transactions (public order) are deterministic
+  **pure code** (`/api/public/[slug]/order` → `Order`). Agents are the augmentation
+  layer — they act via **function-calling tools** gated by `Agent.permissions`
+  (`getToolsForAgent`: module ∩ permissions; empty = all). Never mutate from raw
+  model text.
+- **Token bank:** charge the real `usageMetadata.totalTokenCount` (incl. thinking);
+  default grant is **5,000,000** (`Company.tokenBalance`). No custom token math.
+- **Light theme is the default**; dark via the toggle.
+- **Admin:** `/admin` is `SUPER_ADMIN`-only (`lib/admin.ts`); promote via
+  `scripts/make-admin.ts`. See `docs/ADMIN.md`.
 - **RLS is permissive-until-adopted.** It only isolates inside a `withTenant`-pinned
   tx. Un-pinned queries rely on app-level `companyId` (which is everywhere). Don't
   assume the DB isolates un-pinned queries — it doesn't yet.
