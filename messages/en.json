@@ -30,6 +30,77 @@
     "login": "Sign in",
     "signup": "Create account"
   },
+  "landing": {
+    "nav": {
+      "features": "Features",
+      "how": "How it works",
+      "pricing": "Pricing",
+      "signin": "Sign in",
+      "getStarted": "Get started"
+    },
+    "hero": {
+      "badge": "AI employees that run your business 24/7",
+      "headline": "Build a self-running company with AI agents",
+      "lede": "Hire AI employees, give them a persona, goals, and playbooks, and let them handle sales, support, and operations — around the clock, in Arabic and English.",
+      "ctaPrimary": "Start free",
+      "ctaSecondary": "Sign in",
+      "trust": "No credit card required · Free starter credits"
+    },
+    "features": {
+      "title": "Everything your AI workforce needs",
+      "subtitle": "A complete platform to hire, configure, and run AI employees that actually operate your business.",
+      "items": {
+        "templates": {
+          "title": "AI employees in minutes",
+          "desc": "Hire from 9 ready-made roles — Sales, Support, Marketing, Finance and more — or build a custom one from scratch."
+        },
+        "scenarios": {
+          "title": "Autonomous scenarios",
+          "desc": "If-this-then-that triggers wake the right agent on every new lead, order, or complaint — no babysitting."
+        },
+        "memory": {
+          "title": "Real business memory",
+          "desc": "Agents learn your products, FAQ, and policies with vector memory, so they answer accurately — no hallucinations."
+        },
+        "crm": {
+          "title": "CRM, orders & bookings",
+          "desc": "Leads, customers, orders, and appointments — captured, handled, and followed up automatically."
+        },
+        "channels": {
+          "title": "Talks to your customers",
+          "desc": "A public landing page + chat widget in Arabic & English, on your own custom domain."
+        },
+        "control": {
+          "title": "You stay in control",
+          "desc": "Org chart, KPIs, per-agent token caps, and instant Telegram escalation for the hard cases."
+        }
+      }
+    },
+    "how": {
+      "title": "From idea to AI employee in three steps",
+      "subtitle": "The HR Agent vets, onboards, and deploys every hire for you.",
+      "steps": {
+        "s1": { "title": "Pick a role", "desc": "Choose a proven template or describe a custom role — HR checks it for conflicts first." },
+        "s2": { "title": "Set persona & scenarios", "desc": "Give it a personality, goals, KPIs, and automatic playbooks for your business events." },
+        "s3": { "title": "It runs 24/7", "desc": "Your AI employee is onboarded on your business and starts working — reporting back to you." }
+      }
+    },
+    "pricing": {
+      "title": "Simple pricing that scales with you",
+      "subtitle": "Start free on managed AI credits. Upgrade when you grow — no card needed to begin.",
+      "cta": "Get started",
+      "note": "Prices in SAR. Billing arrives soon — every plan starts on free managed credits today."
+    },
+    "cta": {
+      "title": "Build your AI workforce today",
+      "subtitle": "Hire your first AI employee in minutes — free to start.",
+      "button": "Start free"
+    },
+    "footer": {
+      "tagline": "Self-running companies, powered by AI.",
+      "rights": "All rights reserved."
+    }
+  },
   "auth": {
     "loginTitle": "Sign in",
     "loginSubtitle": "Enter your credentials to access your dashboard",
