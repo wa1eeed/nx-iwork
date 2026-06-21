@@ -7,7 +7,12 @@
 // Implements the same neutral AiProvider interface as the REST adapters, so the
 // agent loop / tools / token tracking are identical regardless of provider.
 
-import { VertexAI, type Content, type Part } from '@google-cloud/vertexai';
+import {
+  VertexAI,
+  type Content,
+  type Part,
+  type GenerationConfig,
+} from '@google-cloud/vertexai';
 import { resolveModel } from '../models';
 import { getGcpCredentials, isGcpConfigured, ensureAdcFromEnv } from '../gcp-auth';
 import { withAiRetry } from '../retry';
@@ -65,6 +70,27 @@ function toVertexContents(messages: AiMessage[]): Content[] {
   });
 }
 
+// Gemini 2.5 models "think" before answering. That hidden reasoning pass adds
+// real latency before the first visible token AND burns tokens (billed via
+// totalTokenCount). For operational agent chat / tool-calling a small or zero
+// budget is far snappier with negligible quality loss, so we cap it by default.
+// Tunable via env: 0 = thinking off (fastest, default), N = cap to N tokens,
+// -1 = SDK default (dynamic, slowest). Only Gemini 2.5 supports thinkingConfig.
+function buildGenerationConfig(req: AiCompletionRequest, modelId: string): GenerationConfig {
+  const base = {
+    temperature: req.temperature ?? 0.7,
+    maxOutputTokens: req.maxTokens ?? 4096,
+  };
+  const raw = process.env.VERTEX_THINKING_BUDGET;
+  const budget = raw === undefined ? 0 : Number(raw);
+  if (modelId.includes('2.5') && Number.isFinite(budget) && budget >= 0) {
+    // thinkingConfig isn't in the SDK 1.12 types yet, but it's forwarded to the
+    // REST body verbatim (validateGenerationConfig only touches topK).
+    return { ...base, thinkingConfig: { thinkingBudget: budget } } as unknown as GenerationConfig;
+  }
+  return base;
+}
+
 export function createVertexProvider(): AiProvider {
   return {
     id: 'vertex',
@@ -74,10 +100,7 @@ export function createVertexProvider(): AiProvider {
       const model = getClient().getGenerativeModel({
         model: modelId,
         systemInstruction: req.system,
-        generationConfig: {
-          temperature: req.temperature ?? 0.7,
-          maxOutputTokens: req.maxTokens ?? 4096,
-        },
+        generationConfig: buildGenerationConfig(req, modelId),
         ...(req.tools?.length
           ? {
               tools: [
@@ -138,10 +161,7 @@ export function createVertexProvider(): AiProvider {
       const model = getClient().getGenerativeModel({
         model: modelId,
         systemInstruction: req.system,
-        generationConfig: {
-          temperature: req.temperature ?? 0.7,
-          maxOutputTokens: req.maxTokens ?? 4096,
-        },
+        generationConfig: buildGenerationConfig(req, modelId),
         ...(req.tools?.length
           ? {
               tools: [

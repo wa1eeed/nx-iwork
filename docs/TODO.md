@@ -51,6 +51,19 @@ company-less super-admin is routed to `/admin`. Actions in `lib/actions/admin.ts
 revenue, invoices, a DB Plan-catalog editor (plans are defined in code today via
 `lib/plans.ts`), maintenance-mode app-wide wiring, and 2FA for admin.
 
+### Chat latency — remaining levers
+Diagnosed causes: vector recall + full model generation (incl. Gemini 2.5
+"thinking") + occasional multi-round tool loops, all felt at once with no
+streaming. **Done:** SSE streaming (token-by-token — biggest perceived win);
+fast tier is already the agent default (`HAIKU`→`gemini-2.5-flash`); **thinking
+budget capped** (`VERTEX_THINKING_BUDGET`, default 0 = off) to kill the pre-answer
+reasoning delay + token burn. `MAX_TOOL_ROUNDS=5` left as-is (it's a worst-case
+cap, not the typical path — most chats use 0–1 rounds). **Remaining lever:**
+**Context Caching** — the static system prompt + tool schemas are re-sent every
+call; cache them via Vertex `cachedContent` (SDK 1.12 already supports it → switches
+to `v1beta1`) to cut input latency + cost. Needs the prompt split into a static
+(cacheable) prefix vs the dynamic memory-recall suffix, plus per-agent cache TTL.
+
 ### Payments — Tap.company
 Token-bank top-ups + SaaS subscriptions. Closes the managed-billing loop.
 
