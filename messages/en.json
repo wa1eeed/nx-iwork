@@ -2,6 +2,7 @@
   "common": {
     "appName": "NX iWork",
     "tagline": "Build AI-powered companies",
+    "more": "More",
     "loading": "Loading...",
     "error": "Something went wrong",
     "save": "Save",

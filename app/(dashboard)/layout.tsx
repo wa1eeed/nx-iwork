@@ -5,6 +5,8 @@ import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { Sidebar } from '@/components/dashboard/sidebar';
 import { Topbar } from '@/components/dashboard/topbar';
+import { MobileSectionCarousel } from '@/components/dashboard/mobile-section-carousel';
+import { MobileTabBar } from '@/components/dashboard/mobile-tabbar';
 import { PageTransition } from '@/components/ui/motion';
 
 export default async function DashboardLayout({
@@ -45,13 +47,16 @@ export default async function DashboardLayout({
         <Topbar
           userName={session.user.name ?? ''}
           userEmail={session.user.email ?? ''}
-          modules={modules}
           isSuperAdmin={isSuperAdmin}
         />
-        <main className="flex-1 p-4 sm:p-6">
+        {/* Phone-only swipeable section strip; desktop uses the sidebar. */}
+        <MobileSectionCarousel modules={modules} />
+        <main className="flex-1 p-4 pb-24 sm:p-6 md:pb-6">
           <PageTransition>{children}</PageTransition>
         </main>
       </div>
+      {/* Phone-only fixed bottom navigation. */}
+      <MobileTabBar modules={modules} />
     </div>
   );
 }

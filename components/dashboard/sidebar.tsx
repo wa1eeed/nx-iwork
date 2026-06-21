@@ -27,7 +27,7 @@ export interface NavModules {
   hasBookings: boolean;
 }
 
-interface NavItem {
+export interface NavItem {
   href: string;
   icon: LucideIcon;
   labelKey: string;
@@ -41,7 +41,8 @@ interface NavSection {
 
 // Grouped navigation. Items carrying a `module` key appear only when that
 // optional module is enabled for the company; everything else is always shown.
-const NAV_SECTIONS: NavSection[] = [
+// Exported so the mobile tab strip / bottom bar reuse the exact same source.
+export const NAV_SECTIONS: NavSection[] = [
   {
     sectionKey: 'workspace',
     items: [

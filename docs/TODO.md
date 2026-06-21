@@ -5,6 +5,23 @@ Tracked follow-ups beyond the current build. Newest first.
 
 ## 🔜 Planned
 
+### Customer-facing arc: mobile dashboard + wallet + services marketplace
+Decided 2026-06-21. Three phases:
+1. **Mobile dashboard redesign — DONE.** Phone-first chrome: a swipeable
+   horizontal **section carousel** under the topbar (`mobile-section-carousel.tsx`)
+   + a fixed **bottom tab bar** with primary sections and a "More" sheet
+   (`mobile-tabbar.tsx`, reuses `SidebarNav`). Safe-area + RTL aware; replaced the
+   hamburger drawer. `NAV_SECTIONS` exported from `sidebar.tsx` as the single source.
+2. **Wallet + Tap top-up — NEXT.** A SAR wallet (balance + transactions) separate
+   from the token bank; top-up via **Tap.company** (charge + webhook). Wallet page
+   in the dashboard. Spend wallet → buy token credits (admin-priced) crediting
+   `Company.tokenBalance`.
+3. **Services marketplace (internal add-ons).** New platform-service model
+   (distinct from the tenant `Service`); admin adds offerings with price + active;
+   customer "Services" page lists them and buys with the wallet. Activation /
+   plugins / add-ons deferred to a later phase.
+
+
 ### Infrastructure migration → Google Cloud Run (DECIDED) — strategic
 **Decision (2026-06-21):** the next infra home is **Google Cloud Run**, because
 the AI runs on Google Vertex (Gemini) — Cloud Run sits inside Google's network
