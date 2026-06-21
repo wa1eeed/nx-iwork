@@ -7,7 +7,9 @@
 ## Access & security
 
 - **Role:** `UserRole.SUPER_ADMIN` (in the session JWT — see `lib/auth.ts`),
-  granted by the DB flag **or** the `SUPER_ADMIN_EMAILS` env allowlist (below).
+  granted by the env bootstrap (`ADMIN_EMAIL`/`ADMIN_PASSWORD`), the
+  `SUPER_ADMIN_EMAILS` allowlist, or the DB flag (all under *Becoming a super
+  admin* below).
 - **Guard:** `requireSuperAdmin()` / `isSuperAdmin()` in `lib/admin.ts` (a cheap
   session check, no DB round-trip) — honors both the role and the env allowlist.
   The `app/(admin)/admin/layout.tsx` calls it and `redirect('/overview')`s anyone
@@ -21,31 +23,43 @@
 
 ### Becoming a super admin
 
-Two paths — either grants access; pick whichever fits:
+Three paths — any one grants access; pick whichever fits:
 
-**A) Env allowlist (recommended — editable, no DB write).** Add the email(s) to
-`SUPER_ADMIN_EMAILS` (comma-separated) and redeploy. On next login the account is
-elevated to `SUPER_ADMIN`. Editing the env later (add/remove) re-grants/revokes.
+**A) Full credentials from env (bootstrap — creates the account).** Set the
+admin's email + password as env vars; on **every server start** the account is
+created, or its password/role reconciled, as `SUPER_ADMIN`. Manage entirely from
+env: edit + redeploy and it takes effect (Coolify runs `node server.js`, which
+fires the boot hook). No prior signup needed.
 ```bash
 # .env / Coolify env
+ADMIN_EMAIL="admin@bznss.one"
+ADMIN_PASSWORD="set-a-strong-password"
+ADMIN_NAME="Administrator"        # optional, default "Administrator"
+```
+Logic: `instrumentation.ts` `register()` → `lib/seed-admin.ts`
+`seedAdminFromEnv()`. The password is stored **bcrypt-hashed** (rounds = 12,
+matching signup); it's only re-hashed when it actually changes. Because env is
+the source of truth, a UI password change on this account is overwritten on the
+next restart — expected for an env-managed bootstrap admin.
+
+**B) Env allowlist (elevate an existing account by email).** Add email(s) to
+`SUPER_ADMIN_EMAILS` (comma-separated) + redeploy; on next login that account is
+elevated. Emails only — the account keeps its own password. Logic:
+`lib/admin-allowlist.ts` → applied in `lib/auth.ts` (role at login) and OR-ed
+into the guards (`lib/admin.ts`).
+```bash
 SUPER_ADMIN_EMAILS="you@example.com,ops@bznss.one"
 ```
-Logic: `lib/admin-allowlist.ts` → `isAllowlistedSuperAdmin()`, applied in
-`lib/auth.ts` (role at login) and OR-ed into the guards (`lib/admin.ts`) so it
-also works for sessions issued before the env changed.
 
-**B) DB role (permanent flag on the row).**
+**C) DB role (permanent flag on the row).**
 ```bash
 npx tsx scripts/make-admin.ts you@example.com
-# or on the server's Postgres console:
-# UPDATE "User" SET role='SUPER_ADMIN' WHERE email='you@example.com';
+# or: UPDATE "User" SET role='SUPER_ADMIN' WHERE email='you@example.com';
 ```
 
-**Adding a brand-new admin email:** the account must exist first — sign that
-email up normally (it sets its own password), then add it to `SUPER_ADMIN_EMAILS`
-(A) or run the script (B). **Never put a password in env** — only emails. The
-allowlist decides *who* is admin; the account still authenticates with its own
-bcrypt-hashed password. Then open `/admin` and sign in.
+**Security:** the only secret that belongs in env is `ADMIN_PASSWORD` (path A),
+and it is hashed at rest — keep it in a secrets manager and rotate by editing
+the env. Paths B/C never involve passwords. Then open `/admin` and sign in.
 
 ## Pages
 
