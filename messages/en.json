@@ -664,6 +664,73 @@
     "CART_ABANDONED": "When a cart is abandoned",
     "COMPLAINT_RECEIVED": "When a complaint is received"
   },
+  "admin": {
+    "title": "Platform admin",
+    "subtitle": "Manage every company, plan, and credit across NX iWork.",
+    "panel": "Admin panel",
+    "nav": { "overview": "Overview", "companies": "Companies", "settings": "Platform" },
+    "overview": {
+      "companies": "Companies",
+      "agents": "AI employees",
+      "tasks": "Tasks run",
+      "tokens": "Total credits",
+      "byStatus": "Companies by status",
+      "recent": "Newest companies"
+    },
+    "companies": {
+      "title": "Companies",
+      "search": "Search by name or username…",
+      "empty": "No companies match.",
+      "colCompany": "Company",
+      "colPlan": "Plan",
+      "colStatus": "Status",
+      "colAgents": "Agents",
+      "colTokens": "Credits",
+      "view": "Manage"
+    },
+    "company": {
+      "back": "Companies",
+      "owner": "Owner",
+      "created": "Joined",
+      "usage": "Usage",
+      "agents": "AI employees",
+      "tasks": "Tasks",
+      "customers": "Customers",
+      "tokens": "Token credits",
+      "plan": "Plan",
+      "status": "Status",
+      "topUp": "Add credits",
+      "topUpPlaceholder": "e.g. 100000",
+      "topUpBtn": "Add",
+      "changePlan": "Change plan",
+      "setStatus": "Set status",
+      "save": "Save",
+      "toppedUp": "Credits added.",
+      "planChanged": "Plan updated.",
+      "statusChanged": "Status updated.",
+      "failed": "Action failed."
+    },
+    "status": {
+      "ACTIVE": "Active",
+      "SUSPENDED": "Suspended",
+      "TRIAL": "Trial",
+      "EXPIRED": "Expired"
+    },
+    "settings": {
+      "title": "Platform settings",
+      "subtitle": "Global switches for the whole SaaS.",
+      "siteName": "Site name",
+      "signupEnabled": "Allow new signups",
+      "trialEnabled": "Enable free trial",
+      "trialDays": "Trial days",
+      "maintenanceMode": "Maintenance mode",
+      "maintenanceMessage": "Maintenance message",
+      "maxCompanies": "Max companies (blank = unlimited)",
+      "save": "Save settings",
+      "saved": "Settings saved.",
+      "saveError": "Couldn't save."
+    }
+  },
   "crm": {
     "title": "Customers (CRM)",
     "subtitle": "Your customers and where they sit in the pipeline — your agents log them automatically and you follow up here.",

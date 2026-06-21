@@ -11,6 +11,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: 'invalid_body' }, { status: 400 });
   }
 
+  // Platform owner can close signups globally (Admin → Platform).
+  const platform = await db.platformSettings.findUnique({
+    where: { id: 'singleton' },
+    select: { signupEnabled: true },
+  });
+  if (platform && !platform.signupEnabled) {
+    return NextResponse.json({ error: 'signups_disabled' }, { status: 403 });
+  }
+
   const parsed = signupSchema.safeParse(body);
   if (!parsed.success) {
     const code = parsed.error.issues[0]?.path[0];

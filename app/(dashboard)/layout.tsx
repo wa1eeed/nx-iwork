@@ -16,10 +16,13 @@ export default async function DashboardLayout({
     redirect('/login');
   }
 
+  const isSuperAdmin = session.user.role === 'SUPER_ADMIN';
+
   // Read companyId fresh from DB — the JWT can be stale right after onboarding.
   const companyId = await getUserCompany(session.user.id);
   if (!companyId) {
-    redirect('/onboarding');
+    // The platform owner has no business company — send them to the admin console.
+    redirect(isSuperAdmin ? '/admin' : '/onboarding');
   }
 
   const company = await db.company.findUnique({
@@ -40,6 +43,7 @@ export default async function DashboardLayout({
           userName={session.user.name ?? ''}
           userEmail={session.user.email ?? ''}
           modules={modules}
+          isSuperAdmin={isSuperAdmin}
         />
         <main className="flex-1 p-4 sm:p-6">
           <PageTransition>{children}</PageTransition>

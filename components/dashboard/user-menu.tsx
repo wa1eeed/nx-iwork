@@ -1,6 +1,7 @@
 'use client';
 
-import { LogOut } from 'lucide-react';
+import Link from 'next/link';
+import { LogOut, ShieldCheck } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import { useTranslations } from 'next-intl';
 import { Button } from '@/components/ui/button';
@@ -13,8 +14,9 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 
-export function UserMenu({ name, email }: { name: string; email: string }) {
+export function UserMenu({ name, email, isSuperAdmin }: { name: string; email: string; isSuperAdmin?: boolean }) {
   const t = useTranslations('common');
+  const ta = useTranslations('admin');
   const initial = name.trim().charAt(0).toUpperCase() || '?';
 
   return (
@@ -36,6 +38,14 @@ export function UserMenu({ name, email }: { name: string; email: string }) {
           </div>
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        {isSuperAdmin && (
+          <DropdownMenuItem asChild>
+            <Link href="/admin">
+              <ShieldCheck className="me-2 size-4" />
+              {ta('panel')}
+            </Link>
+          </DropdownMenuItem>
+        )}
         <DropdownMenuItem onSelect={() => signOut({ callbackUrl: '/' })}>
           <LogOut className="me-2 size-4" />
           {t('signOut')}

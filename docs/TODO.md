@@ -25,18 +25,16 @@ The event + scenarios exist but nothing fires it (no cart/checkout-intent model)
 Add cart/checkout-intent capture (or an external integration) that calls
 `dispatchEvent(companyId, 'CART_ABANDONED', …)`.
 
-### Super Admin dashboard (SaaS management) — HIGH
-A platform-owner console (separate from the business-owner dashboard) to run the SaaS:
-- **Subscriptions & billing**: view/manage each company's plan, token-bank top-ups
-  (Tap.company), invoices, trial/expiry, suspend/reactivate.
-- **Customer management**: list companies, usage (tokens, agents, tasks), drill-in,
-  impersonate for support, suspend/delete.
-- **Platform settings**: feature flags, default token grants, maintenance mode,
-  global branding.
-- **Observability**: usage dashboards, token spend vs revenue, error rates (Sentry).
-- Route group `app/(admin)/admin` · role `SUPER_ADMIN` (already in schema) · 2FA.
-- Models mostly exist (`Plan`, `Subscription`, `Invoice`, `PlatformSettings`,
-  `AuditLog`); needs the UI + admin actions + access guard.
+### Super Admin dashboard (SaaS management)
+**Core DONE (2026-06-21):** `app/(admin)/admin` guarded by `SUPER_ADMIN`
+(`lib/admin.ts`) — overview totals, companies list+usage+search, company detail
+(token top-up, change plan → re-applies per-agent caps, suspend/activate), and a
+platform-settings editor (`PlatformSettings`); `signupEnabled` gates the signup
+route; admin actions log to `AuditLog`; "Admin panel" link in the user menu, and a
+company-less super-admin is routed to `/admin`. Actions in `lib/actions/admin.ts`.
+**Still TODO:** impersonate-for-support, audit-log viewer UI, usage charts /
+revenue, invoices, a DB Plan-catalog editor (plans are defined in code today via
+`lib/plans.ts`), maintenance-mode app-wide wiring, and 2FA for admin.
 
 ### Payments — Tap.company
 Token-bank top-ups + SaaS subscriptions. Closes the managed-billing loop.

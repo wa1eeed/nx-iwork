@@ -9,10 +9,12 @@ export function Topbar({
   userName,
   userEmail,
   modules,
+  isSuperAdmin,
 }: {
   userName: string;
   userEmail: string;
   modules: NavModules;
+  isSuperAdmin?: boolean;
 }) {
   return (
     <header className="glass sticky top-0 z-30 flex h-16 items-center justify-between gap-2 border-b px-4 sm:px-6">
@@ -29,7 +31,7 @@ export function Topbar({
       <div className="flex items-center gap-1">
         <ThemeToggle />
         <LanguageSwitcher />
-        <UserMenu name={userName} email={userEmail} />
+        <UserMenu name={userName} email={userEmail} isSuperAdmin={isSuperAdmin} />
       </div>
     </header>
   );

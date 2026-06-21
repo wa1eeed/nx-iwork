@@ -664,6 +664,73 @@
     "CART_ABANDONED": "عند ترك سلة",
     "COMPLAINT_RECEIVED": "عند ورود شكوى"
   },
+  "admin": {
+    "title": "إدارة المنصة",
+    "subtitle": "تحكّم بكل شركة وباقة ورصيد في NX iWork.",
+    "panel": "لوحة الإدارة",
+    "nav": { "overview": "نظرة عامة", "companies": "الشركات", "settings": "المنصة" },
+    "overview": {
+      "companies": "الشركات",
+      "agents": "موظفو الذكاء",
+      "tasks": "المهام المنفّذة",
+      "tokens": "إجمالي الرصيد",
+      "byStatus": "الشركات حسب الحالة",
+      "recent": "أحدث الشركات"
+    },
+    "companies": {
+      "title": "الشركات",
+      "search": "ابحث بالاسم أو اسم المستخدم…",
+      "empty": "لا توجد شركات مطابقة.",
+      "colCompany": "الشركة",
+      "colPlan": "الباقة",
+      "colStatus": "الحالة",
+      "colAgents": "الوكلاء",
+      "colTokens": "الرصيد",
+      "view": "إدارة"
+    },
+    "company": {
+      "back": "الشركات",
+      "owner": "المالك",
+      "created": "انضمّ",
+      "usage": "الاستخدام",
+      "agents": "موظفو الذكاء",
+      "tasks": "المهام",
+      "customers": "العملاء",
+      "tokens": "رصيد التوكن",
+      "plan": "الباقة",
+      "status": "الحالة",
+      "topUp": "إضافة رصيد",
+      "topUpPlaceholder": "مثال: 100000",
+      "topUpBtn": "إضافة",
+      "changePlan": "تغيير الباقة",
+      "setStatus": "تعيين الحالة",
+      "save": "حفظ",
+      "toppedUp": "تمت إضافة الرصيد.",
+      "planChanged": "تم تحديث الباقة.",
+      "statusChanged": "تم تحديث الحالة.",
+      "failed": "فشل الإجراء."
+    },
+    "status": {
+      "ACTIVE": "نشطة",
+      "SUSPENDED": "موقوفة",
+      "TRIAL": "تجريبية",
+      "EXPIRED": "منتهية"
+    },
+    "settings": {
+      "title": "إعدادات المنصة",
+      "subtitle": "مفاتيح عامة للساس بأكمله.",
+      "siteName": "اسم الموقع",
+      "signupEnabled": "السماح بالتسجيلات الجديدة",
+      "trialEnabled": "تفعيل التجربة المجانية",
+      "trialDays": "أيام التجربة",
+      "maintenanceMode": "وضع الصيانة",
+      "maintenanceMessage": "رسالة الصيانة",
+      "maxCompanies": "حد الشركات (فارغ = بلا حدود)",
+      "save": "حفظ الإعدادات",
+      "saved": "تم حفظ الإعدادات.",
+      "saveError": "تعذّر الحفظ."
+    }
+  },
   "crm": {
     "title": "العملاء (CRM)",
     "subtitle": "عملاؤك وحالتهم في مسار البيع — يسجّلهم وكلاؤك تلقائياً وتتابعهم هنا.",
