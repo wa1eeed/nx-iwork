@@ -4,48 +4,67 @@
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    --background: 210 40% 99%;
+    --foreground: 224 44% 8%;
     --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    --card-foreground: 224 44% 8%;
     --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 188 86% 47%;
-    --primary-foreground: 210 40% 98%;
+    --popover-foreground: 224 44% 8%;
+    --primary: 187 88% 42%;
+    --primary-foreground: 0 0% 100%;
     --secondary: 210 40% 96%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    --secondary-foreground: 222 47% 11%;
     --muted: 210 40% 96%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 262 83% 65%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 188 86% 47%;
-    --radius: 0.625rem;
+    --muted-foreground: 215 16% 47%;
+    --accent: 262 80% 58%;
+    --accent-foreground: 0 0% 100%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 62% 40%;
+    --warning: 38 92% 50%;
+    --border: 214 30% 90%;
+    --input: 214 30% 88%;
+    --ring: 187 88% 42%;
+
+    /* Signature brand gradient (cyan → violet) */
+    --brand-from: 187 92% 45%;
+    --brand-to: 268 84% 62%;
+
+    /* Glass surface */
+    --glass: 0 0% 100%;
+    --glass-border: 214 30% 90%;
+
+    --radius: 0.75rem;
   }
 
   .dark {
-    --background: 222.2 47% 5%;
+    --background: 224 44% 5%;
     --foreground: 210 40% 98%;
-    --card: 222.2 47% 7%;
+    --card: 224 40% 8%;
     --card-foreground: 210 40% 98%;
-    --popover: 222.2 47% 7%;
+    --popover: 224 42% 7%;
     --popover-foreground: 210 40% 98%;
-    --primary: 188 86% 53%;
-    --primary-foreground: 222.2 47.4% 11.2%;
-    --secondary: 217.2 32.6% 17.5%;
+    --primary: 187 92% 50%;
+    --primary-foreground: 224 47% 7%;
+    --secondary: 222 30% 14%;
     --secondary-foreground: 210 40% 98%;
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 222 28% 13%;
+    --muted-foreground: 216 20% 62%;
     --accent: 262 83% 70%;
-    --accent-foreground: 210 40% 98%;
-    --destructive: 0 62.8% 50.6%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 188 86% 53%;
+    --accent-foreground: 224 47% 7%;
+    --destructive: 0 72% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 152 60% 48%;
+    --warning: 38 92% 55%;
+    --border: 220 26% 15%;
+    --input: 220 26% 18%;
+    --ring: 187 92% 50%;
+
+    --brand-from: 187 92% 52%;
+    --brand-to: 268 85% 68%;
+
+    --glass: 224 40% 9%;
+    --glass-border: 220 30% 22%;
   }
 }
 
@@ -53,13 +72,106 @@
   * {
     @apply border-border;
   }
+  html {
+    scroll-behavior: smooth;
+  }
   body {
     @apply bg-background text-foreground antialiased;
+    /* Subtle brand-tinted aurora wash behind everything (very low opacity). */
+    background-image:
+      radial-gradient(50rem 40rem at 12% -8%, hsl(var(--brand-from) / 0.10), transparent 60%),
+      radial-gradient(45rem 35rem at 100% 0%, hsl(var(--brand-to) / 0.10), transparent 55%);
+    background-attachment: fixed;
   }
   html[dir='rtl'] body {
     font-family: var(--font-arabic), var(--font-sans), system-ui, sans-serif;
   }
   html[dir='ltr'] body {
     font-family: var(--font-sans), system-ui, sans-serif;
+  }
+  h1, h2, h3 {
+    @apply tracking-tight;
+  }
+
+  /* Brand-tinted text selection */
+  ::selection {
+    background: hsl(var(--brand-to) / 0.28);
+  }
+
+  /* Refined, slim scrollbars */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(var(--muted-foreground) / 0.3) transparent;
+  }
+  *::-webkit-scrollbar {
+    width: 9px;
+    height: 9px;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: hsl(var(--muted-foreground) / 0.25);
+    border-radius: 999px;
+    border: 2px solid transparent;
+    background-clip: content-box;
+  }
+  *::-webkit-scrollbar-thumb:hover {
+    background: hsl(var(--muted-foreground) / 0.45);
+    background-clip: content-box;
+  }
+}
+
+@layer components {
+  /* Frosted-glass surface for sticky chrome (sidebar, topbar, overlays). */
+  .glass {
+    background: hsl(var(--glass) / 0.72);
+    backdrop-filter: blur(14px) saturate(160%);
+    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    border-color: hsl(var(--glass-border) / 0.6);
+  }
+
+  /* The signature gradient — use as a background. */
+  .gradient-brand {
+    background-image: linear-gradient(135deg, hsl(var(--brand-from)), hsl(var(--brand-to)));
+  }
+
+  /* Gradient text (cyan → violet). */
+  .text-gradient {
+    background-image: linear-gradient(120deg, hsl(var(--brand-from)), hsl(var(--brand-to)));
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* A subtle gradient hairline border via mask. */
+  .ring-gradient {
+    position: relative;
+  }
+  .ring-gradient::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    padding: 1px;
+    background: linear-gradient(135deg, hsl(var(--brand-from) / 0.6), hsl(var(--brand-to) / 0.6));
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+}
+
+@layer utilities {
+  .animate-in-up {
+    animation: fade-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+  /* Honor users who prefer less motion. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
