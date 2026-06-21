@@ -18,6 +18,7 @@ import {
   Package,
   Settings,
   Sparkles,
+  Wallet,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -71,6 +72,12 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
       { href: '/tasks', icon: ListChecks, labelKey: 'tasks' },
+    ],
+  },
+  {
+    sectionKey: 'billing',
+    items: [
+      { href: '/wallet', icon: Wallet, labelKey: 'wallet' },
     ],
   },
   {

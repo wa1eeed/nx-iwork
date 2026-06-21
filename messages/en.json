@@ -226,12 +226,48 @@
     "modules": "Modules",
     "customers": "Customers",
     "orders": "Orders",
+    "wallet": "Wallet",
     "sections": {
       "workspace": "Workspace",
       "team": "Team",
       "sales": "Sales",
       "knowledge": "Knowledge & automation",
+      "billing": "Billing",
       "configure": "Configure"
+    }
+  },
+  "wallet": {
+    "title": "Wallet",
+    "subtitle": "Top up your balance and buy AI token credits or services.",
+    "unavailable": "Wallet is unavailable for this account.",
+    "balance": "Available balance",
+    "topUp": "Top up your wallet",
+    "topUpCta": "Top up",
+    "redirecting": "Redirecting…",
+    "customAmount": "Custom amount (SAR)",
+    "topUpUnavailable": "Online top-up isn't configured yet. Please contact support to add balance.",
+    "invalidAmount": "Enter an amount between 10 and 50,000 SAR.",
+    "genericError": "Something went wrong. Please try again.",
+    "buyCredits": "Buy AI token credits",
+    "creditsHelp": "Pay {price} per 1,000,000 tokens, charged from your wallet.",
+    "millionTokens": "{n}M",
+    "customMillions": "Millions of tokens",
+    "buyCta": "Buy · {cost}",
+    "processing": "Processing…",
+    "insufficient": "Not enough wallet balance — top up first.",
+    "creditsAdded": "Added {tokens} token credits.",
+    "history": "Transactions",
+    "noTransactions": "No transactions yet.",
+    "statusPending": "Pending",
+    "statusFailed": "Failed",
+    "topUpSuccess": "Top-up successful — your balance has been updated.",
+    "topUpFailed": "The payment didn't complete. No charge was made.",
+    "txType": {
+      "TOPUP": "Wallet top-up",
+      "TOKEN_PURCHASE": "Token credits",
+      "SERVICE_PURCHASE": "Service purchase",
+      "REFUND": "Refund",
+      "ADJUSTMENT": "Adjustment"
     }
   },
   "overview": {
@@ -729,6 +765,8 @@
       "maintenanceMode": "Maintenance mode",
       "maintenanceMessage": "Maintenance message",
       "maxCompanies": "Max companies (blank = unlimited)",
+      "tokenPrice": "Token credit price (SAR / 1M)",
+      "tokenPriceHelp": "What customers pay per 1,000,000 AI tokens bought from their wallet.",
       "save": "Save settings",
       "saved": "Settings saved.",
       "saveError": "Couldn't save."

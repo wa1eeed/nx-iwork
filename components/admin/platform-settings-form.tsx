@@ -64,6 +64,19 @@ export function PlatformSettingsForm({ initial }: { initial: PlatformSettingsInp
           </div>
         </div>
 
+        <div className="space-y-2">
+          <Label>{t('tokenPrice')}</Label>
+          <Input
+            type="number"
+            min={0}
+            step={0.5}
+            value={form.tokenPricePerMillion}
+            onChange={(e) => set('tokenPricePerMillion', Number(e.target.value))}
+            dir="ltr"
+          />
+          <p className="text-xs text-muted-foreground">{t('tokenPriceHelp')}</p>
+        </div>
+
         <Row label={t('maintenanceMode')}>
           <Switch checked={form.maintenanceMode} onCheckedChange={(v) => set('maintenanceMode', v)} />
         </Row>

@@ -12,11 +12,15 @@ Decided 2026-06-21. Three phases:
    + a fixed **bottom tab bar** with primary sections and a "More" sheet
    (`mobile-tabbar.tsx`, reuses `SidebarNav`). Safe-area + RTL aware; replaced the
    hamburger drawer. `NAV_SECTIONS` exported from `sidebar.tsx` as the single source.
-2. **Wallet + Tap top-up — NEXT.** A SAR wallet (balance + transactions) separate
-   from the token bank; top-up via **Tap.company** (charge + webhook). Wallet page
-   in the dashboard. Spend wallet → buy token credits (admin-priced) crediting
-   `Company.tokenBalance`.
-3. **Services marketplace (internal add-ons).** New platform-service model
+2. **Wallet + Tap top-up — DONE.** `Wallet` (SAR balance) + `WalletTransaction`
+   ledger, separate from the token bank. Dashboard `/wallet` page: balance, top-up
+   presets, buy token credits, history. Top-up via **Tap.company** (`lib/payments/tap.ts`
+   → hosted charge; `app/api/payments/tap/webhook` + return-page reconcile, both
+   re-verifying the charge server-side; idempotent settle). Token-credit purchase
+   debits the wallet and credits `Company.tokenBalance` atomically at the
+   admin-set `PlatformSettings.tokenPricePerMillion`. **Pending:** set live
+   `TAP_SECRET_KEY` in the host env to enable real charges (test keys work now).
+3. **Services marketplace (internal add-ons) — NEXT.** New platform-service model
    (distinct from the tenant `Service`); admin adds offerings with price + active;
    customer "Services" page lists them and buys with the wallet. Activation /
    plugins / add-ons deferred to a later phase.

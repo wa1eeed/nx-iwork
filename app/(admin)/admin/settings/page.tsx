@@ -15,6 +15,7 @@ export default async function AdminSettingsPage() {
     maintenanceMode: s?.maintenanceMode ?? false,
     maintenanceMessage: s?.maintenanceMessage ?? null,
     maxCompaniesAllowed: s?.maxCompaniesAllowed ?? null,
+    tokenPricePerMillion: s?.tokenPricePerMillion ? s.tokenPricePerMillion.toNumber() : 5,
   };
 
   return (

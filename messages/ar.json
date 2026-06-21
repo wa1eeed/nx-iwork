@@ -226,12 +226,48 @@
     "modules": "الموديولات",
     "customers": "العملاء",
     "orders": "الطلبات",
+    "wallet": "المحفظة",
     "sections": {
       "workspace": "مساحة العمل",
       "team": "الفريق",
       "sales": "المبيعات",
       "knowledge": "المعرفة والأتمتة",
+      "billing": "الفوترة",
       "configure": "الإعدادات"
+    }
+  },
+  "wallet": {
+    "title": "المحفظة",
+    "subtitle": "اشحن رصيدك واشترِ رصيد توكنز الذكاء الاصطناعي أو الخدمات.",
+    "unavailable": "المحفظة غير متاحة لهذا الحساب.",
+    "balance": "الرصيد المتاح",
+    "topUp": "اشحن محفظتك",
+    "topUpCta": "اشحن",
+    "redirecting": "جارٍ التحويل…",
+    "customAmount": "مبلغ مخصّص (ريال)",
+    "topUpUnavailable": "الشحن الإلكتروني غير مُفعّل بعد. تواصل مع الدعم لإضافة رصيد.",
+    "invalidAmount": "أدخل مبلغاً بين 10 و 50,000 ريال.",
+    "genericError": "حدث خطأ ما. حاول مرة أخرى.",
+    "buyCredits": "شراء رصيد توكنز",
+    "creditsHelp": "السعر {price} لكل 1,000,000 توكن، يُخصم من محفظتك.",
+    "millionTokens": "{n} مليون",
+    "customMillions": "ملايين التوكنز",
+    "buyCta": "شراء · {cost}",
+    "processing": "جارٍ المعالجة…",
+    "insufficient": "رصيد المحفظة غير كافٍ — اشحن أولاً.",
+    "creditsAdded": "تمت إضافة {tokens} توكن.",
+    "history": "المعاملات",
+    "noTransactions": "لا توجد معاملات بعد.",
+    "statusPending": "قيد الانتظار",
+    "statusFailed": "فشلت",
+    "topUpSuccess": "تم الشحن بنجاح — تم تحديث رصيدك.",
+    "topUpFailed": "لم تكتمل عملية الدفع. لم يتم خصم أي مبلغ.",
+    "txType": {
+      "TOPUP": "شحن المحفظة",
+      "TOKEN_PURCHASE": "رصيد توكنز",
+      "SERVICE_PURCHASE": "شراء خدمة",
+      "REFUND": "استرجاع",
+      "ADJUSTMENT": "تعديل"
     }
   },
   "overview": {
@@ -729,6 +765,8 @@
       "maintenanceMode": "وضع الصيانة",
       "maintenanceMessage": "رسالة الصيانة",
       "maxCompanies": "حد الشركات (فارغ = بلا حدود)",
+      "tokenPrice": "سعر رصيد التوكنز (ريال / مليون)",
+      "tokenPriceHelp": "ما يدفعه العميل لكل 1,000,000 توكن يشتريه من محفظته.",
       "save": "حفظ الإعدادات",
       "saved": "تم حفظ الإعدادات.",
       "saveError": "تعذّر الحفظ."

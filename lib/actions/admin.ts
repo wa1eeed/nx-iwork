@@ -85,6 +85,7 @@ export interface PlatformSettingsInput {
   maintenanceMode: boolean;
   maintenanceMessage: string | null;
   maxCompaniesAllowed: number | null;
+  tokenPricePerMillion: number;
 }
 
 export async function updatePlatformSettings(raw: PlatformSettingsInput): Promise<AdminResult> {
@@ -96,6 +97,7 @@ export async function updatePlatformSettings(raw: PlatformSettingsInput): Promis
     raw.maxCompaniesAllowed == null || Number.isNaN(Number(raw.maxCompaniesAllowed))
       ? null
       : Math.max(0, Math.floor(Number(raw.maxCompaniesAllowed)));
+  const tokenPrice = Math.min(10000, Math.max(0, Math.round((Number(raw.tokenPricePerMillion) || 0) * 100) / 100));
 
   try {
     const data = {
@@ -106,6 +108,7 @@ export async function updatePlatformSettings(raw: PlatformSettingsInput): Promis
       maintenanceMode: Boolean(raw.maintenanceMode),
       maintenanceMessage: raw.maintenanceMessage?.trim() || null,
       maxCompaniesAllowed: maxCompanies,
+      tokenPricePerMillion: tokenPrice,
     };
     await db.platformSettings.upsert({
       where: { id: 'singleton' },
