@@ -41,12 +41,51 @@
     },
     "dashboard": "Go to dashboard",
     "hero": {
-      "badge": "AI employees that run your business 24/7",
-      "headline": "Build a self-running company with AI agents",
-      "lede": "Hire AI employees, give them a persona, goals, and playbooks, and let them handle sales, support, and operations — around the clock, in Arabic and English.",
+      "badge": "Launch a company of AI employees",
+      "headline": "Build a company that",
+      "headlineAccent": "runs itself",
+      "lede": "Hire a full team of AI employees — sales, support, marketing, operations — give them a persona, goals, and playbooks, and let them run your business around the clock, in Arabic and English.",
       "ctaPrimary": "Start free",
-      "ctaSecondary": "Sign in",
-      "trust": "No credit card required · Free starter credits"
+      "ctaSecondary": "See how it works",
+      "trust": "No credit card required · Free starter credits · Live in minutes"
+    },
+    "stats": {
+      "roles": { "value": "9+", "label": "Ready-made roles" },
+      "uptime": { "value": "24/7", "label": "Always working" },
+      "langs": { "value": "AR · EN", "label": "Bilingual & RTL-ready" },
+      "employees": { "value": "∞", "label": "AI employees" }
+    },
+    "workforce": {
+      "badge": "A complete AI workforce",
+      "title": "Launch a whole company, not just a chatbot",
+      "desc": "NX iWork isn't one assistant — it's an entire org of AI employees with roles, managers, and KPIs. Hire from 9 proven templates or build custom roles, organize them into departments, and watch your company chart come to life.",
+      "points": {
+        "p1": "9+ ready-made roles, or fully custom employees",
+        "p2": "Departments, managers, and a live org chart",
+        "p3": "An HR Agent vets every hire and onboards it on your business"
+      }
+    },
+    "website": {
+      "badge": "Built-in storefront",
+      "title": "Your own website — with an AI agent built in",
+      "desc": "Every account gets a public landing page and a smart chat widget on your own custom domain. Visitors browse your products and services, ask questions, and place orders — and your AI agent captures every lead into the CRM and follows up automatically.",
+      "points": {
+        "p1": "Public page + chat widget on your custom domain",
+        "p2": "Visitors order directly — straight into your CRM",
+        "p3": "Bilingual (Arabic / English), themable to your brand"
+      }
+    },
+    "departments": {
+      "title": "An AI agent for every department",
+      "subtitle": "Staff your whole company — each role comes with its own personality, KPIs, tools, and automatic playbooks.",
+      "items": {
+        "sales": { "name": "Sales", "desc": "Converts leads, recommends products, and closes orders." },
+        "support": { "name": "Support", "desc": "Answers instantly and escalates angry cases to you." },
+        "marketing": { "name": "Marketing", "desc": "Drafts content and campaigns from past performance." },
+        "operations": { "name": "Operations", "desc": "Tracks fulfillment and keeps every order on time." },
+        "finance": { "name": "Finance", "desc": "Issues invoices and keeps the ledger reconciled." },
+        "appointments": { "name": "Appointments", "desc": "Books and confirms meetings, cuts no-shows." }
+      }
     },
     "features": {
       "title": "Everything your AI workforce needs",
@@ -93,14 +132,40 @@
       "cta": "Get started",
       "note": "Prices in SAR. Billing arrives soon — every plan starts on free managed credits today."
     },
+    "faq": {
+      "title": "Frequently asked questions",
+      "subtitle": "Everything you need to know before you start.",
+      "items": {
+        "q1": { "q": "Do I need to write code or prompts?", "a": "No. Pick a ready-made role or describe what you need in plain words — the HR Agent configures the persona, tools, and playbooks for you." },
+        "q2": { "q": "Does it work in Arabic?", "a": "Yes. The whole platform and your public page work in Arabic and English, fully RTL-ready. Your agents reply in your customer's language." },
+        "q3": { "q": "Will the AI make things up?", "a": "Agents are onboarded on your business — FAQ, products, and policies — using vector memory, so they answer from your real data, not guesses." },
+        "q4": { "q": "How do my customers reach the agents?", "a": "Each account gets a public website and chat widget on your own domain. Visitors browse, ask, and order — and everything lands in your CRM automatically." },
+        "q5": { "q": "How much does it cost to start?", "a": "Free. Every account starts on managed AI credits with no credit card. Upgrade only when you grow." }
+      }
+    },
     "cta": {
       "title": "Build your AI workforce today",
-      "subtitle": "Hire your first AI employee in minutes — free to start.",
+      "subtitle": "Hire your first AI employee in minutes — free to start, live in minutes.",
       "button": "Start free"
     },
     "footer": {
       "tagline": "Self-running companies, powered by AI.",
+      "product": "Product",
       "rights": "All rights reserved."
+    },
+    "mock": {
+      "appTitle": "NX iWork",
+      "orgTitle": "Your company",
+      "ceo": "Founder",
+      "hr": "HR Agent",
+      "hired": "Suha was hired 🎉",
+      "order": "New order · ORD-1042",
+      "escalated": "Complaint escalated to you",
+      "widgetTitle": "Acme Store",
+      "widgetGreeting": "Hi! How can I help you today?",
+      "widgetUser": "Do you have the blue model in stock?",
+      "widgetAgent": "Yes — 12 in stock. Want me to place the order?",
+      "online": "Online"
     }
   },
   "auth": {
