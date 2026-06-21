@@ -20,8 +20,13 @@
   },
   "home": {
     "title": "NX iWork",
+    "badge": "AI employees that run your business 24/7",
     "subtitle": "Build self-running companies with AI agents",
+    "lede": "Hire AI agents, give them a persona and goals, and let them handle sales, support, and operations — around the clock.",
     "sprintStatus": "Sprint 0 — Under construction",
+    "f1": "Hire AI agents",
+    "f2": "Automate operations",
+    "f3": "Grow 24/7",
     "login": "Sign in",
     "signup": "Create account"
   },

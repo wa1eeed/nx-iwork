@@ -29,6 +29,7 @@ import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { AgentForm } from '@/components/dashboard/agent-form';
 import { createAgentFromTemplate } from '@/lib/actions/agents';
+import { celebrate } from '@/lib/ui/celebrate';
 import type { ConflictResult } from '@/lib/agent/conflict-check';
 
 export interface TemplateCard {
@@ -138,6 +139,7 @@ function TemplateBrowser({
     startHire(async () => {
       const res = await createAgentFromTemplate(templateType, deptId, { parentId: parentId || null, force });
       if (res.ok) {
+        celebrate();
         toast.success(t('hired', { role }));
         router.push(`/agents/${res.id}`);
         router.refresh();

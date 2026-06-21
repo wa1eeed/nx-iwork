@@ -19,6 +19,7 @@ import { db } from '@/lib/db';
 import { getAiMode } from '@/lib/ai';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { HoverLift, AnimatedCounter } from '@/components/ui/motion';
 import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
 
 const IN_PROGRESS: TaskStatus[] = ['PENDING', 'WORKING', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'BLOCKED'];
@@ -94,33 +95,36 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-semibold">{t('greeting', { name: session.user.name ?? '' })}</h1>
-          <p className="text-sm text-muted-foreground">{t('companyDashboard', { company: user.company.name })}</p>
-        </div>
-        <div className="flex gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link href="/agents/new"><Plus className="me-1 h-4 w-4" />{t('newAgent')}</Link>
-          </Button>
-          <Button asChild size="sm">
-            <Link href="/chat">{t('chatAgent')}</Link>
-          </Button>
+      <div className="relative overflow-hidden rounded-2xl border bg-gradient-brand-soft p-6 sm:p-8">
+        <div aria-hidden className="pointer-events-none absolute -end-12 -top-12 size-48 rounded-full bg-gradient-brand opacity-20 blur-3xl animate-glow-pulse" />
+        <div className="relative flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h1 className="text-2xl font-semibold sm:text-3xl">{t('greeting', { name: session.user.name ?? '' })}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{t('companyDashboard', { company: user.company.name })}</p>
+          </div>
+          <div className="flex gap-2">
+            <Button asChild variant="outline" size="sm">
+              <Link href="/agents/new"><Plus className="me-1 h-4 w-4" />{t('newAgent')}</Link>
+            </Button>
+            <Button asChild size="sm">
+              <Link href="/chat">{t('chatAgent')}</Link>
+            </Button>
+          </div>
         </div>
       </div>
 
       <OnboardingChecklist items={checklist} />
 
       {managed && (
-        <Card className="border-primary/30 bg-primary/5">
+        <Card className="ring-gradient overflow-hidden border-primary/20">
           <CardContent className="flex items-center gap-4 p-5">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/15 text-primary">
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-glow">
               <Coins className="h-6 w-6" />
             </div>
             <div className="flex-1">
               <p className="text-sm text-muted-foreground">{t('tokensRemaining')}</p>
               <p className="text-2xl font-semibold tabular-nums">
-                {user.company.tokenBalance.toLocaleString(locale)}
+                <AnimatedCounter value={user.company.tokenBalance} locale={locale} />
               </p>
             </div>
             {user.company.tokenBalance <= 0 && (
@@ -136,17 +140,21 @@ export default async function OverviewPage() {
         {stats.map((s) => {
           const Icon = s.icon;
           return (
-            <Link key={s.label} href={s.href}>
-              <Card className="transition hover:border-primary/50">
-                <CardContent className="p-4">
-                  <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                    <Icon className="h-4 w-4" />
-                  </div>
-                  <p className="text-2xl font-semibold tabular-nums">{s.value}</p>
-                  <p className="text-xs text-muted-foreground">{s.label}</p>
-                </CardContent>
-              </Card>
-            </Link>
+            <HoverLift key={s.label}>
+              <Link href={s.href} className="block h-full">
+                <Card className="h-full hover:border-primary/50 hover:shadow-elevated">
+                  <CardContent className="p-4">
+                    <div className="mb-2 flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-brand-soft text-primary">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <p className="text-2xl font-semibold tabular-nums">
+                      <AnimatedCounter value={s.value} locale={locale} />
+                    </p>
+                    <p className="text-xs text-muted-foreground">{s.label}</p>
+                  </CardContent>
+                </Card>
+              </Link>
+            </HoverLift>
           );
         })}
       </div>

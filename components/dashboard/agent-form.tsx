@@ -2,6 +2,7 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useTranslations } from 'next-intl';
 import { Loader2, AlertTriangle, Lightbulb, Plus, Trash2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
@@ -11,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createAgent, updateAgent } from '@/lib/actions/agents';
+import { celebrate } from '@/lib/ui/celebrate';
 import { TRIGGER_EVENTS } from '@/lib/agent/events-catalog';
 import type { AgentInput } from '@/lib/validators/agents';
 import type { ConflictResult } from '@/lib/agent/conflict-check';
@@ -76,6 +78,7 @@ export function AgentForm({
   const [conflict, setConflict] = useState<ConflictResult | null>(null);
   const [scenarios, setScenarios] = useState<FormScenario[]>([]);
   const [draft, setDraft] = useState<FormScenario>({ event: TRIGGER_EVENTS[0], action: '' });
+  const [scenarioList] = useAutoAnimate<HTMLDivElement>();
   const isEdit = Boolean(initial?.id);
 
   // HR Advisory: surface the closest system template as a starting base.
@@ -137,6 +140,7 @@ export function AgentForm({
         ? await updateAgent(initial!.id!, payload)
         : await createAgent(payload, { force, scenarios });
       if (res.ok) {
+        if (!isEdit) celebrate();
         toast.success(isEdit ? t('saved') : t('created'));
         router.push('/agents');
         router.refresh();
@@ -274,18 +278,20 @@ export function AgentForm({
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">{t('scenariosHelp')}</p>
 
-          {scenarios.map((s, i) => (
-            <div key={i} className="flex items-center gap-2 rounded-lg border p-2 text-sm">
-              <Zap className="h-4 w-4 shrink-0 text-amber-500" />
-              <span className="min-w-0 flex-1">
-                <span className="font-medium">{te(s.event)}</span>
-                <span className="block truncate text-xs text-muted-foreground">{s.action}</span>
-              </span>
-              <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setScenarios((p) => p.filter((_, j) => j !== i))}>
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
+          <div ref={scenarioList} className="space-y-2 empty:hidden">
+            {scenarios.map((s, i) => (
+              <div key={i} className="flex items-center gap-2 rounded-lg border p-2 text-sm">
+                <Zap className="h-4 w-4 shrink-0 text-amber-500" />
+                <span className="min-w-0 flex-1">
+                  <span className="font-medium">{te(s.event)}</span>
+                  <span className="block truncate text-xs text-muted-foreground">{s.action}</span>
+                </span>
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setScenarios((p) => p.filter((_, j) => j !== i))}>
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
 
           <div className="space-y-2 rounded-lg border border-dashed p-3">
             <div className="space-y-1">

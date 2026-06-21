@@ -12,9 +12,9 @@ import { LoginForm } from '@/components/auth/login-form';
 export default function LoginPage() {
   const t = useTranslations('auth');
   return (
-    <Card>
+    <Card className="glass shadow-elevated">
       <CardHeader className="space-y-2 text-center">
-        <CardTitle>{t('loginTitle')}</CardTitle>
+        <CardTitle className="text-2xl">{t('loginTitle')}</CardTitle>
         <CardDescription>{t('loginSubtitle')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
