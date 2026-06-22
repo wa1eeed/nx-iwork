@@ -7,6 +7,32 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-06-22 — Customer-facing arc (mobile + wallet + marketplace)
+
+### Added
+- **Mobile-first dashboard.** Swipeable section carousel under the topbar
+  (`mobile-section-carousel.tsx`) + fixed bottom tab bar with a "More" sheet
+  (`mobile-tabbar.tsx`); safe-area + RTL aware. Replaced the hamburger drawer.
+  `NAV_SECTIONS` exported from `sidebar.tsx` as the single nav source.
+- **Wallet.** `Wallet` (SAR balance) + `WalletTransaction` ledger, separate from
+  the AI token bank. `/wallet` page (balance, top-up, buy token credits, history).
+  Top-up via **Tap.company** (`lib/payments/tap.ts`; webhook + return both
+  re-verify the charge server-side; idempotent settle). Buy token credits debits
+  the wallet and credits `Company.tokenBalance` atomically at the admin-set
+  `PlatformSettings.tokenPricePerMillion`. Env: `TAP_SECRET_KEY`.
+- **Services marketplace (structure).** `MarketplaceService` + `ServicePurchase`.
+  Admin CRUD at `/admin/services`; customer `/services` buys with the wallet
+  (`lib/marketplace.ts`). Activation/plugins deferred.
+- **Admin bootstrap from env.** `ADMIN_EMAIL`/`ADMIN_PASSWORD` (+ allowlist
+  `SUPER_ADMIN_EMAILS`) create/reconcile the super-admin on boot
+  (`lib/seed-admin.ts`, `instrumentation.ts`).
+- Gemini 2.5 **thinking-budget cap** (`VERTEX_THINKING_BUDGET`) to cut chat latency.
+
+### Migrations (additive)
+`20260621130000_wallet`, `20260621140000_marketplace`.
+
+---
+
 ## [Unreleased]
 
 <!-- ============================================================= -->
