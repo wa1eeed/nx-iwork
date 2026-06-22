@@ -81,7 +81,7 @@ product images).
 | Upload security | Auth + type/size limits | ✅ Auth + type allowlist · ⚠️ no server-side size cap |
 | Body vs DB | URL reference in DB, bytes in store | ✅ URL as text; **no bytes in Postgres** |
 | AI embeddings | Vectors in DB, file in store | ✅ `vector(1536)` in pgvector; file in R2 |
-| File metadata (uuid/size/mime) | Optional central `tenant_files` table | ➖ Not yet — fine without it; useful for audit/quota |
+| File metadata (uuid/size/mime) | Optional central `tenant_files` table | ✅ `File` registry (key/url/mime/size/uploadedById) + RLS |
 | Private files | Private bucket + signed-only + access control | ⚠️ Capability present; flow not wired |
 
 **Verdict:** the core architecture — the **hybrid rule** (file → R2, URL → text,
@@ -90,18 +90,26 @@ direct uploads, provider portability, CDN — is **fully in place and competitiv
 A central files table is an **optional** enhancement (it stores references +
 metadata, never bytes, so the DB stays light); private files + a size cap remain.
 
+## Implemented registry
+
+**`File` table** (`prisma`, migration `20260622120000_tenant_files`) — the central
+metadata registry: `{ id, companyId, key (unique), url, purpose, mimeType, size,
+uploadedById, createdAt }`, with the standard tenant **RLS** policy. The sign
+route (`app/api/uploads/sign`) writes a row on every presigned upload
+(best-effort, non-blocking); the client sends `size`. References + metadata only —
+**never bytes**, so the DB stays light. Enables audit, quota, orphan cleanup, and
+per-tenant file listing.
+
 ## Gaps / roadmap
 
-1. **(Optional) central `tenant_files` metadata table** — `File { id, companyId,
-   key, url, purpose, mime, size, uploadedById, createdAt }`, RLS on `companyId`.
-   Stores **references + metadata only, never bytes** — the DB stays light. Not
-   required for correctness (URL-as-text already works); it adds audit, quota,
-   orphan cleanup, and per-tenant file listing.
-2. **Private / confidential files** — a private bucket (or private prefix), served
+1. **Private / confidential files** — a private bucket (or private prefix), served
    only via short-lived `createDownloadUrl`, with a per-file access check. For
    customer documents / financial reports.
-3. **Server-side size cap** — switch presigned **PUT** → presigned **POST** with a
-   `content-length-range` policy so the bucket itself rejects oversized uploads.
+2. **Server-side size cap** — switch presigned **PUT** → presigned **POST** with a
+   `content-length-range` policy so the bucket itself rejects oversized uploads
+   (today: client-reported size only).
+3. **Orphan cleanup + quota** — a periodic job using the `File` registry to delete
+   rows whose R2 object never landed, and to enforce per-tenant storage quotas.
 
 ## Env
 

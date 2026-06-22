@@ -1655,3 +1655,25 @@ enum ServicePurchaseStatus {
   ACTIVE
   CANCELLED
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// File — lightweight metadata registry for tenant uploads. Stores a REFERENCE
+// (R2 key + URL + size/mime), never the bytes — the body lives in R2
+// (lib/storage). Enables audit, quota, orphan cleanup, and per-tenant file
+// listing. The owning record still keeps its URL inline (the hybrid rule); this
+// table is the central registry. See docs/STORAGE.md.
+// ─────────────────────────────────────────────────────────────────────────────
+model File {
+  id           String  @id @default(cuid())
+  companyId    String
+  key          String  @unique // R2 object key: companies/<id>/<purpose>/<uuid>.<ext>
+  url          String // public URL (R2 public domain)
+  purpose      String // 'logo' | 'products' | 'docs' | …
+  mimeType     String
+  size         Int     @default(0) // bytes (reported by the client at sign time)
+  uploadedById String? // User who uploaded it
+
+  createdAt DateTime @default(now())
+
+  @@index([companyId, createdAt])
+}

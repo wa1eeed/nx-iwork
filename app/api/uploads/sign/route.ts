@@ -17,10 +17,15 @@ const TYPE_EXT: Record<string, string> = {
   'application/pdf': 'pdf',
 };
 
+const MAX_SIZE = 50 * 1024 * 1024; // 50 MB
+
 const bodySchema = z.object({
   contentType: z.string().refine((t) => t in TYPE_EXT, 'unsupported_type'),
   // Where it belongs, for a tidy key prefix (e.g. 'logo', 'products', 'docs').
   purpose: z.string().trim().min(1).max(40).regex(/^[a-z0-9_-]+$/),
+  // Client-reported byte size (browsers know it before upload). Recorded in the
+  // File registry; not a security control (R2 holds the real bytes).
+  size: z.number().int().min(0).max(MAX_SIZE).optional(),
 });
 
 // Returns a presigned PUT URL so the client uploads the file directly to R2.
@@ -64,6 +69,25 @@ export async function POST(req: Request) {
       key,
       contentType: parsed.data.contentType,
     });
+
+    // Record a reference in the File registry (metadata only, never bytes).
+    // Best-effort: a failure here must not block the upload.
+    try {
+      await db.file.create({
+        data: {
+          companyId: user.companyId,
+          key,
+          url: signed.publicUrl,
+          purpose: parsed.data.purpose,
+          mimeType: parsed.data.contentType,
+          size: parsed.data.size ?? 0,
+          uploadedById: session.user.id,
+        },
+      });
+    } catch (e) {
+      console.error('File registry insert failed (non-blocking)', e);
+    }
+
     return NextResponse.json({ ok: true, ...signed });
   } catch (err) {
     console.error('Presign upload failed', err);

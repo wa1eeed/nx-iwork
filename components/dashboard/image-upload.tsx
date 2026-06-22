@@ -27,7 +27,7 @@ export function ImageUpload({
     const signRes = await fetch('/api/uploads/sign', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ contentType: file.type, purpose }),
+      body: JSON.stringify({ contentType: file.type, purpose, size: file.size }),
     });
     const signed = await signRes.json();
     if (!signed.ok) {
