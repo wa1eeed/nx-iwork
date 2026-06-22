@@ -2,6 +2,7 @@
 
 import { animate, motion, useInView } from 'framer-motion';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { formatNumber } from '@/lib/format';
 
 // Tasteful, spring-based motion primitives. Used across the dashboard so it feels
 // alive and premium without being distracting. All respect prefers-reduced-motion
@@ -110,7 +111,7 @@ export function AnimatedCounter({
 
   return (
     <span ref={ref} className={className}>
-      {display.toLocaleString(locale)}
+      {formatNumber(display, locale)}
     </span>
   );
 }

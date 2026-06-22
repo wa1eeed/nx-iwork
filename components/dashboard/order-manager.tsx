@@ -7,6 +7,7 @@ import { ShoppingBag, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StaggerList, MotionItem } from '@/components/ui/motion';
+import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { feedback } from '@/lib/ui/feedback';
 import { setOrderStatus, deleteOrder } from '@/lib/actions/orders';
@@ -33,7 +34,7 @@ const ORDER = ['NEW', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as c
 const selectCls = 'h-8 rounded-md border border-input bg-background px-2 text-xs';
 
 function fmt(iso: string): string {
-  return new Date(iso).toLocaleString('ar', { dateStyle: 'medium', timeStyle: 'short' });
+  return formatDateTime(iso, 'ar', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 export function OrderManager({ orders }: { orders: OrderRow[] }) {

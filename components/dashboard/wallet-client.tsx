@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { startWalletTopUp, buyTokenCredits } from '@/lib/actions/wallet';
-import { formatSar } from '@/lib/money';
+import { formatSar, formatNumber, formatDateTime } from '@/lib/format';
 import type { WalletTxView } from '@/lib/wallet';
 
 const TOPUP_PRESETS = [50, 100, 300, 500];
@@ -62,7 +62,7 @@ export function WalletClient({
     startBuy(async () => {
       const res = await buyTokenCredits(millions);
       if (res.ok) {
-        toast.success(t('creditsAdded', { tokens: res.tokensAdded.toLocaleString(locale) }));
+        toast.success(t('creditsAdded', { tokens: formatNumber(res.tokensAdded, locale) }));
         router.refresh();
       } else if (res.error === 'insufficient') {
         toast.error(t('insufficient'));
@@ -211,7 +211,7 @@ export function WalletClient({
                         {tx.description ?? t(`txType.${tx.type}`)}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {new Date(tx.createdAt).toLocaleString(locale)}
+                        {formatDateTime(tx.createdAt, locale)}
                         {pending && ` · ${t('statusPending')}`}
                         {failed && ` · ${t('statusFailed')}`}
                       </p>

@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { HoverLift, AnimatedCounter } from '@/components/ui/motion';
 import { OnboardingChecklist } from '@/components/dashboard/onboarding-checklist';
+import { formatDateTime } from '@/lib/format';
 
 const IN_PROGRESS: TaskStatus[] = ['PENDING', 'WORKING', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'BLOCKED'];
 
@@ -30,7 +31,7 @@ export default async function OverviewPage() {
 
   const t = await getTranslations('overview');
   const locale = await getLocale();
-  const fmt = (d: Date) => d.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+  const fmt = (d: Date) => formatDateTime(d, locale, { dateStyle: 'medium', timeStyle: 'short' });
 
   const user = await db.user.findUnique({
     where: { id: session.user.id },

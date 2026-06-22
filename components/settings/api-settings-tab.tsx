@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import { CheckCircle2, AlertCircle, Trash2, KeyRound } from 'lucide-react';
+import { formatDateTime } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -132,7 +133,7 @@ export function ApiSettingsTab({ initial }: { initial: ApiSettingsForClient }) {
   };
 
   const lastTested = initial.lastTested
-    ? new Date(initial.lastTested).toLocaleString()
+    ? formatDateTime(initial.lastTested, 'en')
     : null;
 
   return (

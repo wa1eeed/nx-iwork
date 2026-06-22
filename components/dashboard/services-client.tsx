@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ServiceIcon } from '@/components/dashboard/service-icon';
 import { buyService } from '@/lib/actions/marketplace';
-import { formatSar } from '@/lib/money';
+import { formatSar } from '@/lib/format';
 import type { MarketplaceServiceView } from '@/lib/marketplace';
 
 export function ServicesClient({

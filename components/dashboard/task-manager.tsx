@@ -14,6 +14,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { formatDateTime } from '@/lib/format';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -59,10 +60,7 @@ const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3
 
 function fmt(iso: string | null): string {
   if (!iso) return '';
-  return new Date(iso).toLocaleString('ar', {
-    dateStyle: 'medium',
-    timeStyle: 'short',
-  });
+  return formatDateTime(iso, 'ar', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 export function TaskManager({

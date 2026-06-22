@@ -5,6 +5,7 @@ import { Search, ArrowRight } from 'lucide-react';
 import { db } from '@/lib/db';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { formatNumber } from '@/lib/format';
 
 const STATUS_CLS: Record<string, string> = {
   ACTIVE: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
@@ -90,7 +91,7 @@ export default async function AdminCompaniesPage({
                     </span>
                     <span className="col-span-1 text-center text-xs tabular-nums text-muted-foreground sm:col-span-1">{c._count.agents}</span>
                     <span className="col-span-1 flex items-center justify-end gap-2 text-end font-mono text-xs tabular-nums sm:col-span-2" dir="ltr">
-                      {c.tokenBalance.toLocaleString(locale)}
+                      {formatNumber(c.tokenBalance, locale)}
                       <ArrowRight className="size-3.5 text-muted-foreground rtl:rotate-180" />
                     </span>
                   </Link>

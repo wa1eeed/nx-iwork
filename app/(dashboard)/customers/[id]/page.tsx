@@ -8,12 +8,13 @@ import { getUserCompany } from '@/lib/companies';
 import { Card, CardContent } from '@/components/ui/card';
 import { CustomerEditor } from '@/components/dashboard/customer-editor';
 import { STATUS_CLS } from '@/components/dashboard/customer-manager';
+import { formatDateTime } from '@/lib/format';
 
 export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const t = await getTranslations('crm');
   const locale = await getLocale();
-  const fmt = (d: Date) => d.toLocaleString(locale, { dateStyle: 'medium', timeStyle: 'short' });
+  const fmt = (d: Date) => formatDateTime(d, locale, { dateStyle: 'medium', timeStyle: 'short' });
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');

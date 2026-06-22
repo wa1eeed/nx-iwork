@@ -5,6 +5,7 @@ import { ArrowRight, Bot, ListChecks, Users, Coins } from 'lucide-react';
 import { db } from '@/lib/db';
 import { Card, CardContent } from '@/components/ui/card';
 import { CompanyActions } from '@/components/admin/company-actions';
+import { formatNumber, formatDate } from '@/lib/format';
 
 const STATUS_CLS: Record<string, string> = {
   ACTIVE: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
@@ -66,7 +67,7 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
             <a href={`/${company.slug}`} target="_blank" className="font-mono hover:text-foreground" dir="ltr">/{company.slug}</a>
             {' · '}{company.plan}
             {owner?.email ? ` · ${t('company.owner')}: ${owner.email}` : ''}
-            {` · ${t('company.created')}: ${company.createdAt.toLocaleDateString(locale)}`}
+            {` · ${t('company.created')}: ${formatDate(company.createdAt, locale)}`}
           </p>
         </div>
       </div>
@@ -80,7 +81,7 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
                 <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-gradient-brand-soft text-primary">
                   <u.icon className="size-4" />
                 </div>
-                <p className="text-2xl font-semibold tabular-nums">{u.value.toLocaleString(locale)}</p>
+                <p className="text-2xl font-semibold tabular-nums">{formatNumber(u.value, locale)}</p>
                 <p className="text-xs text-muted-foreground">{u.label}</p>
               </CardContent>
             </Card>

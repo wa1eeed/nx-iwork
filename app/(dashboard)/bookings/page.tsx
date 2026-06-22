@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { Card, CardContent } from '@/components/ui/card';
+import { formatDateTime } from '@/lib/format';
 
 const STATUS_CLS: Record<string, string> = {
   PENDING: 'text-amber-500',
@@ -18,7 +19,7 @@ const STATUS_CLS: Record<string, string> = {
 export default async function BookingsPage() {
   const t = await getTranslations('pages.bookings');
   const locale = await getLocale();
-  const fmt = (d: Date) => d.toLocaleString(locale, { dateStyle: 'full', timeStyle: 'short' });
+  const fmt = (d: Date) => formatDateTime(d, locale, { dateStyle: 'full', timeStyle: 'short' });
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');

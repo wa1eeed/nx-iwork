@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import { formatDateTime } from '@/lib/format';
 import { Countdown } from '@/components/dashboard/countdown';
 
 export interface AgentTaskRow {
@@ -42,7 +43,7 @@ const IN_PROGRESS = new Set(['PENDING', 'WORKING', 'PENDING_APPROVAL', 'PENDING_
 
 function fmt(iso: string | null): string {
   if (!iso) return '';
-  return new Date(iso).toLocaleString('ar', { dateStyle: 'medium', timeStyle: 'short' });
+  return formatDateTime(iso, 'ar', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 // Live activity timeline for one agent. Auto-refreshes so running tasks update

@@ -13,6 +13,7 @@ import { AgentSchedules } from '@/components/dashboard/agent-schedules';
 import { AgentActivity } from '@/components/dashboard/agent-activity';
 import { getToolsForAgent } from '@/lib/agent/tools';
 import { TOOL_LABELS } from '@/lib/agent/tool-labels';
+import { formatNumber, formatDate } from '@/lib/format';
 import { AgentScenarios } from '@/components/dashboard/agent-scenarios';
 import type { AgentKpi } from '@/lib/agent/templates';
 
@@ -159,7 +160,7 @@ export default async function AgentProfilePage({
               <p className="text-[11px] text-muted-foreground">{t('failed')}</p>
             </div>
             <div>
-              <p className="text-lg font-semibold">{agent.totalTokensUsed.toLocaleString(locale)}</p>
+              <p className="text-lg font-semibold">{formatNumber(agent.totalTokensUsed, locale)}</p>
               <p className="text-[11px] text-muted-foreground">{t('tokens')}</p>
             </div>
           </div>
@@ -245,8 +246,8 @@ export default async function AgentProfilePage({
               <div className="flex items-center justify-between text-sm">
                 <span className="text-muted-foreground">{t('monthlyTokens')}</span>
                 <span className="font-mono tabular-nums" dir="ltr">
-                  {agent.periodTokensUsed.toLocaleString(locale)}
-                  {agent.tokenLimit > 0 ? ` / ${agent.tokenLimit.toLocaleString(locale)}` : ` · ${t('unlimited')}`}
+                  {formatNumber(agent.periodTokensUsed, locale)}
+                  {agent.tokenLimit > 0 ? ` / ${formatNumber(agent.tokenLimit, locale)}` : ` · ${t('unlimited')}`}
                 </span>
               </div>
               {agent.tokenLimit > 0 && (
@@ -307,7 +308,7 @@ export default async function AgentProfilePage({
                           {t('importance')}: {m.importance}/10
                         </span>
                         <span className="ms-auto text-[10px] text-muted-foreground">
-                          {m.createdAt.toLocaleDateString(locale)}
+                          {formatDate(m.createdAt, locale)}
                         </span>
                       </div>
                       <p className="whitespace-pre-wrap text-sm text-foreground/90">{m.summary}</p>
