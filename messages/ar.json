@@ -228,6 +228,7 @@
     "orders": "الطلبات",
     "wallet": "المحفظة",
     "services": "الخدمات",
+    "subscription": "الاشتراك",
     "sections": {
       "workspace": "مساحة العمل",
       "team": "الفريق",
@@ -290,6 +291,54 @@
     "purchased": "تم الشراء — شكراً لك!",
     "insufficient": "رصيد المحفظة غير كافٍ — اشحن أولاً.",
     "genericError": "حدث خطأ ما. حاول مرة أخرى."
+  },
+  "subscription": {
+    "title": "الاشتراك",
+    "subtitle": "باقتك، خيارات الترقية، والفواتير.",
+    "unavailable": "الاشتراك غير متاح لهذا الحساب.",
+    "currentPlan": "الباقة الحالية",
+    "walletBalance": "رصيد المحفظة",
+    "renewsOn": "يتجدّد {date}",
+    "recommended": "الأكثر اختياراً",
+    "free": "مجاني",
+    "month": "شهرياً",
+    "current": "باقتك الحالية",
+    "choose": "اختيار",
+    "upgrade": "ترقية",
+    "invoices": "الفواتير",
+    "noInvoices": "لا توجد فواتير بعد.",
+    "choosePayment": "اختر وسيلة الدفع",
+    "payWallet": "الدفع من المحفظة",
+    "payCard": "بطاقة / Apple Pay",
+    "cardApplePay": "عبر Tap",
+    "tapUnavailable": "الدفع بالبطاقة غير مُفعّل بعد.",
+    "activated": "باقتك أصبحت فعّالة الآن.",
+    "insufficient": "رصيد المحفظة غير كافٍ — اشحن أولاً.",
+    "insufficientShort": "الرصيد غير كافٍ.",
+    "genericError": "حدث خطأ ما. حاول مرة أخرى.",
+    "paySuccess": "تم الدفع بنجاح — باقتك فعّالة.",
+    "payFailed": "لم تكتمل عملية الدفع. لم يُخصم أي مبلغ.",
+    "status": {
+      "TRIAL": "تجريبي",
+      "ACTIVE": "نشط",
+      "PAST_DUE": "متأخر السداد",
+      "CANCELLED": "ملغى",
+      "EXPIRED": "منتهٍ"
+    },
+    "invoiceStatus": {
+      "DRAFT": "مسودة",
+      "OPEN": "مفتوحة",
+      "PAID": "مدفوعة",
+      "FAILED": "فاشلة",
+      "REFUNDED": "مُستردّة"
+    },
+    "tierName": {
+      "FREE": "مجانية",
+      "STARTER": "الأساسية",
+      "GROWTH": "النمو",
+      "SCALE": "التوسّع",
+      "ENTERPRISE": "المؤسسات"
+    }
   },
   "overview": {
     "greeting": "مرحباً، {name}",

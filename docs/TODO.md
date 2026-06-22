@@ -90,7 +90,15 @@ to `v1beta1`) to cut input latency + cost. Needs the prompt split into a static
 (cacheable) prefix vs the dynamic memory-recall suffix, plus per-agent cache TTL.
 
 ### Payments — Tap.company
-Token-bank top-ups + SaaS subscriptions. Closes the managed-billing loop.
+Token-bank top-ups (DONE), marketplace (DONE), and **subscriptions (DONE)**:
+`/subscription` shows the current plan, upgrade options (Plan catalog seeded in
+DB), and invoices. Renew/upgrade offers two methods — **pay from wallet** (atomic
+debit, shows balance) or **Tap card / Apple Pay** (hosted charge, settled
+idempotently on webhook/return via `lib/billing/subscription.ts`). Activation
+syncs `Company.plan` + per-agent token cap and writes a PAID `Invoice`.
+**Still future:** recurring/auto-renew (Tap subscriptions API), invoice PDFs,
+proration on mid-cycle upgrades, a DB Plan-catalog editor in the admin (plans are
+seeded; editing still needs UI).
 
 ### Other
 - Bookings module: interactive calendar + business-hours/availability + manual create.

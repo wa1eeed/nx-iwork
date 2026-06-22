@@ -16,6 +16,7 @@ import {
   ListChecks,
   MessageSquare,
   Package,
+  Gem,
   Settings,
   Sparkles,
   Store,
@@ -78,6 +79,7 @@ export const NAV_SECTIONS: NavSection[] = [
   {
     sectionKey: 'billing',
     items: [
+      { href: '/subscription', icon: Gem, labelKey: 'subscription' },
       { href: '/wallet', icon: Wallet, labelKey: 'wallet' },
       { href: '/services', icon: Store, labelKey: 'services' },
     ],

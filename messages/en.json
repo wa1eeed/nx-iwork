@@ -228,6 +228,7 @@
     "orders": "Orders",
     "wallet": "Wallet",
     "services": "Services",
+    "subscription": "Subscription",
     "sections": {
       "workspace": "Workspace",
       "team": "Team",
@@ -290,6 +291,54 @@
     "purchased": "Purchased — thank you!",
     "insufficient": "Not enough wallet balance — top up first.",
     "genericError": "Something went wrong. Please try again."
+  },
+  "subscription": {
+    "title": "Subscription",
+    "subtitle": "Your plan, upgrade options, and invoices.",
+    "unavailable": "Subscription is unavailable for this account.",
+    "currentPlan": "Current plan",
+    "walletBalance": "Wallet balance",
+    "renewsOn": "Renews {date}",
+    "recommended": "Most popular",
+    "free": "Free",
+    "month": "mo",
+    "current": "Current plan",
+    "choose": "Choose",
+    "upgrade": "Upgrade",
+    "invoices": "Invoices",
+    "noInvoices": "No invoices yet.",
+    "choosePayment": "Choose a payment method",
+    "payWallet": "Pay from wallet",
+    "payCard": "Pay by card / Apple Pay",
+    "cardApplePay": "via Tap",
+    "tapUnavailable": "Card payment isn't configured yet.",
+    "activated": "Your plan is now active.",
+    "insufficient": "Not enough wallet balance — top up first.",
+    "insufficientShort": "Insufficient balance.",
+    "genericError": "Something went wrong. Please try again.",
+    "paySuccess": "Payment successful — your plan is active.",
+    "payFailed": "The payment didn't complete. No charge was made.",
+    "status": {
+      "TRIAL": "Trial",
+      "ACTIVE": "Active",
+      "PAST_DUE": "Past due",
+      "CANCELLED": "Cancelled",
+      "EXPIRED": "Expired"
+    },
+    "invoiceStatus": {
+      "DRAFT": "Draft",
+      "OPEN": "Open",
+      "PAID": "Paid",
+      "FAILED": "Failed",
+      "REFUNDED": "Refunded"
+    },
+    "tierName": {
+      "FREE": "Free",
+      "STARTER": "Starter",
+      "GROWTH": "Growth",
+      "SCALE": "Scale",
+      "ENTERPRISE": "Enterprise"
+    }
   },
   "overview": {
     "greeting": "Hi, {name}",

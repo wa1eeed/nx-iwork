@@ -1354,7 +1354,7 @@ model Invoice {
 
   status InvoiceStatus @default(DRAFT)
 
-  providerInvoiceId String?
+  providerInvoiceId String?  @unique
   pdfUrl            String?
 
   dueAt  DateTime?
@@ -1569,6 +1569,7 @@ enum WalletTxType {
   TOPUP // money in, from a Tap charge
   TOKEN_PURCHASE // money out, buys AI token credits
   SERVICE_PURCHASE // money out, buys a marketplace service
+  SUBSCRIPTION // money out, pays a plan subscription
   REFUND // money in, reversal
   ADJUSTMENT // manual admin credit/debit
 }

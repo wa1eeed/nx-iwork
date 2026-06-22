@@ -40,6 +40,8 @@ interface CreateChargeInput {
   redirectUrl: string;
   postUrl: string;
   description?: string;
+  // Extra metadata echoed back on the charge (e.g. { kind: 'subscription', tier }).
+  metadata?: Record<string, string>;
 }
 
 export async function createCharge(
@@ -58,7 +60,7 @@ export async function createCharge(
     threeDSecure: true,
     save_card: false,
     description: input.description ?? 'Wallet top-up',
-    metadata: { companyId: input.companyId },
+    metadata: { companyId: input.companyId, kind: 'topup', ...input.metadata },
     customer: {
       first_name: firstName,
       last_name: lastName,

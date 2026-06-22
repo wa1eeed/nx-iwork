@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { retrieveCharge, isCaptured, isFailure } from '@/lib/payments/tap';
 import { completeTopUp, failTopUp } from '@/lib/wallet';
+import { settleSubscriptionPayment, isSelectableTier } from '@/lib/billing/subscription';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,9 +30,19 @@ export async function POST(req: Request) {
 
   try {
     if (isCaptured(charge)) {
-      const res = await completeTopUp(charge.id);
-      if (res.credited) {
-        console.log(`[tap webhook] credited top-up ${charge.id} (balance=${res.balance})`);
+      const kind = String(charge.metadata?.kind ?? 'topup');
+      if (kind === 'subscription') {
+        const companyId = String(charge.metadata?.companyId ?? '');
+        const tier = String(charge.metadata?.tier ?? '');
+        if (companyId && isSelectableTier(tier)) {
+          const settled = await settleSubscriptionPayment(companyId, tier, charge.id);
+          if (settled) console.log(`[tap webhook] activated ${tier} for ${companyId} (${charge.id})`);
+        }
+      } else {
+        const res = await completeTopUp(charge.id);
+        if (res.credited) {
+          console.log(`[tap webhook] credited top-up ${charge.id} (balance=${res.balance})`);
+        }
       }
     } else if (isFailure(charge)) {
       await failTopUp(charge.id);
