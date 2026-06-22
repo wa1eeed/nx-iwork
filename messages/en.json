@@ -224,7 +224,7 @@
     "knowledge": "Knowledge",
     "bookings": "Bookings",
     "modules": "Modules",
-    "customers": "Customers",
+    "customers": "Opportunities",
     "orders": "Orders",
     "wallet": "Wallet",
     "services": "Services",
@@ -872,10 +872,12 @@
     }
   },
   "crm": {
-    "title": "Customers (CRM)",
-    "subtitle": "Your customers and where they sit in the pipeline — your agents log them automatically and you follow up here.",
+    "title": "Opportunities",
+    "subtitle": "Your sales pipeline — leads your agents or you open, tracked until won, deferred, or lost. Won opportunities are your customers.",
     "all": "All",
-    "newCustomer": "New customer",
+    "viewBoard": "Board",
+    "viewList": "List",
+    "newCustomer": "New opportunity",
     "name": "Name",
     "namePlaceholder": "Customer name",
     "phone": "Phone",
@@ -906,6 +908,7 @@
       "NEW": "New",
       "INTERESTED": "Interested",
       "NEGOTIATING": "Negotiating",
+      "DEFERRED": "Deferred",
       "WON": "Won",
       "LOST": "Lost"
     }

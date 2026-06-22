@@ -748,8 +748,9 @@ enum LeadStatus {
   NEW // جديد
   INTERESTED // مهتم
   NEGOTIATING // قيد التفاوض
-  WON // اشترى / تم
-  LOST // مفقود
+  DEFERRED // مؤجلة
+  WON // ناجحة / اشترى
+  LOST // غير محققة / مفقود
 }
 
 // A human customer/lead of the business. Distinct from User (platform accounts)
@@ -778,9 +779,10 @@ model Customer {
   assignedAgentId String?
   assignedAgent   Agent?  @relation("AgentCustomers", fields: [assignedAgentId], references: [id], onDelete: SetNull)
 
-  tasks    Task[]
-  orders   Order[]
-  bookings Booking[]
+  tasks       Task[]
+  orders      Order[]
+  bookings    Booking[]
+  activityLog CustomerNote[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -788,6 +790,29 @@ model Customer {
   @@index([companyId, status])
   @@index([assignedAgentId])
   @@index([phone])
+}
+
+// Opportunity activity log — manual notes and logged visits on a CRM record.
+// Reminders and meetings are NOT here; they reuse Task (kind REMINDER /
+// APPOINTMENT, linked to the customer) so they flow into the calendar + alerts.
+model CustomerNote {
+  id         String           @id @default(cuid())
+  companyId  String // denormalized for per-tenant queries
+  customerId String
+  customer   Customer         @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  type       CustomerNoteType @default(NOTE)
+  body       String           @db.Text
+  authorId   String? // User who wrote it; null if from an agent/system
+
+  createdAt DateTime @default(now())
+
+  @@index([customerId, createdAt])
+  @@index([companyId])
+}
+
+enum CustomerNoteType {
+  NOTE
+  VISIT
 }
 
 // ========================================
@@ -1354,7 +1379,7 @@ model Invoice {
 
   status InvoiceStatus @default(DRAFT)
 
-  providerInvoiceId String?  @unique
+  providerInvoiceId String? @unique
   pdfUrl            String?
 
   dueAt  DateTime?

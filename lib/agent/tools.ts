@@ -136,7 +136,7 @@ export const AGENT_TOOLS: AiTool[] = [
         email: { type: 'string' },
         status: {
           type: 'string',
-          enum: ['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST'],
+          enum: ['NEW', 'INTERESTED', 'NEGOTIATING', 'DEFERRED', 'WON', 'LOST'],
           description: 'حالة العميل. الافتراضي NEW.',
         },
         notes: { type: 'string', description: 'ملاحظة موجزة عن طلب العميل' },
@@ -159,7 +159,7 @@ export const AGENT_TOOLS: AiTool[] = [
         name: { type: 'string' },
         phone: { type: 'string' },
         email: { type: 'string' },
-        status: { type: 'string', enum: ['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST'] },
+        status: { type: 'string', enum: ['NEW', 'INTERESTED', 'NEGOTIATING', 'DEFERRED', 'WON', 'LOST'] },
         notes: { type: 'string' },
       },
       required: ['customerId'],
@@ -280,7 +280,7 @@ const createLeadArgs = z.object({
   name: z.string().trim().min(1).max(200),
   phone: z.string().trim().max(40).optional(),
   email: z.string().trim().max(200).optional(),
-  status: z.enum(['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST']).optional(),
+  status: z.enum(['NEW', 'INTERESTED', 'NEGOTIATING', 'DEFERRED', 'WON', 'LOST']).optional(),
   notes: z.string().trim().max(2000).optional(),
   customFields: z.record(z.unknown()).optional(),
 });
@@ -290,7 +290,7 @@ const updateLeadArgs = z.object({
   name: z.string().trim().max(200).optional(),
   phone: z.string().trim().max(40).optional(),
   email: z.string().trim().max(200).optional(),
-  status: z.enum(['NEW', 'INTERESTED', 'NEGOTIATING', 'WON', 'LOST']).optional(),
+  status: z.enum(['NEW', 'INTERESTED', 'NEGOTIATING', 'DEFERRED', 'WON', 'LOST']).optional(),
   notes: z.string().trim().max(2000).optional(),
 });
 
