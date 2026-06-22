@@ -20,6 +20,7 @@ import {
   Settings,
   Sparkles,
   Store,
+  UserCheck,
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -64,6 +65,7 @@ export const NAV_SECTIONS: NavSection[] = [
     sectionKey: 'sales',
     items: [
       { href: '/customers', icon: Contact, labelKey: 'customers' },
+      { href: '/clients', icon: UserCheck, labelKey: 'clients' },
       { href: '/products', icon: Package, labelKey: 'products', module: 'hasEcommerce' },
       { href: '/orders', icon: ShoppingBag, labelKey: 'orders' },
       { href: '/bookings', icon: CalendarCheck, labelKey: 'bookings', module: 'hasBookings' },

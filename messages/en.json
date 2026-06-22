@@ -225,6 +225,7 @@
     "bookings": "Bookings",
     "modules": "Modules",
     "customers": "Opportunities",
+    "clients": "Customers",
     "orders": "Orders",
     "wallet": "Wallet",
     "services": "Services",
@@ -936,5 +937,14 @@
       "WON": "Won",
       "LOST": "Lost"
     }
+  },
+  "clients": {
+    "title": "Customers",
+    "subtitle": "Your actual customers — everyone who has placed an order. Open any to see their full profile.",
+    "search": "Search customers…",
+    "empty": "No customers yet — they appear here once an order is placed.",
+    "noMatch": "No customers match your search.",
+    "ordersLabel": "orders",
+    "spent": "Total spent"
   }
 }
