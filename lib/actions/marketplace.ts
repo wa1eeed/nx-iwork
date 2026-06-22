@@ -48,9 +48,13 @@ const serviceSchema = z.object({
   category: z.string().trim().max(60).optional().nullable(),
   active: z.boolean().optional(),
   sortOrder: z.number().int().min(0).max(9999).optional(),
+  // Storage add-on: GB granted on purchase (0/empty = a normal service).
+  grantStorageGb: z.number().min(0).max(100000).optional().nullable(),
 });
 
 export type MarketplaceServiceInput = z.infer<typeof serviceSchema>;
+
+const GB = 1073741824;
 
 function toData(d: MarketplaceServiceInput) {
   return {
@@ -63,6 +67,8 @@ function toData(d: MarketplaceServiceInput) {
     category: d.category ?? null,
     active: d.active ?? true,
     sortOrder: d.sortOrder ?? 0,
+    grantStorageBytes:
+      d.grantStorageGb && d.grantStorageGb > 0 ? BigInt(Math.round(d.grantStorageGb * GB)) : null,
   };
 }
 

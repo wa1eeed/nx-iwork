@@ -20,6 +20,7 @@ export default async function AdminServicesPage() {
     category: s.category,
     active: s.active,
     sortOrder: s.sortOrder,
+    grantStorageGb: s.grantStorageBytes ? Number(s.grantStorageBytes) / 1073741824 : null,
     purchases: s._count.purchases,
   }));
 

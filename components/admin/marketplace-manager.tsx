@@ -30,6 +30,7 @@ export interface AdminService {
   category: string | null;
   active: boolean;
   sortOrder: number;
+  grantStorageGb: number | null;
   purchases: number;
 }
 
@@ -43,6 +44,7 @@ const EMPTY: MarketplaceServiceInput = {
   category: '',
   active: true,
   sortOrder: 0,
+  grantStorageGb: null,
 };
 
 export function MarketplaceManager({ services }: { services: AdminService[] }) {
@@ -69,6 +71,7 @@ export function MarketplaceManager({ services }: { services: AdminService[] }) {
       category: s.category ?? '',
       active: s.active,
       sortOrder: s.sortOrder,
+      grantStorageGb: s.grantStorageGb,
     });
     setEditingId(s.id);
   };
@@ -169,6 +172,19 @@ export function MarketplaceManager({ services }: { services: AdminService[] }) {
                 <Label>{t('fSort')}</Label>
                 <Input type="number" min={0} value={form.sortOrder ?? 0} onChange={(e) => set('sortOrder', Number(e.target.value))} dir="ltr" />
               </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>{t('fStorageGrant')}</Label>
+              <Input
+                type="number"
+                min={0}
+                value={form.grantStorageGb ?? ''}
+                onChange={(e) => set('grantStorageGb', e.target.value === '' ? null : Number(e.target.value))}
+                placeholder="0"
+                dir="ltr"
+              />
+              <p className="text-xs text-muted-foreground">{t('fStorageGrantHelp')}</p>
             </div>
 
             <div className="space-y-2">

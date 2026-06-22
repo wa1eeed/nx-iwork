@@ -84,6 +84,27 @@ export async function purchaseService(
         walletTxId: wtx.id,
       },
     });
+
+    // Storage add-on: raise the tenant's ceiling by the granted bytes. We
+    // materialize the override from the current effective limit (override ?? plan
+    // default) + grant, so it stacks correctly.
+    if (service.grantStorageBytes && service.grantStorageBytes > 0n) {
+      const company = await tx.company.findUnique({
+        where: { id: companyId },
+        select: { plan: true, storageLimitBytes: true },
+      });
+      const planRow = await tx.plan.findUnique({
+        where: { tier: company?.plan ?? 'STARTER' },
+        select: { maxStorageBytes: true },
+      });
+      const base =
+        company?.storageLimitBytes ?? planRow?.maxStorageBytes ?? 5368709120n; // 5 GB fallback
+      await tx.company.update({
+        where: { id: companyId },
+        data: { storageLimitBytes: base + service.grantStorageBytes },
+      });
+    }
+
     return { ok: true, balance: updated.balance.toNumber(), title: service.title };
   });
 }

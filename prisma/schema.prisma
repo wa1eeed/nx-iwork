@@ -1630,6 +1630,10 @@ model MarketplaceService {
   active        Boolean @default(true)
   sortOrder     Int     @default(0)
 
+  // Storage add-on: when set, buying this service raises the tenant's
+  // storageLimitBytes by this many bytes (the upgrade path the 403 hints at).
+  grantStorageBytes BigInt?
+
   purchases ServicePurchase[]
 
   createdAt DateTime @default(now())

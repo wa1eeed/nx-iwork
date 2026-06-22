@@ -824,6 +824,8 @@
       "fPrice": "Price (SAR)",
       "fCategory": "Category",
       "fSort": "Sort order",
+      "fStorageGrant": "Storage grant (GB)",
+      "fStorageGrantHelp": "If set, buying this raises the customer's storage ceiling by this many GB.",
       "fIcon": "Icon",
       "fActive": "Visible to customers",
       "purchasesCount": "{n} purchases"
