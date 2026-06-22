@@ -8,6 +8,7 @@ import { getUserCompany } from '@/lib/companies';
 import { Card, CardContent } from '@/components/ui/card';
 import { CustomerEditor } from '@/components/dashboard/customer-editor';
 import { STATUS_CLS } from '@/components/dashboard/customer-manager';
+import { OpportunityActivity, type ActivityItem } from '@/components/dashboard/opportunity-activity';
 import { formatDateTime } from '@/lib/format';
 
 export default async function CustomerDetailPage({ params }: { params: Promise<{ id: string }> }) {
@@ -31,7 +32,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
   });
   const currency = settings?.currencySymbol ?? 'SAR';
 
-  const [orders, bookings, tasks] = await Promise.all([
+  const [orders, bookings, tasks, notes] = await Promise.all([
     db.order.findMany({
       where: { customerId: id, companyId },
       orderBy: { createdAt: 'desc' },
@@ -47,10 +48,36 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     db.task.findMany({
       where: { customerId: id, companyId },
       orderBy: { createdAt: 'desc' },
-      take: 50,
-      select: { id: true, title: true, status: true, createdAt: true },
+      take: 100,
+      select: { id: true, title: true, status: true, createdAt: true, kind: true, dueAt: true, startAt: true },
+    }),
+    db.customerNote.findMany({
+      where: { customerId: id, companyId },
+      orderBy: { createdAt: 'desc' },
+      take: 100,
+      select: { id: true, type: true, body: true, createdAt: true },
     }),
   ]);
+
+  // Reminders/meetings (Tasks) + notes/visits (CustomerNote) → one timeline.
+  const activityTasks = tasks.filter((tk) => tk.kind === 'REMINDER' || tk.kind === 'APPOINTMENT');
+  const agentTasks = tasks.filter((tk) => tk.kind === 'AGENT_TASK');
+  const activity: ActivityItem[] = [
+    ...notes.map((n) => ({
+      id: n.id,
+      kind: n.type as 'NOTE' | 'VISIT',
+      body: n.body,
+      at: n.createdAt.toISOString(),
+      done: false,
+    })),
+    ...activityTasks.map((tk) => ({
+      id: tk.id,
+      kind: (tk.kind === 'REMINDER' ? 'REMINDER' : 'MEETING') as 'REMINDER' | 'MEETING',
+      body: tk.title,
+      at: (tk.kind === 'REMINDER' ? tk.dueAt ?? tk.createdAt : tk.startAt ?? tk.createdAt).toISOString(),
+      done: tk.status === 'DONE',
+    })),
+  ].sort((a, b) => b.at.localeCompare(a.at));
 
   return (
     <div className="space-y-6">
@@ -91,6 +118,9 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
         }}
       />
 
+      {/* Activity: notes / visits / reminders / meetings + convert to order */}
+      <OpportunityActivity customerId={customer.id} items={activity} status={customer.status} />
+
       {/* History */}
       <div className="grid gap-4 lg:grid-cols-3">
         <HistoryCard icon={ShoppingBag} title={t('orders')} empty={t('noOrders')}>
@@ -104,7 +134,7 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
           ))}
         </HistoryCard>
         <HistoryCard icon={ListChecks} title={t('relatedTasks')} empty={t('noTasks')}>
-          {tasks.map((tk) => (
+          {agentTasks.map((tk) => (
             <Row key={tk.id} title={tk.title} sub={tk.status} when={fmt(tk.createdAt)} />
           ))}
         </HistoryCard>

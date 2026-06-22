@@ -7,6 +7,29 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-06-22 — Opportunities (CRM revamp) + Subscription
+
+### Added — CRM (Zoho-style opportunities)
+- **Customers → Opportunities.** The CRM page is now an opportunity/lead pipeline
+  (won opportunities are your customers). Kanban **board** (drag cards between
+  stages) + **list** view. New stage **DEFERRED** (مؤجلة) → stages: New ·
+  Interested · Negotiating · Deferred · Won · Lost.
+- **Opportunity 360° detail** — header (contact/source/agent/stage) + a unified
+  **activity timeline**: notes, visits, reminders, meetings. Quick actions create
+  a `CustomerNote` (note/visit) or a `Task` (reminder→REMINDER, meeting→APPOINTMENT
+  — so they flow into the calendar/alerts). `lib/actions/crm-activity.ts`.
+- **Convert to order** — turns a won opportunity into a linked `Order` and marks
+  it WON. Any order created (public storefront, agent `create_order`, or convert)
+  auto-advances the linked opportunity to WON. Orders link back to the opportunity.
+- Data: `LeadStatus += DEFERRED`; new `CustomerNote` (NOTE/VISIT) model.
+  Migrations `20260622110000`, `20260622110001`.
+
+### Added — Subscription
+- `/subscription`: current plan + upgrade options + invoices; pay from wallet or
+  Tap (card/Apple Pay). Plan catalog seeded; `lib/billing/subscription.ts`.
+
+---
+
 ## 2026-06-22 — Customer-facing arc (mobile + wallet + marketplace)
 
 ### Added

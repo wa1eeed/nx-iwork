@@ -105,6 +105,11 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     select: { id: true, orderNumber: true },
   });
 
+  // A placed order is a realized deal → advance the opportunity to WON.
+  if (customerId) {
+    await db.customer.update({ where: { id: customerId }, data: { status: 'WON' } });
+  }
+
   await dispatchEvent(company.id, 'ORDER_CREATED', {
     summary: `طلب جديد ${order.orderNumber}: ${title} — العميل ${customerName}${customerPhone ? ` (${customerPhone})` : ''}`,
     metadata: { orderId: order.id, customerId },

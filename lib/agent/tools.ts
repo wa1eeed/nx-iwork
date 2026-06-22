@@ -595,6 +595,10 @@ export async function executeTool(
           },
           select: { id: true, orderNumber: true },
         });
+        // A placed order is a realized deal → advance the opportunity to WON.
+        if (args.customerId) {
+          await db.customer.update({ where: { id: args.customerId }, data: { status: 'WON' } });
+        }
         // Fire ORDER_CREATED so a configured agent follows up automatically.
         await dispatchEvent(ctx.companyId, 'ORDER_CREATED', {
           summary: `طلب جديد ${order.orderNumber} للعميل ${args.customerName}`,
