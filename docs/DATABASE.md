@@ -23,10 +23,14 @@ migration: `20260619130000_crm_flexible_tasks`
 
 ## 🎯 التغييرات عن المشروع الأصلي
 
-### حذفنا (لأن BYOK):
-- ❌ `Plan.creditsPerMonth`
-- ❌ `CreditTransaction`
-- ❌ `Company.apiSettings.mode` (كله BYOK)
+### نموذج الذكاء الحالي: **managed-أولاً** (Vertex + بنك توكنز)، BYOK اختياري
+- ✅ `Company.tokenBalance` — **بنك توكنز managed** (المنصة تدفع لجوجل وتُحاسِب
+  بالاستهلاك الحقيقي). الافتراضي 5,000,000.
+- ✅ `Plan` / `Subscription` / `Invoice` **فعّالة** (اشتراكات + فواتير، دفع من
+  المحفظة أو Tap).
+- ✅ BYOK **اختياري**: `CompanyApiSettings.byokProvider` + مفتاح مشفّر AES-256-GCM.
+- ⚠️ **تحديث:** سابقاً كان BYOK-أولاً بلا credits/billing؛ تحوّلنا إلى **managed +
+  بنك توكنز** (انظر `PROJECT.md` قرار 2 و`AI_VERTEX.md`).
 
 ### أضفنا (للذكاء الحقيقي):
 - ✅ `AgentMemory` - الذاكرة طويلة المدى (vector)
@@ -914,3 +918,23 @@ Rollback: `ALTER TABLE <t> DISABLE ROW LEVEL SECURITY`.
 - **`AgentMemory` vector index** ivfflat → **HNSW** (`vector_cosine_ops`).
 - Used by the Super Admin console (no new tables — `Plan`, `Subscription`,
   `Invoice`, `AuditLog`, `PlatformSettings` already existed). See `docs/ADMIN.md`.
+
+## 🆕 Schema additions (2026-06-22)
+
+The customer-facing + storage arc:
+
+- **Wallet** — `Wallet` (SAR balance) + `WalletTransaction` (ledger;
+  `WalletTxType` incl. `SUBSCRIPTION`). Top-up via Tap; spends on token credits /
+  services / subscriptions.
+- **Marketplace** — `MarketplaceService` (+ `grantStorageBytes` for storage
+  add-ons) + `ServicePurchase` (`ServicePurchaseStatus`).
+- **Subscriptions** — `Plan` catalog seeded (+ `Plan.maxStorageBytes`); `Subscription`
+  + `Invoice` now used (pay from wallet or Tap; `Invoice.providerInvoiceId @unique`).
+- **CRM** — `LeadStatus += DEFERRED`; new `CustomerNote` (NOTE/VISIT activity log).
+- **Storage** — `File` registry (RLS) + `Company.storageUsedBytes` /
+  `storageLimitBytes` (BigInt quota; per-plan ceiling + per-tenant override). Image
+  bodies are compressed (sharp → WebP) before R2. See `docs/STORAGE.md`.
+- **Admin from env** — `PlatformSettings.tokenPricePerMillion`; super-admin
+  bootstrapped from `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
+
+Migrations: `20260621130000_wallet` … `20260622140000_storage_addon`.

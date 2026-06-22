@@ -10,9 +10,9 @@
 
 **الوصف:** منصة تمكّن أصحاب الأعمال من بناء شركة كاملة من موظفين ذكاء اصطناعي يعملون في أقسام، ينفذون مهام، ولديهم ذاكرة طويلة المدى.
 
-**النموذج التجاري المزدوج:**
-- **بيع نسخ مرخصة** (شهر 1-2): 25K-100K SAR للنسخة
-- **SaaS** (شهر 3+): اشتراكات شهرية على nx.sa
+**النموذج التجاري:** **SaaS مُدار** — حيّ الآن على **bznss.one**. اشتراكات شهرية
+(باقات Starter/Growth/Scale) + **بنك توكنز** مُدار للذكاء + **محفظة** (SAR) + **سوق
+خدمات/إضافات**. (التوجه القديم «بيع نسخ مرخصة» تم استبداله بالـ SaaS المُدار.)
 
 **السوق:** السعودية أولاً، ثم الخليج، ثم عالمياً.
 
@@ -33,7 +33,7 @@
 ## 3. Tech Stack
 
 ### Frontend
-- Next.js 15 (App Router)
+- Next.js 16 (App Router)
 - TypeScript (strict)
 - Tailwind CSS + shadcn/ui
 - Tajawal + Inter fonts
@@ -50,8 +50,9 @@
 
 ### AI (Provider-Agnostic)
 - **طبقة محايدة** (`lib/ai/`) — واجهة موحّدة، وباقي الكود لا يستورد أي SDK مزوّد
-- **مزوّدان (BYOK):** Google Gemini (افتراضي — أوفر + طبقة AI Studio المجانية) و Anthropic Claude
-- كل شركة تختار مزوّدها ومفتاحها من الإعدادات (`CompanyApiSettings.byokProvider`)
+- **افتراضياً Managed عبر Google Vertex** (Gemini 2.5) بمصادقة **ADC بلا مفاتيح**،
+  والمحاسبة عبر **بنك توكنز** لكل شركة. **BYOK** خيار اختياري (مفتاح الشركة مشفّر،
+  Gemini/Claude). انظر [`AI_VERTEX.md`](./AI_VERTEX.md).
 - **استدعاء الدوال (Function Calling):** الوكلاء ينفّذون أدوات (كتالوج، CRM، مهام) بدل الاكتفاء بالمحادثة — قراءة منظمة بدل PDF لتوفير التوكنز
 - Model tiers مجرّدة (Fast/Balanced/Advanced) تُترجم لمعرّف نموذج لكل مزوّد (`lib/ai/models.ts`)
 
@@ -59,7 +60,7 @@
 - **Cloudflare R2** (تخزين S3-compatible، رفع presigned مباشر بلا مرور على الـ VPS) — `lib/storage/` ✅
 - **Resend** (إيميل) + **Twilio** (SMS) — `lib/notifications/` ✅
 - **Embeddings** (Google Gemini `gemini-embedding-001` @ 1536) للذاكرة الدلالية — `lib/ai/embeddings.ts` ✅
-- **Tap.company** (بوابة دفع اشتراكات SaaS) — مخطّط
+- **Tap.company** (شحن المحفظة + دفع الاشتراكات بالبطاقة/Apple Pay) — ✅ مُنفّذ
 - **Sentry** (مراقبة وتتبّع أخطاء) — مخطّط
 - **API عام v1** لتكامل أطراف ثالثة — مخطّط
 - n8n (workflows خارجية معقّدة) — اختياري/لاحق
@@ -75,13 +76,13 @@
 ## 4. الأدوار في النظام
 
 ### 1. Super Admin (وليد)
-- وصول لكل شي في `admin.nx.sa`
-- إدارة العملاء (في SaaS mode)
-- مفاتيح API الرئيسية (لو فعّل managed mode لاحقاً)
+- وصول لكل شي عبر `/admin` (لوحة السوبر أدمن — انظر [`ADMIN.md`](./ADMIN.md))
+- إدارة الشركات، الباقات، أرصدة التوكنز، سقوف التخزين، إعدادات المنصّة
+- اعتماد managed (Vertex) عبر service account واحد — لا مفاتيح API مكشوفة
 
 ### 2. Business Owner
 - صاحب الشركة (المشترك)
-- لوحة التحكم في `app.nx.sa`
+- لوحة التحكم على `bznss.one` (مسارات `/overview`, `/agents`, …)
 - يضيف موظفين، أقسام، خدمات، منتجات
 
 ### 3. Business Member
@@ -93,7 +94,7 @@
 - له شخصية، ذاكرة، صلاحيات
 
 ### 5. Visitor
-- زائر الموقع العام (`nx.sa/{slug}`)
+- زائر الموقع العام (`bznss.one/{slug}` أو النطاق المخصّص للشركة)
 - يتفاعل مع AI Agents عبر chat widget
 
 ---
@@ -235,7 +236,7 @@ nx-iwork/
 │   ├── (public)/                 # الصفحة العامة
 │   │   └── [businessSlug]/
 │   ├── api/
-│   └── (marketing)/              # nx.sa marketing site
+│   └── page.tsx                  # marketing landing (/) + SEO/JSON-LD
 ├── components/
 ├── lib/
 │   ├── auth.ts
@@ -269,7 +270,7 @@ nx-iwork/
 
 ### للبدء:
 - VPS Coolify: 100 SAR/شهر
-- Domain nx.sa: 200 SAR/سنة
+- Domain (bznss.one): ~200 SAR/سنة
 - Claude API (BYOK من العملاء): 0
 - **المجموع: ~120 SAR/شهر**
 
@@ -286,7 +287,7 @@ nx-iwork/
 
 | القدرة | الحالة | المكان |
 |---|---|---|
-| طبقة AI محايدة (Gemini افتراضي + Claude) BYOK | ✅ | `lib/ai/` |
+| طبقة AI محايدة (Vertex/Gemini افتراضي مُدار، BYOK اختياري) | ✅ | `lib/ai/` |
 | وضع Managed: Vertex AI + بنك توكنز (`AI_MODE=managed`، **افتراضي**) | ✅ مُتحقَّق حيّاً | `lib/ai/providers/vertex.ts`, `lib/billing/tokens.ts` — مرجع: `docs/AI_VERTEX.md` |
 | محادثة الوكيل + استدعاء الأدوات (catalog/CRM/tasks/memory) | ✅ | `lib/agent/run.ts`, `tools.ts` |
 | نموذج بيانات مرن: CRM (Customer) + customFields + Task موحّد | ✅ | `prisma/schema.prisma` |
@@ -296,8 +297,16 @@ nx-iwork/
 | الذاكرة (semantic via pgvector + fallback) | ✅ | `lib/agent/memory.ts`, `lib/ai/embeddings.ts` |
 | تخزين R2 + كتالوج المنتجات | ✅ | `lib/storage/`, `app/(dashboard)/products` |
 | الإشعارات (Resend + Twilio) | ✅ | `lib/notifications/` |
-| اللاندنغ بيج العامة + ودجت الوكيل | ⬜ التالي | `app/[slug]` |
-| التكامل (Sentry / Tap / API عام) | ⬜ لاحقاً | — |
+| اللاندنغ بيج العامة + ودجت الوكيل | ✅ | `app/(public)/[slug]` |
+| لاندنغ تسويقية + SEO/JSON-LD على `/` | ✅ | `app/page.tsx` |
+| تصميم جوال (كاروسيل أقسام + شريط سفلي) | ✅ | `components/dashboard/mobile-*` |
+| الـ CRM: الفرص (Pipeline/Kanban + 360°) + الطلبات + دليل العملاء | ✅ | `app/(dashboard)/customers`, `clients` |
+| المحفظة (SAR) + شحن Tap + شراء توكنز | ✅ | `app/(dashboard)/wallet`, `lib/wallet.ts` |
+| الاشتراكات (باقات + ترقية + فواتير، دفع محفظة/Tap) | ✅ | `app/(dashboard)/subscription` |
+| سوق الخدمات/الإضافات + شراء بالمحفظة + إضافة مساحة | ✅ | `app/(dashboard)/services`, `lib/marketplace.ts` |
+| حصص التخزين متعددة المستأجرين + ضغط الصور (sharp) | ✅ | `lib/storage/quota.ts`, `image.ts` — `docs/STORAGE.md` |
+| لوحة السوبر أدمن (شركات/باقات/توكنز/تخزين/متجر/إعدادات) | ✅ | `app/(admin)/admin` — `docs/ADMIN.md` |
+| التكاملات اللاحقة (Sentry / API عام v1) | ⬜ لاحقاً | — |
 
 **التشغيل:** الويب عبر `Dockerfile` (يشغّل `prisma migrate deploy` تلقائياً)، والجدولة كخدمة ثانية `npm run scheduler` (نسخة واحدة).
 

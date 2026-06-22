@@ -6,7 +6,7 @@
 > `docs/ADMIN.md`; infra/CDN/Cloud-Run in `docs/INFRA.md`; file storage in
 > `docs/STORAGE.md`.
 
-**Last updated:** 2026-06-21
+**Last updated:** 2026-06-22
 **Live:** https://bznss.one/ · repo `github.com/wa1eeed/nx-iwork`
 **Deploy:** `git push origin HEAD:main` → Coolify builds & runs
 `prisma migrate deploy && node server.js`. **`main` is the deploy branch**, not
@@ -51,6 +51,23 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
     modes** (agent knows it's talking to the owner in the dashboard).
 12. **Decision:** next infra home = **Google Cloud Run** (`docs/INFRA.md`).
 
+### Then the customer-facing arc (2026-06-22), all shipped to `main`
+13. **Mobile-first dashboard** — swipeable section carousel + bottom tab bar
+    (`mobile-section-carousel.tsx`, `mobile-tabbar.tsx`).
+14. **Wallet** (SAR) + **Tap top-up** + **buy token credits**; **Subscription**
+    page (current plan, upgrade, invoices; pay from wallet or Tap card/Apple Pay);
+    **Services marketplace** (admin CRUD + buy with wallet) — incl. a **"buy extra
+    storage" add-on**. `lib/{wallet,marketplace,billing/subscription}.ts`.
+15. **CRM revamp → Opportunities** — pipeline (Kanban + list), 360° detail with
+    activity (notes/visits/reminders/meetings) + convert-to-order; orders auto-set
+    the opportunity WON (cancel reverts). New **Customers directory** (`/clients`).
+16. **Storage** — central `File` registry + **multi-tenant quota** (per-plan
+    ceilings + per-tenant override + 403 on over-quota + `/admin/plans` telemetry)
+    + **server-side image compression** (sharp → WebP). See `docs/STORAGE.md`.
+17. **Latin digits everywhere** + no thousands-separator in prices (`lib/format.ts`).
+18. **Admin from env** (`ADMIN_EMAIL`/`ADMIN_PASSWORD`) + docs restructure
+    (`docs/README.md` index, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`).
+
 ---
 
 ## 🔜 Next up (resume here, in priority order)
@@ -71,9 +88,11 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
    `/api/cron/run`, Redis for rate-limit/queue, Cloud SQL + PgBouncer, Secret
    Manager + least-privilege Vertex SA. Do **Cloudflare CDN** now. See `docs/INFRA.md`.
 5. **Admin Phase 2** (`docs/ADMIN.md`): impersonate-for-support · audit-log viewer ·
-   usage/revenue charts · invoices · DB plan-catalog editor · maintenance-mode wiring · 2FA.
-6. **Then the standing backlog** (`docs/TODO.md`): Tap payments · Sentry · Public
-   API v1 · bookings calendar.
+   usage/revenue charts · DB plan-catalog editor · maintenance-mode wiring · 2FA.
+6. **Storage follow-ups** (`docs/STORAGE.md`): private/confidential files · server-side
+   size cap (presigned POST) · orphan-cleanup/reconcile job.
+7. **Then the standing backlog** (`docs/TODO.md`): Sentry · Public API v1 ·
+   bookings calendar · recurring-subscription auto-renew.
 
 ---
 
