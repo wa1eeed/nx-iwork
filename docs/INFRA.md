@@ -1,5 +1,8 @@
 # Infrastructure — CDN, scaling, and the Cloud Run migration
 
+> File storage (R2 object store, per-tenant prefixes, presigned uploads) has its
+> own deep-dive: **`docs/STORAGE.md`**.
+
 ## CDN (Cloudflare)
 
 The app is built CDN-friendly: hashed `/_next/static/*` assets are served

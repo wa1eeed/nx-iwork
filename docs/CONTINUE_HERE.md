@@ -3,7 +3,8 @@
 > **Read this first when resuming.** It's the single source of "current state +
 > what's next". Detailed history is in `CHANGELOG.md`; backlog in `docs/TODO.md`;
 > architecture in `docs/AGENT_SYSTEM.md`, `docs/DATABASE.md`; admin in
-> `docs/ADMIN.md`; infra/CDN/Cloud-Run in `docs/INFRA.md`.
+> `docs/ADMIN.md`; infra/CDN/Cloud-Run in `docs/INFRA.md`; file storage in
+> `docs/STORAGE.md`.
 
 **Last updated:** 2026-06-21
 **Live:** https://bznss.one/ · repo `github.com/wa1eeed/nx-iwork`

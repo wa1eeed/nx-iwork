@@ -89,6 +89,17 @@ call; cache them via Vertex `cachedContent` (SDK 1.12 already supports it → sw
 to `v1beta1`) to cut input latency + cost. Needs the prompt split into a static
 (cacheable) prefix vs the dynamic memory-recall suffix, plus per-agent cache TTL.
 
+### File storage — close the 3 gaps (see `docs/STORAGE.md`)
+Core is in place (R2 + per-tenant prefix `companies/<id>/…` + presigned direct
+uploads + provider-agnostic + CDN). Remaining to fully match the global standard:
+1. **`tenant_files` metadata table** — `File { id, companyId, key, url, purpose,
+   mime, size, uploadedById }` + RLS on `companyId`; relate records to files
+   (audit, quota, orphan cleanup, per-tenant file listing).
+2. **Private/confidential files** — private bucket/prefix served only via
+   short-lived `createDownloadUrl` + per-file access checks (customer docs).
+3. **Server-side size cap** — presigned PUT → presigned POST with a
+   `content-length-range` policy so the bucket rejects oversized uploads.
+
 ### Payments — Tap.company
 Token-bank top-ups (DONE), marketplace (DONE), and **subscriptions (DONE)**:
 `/subscription` shows the current plan, upgrade options (Plan catalog seeded in
