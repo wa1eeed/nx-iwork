@@ -13,18 +13,20 @@ import { formatSar, formatNumber, formatDateTime } from '@/lib/format';
 import type { WalletTxView } from '@/lib/wallet';
 
 const TOPUP_PRESETS = [50, 100, 300, 500];
-const CREDIT_PRESETS = [1, 5, 10];
+const CREDIT_PRESETS = [1, 5, 10, 30, 50];
 
 export function WalletClient({
   balance,
   transactions,
   pricePerMillion,
+  tokenBalance,
   tapConfigured,
 }: {
   balance: number;
   currency: string;
   transactions: WalletTxView[];
   pricePerMillion: number;
+  tokenBalance: number;
   tapConfigured: boolean;
 }) {
   const t = useTranslations('wallet');
@@ -135,39 +137,54 @@ export function WalletClient({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Current token credits */}
+          <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2.5">
+            <span className="text-sm text-muted-foreground">{t('currentCredits')}</span>
+            <span className="font-semibold tabular-nums">
+              {formatNumber(tokenBalance, locale)}
+              <span className="ms-1 text-xs font-normal text-muted-foreground">
+                {t('tokensSuffix')}
+              </span>
+            </span>
+          </div>
+
           <p className="text-sm text-muted-foreground">
             {t('creditsHelp', { price: money(pricePerMillion) })}
           </p>
-          <div className="flex flex-wrap gap-2">
-            {CREDIT_PRESETS.map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => setMillions(m)}
-                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                  millions === m
-                    ? 'border-primary bg-gradient-brand-soft text-primary'
-                    : 'text-muted-foreground hover:bg-accent'
-                }`}
-              >
-                {t('millionTokens', { n: m })}
-              </button>
-            ))}
+
+          {/* Choose a package — selection only */}
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {CREDIT_PRESETS.map((m) => {
+              const active = millions === m;
+              return (
+                <button
+                  key={m}
+                  type="button"
+                  onClick={() => setMillions(m)}
+                  aria-pressed={active}
+                  className={`flex flex-col items-center gap-0.5 rounded-xl border px-2 py-3 text-center transition-colors ${
+                    active
+                      ? 'border-primary bg-gradient-brand-soft text-primary shadow-glow'
+                      : 'hover:bg-accent'
+                  }`}
+                >
+                  <span className="text-sm font-semibold">{t('millionTokens', { n: m })}</span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {money(m * pricePerMillion)}
+                  </span>
+                </button>
+              );
+            })}
           </div>
-          <div className="flex items-end gap-2">
-            <div className="flex-1 space-y-1">
-              <label className="text-xs text-muted-foreground">{t('customMillions')}</label>
-              <Input
-                type="number"
-                min={1}
-                max={1000}
-                value={millions}
-                onChange={(e) => setMillions(Number(e.target.value))}
-                dir="ltr"
-              />
+
+          {/* Total + buy */}
+          <div className="flex items-center justify-between border-t pt-3">
+            <div>
+              <p className="text-xs text-muted-foreground">{t('youPay')}</p>
+              <p className="text-lg font-semibold tabular-nums">{money(creditCost)}</p>
             </div>
-            <Button onClick={onBuyCredits} disabled={buying || millions < 1} variant="outline">
-              {buying ? t('processing') : t('buyCta', { cost: money(creditCost) })}
+            <Button onClick={onBuyCredits} disabled={buying}>
+              {buying ? t('processing') : t('buyNow')}
             </Button>
           </div>
         </CardContent>

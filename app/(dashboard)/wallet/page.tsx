@@ -33,12 +33,13 @@ export default async function WalletPage({
     }
   }
 
-  const [summary, settings] = await Promise.all([
+  const [summary, settings, company] = await Promise.all([
     getWalletSummary(companyId),
     db.platformSettings.findUnique({
       where: { id: 'singleton' },
       select: { tokenPricePerMillion: true },
     }),
+    db.company.findUnique({ where: { id: companyId }, select: { tokenBalance: true } }),
   ]);
   const pricePerMillion = settings ? settings.tokenPricePerMillion.toNumber() : 5;
 
@@ -65,6 +66,7 @@ export default async function WalletPage({
         currency={summary.currency}
         transactions={summary.transactions}
         pricePerMillion={pricePerMillion}
+        tokenBalance={company?.tokenBalance ?? 0}
         tapConfigured={isTapConfigured()}
       />
     </div>
