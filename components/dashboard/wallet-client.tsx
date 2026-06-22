@@ -138,6 +138,9 @@ export function WalletClient({
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* What token credits are and why they matter */}
+          <p className="text-sm leading-relaxed text-muted-foreground">{t('creditsAbout')}</p>
+
           {/* Current token credits */}
           <div className="flex items-center justify-between rounded-lg border bg-muted/30 px-3 py-2.5">
             <span className="text-sm text-muted-foreground">{t('currentCredits')}</span>

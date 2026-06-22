@@ -251,6 +251,7 @@
     "invalidAmount": "Enter an amount between 10 and 50,000 SAR.",
     "genericError": "Something went wrong. Please try again.",
     "buyCredits": "Buy AI token credits",
+    "creditsAbout": "Token credits are the fuel that runs your AI employees — your automated team. Every task, reply, or chat your agents handle uses tokens, so keeping a balance keeps your team working around the clock.",
     "currentCredits": "Current balance",
     "tokensSuffix": "tokens",
     "creditsHelp": "Pay {price} per 1,000,000 tokens, charged from your wallet.",
