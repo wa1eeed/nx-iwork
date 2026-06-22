@@ -111,6 +111,12 @@ model Company {
   // chats; 5M gives real headroom for the trial.
   tokenBalance Int @default(5000000)
 
+  // R2 storage quota (multi-tenant). storageUsedBytes is the running aggregate of
+  // this tenant's File sizes; the ceiling is storageLimitBytes (per-tenant admin
+  // override) or, when null, the plan's Plan.maxStorageBytes.
+  storageUsedBytes  BigInt  @default(0)
+  storageLimitBytes BigInt?
+
   // Modular architecture: the owner enables only the modules their business
   // needs. Drives the sidebar, pages, and which AI tools the agents receive.
   hasEcommerce Boolean @default(true) // Product catalog + cart
@@ -1305,11 +1311,12 @@ model Plan {
   priceYearly  Decimal @db.Decimal(10, 2)
 
   // Limits
-  maxAgents      Int
-  maxDepartments Int
-  maxMembers     Int
-  maxProducts    Int @default(-1) // -1 = unlimited
-  maxServices    Int @default(-1)
+  maxAgents       Int
+  maxDepartments  Int
+  maxMembers      Int
+  maxProducts     Int    @default(-1) // -1 = unlimited
+  maxServices     Int    @default(-1)
+  maxStorageBytes BigInt @default(5368709120) // R2 storage ceiling (default 5 GB)
 
   // Features
   allowCustomDomain   Boolean @default(false)

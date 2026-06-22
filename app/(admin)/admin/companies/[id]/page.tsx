@@ -29,6 +29,8 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
       plan: true,
       status: true,
       tokenBalance: true,
+      storageUsedBytes: true,
+      storageLimitBytes: true,
       createdAt: true,
       customDomain: true,
       users: { where: { role: 'BUSINESS_OWNER' }, take: 1, select: { name: true, email: true } },
@@ -36,6 +38,21 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
     },
   });
   if (!company) notFound();
+
+  const planRow = await db.plan.findUnique({
+    where: { tier: company.plan },
+    select: { maxStorageBytes: true },
+  });
+  const GB = 1073741824;
+  const storageUsedBytes = Number(company.storageUsedBytes);
+  const storageLimitBytes =
+    company.storageLimitBytes != null
+      ? Number(company.storageLimitBytes)
+      : planRow
+        ? Number(planRow.maxStorageBytes)
+        : 5 * GB;
+  const storageOverrideGb =
+    company.storageLimitBytes != null ? Number(company.storageLimitBytes) / GB : null;
 
   const owner = company.users[0];
   const usage = [
@@ -89,7 +106,14 @@ export default async function AdminCompanyPage({ params }: { params: Promise<{ i
         </div>
       </div>
 
-      <CompanyActions companyId={company.id} plan={company.plan} status={company.status} />
+      <CompanyActions
+        companyId={company.id}
+        plan={company.plan}
+        status={company.status}
+        storageOverrideGb={storageOverrideGb}
+        storageUsedBytes={storageUsedBytes}
+        storageLimitBytes={storageLimitBytes}
+      />
     </div>
   );
 }

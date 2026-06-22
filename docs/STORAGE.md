@@ -100,6 +100,26 @@ route (`app/api/uploads/sign`) writes a row on every presigned upload
 **never bytes**, so the DB stays light. Enables audit, quota, orphan cleanup, and
 per-tenant file listing.
 
+## Storage quota (implemented)
+
+Per-tenant byte quota (migration `20260622130000_storage_quota`):
+
+- **Ceiling:** `Company.storageLimitBytes` (admin per-tenant override) or, when
+  null, the plan's `Plan.maxStorageBytes`. Seeded defaults: Starter 5 GB ·
+  Growth 10 GB · Scale 20 GB (Free 1 · Enterprise 50). `lib/storage/quota.ts`.
+- **Enforcement:** the sign route signs first (no side effect) then calls
+  `reserveAndRecordFile` — an **atomic** tx that increments `storageUsedBytes`
+  and writes the `File` row; if the new usage exceeds the ceiling the tx rolls
+  back and the route returns **HTTP 403** (*"Storage quota exceeded… Please
+  upgrade your storage ceiling."*). The over-quota request never gets an upload URL.
+- **Delete:** `/api/uploads/delete` → `deleteTenantFile` removes the R2 object,
+  deletes the `File` row, and decrements `storageUsedBytes` (atomic). The uploader
+  calls it when an image is removed.
+- **Admin:** `/admin/plans` edits per-plan ceilings + an ecosystem-usage telemetry
+  widget (total used + top consumers, ≥90% flagged red). Per-tenant override on
+  the company detail page (`setCompanyStorageLimit`) — a premium customer gets a
+  bigger ceiling with no code change.
+
 ## Gaps / roadmap
 
 1. **Private / confidential files** — a private bucket (or private prefix), served
@@ -108,8 +128,8 @@ per-tenant file listing.
 2. **Server-side size cap** — switch presigned **PUT** → presigned **POST** with a
    `content-length-range` policy so the bucket itself rejects oversized uploads
    (today: client-reported size only).
-3. **Orphan cleanup + quota** — a periodic job using the `File` registry to delete
-   rows whose R2 object never landed, and to enforce per-tenant storage quotas.
+3. **Orphan cleanup + reconcile** — a periodic job using the `File` registry to
+   delete rows whose R2 object never landed and re-sync `storageUsedBytes`.
 
 ## Env
 

@@ -35,6 +35,8 @@ export function ImageUpload({
         toast.error('التخزين غير مُهيأ بعد (R2). راجع الإعدادات.');
       } else if (signed.reason === 'unsupported_type') {
         toast.error('نوع الملف غير مدعوم. استخدم PNG/JPG/WebP/GIF.');
+      } else if (signed.reason === 'quota_exceeded') {
+        toast.error('تجاوزت سعة التخزين في باقتك. رقّي باقتك أو اشترِ مساحة إضافية من الخدمات.');
       } else {
         toast.error('تعذّر تجهيز الرفع.');
       }
@@ -75,7 +77,13 @@ export function ImageUpload({
   }
 
   function remove(url: string) {
-    onChange(value.filter((u) => u !== url));
+    onChange(value.filter((u) => u !== url)); // optimistic
+    // Free the object in R2 + the tenant's storage counter (best-effort).
+    fetch('/api/uploads/delete', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ url }),
+    }).catch(() => {});
   }
 
   return (

@@ -15,6 +15,18 @@ export function formatNumber(value: number, locale = 'en'): string {
   );
 }
 
+// Byte size — Latin digits, human units (e.g. 4.96 GB).
+export function formatBytes(bytes: number, locale = 'en'): string {
+  if (!Number.isFinite(bytes) || bytes <= 0) return '0 B';
+  const units = ['B', 'KB', 'MB', 'GB', 'TB'];
+  const i = Math.min(units.length - 1, Math.floor(Math.log(bytes) / Math.log(1024)));
+  const val = bytes / 1024 ** i;
+  const out = new Intl.NumberFormat(latn(locale), {
+    maximumFractionDigits: i <= 1 ? 0 : 2,
+  }).format(val);
+  return `${out} ${units[i]}`;
+}
+
 // Money (SAR) — Latin digits, NO thousands separator (e.g. SAR 1200.00).
 export function formatSar(amount: number, locale = 'en'): string {
   return new Intl.NumberFormat(latn(locale), {

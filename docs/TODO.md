@@ -92,13 +92,16 @@ to `v1beta1`) to cut input latency + cost. Needs the prompt split into a static
 ### File storage (see `docs/STORAGE.md`)
 Core in place (hybrid rule: file→R2, URL→text, vectors→pgvector, **no bytes in
 DB**; per-tenant prefix; presigned direct uploads; provider-agnostic; CDN).
-**DONE:** central `File` registry table (key/url/mime/size/uploadedById + RLS),
-written on every upload. **Remaining:**
+**DONE:** central `File` registry (RLS) + **per-tenant storage quota** (per-plan
+ceilings + admin per-tenant override + 403 on over-quota + atomic reserve/release
++ `/admin/plans` telemetry). **Remaining:**
 1. **Private/confidential files** — private bucket/prefix served only via
    short-lived `createDownloadUrl` + per-file access checks (customer docs).
 2. **Server-side size cap** — presigned PUT → presigned POST with a
    `content-length-range` policy (today: client-reported size only).
-3. **Orphan cleanup + quota** — periodic job over the `File` registry.
+3. **Orphan cleanup + reconcile** — periodic job over the `File` registry.
+4. **"Buy extra storage" add-on** — a marketplace service that bumps
+   `storageLimitBytes` on purchase (the upgrade path the 403 hints at).
 
 ### Payments — Tap.company
 Token-bank top-ups (DONE), marketplace (DONE), and **subscriptions (DONE)**:

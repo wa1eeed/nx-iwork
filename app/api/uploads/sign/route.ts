@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getStorage, companyKey, isStorageConfigured } from '@/lib/storage';
+import { reserveAndRecordFile } from '@/lib/storage/quota';
 
 // Allowed upload types → file extension. Kept tight on purpose: logos and
 // product images, plus PDF for document uploads. SVG is excluded (script-in-SVG
@@ -64,33 +65,42 @@ export async function POST(req: Request) {
   const ext = TYPE_EXT[parsed.data.contentType];
   const key = companyKey(user.companyId, parsed.data.purpose, `${randomUUID()}.${ext}`);
 
+  // Sign first — generating a presigned URL has no side effect, so an over-quota
+  // request can be rejected after without leaking an upload URL.
+  let signed;
   try {
-    const signed = await getStorage().createUploadUrl({
-      key,
-      contentType: parsed.data.contentType,
-    });
-
-    // Record a reference in the File registry (metadata only, never bytes).
-    // Best-effort: a failure here must not block the upload.
-    try {
-      await db.file.create({
-        data: {
-          companyId: user.companyId,
-          key,
-          url: signed.publicUrl,
-          purpose: parsed.data.purpose,
-          mimeType: parsed.data.contentType,
-          size: parsed.data.size ?? 0,
-          uploadedById: session.user.id,
-        },
-      });
-    } catch (e) {
-      console.error('File registry insert failed (non-blocking)', e);
-    }
-
-    return NextResponse.json({ ok: true, ...signed });
+    signed = await getStorage().createUploadUrl({ key, contentType: parsed.data.contentType });
   } catch (err) {
     console.error('Presign upload failed', err);
     return NextResponse.json({ ok: false, reason: 'sign_failed' }, { status: 500 });
   }
+
+  // Atomic quota check + reservation + File registry row. Over quota → 403.
+  const reserved = await reserveAndRecordFile({
+    companyId: user.companyId,
+    key,
+    url: signed.publicUrl,
+    purpose: parsed.data.purpose,
+    mimeType: parsed.data.contentType,
+    size: parsed.data.size ?? 0,
+    uploadedById: session.user.id,
+  });
+
+  if (!reserved.ok) {
+    if (reserved.reason === 'quota_exceeded') {
+      return NextResponse.json(
+        {
+          ok: false,
+          reason: 'quota_exceeded',
+          message: 'Storage quota exceeded for your current plan. Please upgrade your storage ceiling.',
+          used: reserved.used,
+          limit: reserved.limit,
+        },
+        { status: 403 }
+      );
+    }
+    return NextResponse.json({ ok: false, reason: 'no_company' }, { status: 400 });
+  }
+
+  return NextResponse.json({ ok: true, ...signed });
 }

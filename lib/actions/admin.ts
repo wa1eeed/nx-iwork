@@ -77,6 +77,49 @@ export async function setCompanyStatus(companyId: string, status: CompanyStatus)
   }
 }
 
+const GB = 1073741824;
+
+// Set a plan's storage ceiling (admin enters GB). Applies to every tenant on that
+// plan that has no per-tenant override.
+export async function setPlanStorage(tier: PlanTier, gb: number): Promise<AdminResult> {
+  const admin = await requireSuperAdmin();
+  if (!admin.ok) return { ok: false, error: 'forbidden' };
+  if (!VALID_TIERS.includes(tier) || !Number.isFinite(gb) || gb < 0 || gb > 100000) {
+    return { ok: false, error: 'invalid' };
+  }
+  try {
+    await db.plan.update({ where: { tier }, data: { maxStorageBytes: BigInt(Math.round(gb * GB)) } });
+    await audit(admin.userId, 'admin.plan.storage', null, { tier, gb });
+    revalidatePath('/admin/plans');
+    return { ok: true };
+  } catch (err) {
+    console.error('setPlanStorage failed', err);
+    return { ok: false, error: 'generic' };
+  }
+}
+
+// Override one tenant's storage ceiling (GB). null clears it → back to the plan
+// default. This is how a premium customer gets a bigger ceiling, no code change.
+export async function setCompanyStorageLimit(companyId: string, gb: number | null): Promise<AdminResult> {
+  const admin = await requireSuperAdmin();
+  if (!admin.ok) return { ok: false, error: 'forbidden' };
+  let bytes: bigint | null = null;
+  if (gb != null) {
+    if (!Number.isFinite(gb) || gb < 0 || gb > 100000) return { ok: false, error: 'invalid' };
+    bytes = BigInt(Math.round(gb * GB));
+  }
+  try {
+    await db.company.update({ where: { id: companyId }, data: { storageLimitBytes: bytes } });
+    await audit(admin.userId, 'admin.company.storage', companyId, { gb });
+    revalidatePath(`/admin/companies/${companyId}`);
+    revalidatePath('/admin/plans');
+    return { ok: true };
+  } catch (err) {
+    console.error('setCompanyStorageLimit failed', err);
+    return { ok: false, error: 'generic' };
+  }
+}
+
 export interface PlatformSettingsInput {
   siteName: string;
   signupEnabled: boolean;

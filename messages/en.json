@@ -779,7 +779,19 @@
     "title": "Platform admin",
     "subtitle": "Manage every company, plan, and credit across NX iWork.",
     "panel": "Admin panel",
-    "nav": { "overview": "Overview", "companies": "Companies", "services": "Marketplace", "settings": "Platform" },
+    "nav": { "overview": "Overview", "companies": "Companies", "services": "Marketplace", "plans": "Plans & storage", "settings": "Platform" },
+    "plans": {
+      "title": "Plans & storage",
+      "subtitle": "Per-plan storage ceilings and ecosystem usage.",
+      "planCeilings": "Storage ceiling per plan",
+      "ceilingHelp": "Applies to every tenant on that plan without a per-tenant override.",
+      "save": "Save",
+      "saved": "Saved",
+      "saveError": "Couldn't save. Try again.",
+      "usage": "Storage usage",
+      "totalUsed": "Total used",
+      "noUsage": "No storage used yet."
+    },
     "overview": {
       "companies": "Companies",
       "agents": "AI employees",
@@ -847,6 +859,9 @@
       "toppedUp": "Credits added.",
       "planChanged": "Plan updated.",
       "statusChanged": "Status updated.",
+      "storageOverride": "Storage override (GB)",
+      "storageSaved": "Storage limit updated.",
+      "storageClear": "reset to plan",
       "failed": "Action failed."
     },
     "status": {
