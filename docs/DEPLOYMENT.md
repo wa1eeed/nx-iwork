@@ -2,6 +2,12 @@
 
 > دليل النشر على Coolify خطوة بخطوة، مع دعم النموذجين (SaaS + Single-Tenant).
 
+> ⚠️ **المصادر المرجعية (canonical):** للأحدث دائماً اعتمد
+> [`../README.md`](../README.md) (التشغيل السريع + متغيّرات البيئة)،
+> [`AI_VERTEX.md`](./AI_VERTEX.md) (الذكاء/embeddings عبر **Vertex** — لا Voyage)،
+> و[`INFRA.md`](./INFRA.md) (CDN/التوسّع). المدفوعات الآن عبر **Tap** (لا Moyasar)،
+> والنطاق الحي **bznss.one**. بعض التفاصيل أدناه تاريخية.
+
 ---
 
 ## 📋 المتطلبات
@@ -58,15 +64,21 @@ NEXT_PUBLIC_APP_NAME=NX iWork
 
 # Email (Resend)
 RESEND_API_KEY=re_...
-EMAIL_FROM=noreply@nx.sa
+EMAIL_FROM=noreply@bznss.one
 
-# Embeddings (Voyage AI - cheap)
-VOYAGE_API_KEY=...
+# AI + embeddings: Google Vertex (keyless ADC) — see AI_VERTEX.md
+GCP_PROJECT_ID=...
+GOOGLE_APPLICATION_CREDENTIALS_JSON=<ADC JSON>
 
-# Optional: SaaS billing (later)
-# MOYASAR_PUBLIC_KEY=
-# MOYASAR_SECRET_KEY=
+# Payments (wallet top-ups + subscriptions): Tap.company
+# TAP_SECRET_KEY=sk_test_...
+
+# Super admin bootstrap (see ADMIN.md)
+# ADMIN_EMAIL=waleed@nx.sa
+# ADMIN_PASSWORD=...
 ```
+
+> The full, current env reference lives in [`.env.example`](../.env.example).
 
 ### خطوة 4: Domains
 
