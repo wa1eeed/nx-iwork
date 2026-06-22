@@ -6,7 +6,6 @@ import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import { Wallet, Plus, Coins, ArrowDownLeft, ArrowUpRight, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { startWalletTopUp, buyTokenCredits } from '@/lib/actions/wallet';
 import { formatSar, formatNumber, formatDateTime } from '@/lib/format';
@@ -87,39 +86,41 @@ export function WalletClient({
         </div>
         <CardContent className="space-y-4 pt-5">
           <p className="text-sm font-medium">{t('topUp')}</p>
-          <div className="flex flex-wrap gap-2">
-            {TOPUP_PRESETS.map((p) => (
-              <button
-                key={p}
-                type="button"
-                onClick={() => setAmount(p)}
-                className={`rounded-full border px-4 py-1.5 text-sm font-medium transition-colors ${
-                  amount === p
-                    ? 'border-primary bg-gradient-brand-soft text-primary'
-                    : 'text-muted-foreground hover:bg-accent'
-                }`}
-              >
-                {money(p)}
-              </button>
-            ))}
+
+          {/* Choose an amount — selection only */}
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {TOPUP_PRESETS.map((p) => {
+              const active = amount === p;
+              return (
+                <button
+                  key={p}
+                  type="button"
+                  onClick={() => setAmount(p)}
+                  aria-pressed={active}
+                  className={`flex items-center justify-center rounded-xl border px-2 py-3 text-sm font-semibold tabular-nums transition-colors ${
+                    active
+                      ? 'border-primary bg-gradient-brand-soft text-primary shadow-glow'
+                      : 'hover:bg-accent'
+                  }`}
+                >
+                  {money(p)}
+                </button>
+              );
+            })}
           </div>
-          <div className="flex items-end gap-2">
-            <div className="flex-1 space-y-1">
-              <label className="text-xs text-muted-foreground">{t('customAmount')}</label>
-              <Input
-                type="number"
-                min={10}
-                max={50000}
-                value={amount}
-                onChange={(e) => setAmount(Number(e.target.value))}
-                dir="ltr"
-              />
+
+          {/* Total + top up */}
+          <div className="flex items-center justify-between border-t pt-3">
+            <div>
+              <p className="text-xs text-muted-foreground">{t('youPay')}</p>
+              <p className="text-lg font-semibold tabular-nums">{money(amount)}</p>
             </div>
-            <Button onClick={onTopUp} disabled={toppingUp || amount < 10}>
+            <Button onClick={onTopUp} disabled={toppingUp}>
               <Plus className="me-1 size-4" />
               {toppingUp ? t('redirecting') : t('topUpCta')}
             </Button>
           </div>
+
           {!tapConfigured && (
             <p className="rounded-lg border bg-muted/30 p-2 text-xs text-muted-foreground">
               {t('topUpUnavailable')}
