@@ -31,6 +31,14 @@ export interface StorageProvider {
     expiresIn?: number;
   }): Promise<PresignedUpload>;
 
+  /** Server-side upload of a buffer straight to the bucket (e.g. after sharp
+   *  compression, where the bytes must pass through the server briefly). */
+  put(
+    key: string,
+    body: Buffer | Uint8Array,
+    contentType: string
+  ): Promise<{ key: string; publicUrl: string }>;
+
   /** Presigned GET for private objects (default 300s). */
   createDownloadUrl(key: string, expiresIn?: number): Promise<string>;
 

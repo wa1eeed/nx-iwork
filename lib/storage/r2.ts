@@ -47,6 +47,13 @@ export function createR2Provider(config: R2Config): StorageProvider {
       return { uploadUrl, key, publicUrl: publicUrl(key), contentType };
     },
 
+    async put(key, body, contentType): Promise<{ key: string; publicUrl: string }> {
+      await client.send(
+        new PutObjectCommand({ Bucket: config.bucket, Key: key, Body: body, ContentType: contentType })
+      );
+      return { key, publicUrl: publicUrl(key) };
+    },
+
     async createDownloadUrl(key, expiresIn = 300): Promise<string> {
       const command = new GetObjectCommand({ Bucket: config.bucket, Key: key });
       return getSignedUrl(client, command, { expiresIn });

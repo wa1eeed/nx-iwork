@@ -7,6 +7,26 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-06-22 — Storage: quota + compression + docs structure
+
+### Added
+- **Multi-tenant storage quota.** `Plan.maxStorageBytes` (5/10/20 GB per tier) +
+  `Company.storageUsedBytes` / `storageLimitBytes` (per-tenant override).
+  `lib/storage/quota.ts`: atomic reserve (over-quota → HTTP 403 with an upgrade
+  message) + release on delete. Admin `/admin/plans` (per-plan ceilings +
+  ecosystem telemetry) and a per-tenant override on the company page.
+- **`File` registry** (metadata, never bytes) written on every upload, with RLS.
+- **Server-side image compression (sharp).** `app/api/uploads/image` → WebP q80,
+  ≤1200px, graceful fallback to the original on failure. `lib/storage/image.ts`.
+- **Documentation structure** brought to the international standard: `docs/README.md`
+  (index), `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`, `docs/STORAGE.md`; fixed
+  the stale BYOK decision (managed-Vertex-first) and stale `DEPLOYMENT.md` facts.
+
+### Migrations
+`20260622120000_tenant_files`, `20260622130000_storage_quota`.
+
+---
+
 ## 2026-06-22 — Opportunities (CRM revamp) + Subscription
 
 ### Added — CRM (Zoho-style opportunities)

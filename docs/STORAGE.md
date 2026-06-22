@@ -69,6 +69,28 @@ a full private-document flow (private bucket + signed-download-only + per-file
 access checks) is **not wired yet** — current uploads are public assets (logos,
 product images).
 
+## Image compression (sharp)
+
+Images are compressed **server-side** before they reach R2 (the bytes pass
+through the server only for this momentary pass — the one deliberate exception to
+the direct-presigned rule). Route: `app/api/uploads/image` (`runtime = 'nodejs'`),
+logic in `lib/storage/image.ts`:
+
+1. **WebP** — every image is converted to `image/webp`.
+2. **Quality 80** — keeps text legible for Gemini OCR while cutting size to a few
+   hundred KB.
+3. **Resize ≤ 1200px** width (`withoutEnlargement`) — never process oversized
+   resolutions; EXIF orientation is honored (`.rotate()`).
+4. **Graceful fallback** — any sharp failure logs explicitly and uploads the
+   **original** bytes, so a bad/odd image never blocks an upload. Non-images
+   (PDF) pass through untouched.
+
+Flow: compress → quota pre-check → `getStorage().put()` (server-side) → atomic
+`reserveAndRecordFile` (on quota race / DB error the just-written object is
+deleted). The `ImageUpload` component POSTs multipart to this route. The presigned
+`/sign` route remains for direct (non-compressed) uploads. `sharp` is a direct
+dependency; the Docker `node:20-alpine` image ships its musl binary.
+
 ## Comparison vs the global standard
 
 | Dimension | Global standard | NX iWork (as built) |

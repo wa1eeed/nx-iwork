@@ -24,35 +24,27 @@ export function ImageUpload({
   const [uploading, setUploading] = useState(false);
 
   async function uploadOne(file: File): Promise<string | null> {
-    const signRes = await fetch('/api/uploads/sign', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ contentType: file.type, purpose, size: file.size }),
-    });
-    const signed = await signRes.json();
-    if (!signed.ok) {
-      if (signed.reason === 'storage_not_configured') {
+    // Server compresses (WebP q80, ≤1200px) then stores in R2.
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('purpose', purpose);
+    const res = await fetch('/api/uploads/image', { method: 'POST', body: fd });
+    const data = await res.json().catch(() => ({ ok: false }));
+    if (!data.ok) {
+      if (data.reason === 'storage_not_configured') {
         toast.error('التخزين غير مُهيأ بعد (R2). راجع الإعدادات.');
-      } else if (signed.reason === 'unsupported_type') {
+      } else if (data.reason === 'unsupported_type') {
         toast.error('نوع الملف غير مدعوم. استخدم PNG/JPG/WebP/GIF.');
-      } else if (signed.reason === 'quota_exceeded') {
+      } else if (data.reason === 'quota_exceeded') {
         toast.error('تجاوزت سعة التخزين في باقتك. رقّي باقتك أو اشترِ مساحة إضافية من الخدمات.');
+      } else if (data.reason === 'too_large') {
+        toast.error('حجم الملف كبير جداً (الحد 25MB).');
       } else {
-        toast.error('تعذّر تجهيز الرفع.');
+        toast.error('تعذّر رفع الصورة.');
       }
       return null;
     }
-
-    const put = await fetch(signed.uploadUrl, {
-      method: 'PUT',
-      headers: { 'content-type': file.type },
-      body: file,
-    });
-    if (!put.ok) {
-      toast.error('فشل رفع الصورة.');
-      return null;
-    }
-    return signed.publicUrl as string;
+    return data.publicUrl as string;
   }
 
   async function onPick(e: React.ChangeEvent<HTMLInputElement>) {
