@@ -3,12 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { LayoutDashboard, Building2, SlidersHorizontal, type LucideIcon } from 'lucide-react';
+import { LayoutDashboard, Building2, Store, SlidersHorizontal, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const ITEMS: { href: string; key: string; icon: LucideIcon; exact?: boolean }[] = [
   { href: '/admin', key: 'overview', icon: LayoutDashboard, exact: true },
   { href: '/admin/companies', key: 'companies', icon: Building2 },
+  { href: '/admin/services', key: 'services', icon: Store },
   { href: '/admin/settings', key: 'settings', icon: SlidersHorizontal },
 ];
 

@@ -20,10 +20,14 @@ Decided 2026-06-21. Three phases:
    debits the wallet and credits `Company.tokenBalance` atomically at the
    admin-set `PlatformSettings.tokenPricePerMillion`. **Pending:** set live
    `TAP_SECRET_KEY` in the host env to enable real charges (test keys work now).
-3. **Services marketplace (internal add-ons) — NEXT.** New platform-service model
-   (distinct from the tenant `Service`); admin adds offerings with price + active;
-   customer "Services" page lists them and buys with the wallet. Activation /
-   plugins / add-ons deferred to a later phase.
+3. **Services marketplace (internal add-ons) — DONE (structure).** New
+   `MarketplaceService` + `ServicePurchase` models (distinct from the tenant
+   `Service`). Admin CRUD at `/admin/services` (title/desc EN+AR, price, icon,
+   category, active, sort). Customer `/services` page lists active offerings and
+   buys with the wallet (atomic debit + ledger + purchase record;
+   `lib/marketplace.ts`). Additive migration 20260621140000_marketplace.
+   **Deferred (later phase):** activation logic, plugins/add-ons that actually
+   change platform behavior, recurring/subscription services.
 
 
 ### Infrastructure migration → Google Cloud Run (DECIDED) — strategic

@@ -227,6 +227,7 @@
     "customers": "Customers",
     "orders": "Orders",
     "wallet": "Wallet",
+    "services": "Services",
     "sections": {
       "workspace": "Workspace",
       "team": "Team",
@@ -269,6 +270,22 @@
       "REFUND": "Refund",
       "ADJUSTMENT": "Adjustment"
     }
+  },
+  "services": {
+    "title": "Services & add-ons",
+    "subtitle": "Extend your workspace with services from the marketplace, paid from your wallet.",
+    "unavailable": "Services are unavailable for this account.",
+    "walletBalance": "Wallet balance",
+    "topUp": "Top up",
+    "empty": "No services available yet.",
+    "free": "Free",
+    "owned": "Owned",
+    "buy": "Buy",
+    "processing": "Processing…",
+    "topUpFirst": "Top up first",
+    "purchased": "Purchased — thank you!",
+    "insufficient": "Not enough wallet balance — top up first.",
+    "genericError": "Something went wrong. Please try again."
   },
   "overview": {
     "greeting": "Hi, {name}",
@@ -707,7 +724,7 @@
     "title": "Platform admin",
     "subtitle": "Manage every company, plan, and credit across NX iWork.",
     "panel": "Admin panel",
-    "nav": { "overview": "Overview", "companies": "Companies", "settings": "Platform" },
+    "nav": { "overview": "Overview", "companies": "Companies", "services": "Marketplace", "settings": "Platform" },
     "overview": {
       "companies": "Companies",
       "agents": "AI employees",
@@ -715,6 +732,34 @@
       "tokens": "Total credits",
       "byStatus": "Companies by status",
       "recent": "Newest companies"
+    },
+    "services": {
+      "title": "Marketplace",
+      "subtitle": "Services and add-ons customers can buy with their wallet.",
+      "add": "Add service",
+      "edit": "Edit service",
+      "empty": "No services yet. Add the first one.",
+      "free": "Free",
+      "inactive": "hidden",
+      "saved": "Saved",
+      "saveError": "Couldn't save. Try again.",
+      "deleted": "Deleted",
+      "inUse": "This service has purchases — deactivate it instead of deleting.",
+      "confirmDelete": "Delete this service?",
+      "titleRequired": "A title is required.",
+      "cancel": "Cancel",
+      "save": "Save",
+      "delete": "Delete",
+      "fTitle": "Title (English)",
+      "fTitleAr": "Title (Arabic)",
+      "fDesc": "Description (English)",
+      "fDescAr": "Description (Arabic)",
+      "fPrice": "Price (SAR)",
+      "fCategory": "Category",
+      "fSort": "Sort order",
+      "fIcon": "Icon",
+      "fActive": "Visible to customers",
+      "purchasesCount": "{n} purchases"
     },
     "companies": {
       "title": "Companies",

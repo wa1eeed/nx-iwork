@@ -72,7 +72,8 @@ the env. Paths B/C never involve passwords. Then open `/admin` and sign in.
 | `/admin` | **Overview** — platform totals: companies, AI employees, tasks run, total token credits (sum of `Company.tokenBalance`), companies-by-status, newest companies. |
 | `/admin/companies` | **Companies** — searchable list (name / username) with plan, status, agent count, credits. |
 | `/admin/companies/[id]` | **Company detail** — usage (agents/tasks/customers/credits), owner, joined date, public-page link, **+ actions** (below). |
-| `/admin/settings` | **Platform settings** — global switches (below). |
+| `/admin/services` | **Marketplace** — CRUD the platform services/add-ons customers buy with their wallet (title/desc EN+AR, price, icon, category, active, sort). Sold services deactivate instead of delete (purchase history kept). |
+| `/admin/settings` | **Platform settings** — global switches + `tokenPricePerMillion` (wallet token-credit price). |
 
 ## Actions (server actions in `lib/actions/admin.ts`, all `requireSuperAdmin`-gated)
 

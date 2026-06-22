@@ -151,6 +151,7 @@ model Company {
   refCounters         RefCounter[]
   publicConversations PublicConversation[]
   wallet              Wallet?
+  servicePurchases    ServicePurchase[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1576,4 +1577,55 @@ enum WalletTxStatus {
   PENDING
   COMPLETED
   FAILED
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Marketplace — internal add-ons / services the PLATFORM sells to its customers
+// (the business owners), distinct from the tenant `Service` (which a business
+// sells to ITS customers). Admin-managed catalog; bought with the wallet.
+// Activation / plugins are a later phase — a purchase records the sale for now.
+// ─────────────────────────────────────────────────────────────────────────────
+model MarketplaceService {
+  id            String  @id @default(cuid())
+  title         String
+  titleAr       String?
+  description   String? @db.Text
+  descriptionAr String? @db.Text
+  price         Decimal @db.Decimal(10, 2)
+  icon          String  @default("package") // lucide icon name
+  category      String?
+  active        Boolean @default(true)
+  sortOrder     Int     @default(0)
+
+  purchases ServicePurchase[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([active])
+}
+
+model ServicePurchase {
+  id        String             @id @default(cuid())
+  companyId String
+  company   Company            @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   MarketplaceService @relation(fields: [serviceId], references: [id], onDelete: Restrict)
+
+  title      String // snapshot of the title at purchase time
+  pricePaid  Decimal               @db.Decimal(10, 2)
+  status     ServicePurchaseStatus @default(PURCHASED)
+  walletTxId String? // the WalletTransaction that paid for it
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([serviceId])
+}
+
+enum ServicePurchaseStatus {
+  PURCHASED // bought; activation handled in a later phase
+  ACTIVE
+  CANCELLED
 }
