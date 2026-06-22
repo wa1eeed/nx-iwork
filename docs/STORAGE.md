@@ -36,12 +36,29 @@ client ──(presigned PUT)──▶  Cloudflare R2 bucket
 - **CDN:** the public bucket is served via a Cloudflare custom domain
   (`R2_PUBLIC_BASE_URL`, e.g. `cdn.bznss.one`) → edge-cached, zero egress.
 
-## 2) The identity → metadata
+## 2) The identity → the database (the hybrid rule)
 
-Each upload returns `{ key, publicUrl, contentType }`. Today the **public URL /
-key is persisted as a string on the owning record** (e.g. `Product.images[]`,
-`Company.logo`). This works and is tenant-isolated by the key prefix, but there is
-**no central files table** yet (see Gaps).
+The DB stays **light** because it never holds file bytes — only the **reference**:
+
+- **File body** → R2 (image, PDF, …).
+- **URL/key** → a plain **text** column on the owning record. Verified examples:
+  `Company.logo`, `Company.logoUrl`, `User.image`, `Product.images String[]`,
+  `Invoice.pdfUrl` — all `String`/`String[]`. The bytes are never in Postgres
+  (no `bytea`/Buffer/base64 anywhere in the schema — checked).
+
+### The one exception: AI embeddings (pgvector)
+
+The only thing we store **deep** in the DB is the numeric **vectors** Gemini
+produces from a tenant's knowledge text — because they're math, not files, and the
+agent compares them by similarity for fast retrieval:
+
+- `AgentMemory.embedding Unsupported("vector(1536)")` (pgvector, HNSW index).
+- `lib/agent/memory.ts`: `getEmbedding(summary)` → stored as `::vector`. We embed
+  the **text summary**; the **original uploaded file stays in R2**.
+
+So: Postgres holds tiny references + vectors and stays MB-sized; the actual files
+live in R2 (effectively unlimited, zero-egress). This is the exact hybrid the
+global platforms use.
 
 ## 3) Private files & temporary signed links
 
@@ -62,19 +79,24 @@ product images).
 | Portability | Vendor-swappable | ✅ S3-compatible interface |
 | CDN delivery | Edge-cached | ✅ R2 public domain on Cloudflare |
 | Upload security | Auth + type/size limits | ✅ Auth + type allowlist · ⚠️ no server-side size cap |
-| File metadata (uuid/size/mime) | Central `tenant_files` table | ❌ Not yet — URLs stored inline on records |
+| Body vs DB | URL reference in DB, bytes in store | ✅ URL as text; **no bytes in Postgres** |
+| AI embeddings | Vectors in DB, file in store | ✅ `vector(1536)` in pgvector; file in R2 |
+| File metadata (uuid/size/mime) | Optional central `tenant_files` table | ➖ Not yet — fine without it; useful for audit/quota |
 | Private files | Private bucket + signed-only + access control | ⚠️ Capability present; flow not wired |
 
-**Verdict:** the core architecture (decoupling, R2, per-tenant isolation, presigned
-direct uploads, provider portability, CDN) is **in place and competitive**. Three
-gaps remain (below).
+**Verdict:** the core architecture — the **hybrid rule** (file → R2, URL → text,
+vectors → pgvector, **zero bytes in the DB**), per-tenant isolation, presigned
+direct uploads, provider portability, CDN — is **fully in place and competitive**.
+A central files table is an **optional** enhancement (it stores references +
+metadata, never bytes, so the DB stays light); private files + a size cap remain.
 
 ## Gaps / roadmap
 
-1. **Central `tenant_files` metadata table** — `File { id, companyId, key, url,
-   purpose, mime, size, uploadedById, createdAt }`, with RLS on `companyId` and a
-   relation from records to files. Enables audit, quota, orphan cleanup, and
-   listing a tenant's files.
+1. **(Optional) central `tenant_files` metadata table** — `File { id, companyId,
+   key, url, purpose, mime, size, uploadedById, createdAt }`, RLS on `companyId`.
+   Stores **references + metadata only, never bytes** — the DB stays light. Not
+   required for correctness (URL-as-text already works); it adds audit, quota,
+   orphan cleanup, and per-tenant file listing.
 2. **Private / confidential files** — a private bucket (or private prefix), served
    only via short-lived `createDownloadUrl`, with a per-file access check. For
    customer documents / financial reports.
