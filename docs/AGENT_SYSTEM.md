@@ -18,6 +18,23 @@
 
 ---
 
+## ⚖️ العقد ثنائي الطبقة (قانون تصميم الوكلاء)
+
+- **النظام** (كود حتمي داخل الوورك فلو) يملك المعاملات: الفواتير، الحجوزات، الطلبات،
+  سجلات CRM — برمجياً وبموثوقية عالية.
+- **الوكلاء** يؤدّون العمل الإنساني: الحكم، التواصل باللغة الطبيعية (مع العملاء وفيما
+  بينهم)، الغموض، المبادرة، التنسيق بين الأقسام. الوكيل يُدرِك حالة النظام، يقرّر ضمن
+  السياسة، يتواصل، و**يشغّل** الوورك فلو — ولا «يسجّل الفاتورة» بنفسه (النظام يفعل ذلك).
+
+**اتجاه معمارية الوكلاء (مخطّط — لم يُبنَ بعد):** المرحلة 1 = دستور **Job Description**
+(يحكم الوكيل، منفصل عن `persona`) + مصفوفة صلاحيات on/off **عبر الأقسام** فوق البوّابة
+الصارمة `getToolsForAgent` + «اختبار الجدوى» في واجهة الإنشاء. المرحلة 2 = نظام **Skills**
+قابل للتركيب. المرحلة 3 = **تنسيق** (ناقل أحداث داخلي + `delegate_to_agent` /
+`request_from_agent` / `depends_on`). المرحلة 4 = مركز عمليات (تقويم حجوزات + تقويم مهام
+الوكلاء + صفحة تتبّع). راجع [`ROADMAP.md`](./ROADMAP.md).
+
+---
+
 ## 🏗️ Architecture الكامل
 
 ```
@@ -38,8 +55,9 @@
 > (`run.ts`) وتنفيذ المهام (`task.ts`). الأدوات المُنفَّذة: `search_catalog`, `find_customer`,
 > `create_lead`, `update_lead`, `create_task`, `save_memory` (`lib/agent/tools.ts`).
 > الجدولة عبر `lib/agent/scheduler.ts` + worker `scripts/scheduler.ts`. الذاكرة الدلالية
-> عبر `lib/agent/memory.ts` (pgvector). **n8n أدناه اختياري/لاحق** — الأدوات الأساسية
-> داخلية ومباشرة، لا تعتمد على n8n.
+> عبر `lib/agent/memory.ts` (pgvector). الأدوات كلها **داخلية ومباشرة** عبر
+> function-calling، مبوّبة بـ `getToolsForAgent` (module ∩ `permissions`) — لا اعتماد على
+> تكاملات خارجية.
 
 ---
 
@@ -64,8 +82,8 @@
 - **Latency:** حسب الجدول
 
 ### 4. Webhook Trigger
-- n8n نبّهه (مثلاً: عميل جديد سجّل من Form)
-- نظام خارجي أرسل event
+- نظام خارجي أرسل event (مثلاً: عميل جديد سجّل من Form)
+- تكامل خارجي عبر الـ API العام (مخطّط)
 - **Latency:** فوري
 
 ### 5. Inter-Agent Trigger
@@ -235,12 +253,13 @@ const tools = [
       options: { type: "array", items: { type: "string" } }
     }}
   },
+  // planned (orchestration phase): hand a sub-task to another department's agent
   {
-    name: "call_n8n_workflow",
-    description: "Trigger an n8n workflow for external actions",
+    name: "delegate_to_agent",
+    description: "Delegate a sub-task to another agent (planned)",
     input_schema: { type: "object", properties: {
-      workflowId: { type: "string" },
-      payload: { type: "object" }
+      agentId: { type: "string" },
+      task: { type: "string" }
     }}
   },
   {
@@ -322,8 +341,8 @@ async function executeTool(toolName: string, input: any) {
     case 'request_approval':
       return await createApproval(input);
       
-    case 'call_n8n_workflow':
-      return await callN8nWorkflow(input.workflowId, input.payload);
+    case 'delegate_to_agent': // planned (orchestration phase)
+      return await delegateToAgent(input.agentId, input.task);
       
     case 'save_memory':
       return await saveSemanticMemory(input);
@@ -493,12 +512,12 @@ const persona = {
 **التطبيق:** يضاف لـ system prompt كنص تعليمي
 
 ### Tools (التنفيذ)
-**ما هي:** قدرات تنفيذية فعلية (API calls, DB queries, n8n)
+**ما هي:** أدوات **داخلية** عبر function-calling، مبوّبة بـ `getToolsForAgent` (module ∩ `permissions`) — بوّابة صارمة: النموذج لا يصل لأداة لم تُسلَّم له.
 
-**أمثلة:**
-- `send_email` - يرسل إيميل عبر Resend
-- `post_to_instagram` - ينشر على انستقرام (n8n)
-- `create_invoice` - ينشئ فاتورة
+**أمثلة (مُنفَّذة):**
+- `search_catalog` · `find_customer` · `create_lead` / `update_lead` · `create_task` · `save_memory`
+
+> قدرات إضافية (نشر سوشيال ميديا، تكاملات خارجية) تأتي عبر **نظام Skills المخطّط**، لا عبر n8n (أُلغي).
 
 **التطبيق:** يضاف للـ tools array في Claude API call
 
@@ -530,8 +549,8 @@ const persona = {
 **الحل:** Save state, retry with exponential backoff
 **العرض:** Tab "فشل" مع reason + retry button
 
-### 2. External Tool Failed (n8n down)
-**الكشف:** webhook timeout / 5xx
+### 2. External Tool Failed
+**الكشف:** external API/integration timeout / 5xx
 **الحل:** Mark task as failed, suggest alternative
 **العرض:** Tab "فشل" مع reason
 

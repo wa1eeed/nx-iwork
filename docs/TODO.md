@@ -5,6 +5,29 @@ Tracked follow-ups beyond the current build. Newest first.
 
 ## 🔜 Planned
 
+### 🎯 Multi-agent architecture (the headline) — phased
+The next major build. Make every department's AI employee worthwhile alongside the
+deterministic workflow — the **two-layer contract**: the system owns transactions
+(invoices/bookings/orders/CRM records) programmatically; agents do the human work
+(judgment, communication, coordination) and *trigger* workflows.
+- **Phase 1 — Job Spec:** a Job Description "constitution" (`Agent.jobDescription`,
+  distinct from `persona`) + a granular **per-department permission matrix** over the
+  existing `getToolsForAgent` hard gate + a **"justification test"** in the creation UX
+  (deterministic responsibility → workflow; judgment responsibility → agent).
+- **Phase 2 — Skills:** a composable skills system (OpenClaw-class, more organized).
+- **Phase 3 — Orchestration:** internal event bus + `delegate_to_agent` /
+  `request_from_agent` / `depends_on`, autonomous via the scheduler.
+- **Phase 4 — Ops command center:** bookings calendar + agent scheduled-task calendar +
+  task-tracking page. See `docs/AGENT_SYSTEM.md`.
+
+### ✅ Shipped this session (2026-07-08)
+- **Three environments** via `APP_ENV` (`lib/env.ts`, dev/staging/prod) + boot
+  guardrails · **Sentry** (no-op without DSN) · **`GET /api/health`**.
+- **Per-tenant email (Resend)** — central account + per-tenant sender
+  (name/reply-to/marketing gate); wired welcome + order confirmation.
+  `lib/notifications/tenant-email.ts`. **Pending (pro tier):** verified custom sending
+  domain, billing receipts.
+
 ### Customer-facing arc: mobile dashboard + wallet + services marketplace
 Decided 2026-06-21. Three phases:
 1. **Mobile dashboard redesign — DONE.** Phone-first chrome: a swipeable
@@ -117,7 +140,7 @@ seeded; editing still needs UI).
 ### Other
 - Bookings module: interactive calendar + business-hours/availability + manual create.
 - Per-trigger conditions (e.g. cart-value thresholds in `abandoned_cart` scenarios).
-- Observability: Sentry integration.
+- Email pro tier: verified custom sending domain (Resend Domains API) + billing receipts.
 - Public API v1 (API keys per company) for third-party integrations.
 - Security hardening: rate limiting (shared store), 2FA for admin.
 - Replace prod GCP `Owner` grant with least-privilege `Vertex AI User`.

@@ -33,7 +33,7 @@ editing env + redeploy re-applies (Coolify runs `node server.js`, which fires th
 boot hook).
 ```bash
 # .env / Coolify env — set both
-ADMIN_EMAIL="waleed@nx.sa"
+ADMIN_EMAIL="admin@bznss.one"
 ADMIN_PASSWORD="set-a-strong-password"
 # ADMIN_NAME="Administrator"      # optional, default "Administrator"
 ```

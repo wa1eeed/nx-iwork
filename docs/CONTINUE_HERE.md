@@ -6,7 +6,7 @@
 > `docs/ADMIN.md`; infra/CDN/Cloud-Run in `docs/INFRA.md`; file storage in
 > `docs/STORAGE.md`.
 
-**Last updated:** 2026-06-22
+**Last updated:** 2026-07-08
 **Live:** https://bznss.one/ · repo `github.com/wa1eeed/nx-iwork`
 **Deploy:** `git push origin HEAD:main` → Coolify builds & runs
 `prisma migrate deploy && node server.js`. **`main` is the deploy branch**, not
@@ -68,31 +68,45 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
 18. **Admin from env** (`ADMIN_EMAIL`/`ADMIN_PASSWORD`) + docs restructure
     (`docs/README.md` index, `CONTRIBUTING.md`, `SECURITY.md`, `LICENSE`).
 
+### Then this session (2026-07-08), committed on `release/full-platform`
+19. **Env-aware three environments** — `APP_ENV` (development/staging/production) in
+    `lib/env.ts`; `NODE_ENV` can't separate staging from prod. Boot guardrails warn on
+    test/live payment-key mismatch + missing critical integrations. **Sentry**
+    (server/edge/client, no-op without a DSN, tagged by `APP_ENV`) + **`GET /api/health`**
+    (public DB probe, no secrets).
+20. **Professional per-tenant email (Resend)** — central account sending from the
+    platform domain + per-tenant sender (`BusinessSettings.emailSenderName`/
+    `emailReplyTo`/`marketingEmailsEnabled`; Settings → Email tab).
+    `lib/notifications/tenant-email.ts` (`sendPlatformEmail` / `sendTenantEmail`, marketing
+    gated + List-Unsubscribe). Wired: **welcome on signup** + **order confirmation**
+    (tenant sender, localized to the storefront language); public order form captures email.
+
 ---
 
 ## 🔜 Next up (resume here, in priority order)
 
-1. **Deep-component i18n (English-primary)** — the remaining translation long-tail:
-   `order-manager`, `product-form`, `faq-manager`, `trigger-manager`, `task-manager`,
-   `department-manager`, `modules-manager`, the **dashboard chat**, the **agent
-   create/edit deep fields**, and the **public landing page** (`app/(public)/[slug]`).
-   Pattern is established: extract Arabic → `messages/{en,ar}.json` namespaces →
-   `useTranslations`/`getTranslations`. (Tracked task; this is the only redesign item left.)
-2. **Fully enforce RLS** — adopt `withTenant()` (`lib/db-tenant.ts`) across tenant
-   queries, then tighten the policy (drop the permissive `IS NULL` fallback). Today
-   only the HR hire flow pins the tenant. See gotchas.
-3. **`CART_ABANDONED` source** — the event + scenarios exist, but nothing dispatches
-   it yet (no cart/checkout-intent model). Add a cart/checkout-intent capture (or an
-   external integration) that calls `dispatchEvent(companyId, 'CART_ABANDONED', …)`.
-4. **Google Cloud Run migration** (decided target) — prep: Cloud Scheduler →
-   `/api/cron/run`, Redis for rate-limit/queue, Cloud SQL + PgBouncer, Secret
-   Manager + least-privilege Vertex SA. Do **Cloudflare CDN** now. See `docs/INFRA.md`.
-5. **Admin Phase 2** (`docs/ADMIN.md`): impersonate-for-support · audit-log viewer ·
-   usage/revenue charts · DB plan-catalog editor · maintenance-mode wiring · 2FA.
-6. **Storage follow-ups** (`docs/STORAGE.md`): private/confidential files · server-side
-   size cap (presigned POST) · orphan-cleanup/reconcile job.
-7. **Then the standing backlog** (`docs/TODO.md`): Sentry · Public API v1 ·
-   bookings calendar · recurring-subscription auto-renew.
+1. **🎯 Multi-agent architecture — Phase 1 (the headline).** Job Description
+   "constitution" (`Agent.jobDescription`, distinct from `persona`) + a granular
+   **per-department permission matrix** over the existing `getToolsForAgent` hard gate +
+   a **"justification test"** in the agent-creation UX (deterministic responsibility →
+   workflow; judgment responsibility → agent). Then Phase 2 **Skills**, Phase 3
+   **orchestration** (internal event bus + `delegate_to_agent`/`request_from_agent`/
+   `depends_on`), Phase 4 **ops command center**. Guiding law: the two-layer contract
+   (system = deterministic transactions; agents = the human/judgment work). See
+   `docs/AGENT_SYSTEM.md`.
+2. **Tap subscription auto-renewal** — recurring charge + webhook idempotency +
+   dunning/retry on failure + receipt email.
+3. **Deep-component i18n (English-primary)** — the remaining translation long-tail
+   (`order-manager`, `product-form`, `faq/trigger/task/department/modules` managers, the
+   dashboard chat, agent create/edit deep fields, the public landing page).
+4. **Fully enforce RLS** — adopt `withTenant()` (`lib/db-tenant.ts`) across tenant
+   queries, then drop the permissive `IS NULL` fallback. Today only the HR hire flow pins
+   the tenant. See gotchas.
+5. **Email pro tier** — verified custom sending domain (Resend Domains API) + billing
+   receipts + per-recipient marketing suppression.
+6. **Then the backlog** (`docs/TODO.md`): `CART_ABANDONED` source · Admin Phase 2 ·
+   storage follow-ups (private files, presigned-POST size cap, orphan cleanup) · Public
+   API v1 · **Google Cloud Run migration** (`docs/INFRA.md`).
 
 ---
 

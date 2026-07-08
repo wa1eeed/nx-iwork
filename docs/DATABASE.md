@@ -115,11 +115,10 @@ const encrypted = encrypt(apiKey, process.env.ENCRYPTION_KEY);
 const decrypted = decrypt(stored, process.env.ENCRYPTION_KEY);
 ```
 
-### 3. Dual Mode (saas vs single_tenant)
+### 3. Multi-tenant SaaS (النموذج الحيّ)
 
-نفس الـ schema. الفرق في:
-- `Subscription`, `Invoice`, `Plan` - تستخدم في SaaS فقط
-- `Company` - في single-tenant، صف واحد فقط
+المنصة الحيّة **SaaS متعدّد المستأجرين**: عزل بيانات لكل شركة عبر `companyId` (+ RLS)،
+واشتراكات عبر `Subscription`/`Invoice`/`Plan`. (وضع single-tenant لم يعد مُنفَّذاً في الكود.)
 
 ### 4. Vector Memory
 
@@ -425,6 +424,10 @@ model AgentSkill {
   @@id([agentId, skillId])
 }
 
+// NOTE: Tool / AgentTool / ToolType are SCAFFOLDING and not wired at runtime.
+// The live agent tools are the INTERNAL function-calling tools gated by
+// getToolsForAgent (module ∩ Agent.permissions) in lib/agent/tools.ts. The
+// N8N_WORKFLOW enum value is a legacy scaffold; n8n is not used in the codebase.
 model Tool {
   id          String      @id @default(cuid())
   key         String      @unique
@@ -434,7 +437,7 @@ model Tool {
   type        ToolType    // CLAUDE_TOOL, N8N_WORKFLOW, INTERNAL_API
   schema      Json        // JSON schema للـ inputs
   
-  // For n8n
+  // For external webhook tools (scaffold; unused)
   webhookUrl  String?
   
   // For internal APIs
@@ -770,8 +773,7 @@ model Subscription {
   
   currentPeriodStart     DateTime
   currentPeriodEnd       DateTime
-  
-  // For single_tenant mode: ignored
+  // Auto-renewal (recurring Tap charge) is planned; today renewal is manual.
   
   invoices               Invoice[]
   
@@ -936,5 +938,18 @@ The customer-facing + storage arc:
   bodies are compressed (sharp → WebP) before R2. See `docs/STORAGE.md`.
 - **Admin from env** — `PlatformSettings.tokenPricePerMillion`; super-admin
   bootstrapped from `ADMIN_EMAIL`/`ADMIN_PASSWORD`.
+
+## 🆕 Schema additions (2026-07-08)
+
+- **Per-tenant email sender** — `BusinessSettings.emailSenderName`,
+  `emailReplyTo`, `marketingEmailsEnabled` (all mail sends through the central
+  Resend account from the platform domain; these brand the sender + gate
+  marketing). Public orders now capture `Order.customerEmail` / `Customer.email`.
+  See `lib/notifications/tenant-email.ts`.
+- **No schema change** for the multi-agent direction yet: the planned
+  `Agent.jobDescription` "constitution" + per-department permission matrix are
+  **not in the schema** — they arrive with Phase 1 (see `docs/AGENT_SYSTEM.md`).
+- **Env/observability** are code-only (no schema): `APP_ENV` three-environment
+  config (`lib/env.ts`), Sentry, and `GET /api/health`.
 
 Migrations: `20260621130000_wallet` … `20260622140000_storage_addon`.

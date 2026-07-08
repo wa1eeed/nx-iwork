@@ -5,6 +5,38 @@ All notable changes to NX iWork are documented here.
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 Versioning: [Semantic Versioning](https://semver.org/)
 
+> ⚠️ **This is a historical log — newest first.** Entries describe what shipped at
+> the time; some early decisions were later **superseded** (BYOK-first → managed
+> Vertex; Voyage → Gemini embeddings; `nx.sa`/subdomains → `bznss.one` path-based;
+> Next.js 15 → 16). For the **current** state and direction, see
+> [`docs/CONTINUE_HERE.md`](docs/CONTINUE_HERE.md) and [`docs/PROJECT.md`](docs/PROJECT.md).
+
+---
+
+## 2026-07-08 — Env-aware 3 environments + Sentry + per-tenant email
+
+### Added
+- **Three environments** via `APP_ENV` (`lib/env.ts`): development / staging /
+  production. `NODE_ENV` can't separate staging from prod, so `APP_ENV` drives
+  payment test/live keys, noindex, the Sentry tag, and log verbosity. Boot-time
+  guardrails warn on a test/live payment-key mismatch + missing critical integrations.
+- **Sentry** (`@sentry/nextjs`): server/edge/client init, no-op unless a DSN is set,
+  tagged by `APP_ENV`. `instrumentation` wires `register()` + `onRequestError`;
+  `next.config` wrapped (source-map upload only with a build token).
+- **`GET /api/health`** — public DB-round-trip probe (200/503, no secrets) for the
+  Coolify health check + uptime monitors. Boot logs a one-line env summary.
+- **Professional per-tenant email (Resend).** Central account sending from the
+  platform's verified domain + per-tenant sender (`BusinessSettings.emailSenderName`,
+  `emailReplyTo`, `marketingEmailsEnabled`; Settings → Email tab).
+  `lib/notifications/tenant-email.ts` (`sendPlatformEmail` / `sendTenantEmail`;
+  marketing gated + `List-Unsubscribe`). Wired: **welcome on signup** + **order
+  confirmation** to the customer (tenant sender, localized). Public order form now
+  captures an optional email (`Order.customerEmail` / `Customer.email`).
+
+### Changed
+- `.env.example` + `docs/*` realigned to the current direction (removed stale
+  Moyasar / n8n / single-tenant / `nx.sa` framing; managed-Vertex-first).
+
 ---
 
 ## 2026-06-22 — Storage: quota + compression + docs structure

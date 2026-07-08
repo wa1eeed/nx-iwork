@@ -57,13 +57,12 @@
 - Model tiers مجرّدة (Fast/Balanced/Advanced) تُترجم لمعرّف نموذج لكل مزوّد (`lib/ai/models.ts`)
 
 ### Integrations (طبقات محايدة معزولة — تطوير أي واحدة لا يلمس الباقي)
-- **Cloudflare R2** (تخزين S3-compatible، رفع presigned مباشر بلا مرور على الـ VPS) — `lib/storage/` ✅
-- **Resend** (إيميل) + **Twilio** (SMS) — `lib/notifications/` ✅
-- **Embeddings** (Google Gemini `gemini-embedding-001` @ 1536) للذاكرة الدلالية — `lib/ai/embeddings.ts` ✅
-- **Tap.company** (شحن المحفظة + دفع الاشتراكات بالبطاقة/Apple Pay) — ✅ مُنفّذ
-- **Sentry** (مراقبة وتتبّع أخطاء) — مخطّط
+- **Cloudflare R2** (تخزين S3-compatible، رفع presigned مباشر بلا مرور على الـ VPS، مبدأ هجين + كوتا + ضغط صور) — `lib/storage/` ✅
+- **Resend** (إيميل مركزي + **مُرسِل per-tenant**: اسم/reply-to/تسويق) + **Twilio** (SMS اختياري) + Telegram (تصعيد) — `lib/notifications/` ✅
+- **Embeddings** (Google Gemini `gemini-embedding-001` @ 1536، HNSW) للذاكرة الدلالية — `lib/ai/embeddings.ts` ✅
+- **Tap.company** (شحن المحفظة + دفع الاشتراكات بالبطاقة/Apple Pay) — ✅ مُنفّذ (التجديد التلقائي مخطّط)
+- **Sentry** (تتبّع أخطاء، موسوم بـ `APP_ENV`) + `GET /api/health` + **ثلاث بيئات** عبر `APP_ENV` (`lib/env.ts`) — ✅ مُنفّذ
 - **API عام v1** لتكامل أطراف ثالثة — مخطّط
-- n8n (workflows خارجية معقّدة) — اختياري/لاحق
 
 ### DevOps
 - Docker (multi-stage)
@@ -180,13 +179,13 @@
 4. **Wake Triggers** (events تنبّهه: مهمة، رسالة، schedule، webhook)
 
 ### قرار 4: Skills & Tools System
-**القرار:** كل موظف عنده Skills (capabilities) + Tools (executable)
-- Skills: فهم سياق محدد (مثلاً: "ZATCA Invoice")
-- Tools: قدرة تنفيذية (n8n workflow, API call, DB query)
+**القرار:** كل موظف عنده Tools (أدوات تنفيذية عبر function-calling) + Skills (قدرات قابلة للتركيب)
+- Tools: أدوات **داخلية مباشرة** (كتالوج، CRM، مهام، ذاكرة) مبوّبة عبر `getToolsForAgent` (module ∩ `permissions`) — والنموذج لا يصل لأي أداة لم تُسلَّم له (بوابة صارمة).
+- Skills: قدرات متخصّصة قابلة للتركيب — **نظام Skills مخطّط** (المرحلة 2 من معمارية الوكلاء).
 
-### قرار 5: n8n كذراع تنفيذي خارجي فقط
-**القرار:** n8n للـ workflows المعقدة (social media, emails, integrations)
-**ليش:** نخلي القلب في NX، n8n للأدوات الخارجية
+### قرار 5: العقد ثنائي الطبقة (النظام مقابل الوكلاء)
+**القرار:** **النظام** (كود حتمي داخل الوورك فلو) يملك المعاملات — الفواتير، الحجوزات، الطلبات، سجلات CRM — برمجياً وبموثوقية. و**الوكلاء** يؤدّون العمل الإنساني: الحكم، التواصل باللغة الطبيعية (مع العملاء وفيما بينهم)، الغموض، المبادرة، التنسيق بين الأقسام. الوكيل يُدرِك حالة النظام، يقرّر ضمن السياسة، يتواصل، و**يشغّل** الوورك فلو — ولا «يسجّل الفاتورة» بنفسه (النظام يفعل ذلك).
+**ليش:** يمنع الوكلاء الزائدين — كل وكيل مبرَّر فقط حيث يلزم الحكم/التواصل/المبادرة. (يحلّ محل قرار n8n القديم المُلغى؛ الأدوات الأساسية داخلية لا خارجية.)
 
 ### قرار 6: Configurable Settings
 **القرار:** كل شي قابل للتخصيص من Settings:
@@ -196,15 +195,13 @@
 - Branding
 **ليش:** يدعم بيع نسخ بـ branding مختلف، ويسهّل التوسع عالمياً
 
-### قرار 7: Dual Deployment Mode
-**القرار:** متغير `DEPLOYMENT_MODE`:
-- `saas` - multi-tenant مع billing
-- `single_tenant` - شركة واحدة، بدون billing
-**ليش:** نفس الكود، نموذجين، صفر تعقيد
+### قرار 7: النموذج = SaaS متعدّد المستأجرين + ثلاث بيئات
+**القرار:** المنصة الحيّة **SaaS متعدّد المستأجرين** (عزل عبر `companyId` + RLS)، تعمل عبر **ثلاث بيئات** (development/staging/production) يميّزها `APP_ENV` (`lib/env.ts`) — لأن `NODE_ENV` لا يفرّق staging عن production. وحدة واحدة على bznss.one، مسارات path-based.
+**ليش:** نموذج واحد مُدار مركزياً، وبيئات معزولة الأسرار/المفاتيح (test مقابل live). (وضع single-tenant لم يعد مُنفَّذاً في الكود.)
 
 ### قرار 8: Custom Domain Support
-**القرار:** Caddy auto-detects domains وLet's Encrypt SSL تلقائي
-**ليش:** صاحب البزنس يربط دومينه الخاص بسهولة
+**القرار:** العميل يوجّه دومينه (A-record للـ apex) والمنصة تتحقّق منه وتخدم `/{slug}` عليه؛ SSL يُدار عبر Coolify/Caddy.
+**ليش:** صاحب البزنس يربط دومينه الخاص بسهولة.
 
 ### قرار 9: Data Sovereignty
 **القرار:** كل البيانات على VPS في السعودية
@@ -296,7 +293,7 @@ nx-iwork/
 | المشغّلات والجدولة (worker مستقل) | ✅ | `lib/agent/scheduler.ts`, `scripts/scheduler.ts` |
 | الذاكرة (semantic via pgvector + fallback) | ✅ | `lib/agent/memory.ts`, `lib/ai/embeddings.ts` |
 | تخزين R2 + كتالوج المنتجات | ✅ | `lib/storage/`, `app/(dashboard)/products` |
-| الإشعارات (Resend + Twilio) | ✅ | `lib/notifications/` |
+| الإشعارات: إيميل per-tenant (Resend) + SMS (Twilio اختياري) + تصعيد (Telegram) | ✅ | `lib/notifications/`, `tenant-email.ts` |
 | اللاندنغ بيج العامة + ودجت الوكيل | ✅ | `app/(public)/[slug]` |
 | لاندنغ تسويقية + SEO/JSON-LD على `/` | ✅ | `app/page.tsx` |
 | تصميم جوال (كاروسيل أقسام + شريط سفلي) | ✅ | `components/dashboard/mobile-*` |
@@ -306,7 +303,9 @@ nx-iwork/
 | سوق الخدمات/الإضافات + شراء بالمحفظة + إضافة مساحة | ✅ | `app/(dashboard)/services`, `lib/marketplace.ts` |
 | حصص التخزين متعددة المستأجرين + ضغط الصور (sharp) | ✅ | `lib/storage/quota.ts`, `image.ts` — `docs/STORAGE.md` |
 | لوحة السوبر أدمن (شركات/باقات/توكنز/تخزين/متجر/إعدادات) | ✅ | `app/(admin)/admin` — `docs/ADMIN.md` |
-| التكاملات اللاحقة (Sentry / API عام v1) | ⬜ لاحقاً | — |
+| Sentry + `GET /api/health` + ثلاث بيئات (`APP_ENV`) | ✅ | `lib/env.ts`, `sentry.*.config.ts`, `app/api/health` — `docs/DEPLOYMENT.md` |
+| **معمارية الوكلاء متعددة المراحل** (دستور Job Description + مصفوفة صلاحيات per-department + Skills + تنسيق) | ⬜ مخطّط (الحدث القادم) | `docs/AGENT_SYSTEM.md` |
+| تجديد الاشتراك التلقائي (Tap) · API عام v1 | ⬜ لاحقاً | — |
 
 **التشغيل:** الويب عبر `Dockerfile` (يشغّل `prisma migrate deploy` تلقائياً)، والجدولة كخدمة ثانية `npm run scheduler` (نسخة واحدة).
 
@@ -322,6 +321,6 @@ nx-iwork/
 
 ---
 
-**آخر تحديث:** 27 أبريل 2026
+**آخر تحديث:** 8 يوليو 2026
 **النسخة:** 0.1.0 NX iWork
 **المؤلف:** وليد + Claude Opus

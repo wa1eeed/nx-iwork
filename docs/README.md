@@ -12,6 +12,7 @@ how-to · planning) used by most large platforms.
 | Doc | What it is | Read it when |
 |---|---|---|
 | [`../README.md`](../README.md) | The front door — what the platform is, stack, quickstart, deploy. | First contact. |
+| [`../START_HERE.md`](../START_HERE.md) | Short orientation + the invariants + the docs map. | Onboarding (human or AI). |
 | [`CONTINUE_HERE.md`](./CONTINUE_HERE.md) | Current state + what's next + invariants. The single "where we left off". | Resuming work. |
 | [`../CONTRIBUTING.md`](../CONTRIBUTING.md) | Dev setup, conventions, the non-negotiable invariants. | Before your first change. |
 
@@ -44,7 +45,7 @@ how-to · planning) used by most large platforms.
 | Doc | Scope |
 |---|---|
 | [`TODO.md`](./TODO.md) | **Live backlog** — what's planned next. |
-| [`ROADMAP.md`](./ROADMAP.md) | The original sprint plan (historical reference). |
+| [`ROADMAP.md`](./ROADMAP.md) | The forward-looking roadmap — multi-agent phases, billing, infra. |
 | [`../CHANGELOG.md`](../CHANGELOG.md) | Change log, newest first ([Keep a Changelog](https://keepachangelog.com/)). |
 
 ---

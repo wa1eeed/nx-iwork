@@ -34,6 +34,9 @@ Router), `lib/ai/` (neutral AI layer), `lib/agent/` (the engine), `lib/storage/`
 
 - **Deploy = push to `origin/main`** (Coolify builds the Dockerfile, runs
   `prisma migrate deploy` then the app). `main` is the deploy branch.
+- **Three environments** via `APP_ENV` (`lib/env.ts`): development (local) /
+  staging (VPS) / production. Use `sk_test_` Tap keys off production, `sk_live_`
+  only on production — the boot log warns on a mismatch.
 - **Verify before every commit:** `npm run type-check && npm run build`.
 - **Commits** end with the trailer:
   `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>` and use a

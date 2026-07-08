@@ -200,11 +200,14 @@ npm run test:vertex
 
 ## 11. ملاحظة الإهلال (Deprecation)
 
-`@google-cloud/vertexai` مُعلَن إهلاله (يُزال **يونيو 2026**) لصالح
-[`@google/genai`](https://www.npmjs.com/package/@google/genai). يعمل حالياً بلا
-مشاكل. **خطة الصيانة:** الهجرة إلى `@google/genai` (يدعم Vertex عبر
-`new GoogleGenAI({ vertexai: true, project, location })`) قبل 2026 — تغيير معزول
-في `lib/ai/providers/vertex.ts` فقط بفضل الطبقة المحايدة.
+**الحالي:** الكود يستخدم `@google-cloud/vertexai` (هو المعتمد في المشروع الآن، ويعمل
+بلا مشاكل). أعلنت جوجل إهلاله لصالح SDK الموحّد
+[`@google/genai`](https://www.npmjs.com/package/@google/genai) (يدعم Vertex عبر
+`new GoogleGenAI({ vertexai: true, project, location })`).
+
+**خطة الصيانة (مهمة مؤجّلة — لم تُنفَّذ بعد):** الهجرة إلى `@google/genai` عند الحاجة —
+تغيير **معزول** في `lib/ai/providers/vertex.ts` فقط بفضل الطبقة المحايدة. حتى ذلك الحين
+القاعدة الثابتة: **استخدم `@google-cloud/vertexai`، لا `@google/genai`**، في الكود الحالي.
 
 ---
 

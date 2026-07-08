@@ -35,6 +35,17 @@ Recommendation: **Cloudflare** — you're already on R2, it's the cheapest
 - Per-request safety already in place: token bank + per-agent caps, AI retry with
   backoff+jitter (429), per-agent tool permissions.
 
+## Environments & observability
+
+Three environments via `APP_ENV` (`lib/env.ts`): **development** (local) · **staging**
+(VPS/Coolify) · **production**. `NODE_ENV` can't separate staging from prod (both build
+`production`), so `APP_ENV` drives payment test/live keys, search noindex, the Sentry
+environment tag, and log verbosity. Give staging and production **separate** DBs, R2
+buckets, and secrets (`sk_test_` Tap keys off prod, `sk_live_` only on prod) — the boot
+log warns loudly on a mismatch. **Sentry** captures server/edge/client errors (no-op
+without a DSN); **`GET /api/health`** is the public DB-probe for the Coolify health check
++ an uptime monitor. See `docs/DEPLOYMENT.md`.
+
 ## Migration target: Google Cloud Run 🏆
 
 Best fit because the AI runs on Google Vertex (Gemini) — Cloud Run sits inside

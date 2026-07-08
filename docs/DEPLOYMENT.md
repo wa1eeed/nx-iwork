@@ -41,7 +41,7 @@ GOOGLE_APPLICATION_CREDENTIALS_JSON=<full ADC JSON>   # gcloud auth application-
 CRON_SECRET=<random>         # protects /api/cron/run + /api/ai/health
 
 # Super admin bootstrap (ADMIN.md)
-ADMIN_EMAIL=waleed@nx.sa
+ADMIN_EMAIL=admin@bznss.one
 ADMIN_PASSWORD=<strong>
 
 # Optional: R2 storage · Resend/Twilio · Tap payments
@@ -104,8 +104,7 @@ Then sign in at `https://bznss.one/admin` with the bootstrap admin.
 
 ## Notes
 
-- **Single-tenant mode** is still supported via `DEPLOYMENT_MODE` /
-  `PlatformSettings` for an on-prem install, but the default and live target is
-  **multi-tenant SaaS**.
+- The live model is **multi-tenant SaaS** (isolation via `companyId` + RLS). The
+  earlier single-tenant / `DEPLOYMENT_MODE` toggle is no longer implemented in code.
 - Migration to **Google Cloud Run** is the planned next infra home — see
   [`INFRA.md`](./INFRA.md).
