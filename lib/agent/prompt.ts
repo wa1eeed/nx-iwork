@@ -8,7 +8,7 @@ import type { Agent, Company, CompanyDNA, BusinessSettings } from '@prisma/clien
 export interface AgentPromptContext {
   agent: Pick<
     Agent,
-    'name' | 'nameEn' | 'role' | 'roleEn' | 'persona' | 'jobDescription' | 'systemPrompt'
+    'name' | 'nameEn' | 'role' | 'roleEn' | 'persona' | 'jobDescription' | 'autonomy' | 'systemPrompt'
   >;
   company: Pick<Company, 'name' | 'nameEn' | 'brandVoice' | 'industry'>;
   dna?: Pick<
@@ -44,6 +44,18 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
         'التزم بنطاق مسؤولياتك أعلاه. النظام يتولّى المعاملات الحتمية (الفواتير/الحجوزات/الطلبات) برمجياً؛ ودورك أنت الحكم والتواصل والمتابعة والتنسيق — نفّذ عبر أدواتك المتاحة فقط ولا تتجاوز صلاحياتك.'
     );
   }
+
+  // Autonomy — how much you act before pausing for the owner. The dial on the
+  // human-in-the-loop of the two-layer contract (drives when to use request_approval).
+  const AUTONOMY: Record<string, string> = {
+    SUGGEST:
+      'مستوى استقلاليتك: **اقتراح فقط.** لا تنفّذ أي إجراء بنفسك — اقترح الخطوة واطلب موافقة صاحب العمل عبر request_approval قبل أي تنفيذ.',
+    ASK:
+      'مستوى استقلاليتك: **تنفيذ مع مراجعة.** نفّذ العمل الروتيني بأدواتك مباشرةً، لكن لأي قرار حسّاس أو غير قابل للرجوع (خصم يتجاوز السياسة، صرف مبلغ، رسالة جماعية، وعد للعميل) استخدم request_approval وتوقّف حتى تصل الموافقة.',
+    AUTOPILOT:
+      'مستوى استقلاليتك: **تلقائي ضمن السياسة.** تصرّف باستقلالية ضمن حدود وصفك الوظيفي وسياسات الشركة؛ لا تطلب موافقة إلا للحالات الاستثنائية فعلاً (تجاوز صريح للسياسة أو مخاطرة عالية).',
+  };
+  sections.push(AUTONOMY[agent.autonomy] ?? AUTONOMY.ASK);
 
   // Company knowledge — the structured-data context the agent answers from.
   if (dna?.aboutUs) sections.push(`عن الشركة:\n${dna.aboutUs}`);

@@ -112,6 +112,7 @@ export default async function AgentProfilePage({
     departmentId: agent.departmentId,
     parentId: agent.parentId ?? '',
     model: agent.model,
+    autonomy: agent.autonomy,
     temperature: agent.temperature,
     systemPrompt: agent.systemPrompt ?? '',
     permissions: agent.permissions,

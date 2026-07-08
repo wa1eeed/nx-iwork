@@ -11,6 +11,12 @@ function len(v: unknown): number {
   return Array.isArray(v) ? v.length : 0;
 }
 
+// Build a persona string from the template's structured personality profile.
+function buildPersona(pp: unknown): string {
+  const p = (pp ?? {}) as { tone?: string; traits?: string[] };
+  return [p.tone, (p.traits ?? []).join('، ')].filter(Boolean).join(' — ');
+}
+
 export default async function NewAgentPage() {
   const t = await getTranslations('agentCreate');
   const session = await auth();
@@ -45,6 +51,11 @@ export default async function NewAgentPage() {
     kpiCount: len(tpl.defaultKpis),
     scenarioCount: len(tpl.ifThenScenarios),
     toolCount: len(tpl.defaultPermissions),
+    // Prefill for the configure step (Step 1).
+    model: tpl.model,
+    persona: buildPersona(tpl.personalityProfile),
+    jobDescription: tpl.coreInstructions,
+    permissions: (tpl.defaultPermissions as string[] | null) ?? [],
   }));
 
   return (

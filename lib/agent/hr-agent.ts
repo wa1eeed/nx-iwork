@@ -15,7 +15,7 @@
 // SDK note: Gemini runs through the official @google-cloud/vertexai provider
 // (managed Vertex + ADC), not @google/genai — the production-correct path here.
 
-import type { ClaudeModel, Prisma, TriggerEvent } from '@prisma/client';
+import type { AutonomyLevel, ClaudeModel, Prisma, TriggerEvent } from '@prisma/client';
 import { db } from '@/lib/db';
 import { nextRef } from '@/lib/refs';
 import { checkRoleConflict } from '@/lib/agent/conflict-check';
@@ -42,6 +42,7 @@ export interface DeployPayload {
   roleEn?: string | null;
   persona?: string;
   jobDescription?: string | null; // the "constitution" — mandate + boundaries
+  autonomy?: AutonomyLevel; // how much it acts before pausing for the owner
   model?: ClaudeModel;
   temperature?: number;
   systemPrompt?: string | null;
@@ -188,6 +189,7 @@ export class HRAgentService {
         roleEn: payload.roleEn || null,
         persona: payload.persona.trim(),
         jobDescription: payload.jobDescription?.trim() || null,
+        autonomy: payload.autonomy ?? 'ASK',
         model: payload.model ?? 'HAIKU',
         temperature: payload.temperature ?? 0.6,
         systemPrompt: payload.systemPrompt || null,

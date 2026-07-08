@@ -40,6 +40,7 @@ export interface AgentFormValues {
   departmentId: string;
   parentId: string;
   model: 'HAIKU' | 'SONNET' | 'OPUS';
+  autonomy: 'SUGGEST' | 'ASK' | 'AUTOPILOT';
   temperature: number;
   systemPrompt: string;
   permissions: string[];
@@ -55,6 +56,7 @@ const DEFAULTS: AgentFormValues = {
   departmentId: '',
   parentId: '',
   model: 'HAIKU',
+  autonomy: 'ASK',
   temperature: 0.6,
   systemPrompt: '',
   permissions: [],
@@ -153,6 +155,7 @@ export function AgentForm({
       departmentId: v.departmentId,
       parentId: v.parentId || null,
       model: v.model,
+      autonomy: v.autonomy,
       temperature: v.temperature,
       maxTokens: 4096,
       systemPrompt: v.systemPrompt.trim() || null,
@@ -280,6 +283,32 @@ export function AgentForm({
               ))}
             </div>
           </div>
+
+          <div className="space-y-2">
+            <Label>{t('autonomyLabel')}</Label>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {([
+                { v: 'SUGGEST', l: t('autonomySuggest'), h: t('autonomySuggestHint') },
+                { v: 'ASK', l: t('autonomyAsk'), h: t('autonomyAskHint') },
+                { v: 'AUTOPILOT', l: t('autonomyAutopilot'), h: t('autonomyAutopilotHint') },
+              ] as const).map((a) => (
+                <button
+                  key={a.v}
+                  type="button"
+                  onClick={() => set('autonomy', a.v)}
+                  className={
+                    'rounded-lg border p-3 text-start ' +
+                    (v.autonomy === a.v ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted')
+                  }
+                >
+                  <span className="block text-sm font-medium">{a.l}</span>
+                  <span className="mt-1 block text-xs text-muted-foreground">{a.h}</span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground">{t('autonomyHelp')}</p>
+          </div>
+
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>{t('creativity', { value: v.temperature })}</Label>

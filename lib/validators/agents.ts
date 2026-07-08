@@ -15,6 +15,8 @@ export const agentSchema = z.object({
   // Optional manager (another agent in the same company).
   parentId: z.string().trim().optional().nullable(),
   model: z.enum(['HAIKU', 'SONNET', 'OPUS']).default('HAIKU'),
+  // How autonomously the agent acts before pausing for the owner.
+  autonomy: z.enum(['SUGGEST', 'ASK', 'AUTOPILOT']).default('ASK'),
   temperature: z.coerce.number().min(0).max(1).default(0.6),
   maxTokens: z.coerce.number().int().min(256).max(8192).default(4096),
   systemPrompt: z.string().trim().max(4000).optional().nullable(),

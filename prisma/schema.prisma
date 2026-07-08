@@ -276,6 +276,13 @@ enum ClaudeModel {
   OPUS
 }
 
+// How autonomously an agent acts before pausing for the owner (see Agent.autonomy).
+enum AutonomyLevel {
+  SUGGEST // only proposes; never acts without approval
+  ASK // acts on routine work, requests approval for sensitive decisions
+  AUTOPILOT // acts autonomously within policy; approval only for the exceptional
+}
+
 model Agent {
   id        String  @id @default(cuid())
   companyId String
@@ -320,6 +327,13 @@ model Agent {
   temperature  Float       @default(0.7)
   maxTokens    Int         @default(4096)
   systemPrompt String?     @db.Text
+
+  // How much the agent may do on its own before pausing for the owner — the
+  // dial on the two-layer contract's human-in-the-loop (governs request_approval
+  // aggressiveness). SUGGEST = only propose, never act; ASK = act on routine work
+  // but request approval for sensitive/irreversible decisions; AUTOPILOT = act
+  // autonomously within policy, approval only for the truly exceptional.
+  autonomy AutonomyLevel @default(ASK)
 
   // Capabilities
   skills AgentSkill[]

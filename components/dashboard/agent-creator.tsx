@@ -1,7 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState } from 'react';
 import { useLocale, useTranslations } from 'next-intl';
 import {
   Bot,
@@ -14,23 +13,11 @@ import {
   UserSearch,
   Share2,
   Handshake,
-  Loader2,
-  AlertTriangle,
-  Check,
-  Target,
-  Zap,
-  Wrench,
+  Plus,
+  ArrowRight,
   type LucideIcon,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
-import { cn } from '@/lib/utils';
-import { toast } from 'sonner';
-import { AgentForm } from '@/components/dashboard/agent-form';
-import { createAgentFromTemplate } from '@/lib/actions/agents';
-import { celebrate } from '@/lib/ui/celebrate';
-import type { ConflictResult } from '@/lib/agent/conflict-check';
+import { AgentForm, type AgentFormValues } from '@/components/dashboard/agent-form';
 
 export interface TemplateCard {
   templateType: string;
@@ -45,6 +32,11 @@ export interface TemplateCard {
   kpiCount: number;
   scenarioCount: number;
   toolCount: number;
+  // Prefill for the configure step.
+  model: 'HAIKU' | 'SONNET' | 'OPUS';
+  persona: string;
+  jobDescription: string;
+  permissions: string[];
 }
 
 const ICONS: Record<string, LucideIcon> = {
@@ -60,8 +52,13 @@ const ICONS: Record<string, LucideIcon> = {
   bot: Bot,
 };
 
+const TIER: Record<string, string> = { HAIKU: 'Fast', SONNET: 'Balanced', OPUS: 'Advanced' };
+
 type Dept = { id: string; name: string };
 
+// Two-step hire: pick a template (or build custom) → configure & onboard. Both
+// paths flow through the SAME AgentForm — the new-direction configure step (job
+// description that governs, per-department tool matrix, autonomy, HR advisory).
 export function AgentCreator({
   templates,
   departments,
@@ -72,8 +69,7 @@ export function AgentCreator({
   managers: { id: string; name: string }[];
 }) {
   const t = useTranslations('agentCreate');
-  const [mode, setMode] = useState<'template' | 'custom'>('template');
-  const [preselect, setPreselect] = useState<string | null>(null);
+  const [configuring, setConfiguring] = useState<TemplateCard | 'custom' | null>(null);
 
   const hints = templates.map((tpl) => ({
     templateType: tpl.templateType,
@@ -81,158 +77,108 @@ export function AgentCreator({
     roleNameEn: tpl.roleNameEn,
   }));
 
-  // HR Advisory: jump from a custom role into the matching template.
-  function useTemplate(templateType: string) {
-    setPreselect(templateType);
-    setMode('template');
+  if (configuring) {
+    const initial =
+      configuring === 'custom' ? undefined : templateToInitial(configuring, departments);
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => setConfiguring(null)}
+          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
+        >
+          <ArrowRight className="h-4 w-4 rtl:rotate-180" />
+          {t('backToTemplates')}
+        </button>
+        <AgentForm
+          departments={departments}
+          managers={managers}
+          initial={initial}
+          templates={hints}
+          onUseTemplate={(tt) => {
+            const tpl = templates.find((x) => x.templateType === tt);
+            if (tpl) setConfiguring(tpl);
+          }}
+        />
+      </div>
+    );
   }
 
-  return (
-    <div className="space-y-6">
-      <div className="inline-flex rounded-lg border p-1">
-        <button
-          onClick={() => setMode('template')}
-          className={cn('rounded-md px-4 py-1.5 text-sm font-medium transition-colors', mode === 'template' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
-        >
-          {t('modeTemplate')}
-        </button>
-        <button
-          onClick={() => setMode('custom')}
-          className={cn('rounded-md px-4 py-1.5 text-sm font-medium transition-colors', mode === 'custom' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground')}
-        >
-          {t('modeCustom')}
-        </button>
-      </div>
-
-      {mode === 'custom' ? (
-        <AgentForm departments={departments} managers={managers} templates={hints} onUseTemplate={useTemplate} />
-      ) : (
-        <TemplateBrowser templates={templates} departments={departments} managers={managers} initialSelected={preselect} />
-      )}
-    </div>
-  );
+  return <TemplatesGrid templates={templates} onPick={setConfiguring} onCustom={() => setConfiguring('custom')} />;
 }
 
-function TemplateBrowser({
+function templateToInitial(tpl: TemplateCard, departments: Dept[]): AgentFormValues {
+  const dept =
+    departments.find((d) => d.name === tpl.department || d.name === tpl.departmentEn) ?? departments[0];
+  return {
+    name: '',
+    nameEn: '',
+    role: tpl.roleName,
+    roleEn: tpl.roleNameEn,
+    persona: tpl.persona || tpl.roleName,
+    jobDescription: tpl.jobDescription,
+    departmentId: dept?.id ?? '',
+    parentId: '',
+    model: tpl.model,
+    autonomy: 'ASK',
+    temperature: 0.6,
+    systemPrompt: '',
+    permissions: tpl.permissions,
+  };
+}
+
+function TemplatesGrid({
   templates,
-  departments,
-  managers,
-  initialSelected,
+  onPick,
+  onCustom,
 }: {
   templates: TemplateCard[];
-  departments: Dept[];
-  managers: { id: string; name: string }[];
-  initialSelected?: string | null;
+  onPick: (t: TemplateCard) => void;
+  onCustom: () => void;
 }) {
   const t = useTranslations('agentCreate');
   const locale = useLocale();
-  const router = useRouter();
-  const [selected, setSelected] = useState<string | null>(initialSelected ?? null);
-  const [deptId, setDeptId] = useState(departments[0]?.id ?? '');
-  const [parentId, setParentId] = useState('');
-  const [conflict, setConflict] = useState<ConflictResult | null>(null);
-  const [hiring, startHire] = useTransition();
-  const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
-
-  function hire(templateType: string, role: string, force = false) {
-    if (!deptId) return toast.error(t('needDept'));
-    startHire(async () => {
-      const res = await createAgentFromTemplate(templateType, deptId, { parentId: parentId || null, force });
-      if (res.ok) {
-        celebrate();
-        toast.success(t('hired', { role }));
-        router.push(`/agents/${res.id}`);
-        router.refresh();
-      } else if (res.error === 'conflict') {
-        setConflict(res.conflict);
-      } else {
-        toast.error(t('hireFailed'));
-      }
-    });
-  }
-
+  const ar = locale === 'ar';
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="text-lg font-medium">{t('templatesTitle')}</h2>
+        <h2 className="text-lg font-semibold">{t('templatesTitle')}</h2>
         <p className="text-sm text-muted-foreground">{t('templatesSubtitle')}</p>
       </div>
-
-      <div className="grid gap-4 lg:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         {templates.map((tpl) => {
           const Icon = ICONS[tpl.icon] ?? Bot;
-          const role = locale === 'ar' ? tpl.roleName : tpl.roleNameEn;
-          const dept = locale === 'ar' ? tpl.department : tpl.departmentEn;
-          const desc = locale === 'ar' ? tpl.roleDescription : tpl.roleDescriptionEn;
-          const isOpen = selected === tpl.templateType;
+          const role = ar ? tpl.roleName : tpl.roleNameEn;
+          const dept = ar ? tpl.department : tpl.departmentEn;
           return (
-            <Card key={tpl.templateType} className={cn('flex flex-col transition', isOpen && 'ring-1 ring-primary')}>
-              <CardContent className="flex flex-1 flex-col gap-3 p-5">
-                <div className="flex items-center gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl" style={{ backgroundColor: `${tpl.accent}22`, color: tpl.accent }}>
-                    <Icon className="h-5 w-5" />
-                  </span>
-                  <div>
-                    <p className="font-semibold">{role}</p>
-                    <p className="text-xs text-muted-foreground">{dept}</p>
-                  </div>
-                </div>
-                <p className="flex-1 text-sm text-muted-foreground">{desc}</p>
-                <div className="flex flex-wrap gap-3 text-[11px] text-muted-foreground">
-                  <span className="inline-flex items-center gap-1"><Target className="h-3 w-3" />{tpl.kpiCount} {t('kpisLabel')}</span>
-                  <span className="inline-flex items-center gap-1"><Zap className="h-3 w-3" />{tpl.scenarioCount} {t('scenariosLabel')}</span>
-                  <span className="inline-flex items-center gap-1"><Wrench className="h-3 w-3" />{tpl.toolCount} {t('toolsLabel')}</span>
-                </div>
-
-                {isOpen ? (
-                  <div className="space-y-3 border-t pt-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs">{t('department')}</Label>
-                      {departments.length === 0 ? (
-                        <p className="text-sm text-destructive">{t('needDept')}</p>
-                      ) : (
-                        <select className={selectCls} value={deptId} onChange={(e) => setDeptId(e.target.value)}>
-                          {departments.map((d) => (
-                            <option key={d.id} value={d.id}>{d.name}</option>
-                          ))}
-                        </select>
-                      )}
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs">{t('manager')}</Label>
-                      <select className={selectCls} value={parentId} onChange={(e) => setParentId(e.target.value)}>
-                        <option value="">{t('none')}</option>
-                        {managers.map((m) => (
-                          <option key={m.id} value={m.id}>{m.name}</option>
-                        ))}
-                      </select>
-                    </div>
-                    {conflict && (
-                      <div className="flex items-start gap-2 rounded-md bg-amber-500/10 p-2 text-xs text-amber-600 dark:text-amber-400">
-                        <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                        <div>
-                          <p className="font-medium">{t('conflictTitle')}</p>
-                          <p>{conflict.reason}</p>
-                          <button className="mt-1 underline" onClick={() => hire(tpl.templateType, role, true)} disabled={hiring}>
-                            {t('createAnyway')}
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                    <Button className="w-full" onClick={() => hire(tpl.templateType, role)} disabled={hiring || departments.length === 0}>
-                      {hiring ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Check className="me-1 h-4 w-4" />}
-                      {t('hire')} · {role}
-                    </Button>
-                  </div>
-                ) : (
-                  <Button variant="outline" className="w-full" onClick={() => { setSelected(tpl.templateType); setConflict(null); }}>
-                    {t('select')}
-                  </Button>
-                )}
-              </CardContent>
-            </Card>
+            <button
+              key={tpl.templateType}
+              onClick={() => onPick(tpl)}
+              className="flex items-center gap-3 rounded-2xl border bg-card p-4 text-start transition hover:bg-accent/40"
+            >
+              <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl" style={{ backgroundColor: `${tpl.accent}22`, color: tpl.accent }}>
+                <Icon className="h-5 w-5" />
+              </span>
+              <div className="min-w-0">
+                <p className="font-semibold">{role}</p>
+                <p className="text-xs text-muted-foreground">
+                  {dept} · {TIER[tpl.model]}
+                </p>
+              </div>
+            </button>
           );
         })}
+        <button
+          onClick={onCustom}
+          className="flex items-center gap-3 rounded-2xl border border-dashed p-4 text-start transition hover:bg-accent/40"
+        >
+          <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-muted text-muted-foreground">
+            <Plus className="h-5 w-5" />
+          </span>
+          <div>
+            <p className="font-semibold">{t('buildCustom')}</p>
+            <p className="text-xs text-muted-foreground">{t('buildCustomHint')}</p>
+          </div>
+        </button>
       </div>
     </div>
   );
