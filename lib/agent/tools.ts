@@ -247,6 +247,19 @@ export const AGENT_TOOLS: AiTool[] = [
       required: ['summary'],
     },
   },
+  {
+    name: 'request_approval',
+    description:
+      'اطلب موافقة صاحب العمل قبل تنفيذ قرار حسّاس (خصم يتجاوز السياسة، صرف مبلغ، رسالة تسويقية جماعية، أي إجراء لا رجعة فيه). لا تنفّذ القرار الحسّاس دون موافقة — استخدم هذه الأداة ثم توقّف.',
+    parameters: {
+      type: 'object',
+      properties: {
+        decision: { type: 'string', description: 'القرار المطلوب الموافقة عليه، بإيجاز واضح' },
+        context: { type: 'string', description: 'سياق مختصر يساعد صاحب العمل على القرار (اختياري)' },
+      },
+      required: ['decision'],
+    },
+  },
 ];
 
 // ---- Executors -------------------------------------------------------------
@@ -272,6 +285,11 @@ const createBookingArgs = z.object({
   serviceId: z.string().trim().optional(), // when set, the engine enforces slot capacity
   customerId: z.string().trim().optional(),
   notes: z.string().trim().max(2000).optional(),
+});
+
+const requestApprovalArgs = z.object({
+  decision: z.string().trim().min(1).max(500),
+  context: z.string().trim().max(2000).optional(),
 });
 
 const findCustomerArgs = z.object({
@@ -685,6 +703,37 @@ export async function executeTool(
           category: args.category,
         });
         return ok({ message: 'تم الحفظ في الذاكرة.' });
+      }
+
+      case 'request_approval': {
+        const args = requestApprovalArgs.parse(rawArgs);
+        // The agent pauses a sensitive decision for the owner (two-layer
+        // contract). Creates the approval + a timeline entry; resolveApproval
+        // (owner action) later wakes the agent to continue or revise.
+        const approval = await db.approval.create({
+          data: {
+            companyId: ctx.companyId,
+            agentId: ctx.agentId,
+            decision: args.decision,
+            context: args.context ?? null,
+            options: ['approve', 'reject'],
+            status: 'PENDING',
+          },
+          select: { id: true },
+        });
+        await db.timelineEvent.create({
+          data: {
+            companyId: ctx.companyId,
+            agentId: ctx.agentId,
+            type: 'APPROVAL_REQUESTED',
+            title: 'طلب موافقة',
+            description: args.decision,
+          },
+        });
+        return ok({
+          approvalId: approval.id,
+          message: 'تم رفع القرار لصاحب العمل للموافقة. لن أنفّذه حتى يوافق.',
+        });
       }
 
       default:

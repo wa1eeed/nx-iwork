@@ -36,6 +36,7 @@ export const TOOL_CATALOG: { id: string; label: string; group: ToolGroup }[] = [
   { id: 'search_faq', label: 'Search FAQ', group: 'support' },
   { id: 'create_task', label: 'Create task', group: 'operations' },
   { id: 'update_task_status', label: 'Update task status', group: 'operations' },
+  { id: 'request_approval', label: 'Request approval', group: 'operations' },
   { id: 'save_memory', label: 'Save memory', group: 'memory' },
 ];
 
