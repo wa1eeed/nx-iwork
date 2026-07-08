@@ -15,6 +15,7 @@ import {
   customDomainSchema,
   storefrontSchema,
   escalationSchema,
+  emailSchema,
   type LocalizationInput,
   type BrandingInput,
   type CompanyInfoInput,
@@ -22,6 +23,7 @@ import {
   type CustomDomainInput,
   type StorefrontInput,
   type EscalationInput,
+  type EmailInput,
 } from '@/lib/validators/settings';
 
 type Result<T = void> =
@@ -198,6 +200,28 @@ export async function testEscalation(raw: EscalationInput): Promise<Result> {
   }
   const ok = await sendTelegramTest(parsed.data.telegramBotToken, parsed.data.telegramChatId);
   return ok ? { ok: true } : { ok: false, error: 'telegram_failed' };
+}
+
+// Per-tenant email sender: brand the "from" display name, route replies, and
+// opt in/out of marketing mail. All mail still goes through the platform's
+// central Resend account from the platform's verified domain.
+export async function updateEmailSettings(raw: EmailInput): Promise<Result> {
+  const companyId = await authedCompanyId();
+  if (!companyId) return { ok: false, error: 'unauthenticated' };
+
+  const parsed = emailSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: 'validation' };
+
+  await db.businessSettings.update({
+    where: { companyId },
+    data: {
+      emailSenderName: parsed.data.emailSenderName?.trim() || null,
+      emailReplyTo: parsed.data.emailReplyTo?.trim() || null,
+      marketingEmailsEnabled: parsed.data.marketingEmailsEnabled,
+    },
+  });
+  revalidatePath('/settings');
+  return { ok: true };
 }
 
 // Storefront: logo + hero copy that render on the public landing page.

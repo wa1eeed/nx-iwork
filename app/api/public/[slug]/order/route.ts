@@ -2,6 +2,9 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { dispatchEvent } from '@/lib/agent/events';
 import { nextRef } from '@/lib/refs';
+import { sendTenantEmail } from '@/lib/notifications/tenant-email';
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
 
 export const dynamic = 'force-dynamic';
 
@@ -30,6 +33,8 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   const customerName = typeof body.customerName === 'string' ? body.customerName.trim() : '';
   const customerPhone = typeof body.customerPhone === 'string' ? body.customerPhone.trim() : '';
+  const rawEmail = typeof body.customerEmail === 'string' ? body.customerEmail.trim().toLowerCase() : '';
+  const customerEmail = EMAIL_RE.test(rawEmail) ? rawEmail : null;
   const notes = typeof body.notes === 'string' ? body.notes.trim().slice(0, 1000) : null;
   const productId = typeof body.productId === 'string' ? body.productId : null;
   const serviceId = typeof body.serviceId === 'string' ? body.serviceId : null;
@@ -42,7 +47,14 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     return NextResponse.json({ ok: false, reason: 'rate_limited' }, { status: 429 });
   }
 
-  const company = await db.company.findUnique({ where: { slug }, select: { id: true, status: true } });
+  const company = await db.company.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      status: true,
+      settings: { select: { primaryLanguage: true, currencySymbol: true } },
+    },
+  });
   if (!company || company.status === 'SUSPENDED') {
     return NextResponse.json({ ok: false, reason: 'unavailable' }, { status: 404 });
   }
@@ -81,7 +93,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     customerId =
       existing?.id ??
       (await db.customer.create({
-        data: { companyId: company.id, ref: await nextRef(company.id, 'customer'), name: customerName, phone: customerPhone, status: 'INTERESTED', source: 'public_form' },
+        data: { companyId: company.id, ref: await nextRef(company.id, 'customer'), name: customerName, phone: customerPhone, email: customerEmail, status: 'INTERESTED', source: 'public_form' },
         select: { id: true },
       })).id;
   }
@@ -94,6 +106,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       customerId,
       customerName,
       customerPhone: customerPhone || null,
+      customerEmail,
       customerNotes: notes,
       subtotal: price,
       total: price,
@@ -105,15 +118,41 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     select: { id: true, orderNumber: true },
   });
 
-  // A placed order is a realized deal → advance the opportunity to WON.
+  // A placed order is a realized deal → advance the opportunity to WON
+  // (and backfill the email if the customer didn't have one).
   if (customerId) {
-    await db.customer.update({ where: { id: customerId }, data: { status: 'WON' } });
+    await db.customer.update({
+      where: { id: customerId },
+      data: { status: 'WON', ...(customerEmail ? { email: customerEmail } : {}) },
+    });
   }
 
   await dispatchEvent(company.id, 'ORDER_CREATED', {
     summary: `طلب جديد ${order.orderNumber}: ${title} — العميل ${customerName}${customerPhone ? ` (${customerPhone})` : ''}`,
     metadata: { orderId: order.id, customerId },
   });
+
+  // Order confirmation to the customer — from the TENANT's brand + reply-to.
+  // Localised to the tenant's storefront language. Fire-and-forget; a mail
+  // failure must never fail the order (the deal is already recorded).
+  if (customerEmail) {
+    const ar = (company.settings?.primaryLanguage ?? 'ar') === 'ar';
+    const cur = company.settings?.currencySymbol ?? 'SAR';
+    void sendTenantEmail(company.id, {
+      to: customerEmail,
+      subject: ar ? `تأكيد طلبك ${order.orderNumber}` : `Order confirmation ${order.orderNumber}`,
+      heading: ar ? `شكراً ${customerName} 🎉` : `Thank you, ${customerName} 🎉`,
+      intro: ar
+        ? 'تم استلام طلبك بنجاح.\nسيتواصل معك فريقنا قريباً لإتمام التفاصيل.'
+        : 'We’ve received your order.\nOur team will reach out shortly to finalize the details.',
+      rows: [
+        { label: ar ? 'رقم الطلب' : 'Order number', value: order.orderNumber },
+        { label: ar ? 'الطلب' : 'Item', value: title },
+        { label: ar ? 'الإجمالي' : 'Total', value: `${price} ${cur}` },
+      ],
+      footnote: ar ? 'هذه رسالة تأكيد آلية.' : 'This is an automated confirmation.',
+    }).catch((err) => console.error('[order] confirmation email failed:', err));
+  }
 
   return NextResponse.json({ ok: true, orderNumber: order.orderNumber });
 }

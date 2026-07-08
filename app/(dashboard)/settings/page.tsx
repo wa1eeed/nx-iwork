@@ -14,6 +14,7 @@ import { BrandingTab } from '@/components/settings/branding-tab';
 import { StorefrontTab } from '@/components/settings/storefront-tab';
 import { CustomDomainTab } from '@/components/settings/custom-domain-tab';
 import { EscalationTab } from '@/components/settings/escalation-tab';
+import { EmailTab } from '@/components/settings/email-tab';
 import { CompanyInfoTab } from '@/components/settings/company-info-tab';
 import { ApiSettingsTab } from '@/components/settings/api-settings-tab';
 import { getAiMode } from '@/lib/ai';
@@ -106,6 +107,7 @@ export default async function SettingsPage() {
           <TabsTrigger value="storefront">{t('tabs.storefront')}</TabsTrigger>
           <TabsTrigger value="domain">{t('tabs.domain')}</TabsTrigger>
           <TabsTrigger value="escalation">{t('tabs.escalation')}</TabsTrigger>
+          <TabsTrigger value="email">{t('tabs.email')}</TabsTrigger>
           <TabsTrigger value="company">{t('tabs.company')}</TabsTrigger>
           {/* Managed mode: the platform supplies the AI centrally — the customer
               never deals with API keys. Only show the tab in BYOK mode. */}
@@ -173,6 +175,16 @@ export default async function SettingsPage() {
             initial={{
               telegramBotToken: settings.telegramBotToken,
               telegramChatId: settings.telegramChatId,
+            }}
+          />
+        </TabsContent>
+
+        <TabsContent value="email">
+          <EmailTab
+            initial={{
+              emailSenderName: settings.emailSenderName,
+              emailReplyTo: settings.emailReplyTo,
+              marketingEmailsEnabled: settings.marketingEmailsEnabled,
             }}
           />
         </TabsContent>

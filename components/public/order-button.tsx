@@ -22,6 +22,7 @@ export function OrderButton({
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
   const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
   const accent = color || '#06b6d4';
@@ -33,7 +34,7 @@ export function OrderButton({
       const res = await fetch(`/api/public/${slug}/order`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ productId, serviceId, customerName: name.trim(), customerPhone: phone.trim(), notes: notes.trim() }),
+        body: JSON.stringify({ productId, serviceId, customerName: name.trim(), customerPhone: phone.trim(), customerEmail: email.trim(), notes: notes.trim() }),
       });
       const data = await res.json();
       if (data.ok) setState('done');
@@ -75,6 +76,7 @@ export function OrderButton({
               <div className="space-y-3">
                 <input value={name} onChange={(e) => setName(e.target.value)} placeholder="الاسم *" className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none" />
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الجوال" dir="ltr" className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none" />
+                <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="البريد الإلكتروني (لإرسال تأكيد الطلب)" dir="ltr" className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none" />
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات (اختياري)" rows={2} className="w-full resize-none rounded-lg border bg-transparent px-3 py-2 text-sm outline-none" />
                 <button
                   onClick={submit}

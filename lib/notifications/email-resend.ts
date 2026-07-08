@@ -25,6 +25,7 @@ export function createResendProvider(apiKey: string, defaultFrom: string): Email
             html: msg.html,
             text: msg.text,
             reply_to: msg.replyTo,
+            headers: msg.headers,
           }),
           signal: AbortSignal.timeout(15_000),
         });

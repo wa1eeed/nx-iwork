@@ -45,6 +45,22 @@ export const escalationSchema = z.object({
   telegramChatId: z.string().trim().max(60).optional().nullable().or(z.literal('')),
 });
 
+const EMAIL = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+// Per-tenant email sender. Sender name brands the "from"; reply-to routes
+// replies to the tenant; the toggle gates marketing (non-transactional) mail.
+export const emailSchema = z.object({
+  emailSenderName: z.string().trim().max(60).optional().nullable(),
+  emailReplyTo: z
+    .string()
+    .trim()
+    .max(120)
+    .refine((v) => v === '' || EMAIL.test(v), 'invalid_email')
+    .optional()
+    .nullable(),
+  marketingEmailsEnabled: z.boolean(),
+});
+
 export const storefrontSchema = z.object({
   logo: z.string().trim().url().max(2048).optional().nullable().or(z.literal('')),
   heroTitle: z.string().trim().max(120).optional().nullable(),
@@ -67,3 +83,4 @@ export type ApiKeyInput = z.infer<typeof apiKeySchema>;
 export type CustomDomainInput = z.infer<typeof customDomainSchema>;
 export type StorefrontInput = z.infer<typeof storefrontSchema>;
 export type EscalationInput = z.infer<typeof escalationSchema>;
+export type EmailInput = z.infer<typeof emailSchema>;

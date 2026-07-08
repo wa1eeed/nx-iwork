@@ -222,6 +222,14 @@ model BusinessSettings {
   emailNotifications   Boolean @default(true)
   desktopNotifications Boolean @default(true)
 
+  // Per-tenant email sender. All mail goes through the platform's central Resend
+  // account from the platform's verified domain (deliverability); these let a
+  // tenant brand the sender + route replies. Empty = fall back to company name /
+  // platform defaults. (Verified custom sending domain is a later pro tier.)
+  emailSenderName        String? // display name, e.g. "Acme Store"
+  emailReplyTo           String? // replies go here, e.g. hello@acme.com
+  marketingEmailsEnabled Boolean @default(false) // gate for non-transactional mail
+
   // Escalation channel: owner's Telegram bot for human-in-the-loop alerts
   // (e.g. an angry-customer complaint that an agent escalates).
   telegramBotToken String?

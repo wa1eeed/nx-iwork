@@ -490,6 +490,7 @@
       "storefront": "Storefront",
       "domain": "Custom domain",
       "escalation": "Alerts",
+      "email": "Email",
       "company": "Company info",
       "api": "API keys"
     },
@@ -522,6 +523,19 @@
       "testFailed": "Couldn't send. Check the token and chat ID.",
       "howTitle": "How it works",
       "howBody": "When a customer message is detected as an angry complaint, the assigned agent is woken with a task and you get an instant Telegram alert with a summary."
+    },
+    "email": {
+      "title": "Email sender",
+      "subtitle": "Choose how emails to your customers are branded. All mail is delivered through the platform for reliability.",
+      "senderName": "Sender name",
+      "senderNamePlaceholder": "e.g. Acme Store",
+      "senderNameHelp": "The name customers see in their inbox. Defaults to your company name.",
+      "replyTo": "Reply-to address",
+      "replyToHelp": "Where customer replies are delivered. Leave empty to use the platform default.",
+      "marketing": "Marketing emails",
+      "marketingHelp": "Allow promotional (non-transactional) emails. Order confirmations and receipts always send.",
+      "howTitle": "How it works",
+      "howBody": "Emails send from the platform's verified domain (best deliverability) with your sender name, and replies go to your reply-to address. A verified custom sending domain is planned for higher tiers."
     },
     "domain": {
       "title": "Custom domain",

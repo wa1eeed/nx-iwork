@@ -15,6 +15,8 @@ export interface EmailMessage {
   /** Overrides the default from address. */
   from?: string;
   replyTo?: string;
+  /** Extra SMTP headers, e.g. List-Unsubscribe for marketing mail. */
+  headers?: Record<string, string>;
 }
 
 export interface SmsMessage {
