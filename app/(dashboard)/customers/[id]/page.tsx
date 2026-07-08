@@ -79,6 +79,16 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
     })),
   ].sort((a, b) => b.at.localeCompare(a.at));
 
+  // Booking / spend KPIs (from the loaded history, capped at 50 each).
+  const completedBookings = bookings.filter((b) => b.status === 'COMPLETED').length;
+  const totalSpend = orders.reduce((sum, o) => sum + Number(o.total), 0);
+  const stats = [
+    { label: t('statBookings'), value: String(bookings.length) },
+    { label: t('statCompleted'), value: String(completedBookings) },
+    { label: t('statOrders'), value: String(orders.length) },
+    { label: t('statSpend'), value: `${totalSpend} ${currency}` },
+  ];
+
   return (
     <div className="space-y-6">
       <Link href="/customers" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
@@ -105,6 +115,15 @@ export default async function CustomerDetailPage({ params }: { params: Promise<{
             {customer.source ? ` · ${t('source')}: ${customer.source}` : ''}
           </p>
         </div>
+      </div>
+
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        {stats.map((s) => (
+          <div key={s.label} className="rounded-xl border p-3">
+            <p className="text-lg font-semibold" dir="ltr">{s.value}</p>
+            <p className="text-xs text-muted-foreground">{s.label}</p>
+          </div>
+        ))}
       </div>
 
       <CustomerEditor

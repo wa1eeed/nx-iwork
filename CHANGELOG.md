@@ -36,8 +36,17 @@ Versioning: [Semantic Versioning](https://semver.org/)
   - `/bookings` becomes a **calendar** (month grid + per-day panel + inline
     confirm / mark-done / cancel + Calendar↔List toggle). `setBookingStatus`
     action (tenant-scoped).
-  - **In progress:** per-service availability editor + the public booking flow
-    (customer picks a slot → confirmation) + customer-detail booking stats.
+  - Per-service **availability editor** (`/bookings/availability`) — the entry
+    point that makes a catalog service bookable (duration/buffer/capacity +
+    weekly windows).
+  - **Public booking flow** — `GET /api/public/[slug]/slots` +
+    `POST /api/public/[slug]/book` (thin wrappers over the engine) + a
+    `booking-button` on the public page (date → live slots → details → confirm →
+    localized confirmation email). Bookable services show Book; others keep the
+    order button.
+  - The agent `create_booking` tool is **routed through the engine** (optional
+    `serviceId` → capacity enforced), so agents book via the system, never
+    reimplement it. Customer-detail page gains **booking / spend KPIs**.
 
 ---
 

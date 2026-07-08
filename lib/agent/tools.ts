@@ -11,6 +11,7 @@ import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import type { AiTool } from '@/lib/ai';
 import { nextRef } from '@/lib/refs';
+import { createBooking, BookingError } from '@/lib/booking/engine';
 import { saveMemory } from './memory';
 import { dispatchEvent } from './events';
 
@@ -96,6 +97,7 @@ export const AGENT_TOOLS: AiTool[] = [
         title: { type: 'string', description: 'وصف الحجز (مثل: موعد كشف)' },
         startAt: { type: 'string', description: 'وقت البداية ISO 8601' },
         endAt: { type: 'string', description: 'وقت النهاية ISO 8601 (اختياري)' },
+        serviceId: { type: 'string', description: 'معرّف الخدمة القابلة للحجز (يفرض النظام السعة تلقائياً)' },
         customerId: { type: 'string', description: 'معرّف العميل من الـ CRM إن وُجد' },
         notes: { type: 'string' },
       },
@@ -267,6 +269,7 @@ const createBookingArgs = z.object({
   title: z.string().trim().min(1).max(300),
   startAt: z.string().trim(),
   endAt: z.string().trim().optional(),
+  serviceId: z.string().trim().optional(), // when set, the engine enforces slot capacity
   customerId: z.string().trim().optional(),
   notes: z.string().trim().max(2000).optional(),
 });
@@ -439,8 +442,8 @@ export async function executeTool(
       case 'create_booking': {
         const args = createBookingArgs.parse(rawArgs);
         const startAt = parseDate(args.startAt);
-        const endAt = parseDate(args.endAt);
-        if (!startAt || endAt === null) return fail('صيغة التاريخ غير صحيحة. استخدم ISO 8601.');
+        if (!startAt) return fail('صيغة التاريخ غير صحيحة. استخدم ISO 8601.');
+        const endAt = args.endAt ? parseDate(args.endAt) : null;
         if (args.customerId) {
           const exists = await db.customer.findFirst({
             where: { id: args.customerId, companyId: ctx.companyId },
@@ -448,19 +451,48 @@ export async function executeTool(
           });
           if (!exists) return fail('العميل المرتبط غير موجود.');
         }
-        const booking = await db.booking.create({
-          data: {
+        if (args.serviceId) {
+          const svc = await db.service.findFirst({
+            where: { id: args.serviceId, companyId: ctx.companyId },
+            select: { id: true },
+          });
+          if (!svc) return fail('الخدمة غير موجودة.');
+        }
+        // Route through the deterministic engine: when a serviceId is given it
+        // enforces slot capacity atomically; otherwise it creates an ad-hoc booking.
+        try {
+          const booking = await createBooking({
             companyId: ctx.companyId,
-            ref: await nextRef(ctx.companyId, 'booking'),
+            serviceId: args.serviceId,
             customerId: args.customerId,
             title: args.title,
             startAt,
-            endAt: endAt ?? undefined,
+            endAt,
             notes: args.notes,
-          },
-          select: { id: true, title: true, startAt: true },
-        });
-        return ok({ booking: { ...booking, startAt: booking.startAt.toISOString() }, message: 'تم تأكيد الحجز.' });
+            source: 'agent',
+          });
+          return ok({
+            booking: {
+              id: booking.id,
+              ref: booking.ref,
+              title: booking.title,
+              startAt: booking.startAt.toISOString(),
+              status: booking.status,
+            },
+            message: 'تم تسجيل الحجز.',
+          });
+        } catch (err) {
+          if (err instanceof BookingError) {
+            const msg =
+              err.code === 'slot_full'
+                ? 'الفترة مكتملة، اقترح على العميل وقتاً آخر.'
+                : err.code === 'not_bookable'
+                  ? 'هذه الخدمة غير مهيّأة للحجز بفترات (اضبط توفّرها أولاً).'
+                  : 'تعذّر إنشاء الحجز في هذا الوقت.';
+            return fail(msg);
+          }
+          throw err;
+        }
       }
 
       case 'search_faq': {

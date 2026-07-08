@@ -85,27 +85,24 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
     anchoring the two-layer contract) + a **per-department permission matrix** (the
     tool toggles grouped by functional area over the existing `getToolsForAgent` hard
     gate) + a **"justification test"** callout in the agent-creation form.
-22. **Bookings adoption (from NXBook) — engine + calendar (in progress).**
-    `lib/booking/engine.ts` — deterministic, timezone-aware slot generation +
-    capacity-safe `createBooking` (the SYSTEM half of the two-layer contract; agents
-    act via the bookings-permission tools). Schema: `ServiceAvailability` +
+22. **Bookings adoption (from NXBook) — complete.** `lib/booking/engine.ts` —
+    deterministic, timezone-aware slot generation + capacity-safe `createBooking`
+    (the SYSTEM half of the two-layer contract). Schema: `ServiceAvailability` +
     `Service.durationMin/bufferMin/maxCapacity` + `Booking.serviceId`. `/bookings` is
-    now a **calendar** (month grid + per-day panel + confirm/mark-done/cancel + list
-    toggle). **Remaining:** per-service availability editor + public booking flow +
-    customer-detail booking stats.
+    a **calendar** (month grid + per-day panel + confirm/mark-done/cancel + list
+    toggle); `/bookings/availability` is the per-service **availability editor**; the
+    **public booking flow** (`/api/public/[slug]/slots` + `/book` + `booking-button` →
+    confirmation email) lets customers self-book bookable services; the agent
+    `create_booking` tool is **routed through the engine**; and `/customers/[id]` shows
+    booking/spend **KPIs**. Optional follow-ups: week/day calendar views, a `NO_SHOW`
+    status (isolated enum migration), a dedicated confirmation page, a `BOOKING_CREATED`
+    trigger event.
 
 ---
 
 ## 🔜 Next up (resume here, in priority order)
 
-1. **▶️ Finish the bookings adoption (current work).** (a) A per-service **availability
-   editor** (weekly windows + duration/buffer/capacity) — note the tenant **catalog
-   Service editor doesn't exist yet** (services are seeded at onboarding), so this adds
-   the missing booking-config entry point. (b) The **public booking flow** on `/[slug]`
-   (bookable service → engine slots → details → confirm → confirmation page). (c) Enrich
-   `/customers/[id]` with booking **KPIs/stats**. (d) Route the agent `check_availability`
-   / `create_booking` tools through `lib/booking/engine.ts`.
-2. **🎯 Multi-agent architecture — Phase 2+ (the headline).** Phase 1 foundation
+1. **🎯 Multi-agent architecture — Phase 2+ (the headline).** Phase 1 foundation
    **shipped** this session: the Job Description "constitution" (`Agent.jobDescription`,
    injected into the prompt) + the **per-department permission matrix** (grouped over the
    existing `getToolsForAgent` hard gate) + the **"justification test"** in the creation
@@ -113,17 +110,17 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
    (internal event bus + `delegate_to_agent` / `request_from_agent` / `depends_on`),
    Phase 4 **ops command center**. Guiding law: the two-layer contract (system =
    deterministic transactions; agents = the human/judgment work). See `docs/AGENT_SYSTEM.md`.
-3. **Tap subscription auto-renewal** — recurring charge + webhook idempotency +
+2. **Tap subscription auto-renewal** — recurring charge + webhook idempotency +
    dunning/retry on failure + receipt email.
-4. **Deep-component i18n (English-primary)** — the remaining translation long-tail
+3. **Deep-component i18n (English-primary)** — the remaining translation long-tail
    (`order-manager`, `product-form`, `faq/trigger/task/department/modules` managers, the
    dashboard chat, agent create/edit deep fields, the public landing page).
-5. **Fully enforce RLS** — adopt `withTenant()` (`lib/db-tenant.ts`) across tenant
+4. **Fully enforce RLS** — adopt `withTenant()` (`lib/db-tenant.ts`) across tenant
    queries, then drop the permissive `IS NULL` fallback. Today only the HR hire flow pins
    the tenant. See gotchas.
-6. **Email pro tier** — verified custom sending domain (Resend Domains API) + billing
+5. **Email pro tier** — verified custom sending domain (Resend Domains API) + billing
    receipts + per-recipient marketing suppression.
-7. **Then the backlog** (`docs/TODO.md`): `CART_ABANDONED` source · Admin Phase 2 ·
+6. **Then the backlog** (`docs/TODO.md`): `CART_ABANDONED` source · Admin Phase 2 ·
    storage follow-ups (private files, presigned-POST size cap, orphan cleanup) · Public
    API v1 · **Google Cloud Run migration** (`docs/INFRA.md`).
 
