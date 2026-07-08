@@ -33,7 +33,13 @@ export default async function DashboardLayout({
   const [company, pendingApprovals] = await Promise.all([
     db.company.findUnique({
       where: { id: companyId },
-      select: { hasEcommerce: true, hasBookings: true, tokenBalance: true, plan: true },
+      select: {
+        hasEcommerce: true,
+        hasBookings: true,
+        tokenBalance: true,
+        plan: true,
+        automationEnabled: true,
+      },
     }),
     db.approval.count({ where: { companyId, status: 'PENDING' } }),
   ]);
@@ -54,6 +60,7 @@ export default async function DashboardLayout({
           tokenBalance={company?.tokenBalance ?? 0}
           plan={company?.plan ?? 'STARTER'}
           pendingApprovals={pendingApprovals}
+          automationEnabled={company?.automationEnabled ?? true}
         />
         {/* Phone-only swipeable section strip; desktop uses the sidebar. */}
         <MobileSectionCarousel modules={modules} />

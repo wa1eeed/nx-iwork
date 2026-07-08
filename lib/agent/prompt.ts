@@ -16,6 +16,15 @@ export interface AgentPromptContext {
     'aboutUs' | 'policies' | 'tone' | 'targetAudience'
   > | null;
   settings?: Pick<BusinessSettings, 'primaryLanguage'> | null;
+  // Company guardrails the owner set (Guardrails screen). Optional so callers
+  // that don't need them fall back to autonomy-only behavior.
+  guardrails?: Pick<
+    Company,
+    | 'requireApprovalForSensitive'
+    | 'requireMessageReview'
+    | 'spendApprovalCapEnabled'
+    | 'spendApprovalCapSar'
+  > | null;
   // Who the agent is talking to: a public 'customer' (widget) or, in the
   // dashboard, the business 'internal' owner/manager. Changes the rules entirely.
   audience?: 'customer' | 'internal';
@@ -56,6 +65,29 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
       'مستوى استقلاليتك: **تلقائي ضمن السياسة.** تصرّف باستقلالية ضمن حدود وصفك الوظيفي وسياسات الشركة؛ لا تطلب موافقة إلا للحالات الاستثنائية فعلاً (تجاوز صريح للسياسة أو مخاطرة عالية).',
   };
   sections.push(AUTONOMY[agent.autonomy] ?? AUTONOMY.ASK);
+
+  // Company guardrails — hard governance the owner set. These OVERRIDE the
+  // autonomy dial: even an AUTOPILOT agent must pause where a guardrail says so.
+  const g = ctx.guardrails;
+  if (g) {
+    const rules: string[] = ['قواعد الحوكمة (إلزامية، تعلو على مستوى استقلاليتك):'];
+    if (g.requireApprovalForSensitive) {
+      rules.push(
+        '- أي قرار حسّاس أو غير قابل للرجوع: توقّف واطلب موافقة صاحب العمل عبر request_approval قبل التنفيذ.'
+      );
+    }
+    if (g.spendApprovalCapEnabled) {
+      rules.push(
+        `- أي إجراء يترتّب عليه صرف أو خصم يتجاوز ${g.spendApprovalCapSar} ريال: استخدم request_approval ولا تنفّذ حتى تصل الموافقة.`
+      );
+    }
+    if (g.requireMessageReview) {
+      rules.push(
+        '- أي رسالة موجّهة لعميل: اعرضها للمراجعة عبر request_approval قبل إرسالها.'
+      );
+    }
+    if (rules.length > 1) sections.push(rules.join('\n'));
+  }
 
   // Company knowledge — the structured-data context the agent answers from.
   if (dna?.aboutUs) sections.push(`عن الشركة:\n${dna.aboutUs}`);

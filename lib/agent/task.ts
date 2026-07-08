@@ -93,6 +93,7 @@ export async function runAgentTask(
     company: agent.company,
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
+    guardrails: agent.company, // enforce owner governance during autonomous runs
     audience: 'internal', // autonomous task on the business's behalf, not a customer chat
   });
   const memoryBlock = await recallMemoryBlock(

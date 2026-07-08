@@ -3,6 +3,7 @@ import { Bell, Sparkles, Zap } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { UserMenu } from '@/components/dashboard/user-menu';
+import { AutomationToggle } from '@/components/dashboard/automation-toggle';
 
 const PLAN_LABEL: Record<string, string> = {
   FREE: 'Free',
@@ -19,6 +20,7 @@ export function Topbar({
   tokenBalance = 0,
   plan = 'STARTER',
   pendingApprovals = 0,
+  automationEnabled = true,
 }: {
   userName: string;
   userEmail: string;
@@ -26,6 +28,7 @@ export function Topbar({
   tokenBalance?: number;
   plan?: string;
   pendingApprovals?: number;
+  automationEnabled?: boolean;
 }) {
   // Latin digits everywhere (English-primary), compact so the pill never grows.
   const tokens = new Intl.NumberFormat('en', {
@@ -61,19 +64,8 @@ export function Topbar({
           </span>
         </Link>
 
-        {/* Automation status — the scheduler runs agents on their triggers.
-            The master switch lives in Guardrails (/settings). */}
-        <Link
-          href="/settings"
-          title="الأتمتة — إعدادات الحوكمة"
-          className="hidden items-center gap-2 rounded-full border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-card lg:flex"
-        >
-          <span className="relative flex size-2">
-            <span className="absolute inline-flex size-full animate-ping rounded-full bg-emerald-500/60" />
-            <span className="relative inline-flex size-2 rounded-full bg-emerald-500" />
-          </span>
-          Automation on
-        </Link>
+        {/* Automation toggle — pauses/resumes the scheduler for the tenant. */}
+        <AutomationToggle initialOn={automationEnabled} />
 
         {/* Needs-you bell — sensitive decisions an agent paused for the owner. */}
         <Link

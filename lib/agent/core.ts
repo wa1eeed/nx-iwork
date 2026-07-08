@@ -25,6 +25,12 @@ export function loadAgentWithContext(agentId: string, companyId: string) {
           hasEcommerce: true,
           hasServices: true,
           hasBookings: true,
+          // Guardrails — injected into the agent's system prompt so governance
+          // (approval-required, spend cap, message review) is actually enforced.
+          requireApprovalForSensitive: true,
+          requireMessageReview: true,
+          spendApprovalCapEnabled: true,
+          spendApprovalCapSar: true,
           companyDNA: {
             select: { aboutUs: true, policies: true, tone: true, targetAudience: true },
           },

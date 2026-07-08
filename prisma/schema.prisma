@@ -128,6 +128,20 @@ model Company {
   customDomainVerified Boolean @default(false)
   customDomainSslReady Boolean @default(false)
 
+  // ── Guardrails (owner governance over the autonomous workforce) ──
+  // Master switch for the scheduler + event triggers. When false the cron loop
+  // skips this tenant entirely — every agent is effectively paused. Drives the
+  // top-bar Automation toggle and the Guardrails "Scheduler & triggers" row.
+  automationEnabled Boolean @default(true)
+  // Sensitive decisions (per the two-layer contract) must pause for the owner
+  // via request_approval instead of the agent acting on its own judgment.
+  requireApprovalForSensitive Boolean @default(true)
+  // Customer-facing messages an agent drafts wait for owner review before send.
+  requireMessageReview Boolean @default(false)
+  // Money moves above this many SAR need an approval. capEnabled gates the rule.
+  spendApprovalCapEnabled Boolean @default(true)
+  spendApprovalCapSar     Int     @default(500)
+
   // Relations
   users               User[]
   departments         Department[]

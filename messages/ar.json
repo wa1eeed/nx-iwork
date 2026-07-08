@@ -516,6 +516,7 @@
     "title": "الإعدادات",
     "subtitle": "تحكّم في إعدادات شركتك.",
     "tabs": {
+      "guardrails": "الحوكمة",
       "localization": "اللغة والمنطقة",
       "branding": "المظهر والهوية",
       "storefront": "الواجهة",

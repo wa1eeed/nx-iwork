@@ -9,6 +9,7 @@ import {
   TabsList,
   TabsTrigger,
 } from '@/components/ui/tabs';
+import { GuardrailsTab } from '@/components/settings/guardrails-tab';
 import { LocalizationTab } from '@/components/settings/localization-tab';
 import { BrandingTab } from '@/components/settings/branding-tab';
 import { StorefrontTab } from '@/components/settings/storefront-tab';
@@ -18,6 +19,7 @@ import { EmailTab } from '@/components/settings/email-tab';
 import { CompanyInfoTab } from '@/components/settings/company-info-tab';
 import { ApiSettingsTab } from '@/components/settings/api-settings-tab';
 import { getAiMode } from '@/lib/ai';
+import { agentTokenCap } from '@/lib/plans';
 import { publicHost } from '@/lib/public-url';
 import type { INDUSTRIES } from '@/lib/validators/onboarding';
 
@@ -31,7 +33,7 @@ export default async function SettingsPage() {
   });
   if (!user?.companyId) redirect('/onboarding');
 
-  const [company, settings, apiSettings, websiteConfig] = await Promise.all([
+  const [company, settings, apiSettings, websiteConfig, wallet] = await Promise.all([
     db.company.findUnique({
       where: { id: user.companyId },
       select: {
@@ -45,6 +47,14 @@ export default async function SettingsPage() {
         brandVoice: true,
         customDomain: true,
         customDomainVerified: true,
+        // Guardrails view (token bank + governance flags).
+        plan: true,
+        tokenBalance: true,
+        automationEnabled: true,
+        requireApprovalForSensitive: true,
+        requireMessageReview: true,
+        spendApprovalCapEnabled: true,
+        spendApprovalCapSar: true,
       },
     }),
     db.businessSettings.findUnique({
@@ -67,6 +77,10 @@ export default async function SettingsPage() {
         heroSubtitle: true,
         heroSubtitleEn: true,
       },
+    }),
+    db.wallet.findUnique({
+      where: { companyId: user.companyId },
+      select: { balance: true, currency: true },
     }),
   ]);
 
@@ -93,6 +107,10 @@ export default async function SettingsPage() {
     lastTested: apiSettings.byokLastTest?.toISOString() ?? null,
   };
 
+  const perAgentTokenCap = agentTokenCap(company.plan);
+  const walletBalance = Number(wallet?.balance ?? 0);
+  const walletCurrency = wallet?.currency ?? settings.currency;
+
   return (
     <div className="space-y-6">
       <div>
@@ -100,8 +118,9 @@ export default async function SettingsPage() {
         <p className="mt-1 text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
-      <Tabs defaultValue="localization">
+      <Tabs defaultValue="guardrails">
         <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="guardrails">{t('tabs.guardrails')}</TabsTrigger>
           <TabsTrigger value="localization">{t('tabs.localization')}</TabsTrigger>
           <TabsTrigger value="branding">{t('tabs.branding')}</TabsTrigger>
           <TabsTrigger value="storefront">{t('tabs.storefront')}</TabsTrigger>
@@ -115,6 +134,23 @@ export default async function SettingsPage() {
             <TabsTrigger value="api">{t('tabs.api')}</TabsTrigger>
           )}
         </TabsList>
+
+        <TabsContent value="guardrails">
+          <GuardrailsTab
+            initial={{
+              automationEnabled: company.automationEnabled,
+              requireApprovalForSensitive: company.requireApprovalForSensitive,
+              requireMessageReview: company.requireMessageReview,
+              spendApprovalCapEnabled: company.spendApprovalCapEnabled,
+              spendApprovalCapSar: company.spendApprovalCapSar,
+            }}
+            tokenBalance={company.tokenBalance}
+            plan={company.plan}
+            perAgentTokenCap={perAgentTokenCap}
+            walletBalance={walletBalance}
+            currency={walletCurrency}
+          />
+        </TabsContent>
 
         <TabsContent value="localization">
           <LocalizationTab

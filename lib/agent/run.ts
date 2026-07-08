@@ -82,6 +82,7 @@ export async function runAgentChat(
     company: agent.company,
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
+    guardrails: agent.company, // owner governance applies to owner-directed work too
     audience: 'internal', // dashboard chat: the owner is talking, not a customer
   });
 

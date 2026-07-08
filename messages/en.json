@@ -516,6 +516,7 @@
     "title": "Settings",
     "subtitle": "Manage your company configuration.",
     "tabs": {
+      "guardrails": "Guardrails",
       "localization": "Language & region",
       "branding": "Theme & branding",
       "storefront": "Storefront",

@@ -21,7 +21,9 @@ export interface SchedulerRunSummary {
 
 export async function runDueSchedules(now: Date = new Date()): Promise<SchedulerRunSummary> {
   const due = await db.agentSchedule.findMany({
-    where: { isActive: true, nextRunAt: { lte: now } },
+    // Guardrails: skip tenants whose owner paused automation — every agent in
+    // that company is effectively off until they flip it back on.
+    where: { isActive: true, nextRunAt: { lte: now }, company: { automationEnabled: true } },
     select: {
       id: true,
       companyId: true,
@@ -89,6 +91,9 @@ export async function runDueTasks(now: Date = new Date(), limit = 50): Promise<S
       triggerType: { in: ['EVENT', 'AGENT_TOOL'] },
       agentId: { not: null },
       OR: [{ dueAt: null }, { dueAt: { lte: now } }],
+      // Guardrails: paused tenants don't run — their pending tasks wait until
+      // the owner re-enables automation.
+      company: { automationEnabled: true },
     },
     select: { id: true, companyId: true },
     orderBy: { createdAt: 'asc' },
