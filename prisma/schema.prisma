@@ -852,6 +852,10 @@ model Booking {
   company    Company   @relation(fields: [companyId], references: [id], onDelete: Cascade)
   customerId String?
   customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  // The booked service (bookings module). Null for ad-hoc/manual bookings not
+  // tied to a catalog service. Drives per-service slot capacity in the engine.
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
 
   ref     String? // BKG-001 (per-company)
   title   String
@@ -868,6 +872,7 @@ model Booking {
 
   @@index([companyId, startAt])
   @@index([customerId])
+  @@index([serviceId, startAt])
 }
 
 // ========================================
@@ -978,12 +983,40 @@ model Service {
   isActive  Boolean @default(true)
   sortOrder Int     @default(0)
 
-  orders Order[]
+  // Bookings module (deterministic engine, lib/booking/engine.ts). A service is
+  // "bookable" when durationMin is set AND it has >=1 availability window. Slots
+  // are generated server-side, sized by durationMin, stepped by durationMin+bufferMin,
+  // allowing maxCapacity concurrent bookings per slot (group sessions > 1).
+  durationMin Int? // slot length in minutes; null = not bookable by slot
+  bufferMin   Int  @default(0) // prep/cleanup gap after each slot
+  maxCapacity Int  @default(1) // concurrent bookings per slot
+
+  availability ServiceAvailability[]
+  bookings     Booking[]
+  orders       Order[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@index([companyId])
+}
+
+// Weekly availability window for a bookable service (deterministic slot source).
+model ServiceAvailability {
+  id        String  @id @default(cuid())
+  companyId String // denormalized for tenant-scoped queries (cascades via Service)
+  serviceId String
+  service   Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Int    // 0 = Sunday … 6 = Saturday
+  startTime String // "HH:MM" 24h, local business time
+  endTime   String // "HH:MM" 24h
+
+  createdAt DateTime @default(now())
+
+  @@unique([serviceId, dayOfWeek, startTime])
+  @@index([companyId])
+  @@index([serviceId])
 }
 
 model Product {
