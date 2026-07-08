@@ -1,5 +1,6 @@
 import type { NextConfig } from 'next';
 import createNextIntlPlugin from 'next-intl/plugin';
+import { withSentryConfig } from '@sentry/nextjs';
 
 const withNextIntl = createNextIntlPlugin('./i18n/request.ts');
 
@@ -40,4 +41,15 @@ if (turboFromExperimental) {
   withIntl.experimental = restExperimental;
 }
 
-export default withIntl;
+// Sentry wraps the build to instrument the app and (optionally) upload source
+// maps. The runtime SDK stays a no-op unless SENTRY_DSN is set; source-map
+// upload only runs when SENTRY_AUTH_TOKEN + org/project are configured, so local
+// and unconfigured builds are unaffected.
+export default withSentryConfig(withIntl, {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  silent: !process.env.CI,
+  telemetry: false,
+  widenClientFileUpload: true,
+  sourcemaps: { disable: !process.env.SENTRY_AUTH_TOKEN },
+});

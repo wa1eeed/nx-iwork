@@ -21,6 +21,11 @@ needs: `vector`, `pg_trgm`, `pgcrypto`. Migrations apply automatically on deploy
 The full reference is [`.env.example`](../.env.example). The essentials:
 
 ```bash
+# Names the deployment. staging + production both build with NODE_ENV=production,
+# so APP_ENV is what separates them (payment test/live keys, noindex, Sentry tag).
+APP_ENV=production          # development | staging | production
+NEXT_PUBLIC_APP_ENV=production   # must mirror APP_ENV (browser Sentry tag)
+
 DATABASE_URL=postgres://…
 NEXTAUTH_SECRET=…            # openssl rand -base64 32
 NEXTAUTH_URL=https://bznss.one
@@ -41,8 +46,26 @@ ADMIN_PASSWORD=<strong>
 
 # Optional: R2 storage · Resend/Twilio · Tap payments
 R2_ENDPOINT= … R2_ACCESS_KEY_ID= … R2_SECRET_ACCESS_KEY= … R2_BUCKET= … R2_PUBLIC_BASE_URL=
-TAP_SECRET_KEY=sk_live_…
+TAP_SECRET_KEY=sk_live_…     # sk_test_… on staging, sk_live_… ONLY on production
+
+# Optional: error tracking (no-op unless set). Same project DSN for both.
+SENTRY_DSN= …  NEXT_PUBLIC_SENTRY_DSN= …
+# SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN  → build-time source-map upload
 ```
+
+### The three environments
+
+The codebase is env-aware via `APP_ENV` (`lib/env.ts`), so one image serves all three:
+
+| Env | `APP_ENV` | Where | Keys |
+|-----|-----------|-------|------|
+| **development** | unset / `development` | local Mac (`next dev`) | test / dummy |
+| **staging** | `staging` | VPS · Coolify (pre-live) | **test** (`sk_test_…`) |
+| **production** | `production` | live `bznss.one` | **live** (`sk_live_…`) |
+
+Give staging and production **separate** databases, R2 buckets, and secrets — never
+share prod secrets into staging. The boot log prints a one-line env summary and
+**warns loudly** if live payment keys appear in a non-prod env (or vice-versa).
 
 ## 3. Domains
 
@@ -70,8 +93,12 @@ curl -fsS -X POST -H "x-cron-secret: $CRON_SECRET" https://bznss.one/api/cron/ru
 
 ```bash
 curl -o /dev/null -w "%{http_code}\n" https://bznss.one/         # 200
+curl -s https://bznss.one/api/health                             # {"ok":true,"env":"production",…} — 200/503; no secrets
 curl -H "x-cron-secret: $CRON_SECRET" https://bznss.one/api/ai/health   # {"ok":true,…,"dims":1536}
 ```
+
+Point the Coolify health check (and an external uptime monitor) at `/api/health` —
+it does a DB round-trip and returns 503 when the database is unreachable.
 
 Then sign in at `https://bznss.one/admin` with the bootstrap admin.
 
