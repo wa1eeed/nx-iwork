@@ -59,5 +59,6 @@ export async function resolveApproval(id: string, decision: 'approve' | 'reject'
   ]);
 
   revalidatePath('/overview');
+  revalidatePath('/approvals');
   return { ok: true };
 }

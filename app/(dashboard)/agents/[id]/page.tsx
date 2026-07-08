@@ -167,7 +167,8 @@ export default async function AgentProfilePage({
         </div>
       )}
 
-      <Tabs defaultValue="activity">
+      <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
+        <Tabs defaultValue="activity">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="activity">{t('tabs.activity')}</TabsTrigger>
           <TabsTrigger value="scenarios">{t('tabs.scenarios')}</TabsTrigger>
@@ -336,7 +337,43 @@ export default async function AgentProfilePage({
             }))}
           />
         </TabsContent>
-      </Tabs>
+        </Tabs>
+
+        {/* Always-on facts rail */}
+        <aside className="space-y-4">
+          <div className="rounded-2xl border bg-card p-4">
+            {[
+              { l: t('factStatus'), v: <span className="dept-tint-bg dept-accent-text rounded-full px-2 py-0.5 text-xs font-semibold">{ta(`status.${agent.status}`)}</span> },
+              { l: t('factModel'), v: tierLabel },
+              { l: t('factReportsTo'), v: manager?.name ?? t('owner') },
+              { l: t('factDepartment'), v: deptName },
+            ].map((r, i) => (
+              <div key={i} className="flex items-center justify-between gap-2 border-b border-border py-2 first:pt-0 last:border-0 last:pb-0">
+                <span className="text-xs text-muted-foreground">{r.l}</span>
+                <span className="text-sm font-medium">{r.v}</span>
+              </div>
+            ))}
+          </div>
+          <div className="rounded-2xl border bg-card p-4">
+            <p className="text-xs text-muted-foreground">{t('tokensThisMonth')}</p>
+            <p className="mt-1 text-xl font-bold tabular-nums" dir="ltr">
+              {formatNumber(agent.periodTokensUsed, locale)}
+              <span className="text-sm font-normal text-muted-foreground">
+                {agent.tokenLimit > 0 ? ` / ${formatNumber(agent.tokenLimit, locale)}` : ` · ${t('unlimited')}`}
+              </span>
+            </p>
+            {agent.tokenLimit > 0 && (
+              <div className="mt-2 h-1.5 overflow-hidden rounded-full bg-[hsl(var(--muted))]">
+                <div
+                  className="h-full dept-accent-bg"
+                  style={{ width: `${Math.min(100, Math.round((agent.periodTokensUsed / Math.max(1, agent.tokenLimit)) * 100))}%` }}
+                />
+              </div>
+            )}
+            <p className="mt-2 text-[11px] text-muted-foreground">{t('capNote')}</p>
+          </div>
+        </aside>
+      </div>
     </div>
   );
 }

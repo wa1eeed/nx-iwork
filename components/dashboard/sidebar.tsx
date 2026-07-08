@@ -9,6 +9,7 @@ import {
   Building2,
   BookOpen,
   CalendarCheck,
+  CheckCircle,
   Contact,
   ShoppingBag,
   LayoutDashboard,
@@ -52,6 +53,7 @@ export const NAV_SECTIONS: NavSection[] = [
     sectionKey: 'command',
     items: [
       { href: '/overview', icon: LayoutDashboard, labelKey: 'overview' },
+      { href: '/approvals', icon: CheckCircle, labelKey: 'approvals' },
       { href: '/chat', icon: MessageSquare, labelKey: 'chat' },
     ],
   },
