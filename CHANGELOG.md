@@ -13,6 +13,34 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-07-08 — Multi-agent Phase 1 + bookings adoption (in progress)
+
+### Added
+- **Multi-agent architecture — Phase 1 (Job Spec).**
+  - `Agent.jobDescription` "constitution" (mandate + boundaries, distinct from
+    `persona`) — injected into `buildSystemPrompt`, anchoring the two-layer
+    contract at the agent level. Threaded through the HR gateway, actions, and
+    the agent form.
+  - **Per-department permission matrix** — the tool toggles are grouped by
+    functional area (sales / catalog / bookings / support / operations / memory)
+    over the existing `getToolsForAgent` hard gate (cross-department allowed).
+  - **"Justification test"** callout in the agent-creation form (deterministic
+    responsibility → workflow; judgment → agent).
+- **Bookings adoption (from NXBook) — deterministic engine + calendar.**
+  - `lib/booking/engine.ts` — the SYSTEM half of the two-layer contract:
+    timezone-aware slot generation from weekly availability, capacity per slot,
+    and a transaction-guarded `createBooking` (no overbooking). Agents complete
+    bookings only via tools that route through this engine (bookings permission).
+  - Schema: `ServiceAvailability` (weekly windows) + `Service.durationMin` /
+    `bufferMin` / `maxCapacity` + `Booking.serviceId`. Additive migration.
+  - `/bookings` becomes a **calendar** (month grid + per-day panel + inline
+    confirm / mark-done / cancel + Calendar↔List toggle). `setBookingStatus`
+    action (tenant-scoped).
+  - **In progress:** per-service availability editor + the public booking flow
+    (customer picks a slot → confirmation) + customer-detail booking stats.
+
+---
+
 ## 2026-07-08 — Env-aware 3 environments + Sentry + per-tenant email
 
 ### Added

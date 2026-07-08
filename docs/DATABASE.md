@@ -953,5 +953,12 @@ The customer-facing + storage arc:
   phases (Skills, orchestration) are not in the schema yet. See `docs/AGENT_SYSTEM.md`.
 - **Env/observability** are code-only (no schema): `APP_ENV` three-environment
   config (`lib/env.ts`), Sentry, and `GET /api/health`.
+- **Bookings engine (deterministic).** `ServiceAvailability` (weekly windows per
+  bookable service) + `Service.durationMin` / `bufferMin` / `maxCapacity` +
+  `Booking.serviceId`. A service is bookable when `durationMin` is set AND it has
+  ≥1 availability window; slots are generated server-side by `lib/booking/engine.ts`
+  (timezone-aware, capacity-safe). Agents create/manage bookings only via tools
+  that route through this engine (bookings permission). Migration
+  `20260708140000_bookings_engine`.
 
-Migrations: `20260621130000_wallet` … `20260622140000_storage_addon`.
+Migrations: `20260621130000_wallet` … `20260708140000_bookings_engine`.
