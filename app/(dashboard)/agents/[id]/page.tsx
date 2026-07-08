@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { ArrowRight, Sparkles, Gauge, Brain } from 'lucide-react';
+import { ArrowRight, Sparkles, Gauge, Brain, Database, Network } from 'lucide-react';
 import { HolographicAvatar } from '@/components/dashboard/holographic-avatar';
 import { deptHue } from '@/lib/ui/dept-accent';
 import { auth } from '@/lib/auth';
@@ -33,7 +33,7 @@ export default async function AgentProfilePage({
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
 
-  const [agent, departments, managers, schedules, settings, tasks, company, scenarios, memories, pendingApprovals] = await Promise.all([
+  const [agent, departments, managers, schedules, settings, tasks, company, scenarios, memories, pendingApprovals, taskCount, chatCount, memoryCount] = await Promise.all([
     db.agent.findFirst({
       where: { id, companyId },
       include: { department: { select: { name: true, nameEn: true, color: true } } },
@@ -91,6 +91,10 @@ export default async function AgentProfilePage({
       orderBy: { createdAt: 'desc' },
       select: { id: true, decision: true },
     }),
+    // 3-layer memory counts (episodic = tasks + conversations; semantic = vectors).
+    db.task.count({ where: { agentId: id, companyId } }),
+    db.chatMessage.count({ where: { agentId: id, companyId } }),
+    db.agentMemory.count({ where: { agentId: id, companyId } }),
   ]);
 
   if (!agent) notFound();
@@ -288,42 +292,71 @@ export default async function AgentProfilePage({
           </Card>
         </TabsContent>
 
-        <TabsContent value="memory" className="space-y-4">
-          <Card>
-            <CardContent className="space-y-3 p-5">
-              <div>
+        <TabsContent value="memory" className="space-y-5">
+          {/* 3-layer memory (design View 2 → Memory) — real per-agent counts. */}
+          <div>
+            <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+              {t('threeLayer')}
+            </p>
+            <div className="space-y-3">
+              {[
+                { icon: Brain, title: t('workingTitle'), desc: t('workingDesc') },
+                {
+                  icon: Database,
+                  title: t('episodicTitle'),
+                  desc: t('episodicDesc', { count: formatNumber(taskCount + chatCount, locale) }),
+                },
+                {
+                  icon: Network,
+                  title: t('semanticTitle'),
+                  desc: t('semanticDesc', { count: formatNumber(memoryCount, locale) }),
+                },
+              ].map(({ icon: Icon, title, desc }) => (
+                <div key={title} className="flex items-start gap-3 rounded-2xl border bg-card p-4">
+                  <span className="dept-tint-bg dept-accent-text flex size-10 shrink-0 items-center justify-center rounded-xl">
+                    <Icon className="size-5" />
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold">{title}</p>
+                    <p className="mt-0.5 text-sm text-muted-foreground">{desc}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Stored semantic memories (the vectors themselves). */}
+          {memories.length > 0 && (
+            <div>
+              <div className="mb-3">
                 <p className="flex items-center gap-2 text-sm font-medium">
-                  <Brain className="h-4 w-4 text-primary" />
+                  <Sparkles className="dept-accent-text h-4 w-4" />
                   {t('memoryTitle')}
                 </p>
                 <p className="text-xs text-muted-foreground">{t('memorySubtitle')}</p>
               </div>
-              {memories.length === 0 ? (
-                <p className="py-8 text-center text-sm text-muted-foreground">{t('noMemory')}</p>
-              ) : (
-                <ul className="space-y-2">
-                  {memories.map((m) => (
-                    <li key={m.id} className="rounded-lg border p-3">
-                      <div className="mb-1 flex items-center gap-2">
-                        {m.category && (
-                          <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] text-primary">
-                            {m.category}
-                          </span>
-                        )}
-                        <span className="text-[10px] text-muted-foreground">
-                          {t('importance')}: {m.importance}/10
+              <ul className="space-y-2">
+                {memories.map((m) => (
+                  <li key={m.id} className="rounded-lg border p-3">
+                    <div className="mb-1 flex items-center gap-2">
+                      {m.category && (
+                        <span className="dept-tint-bg dept-accent-text rounded-full px-2 py-0.5 text-[10px]">
+                          {m.category}
                         </span>
-                        <span className="ms-auto text-[10px] text-muted-foreground">
-                          {formatDate(m.createdAt, locale)}
-                        </span>
-                      </div>
-                      <p className="whitespace-pre-wrap text-sm text-foreground/90">{m.summary}</p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </CardContent>
-          </Card>
+                      )}
+                      <span className="text-[10px] text-muted-foreground">
+                        {t('importance')}: {m.importance}/10
+                      </span>
+                      <span className="ms-auto text-[10px] text-muted-foreground">
+                        {formatDate(m.createdAt, locale)}
+                      </span>
+                    </div>
+                    <p className="whitespace-pre-wrap text-sm text-foreground/90">{m.summary}</p>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
