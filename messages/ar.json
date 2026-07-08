@@ -343,6 +343,28 @@
     }
   },
   "overview": {
+    "workforce": "قوة عملك",
+    "live": "مباشر · الوكلاء يعملون بالمشغّلات",
+    "hireEmployee": "وظّف موظف ذكاء",
+    "hireFirst": "وظّف أول موظف ذكاء لك",
+    "needsAttention": "يحتاج انتباهك",
+    "routeNote": "الوكلاء يحيلون القرارات الحسّاسة إليك للموافقة.",
+    "allCaught": "كل شيء تحت السيطرة",
+    "liveActivity": "النشاط المباشر",
+    "noActivity": "لا نشاط بعد.",
+    "approve": "موافقة",
+    "sendBack": "إعادة",
+    "approved": "تمت الموافقة — سيكمل الوكيل.",
+    "sentBack": "أُعيد للمراجعة.",
+    "actionFailed": "تعذّر التحديث. حاول مجدداً.",
+    "statusLine": {
+      "ONLINE": "يعمل",
+      "WORKING": "يعمل",
+      "ONBOARDING": "يتعلّم عن نشاطك…",
+      "PAUSED": "متوقّف",
+      "OFFLINE": "خامل",
+      "ARCHIVED": "مؤرشف"
+    },
     "greeting": "مرحباً، {name}",
     "companyDashboard": "لوحة تحكم {company}",
     "newAgent": "موظف",

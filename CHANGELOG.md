@@ -13,6 +13,34 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-07-08 — Command Center redesign (from the design handoff)
+
+Rebuild the owner dashboard to the `design_handoff_ai_company` spec (the new
+source of truth, per the root `CLAUDE.md`) — a warm "Command Center" for an AI
+workforce, replacing the Aurora theme inside the dashboard.
+
+### Added
+- **Design foundation.** A `.theme-command` warm-neutral palette scoped to the
+  (dashboard) root (marketing keeps Aurora) + the per-department **oklch accent**
+  system (`.dept-*` utilities + `lib/ui/dept-accent.ts`, one stable hue per dept).
+- **Holographic agent avatars** (`holographic-avatar.tsx`) — deterministic SVG
+  from the agent id (hue + facets + eyes + scanlines all seed-derived); every
+  agent is visually distinct, no image assets.
+- **Command Center (`/overview`)** — replaces the old KPI dashboard: the workforce
+  **roster grouped by department** (reusable `AgentCard` with NEEDS-YOU / progress
+  / trigger+model states) + a right rail of **approvals** (`ApprovalCard`) and a
+  **live activity** feed (`TimelineEvent`).
+- **Approval loop — owner side.** `resolveApproval` action (approve / send back):
+  records the decision and **wakes the agent** with a follow-up task (the
+  two-layer contract's human-in-the-loop). Found the `Approval` model was
+  scaffolded-but-unwired; the agent-side `request_approval` tool is next.
+
+### Next
+Agent workspace · hire modal · guardrails · new-department modal · global top bar +
+sidebar reorg · the `request_approval` agent tool.
+
+---
+
 ## 2026-07-08 — Multi-agent Phase 1 + bookings adoption (in progress)
 
 ### Added

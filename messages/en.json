@@ -343,6 +343,28 @@
     }
   },
   "overview": {
+    "workforce": "Your workforce",
+    "live": "Live · agents acting on triggers",
+    "hireEmployee": "Hire AI employee",
+    "hireFirst": "Hire your first AI employee",
+    "needsAttention": "Needs your attention",
+    "routeNote": "Agents route sensitive decisions to you for approval.",
+    "allCaught": "All caught up",
+    "liveActivity": "Live activity",
+    "noActivity": "No activity yet.",
+    "approve": "Approve",
+    "sendBack": "Send back",
+    "approved": "Approved — the agent will continue.",
+    "sentBack": "Sent back for revision.",
+    "actionFailed": "Couldn't update. Try again.",
+    "statusLine": {
+      "ONLINE": "Working",
+      "WORKING": "Working",
+      "ONBOARDING": "Learning your business…",
+      "PAUSED": "Paused",
+      "OFFLINE": "Idle",
+      "ARCHIVED": "Archived"
+    },
     "greeting": "Hi, {name}",
     "companyDashboard": "{company} dashboard",
     "newAgent": "Agent",
