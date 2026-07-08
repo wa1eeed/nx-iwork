@@ -13,15 +13,15 @@ export function ArchiveAgentButton({ id }: { id: string }) {
   const [pending, start] = useTransition();
 
   function onArchive() {
-    if (!window.confirm('أرشفة هذا الموظف؟ يمكن استرجاعه لاحقاً.')) return;
+    if (!window.confirm('Archive this agent? You can restore it later.')) return;
     start(async () => {
       const res = await archiveAgent(id);
       if (res.ok) {
-        toast.success('تمت الأرشفة.');
+        toast.success('Agent archived.');
         router.push('/agents');
         router.refresh();
       } else {
-        toast.error('تعذّرت الأرشفة.');
+        toast.error('Could not archive the agent.');
       }
     });
   }
@@ -35,7 +35,7 @@ export function ArchiveAgentButton({ id }: { id: string }) {
       className="text-destructive hover:text-destructive"
     >
       {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Archive className="me-1 h-4 w-4" />}
-      أرشفة
+      Archive
     </Button>
   );
 }

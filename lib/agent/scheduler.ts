@@ -22,8 +22,14 @@ export interface SchedulerRunSummary {
 export async function runDueSchedules(now: Date = new Date()): Promise<SchedulerRunSummary> {
   const due = await db.agentSchedule.findMany({
     // Guardrails: skip tenants whose owner paused automation — every agent in
-    // that company is effectively off until they flip it back on.
-    where: { isActive: true, nextRunAt: { lte: now }, company: { automationEnabled: true } },
+    // that company is effectively off until they flip it back on. Also skip
+    // individually paused agents (the "Pause agent" workspace action).
+    where: {
+      isActive: true,
+      nextRunAt: { lte: now },
+      company: { automationEnabled: true },
+      agent: { status: { not: 'PAUSED' } },
+    },
     select: {
       id: true,
       companyId: true,
@@ -92,8 +98,9 @@ export async function runDueTasks(now: Date = new Date(), limit = 50): Promise<S
       agentId: { not: null },
       OR: [{ dueAt: null }, { dueAt: { lte: now } }],
       // Guardrails: paused tenants don't run — their pending tasks wait until
-      // the owner re-enables automation.
+      // the owner re-enables automation. Paused agents are skipped too.
       company: { automationEnabled: true },
+      agent: { status: { not: 'PAUSED' } },
     },
     select: { id: true, companyId: true },
     orderBy: { createdAt: 'asc' },

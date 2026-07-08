@@ -2,17 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-  CheckCircle2,
-  XCircle,
-  Clock,
-  Loader2,
-  CalendarClock,
-  ChevronDown,
-} from 'lucide-react';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import Link from 'next/link';
+import { ChevronDown, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { formatDateTime } from '@/lib/format';
 import { Countdown } from '@/components/dashboard/countdown';
 
 export interface AgentTaskRow {
@@ -31,128 +23,174 @@ export interface AgentScheduleRow {
   runCount: number;
 }
 
-const STATUS: Record<string, { label: string; dot: string; text: string; icon: typeof Clock }> = {
-  PENDING: { label: 'قيد الانتظار', dot: 'bg-muted-foreground', text: 'text-muted-foreground', icon: Clock },
-  WORKING: { label: 'يعمل الآن', dot: 'bg-amber-500', text: 'text-amber-500', icon: Loader2 },
-  DONE: { label: 'منجز', dot: 'bg-emerald-500', text: 'text-emerald-500', icon: CheckCircle2 },
-  FAILED: { label: 'فشل', dot: 'bg-destructive', text: 'text-destructive', icon: XCircle },
-  CANCELLED: { label: 'ملغى', dot: 'bg-muted-foreground', text: 'text-muted-foreground', icon: XCircle },
+export interface AgentApprovalRow {
+  id: string;
+  decision: string;
+}
+
+const DOT: Record<string, string> = {
+  PENDING: 'bg-muted-foreground/50',
+  WORKING: 'bg-amber-500',
+  DONE: 'bg-emerald-500',
+  FAILED: 'bg-destructive',
+  CANCELLED: 'bg-muted-foreground/40',
 };
 
 const IN_PROGRESS = new Set(['PENDING', 'WORKING', 'PENDING_APPROVAL', 'PENDING_REVIEW', 'BLOCKED']);
 
-function fmt(iso: string | null): string {
-  if (!iso) return '';
-  return formatDateTime(iso, 'ar', { dateStyle: 'medium', timeStyle: 'short' });
-}
-
-// Live activity timeline for one agent. Auto-refreshes so running tasks update
-// without a manual reload.
+// The agent's WORK LOG (design View 2 → Activity). A single flat timeline, most
+// recent first, with in-progress work floated to the top as "Currently: …".
 export function AgentActivity({
   tasks,
   schedules,
+  approvals = [],
 }: {
   tasks: AgentTaskRow[];
   schedules: AgentScheduleRow[];
+  approvals?: AgentApprovalRow[];
 }) {
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
+  // `now` starts null so SSR and first client render agree (no relative times);
+  // it fills on mount and ticks every 15s alongside a server refresh.
+  const [now, setNow] = useState<number | null>(null);
 
-  // Live: pull fresh server data every 15s (cheap; cards re-render in place).
   useEffect(() => {
-    const id = setInterval(() => router.refresh(), 15_000);
+    setNow(Date.now());
+    const id = setInterval(() => {
+      setNow(Date.now());
+      router.refresh();
+    }, 15_000);
     return () => clearInterval(id);
   }, [router]);
 
-  const inProgress = tasks.filter((t) => IN_PROGRESS.has(t.status));
-  const done = tasks.filter((t) => !IN_PROGRESS.has(t.status));
-
-  function empty(text: string) {
-    return <p className="py-10 text-center text-sm text-muted-foreground">{text}</p>;
+  function rel(iso: string | null): string {
+    if (!iso || now === null) return '';
+    const m = Math.round((now - new Date(iso).getTime()) / 60_000);
+    if (m < 1) return 'just now';
+    if (m < 60) return `${m} min ago`;
+    const h = Math.round(m / 60);
+    if (h < 24) return `${h} hr ago`;
+    const d = Math.round(h / 24);
+    return `${d} day${d > 1 ? 's' : ''} ago`;
   }
 
-  // A vertical-timeline row: dot on a line + content.
-  function TaskNode({ t, last }: { t: AgentTaskRow; last: boolean }) {
-    const st = STATUS[t.status] ?? STATUS.PENDING;
-    const StIcon = st.icon;
-    const busy = t.status === 'WORKING';
-    return (
-      <div className="relative flex gap-3 ps-2">
-        {/* line */}
-        {!last && <span className="absolute start-[10px] top-5 h-full w-px bg-border" />}
-        {/* dot */}
-        <span className={cn('relative mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ring-4 ring-background', st.dot, busy && 'animate-pulse')} />
-        <div className="min-w-0 flex-1 pb-5">
-          <div className="flex items-start justify-between gap-2">
-            <p className="text-sm font-medium">{t.title}</p>
-            <span className={cn('inline-flex shrink-0 items-center gap-1 text-xs', st.text)}>
-              <StIcon className={cn('h-3 w-3', busy && 'animate-spin')} />
-              {st.label}
-            </span>
-          </div>
-          <p className="mt-0.5 text-[11px] text-muted-foreground tabular-nums">
-            أُنشئت: {fmt(t.createdAt)}
-            {t.completedAt ? ` · انتهت: ${fmt(t.completedAt)}` : ''}
-          </p>
-          {t.result && (
-            <div className="mt-1">
-              <button
-                onClick={() => setOpenId(openId === t.id ? null : t.id)}
-                className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
-              >
-                <ChevronDown className={cn('h-3 w-3 transition', openId === t.id && 'rotate-180')} />
-                نتيجة التنفيذ
-              </button>
-              {openId === t.id && (
-                <p className="mt-1 whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm">{t.result}</p>
-              )}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  }
+  // In-progress first, then by recency.
+  const ordered = [...tasks].sort((a, b) => {
+    const ai = IN_PROGRESS.has(a.status) ? 1 : 0;
+    const bi = IN_PROGRESS.has(b.status) ? 1 : 0;
+    if (ai !== bi) return bi - ai;
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+  });
+
+  const nothing = approvals.length === 0 && ordered.length === 0;
+  const lastIndex = ordered.length - 1;
 
   return (
-    <Tabs defaultValue="active">
-      <TabsList>
-        <TabsTrigger value="active">قيد التنفيذ ({inProgress.length})</TabsTrigger>
-        <TabsTrigger value="done">منجزة ({done.length})</TabsTrigger>
-        <TabsTrigger value="scheduled">مجدولة ({schedules.length})</TabsTrigger>
-      </TabsList>
+    <div className="space-y-6">
+      <div>
+        <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+          Work log
+        </p>
 
-      <TabsContent value="active" className="pt-3">
-        {inProgress.length === 0
-          ? empty('لا مهام قيد التنفيذ.')
-          : inProgress.map((t, i) => <TaskNode key={t.id} t={t} last={i === inProgress.length - 1} />)}
-      </TabsContent>
+        {nothing ? (
+          <p className="rounded-2xl border border-dashed py-10 text-center text-sm text-muted-foreground">
+            No activity yet — this agent hasn&apos;t picked up any work.
+          </p>
+        ) : (
+          <ol className="relative">
+            {/* Sensitive decisions the agent paused for — the top of the log. */}
+            {approvals.map((a) => (
+              <li key={a.id} className="relative flex gap-3 ps-2">
+                <span className="absolute start-[10px] top-5 h-full w-px bg-border" />
+                <span className="relative mt-1.5 size-2.5 shrink-0 animate-pulse rounded-full bg-amber-500 ring-4 ring-background" />
+                <div className="min-w-0 flex-1 pb-5">
+                  <p className="text-sm font-medium">
+                    Currently: {a.decision} —{' '}
+                    <Link
+                      href="/approvals"
+                      className="text-amber-600 hover:underline dark:text-amber-400"
+                    >
+                      approve?
+                    </Link>
+                  </p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">needs you · just now</p>
+                </div>
+              </li>
+            ))}
 
-      <TabsContent value="done" className="pt-3">
-        {done.length === 0
-          ? empty('لا مهام منجزة بعد.')
-          : done.map((t, i) => <TaskNode key={t.id} t={t} last={i === done.length - 1} />)}
-      </TabsContent>
+            {ordered.map((t, i) => {
+              const inProg = IN_PROGRESS.has(t.status);
+              const last = i === lastIndex;
+              return (
+                <li key={t.id} className="relative flex gap-3 ps-2">
+                  {!last && <span className="absolute start-[10px] top-5 h-full w-px bg-border" />}
+                  <span
+                    className={cn(
+                      'relative mt-1.5 size-2.5 shrink-0 rounded-full ring-4 ring-background',
+                      DOT[t.status] ?? DOT.PENDING,
+                      t.status === 'WORKING' && 'animate-pulse'
+                    )}
+                  />
+                  <div className="min-w-0 flex-1 pb-5">
+                    <p className="text-sm font-medium">
+                      {inProg ? `Currently: ${t.title}` : t.title}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-muted-foreground">
+                      {rel(t.completedAt ?? t.createdAt)}
+                    </p>
+                    {t.result && (
+                      <div className="mt-1">
+                        <button
+                          onClick={() => setOpenId(openId === t.id ? null : t.id)}
+                          className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
+                        >
+                          <ChevronDown
+                            className={cn('size-3 transition', openId === t.id && 'rotate-180')}
+                          />
+                          result
+                        </button>
+                        {openId === t.id && (
+                          <p className="mt-1 whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm">
+                            {t.result}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </li>
+              );
+            })}
+          </ol>
+        )}
+      </div>
 
-      <TabsContent value="scheduled" className="space-y-3 pt-3">
-        {schedules.length === 0
-          ? empty('لا جدولة لهذا الموظف. أضفها من تبويب الإعدادات.')
-          : schedules.map((s) => (
-              <div key={s.id} className="flex items-center gap-3 rounded-lg border p-3">
-                <CalendarClock className="h-5 w-5 shrink-0 text-primary" />
+      {/* Upcoming scheduled runs. */}
+      {schedules.length > 0 && (
+        <div>
+          <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
+            Scheduled
+          </p>
+          <div className="space-y-2">
+            {schedules.map((s) => (
+              <div key={s.id} className="flex items-center gap-3 rounded-xl border p-3">
+                <CalendarClock className="size-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{s.name}</p>
-                  <p className="text-xs text-muted-foreground tabular-nums">
-                    نُفّذت {s.runCount} مرة{s.nextRunAt ? ` · التالي ${fmt(s.nextRunAt)}` : ''}
+                  <p className="text-[11px] text-muted-foreground tabular-nums">
+                    ran {s.runCount}×{s.nextRunAt ? '' : ' · inactive'}
                   </p>
                 </div>
                 {s.nextRunAt && (
-                  <span className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-xs">
+                  <span className="shrink-0 rounded-full bg-muted px-2.5 py-1 text-[11px]">
                     <Countdown target={s.nextRunAt} />
                   </span>
                 )}
               </div>
             ))}
-      </TabsContent>
-    </Tabs>
+          </div>
+        </div>
+      )}
+    </div>
   );
 }

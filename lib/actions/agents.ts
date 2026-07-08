@@ -218,6 +218,29 @@ export async function archiveAgent(id: string): Promise<AgentActionResult> {
   }
 }
 
+// Pause / resume an agent. A paused agent keeps all its history and config but
+// stops working: the scheduler skips paused agents, so no schedule or event
+// trigger wakes it until the owner resumes. The primary header action on the
+// agent workspace (design View 2).
+export async function setAgentPaused(id: string, paused: boolean): Promise<AgentActionResult> {
+  const cid = await companyId();
+  if (!cid) return { ok: false, error: 'no_company' };
+  try {
+    const res = await db.agent.updateMany({
+      where: { id, companyId: cid, status: { not: 'ARCHIVED' } },
+      data: { status: paused ? 'PAUSED' : 'ONLINE' },
+    });
+    if (res.count === 0) return { ok: false, error: 'not_found' };
+    revalidatePath('/agents');
+    revalidatePath(`/agents/${id}`);
+    revalidatePath('/overview');
+    return { ok: true, id };
+  } catch (err) {
+    console.error('setAgentPaused failed', err);
+    return { ok: false, error: 'generic' };
+  }
+}
+
 // Used by the chat empty-state to spin up the company's first AI employee with
 // one click. Full per-agent creation (custom persona/department/model) lands
 // with the Agents CRUD priority.

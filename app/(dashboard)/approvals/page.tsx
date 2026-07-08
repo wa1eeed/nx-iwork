@@ -41,7 +41,14 @@ export default async function ApprovalsPage() {
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       <div>
-        <h1 className="text-2xl font-bold">{t('approvalsTitle')}</h1>
+        <div className="flex items-center gap-2">
+          <h1 className="text-2xl font-bold">{t('approvalsTitle')}</h1>
+          {cards.length > 0 && (
+            <span className="inline-flex size-6 items-center justify-center rounded-full bg-amber-500/15 text-xs font-bold text-amber-600 dark:text-amber-400">
+              {cards.length}
+            </span>
+          )}
+        </div>
         <p className="mt-1 text-sm text-muted-foreground">{t('approvalsSubtitle')}</p>
       </div>
 

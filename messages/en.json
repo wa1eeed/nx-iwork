@@ -784,13 +784,13 @@
     "failed": "Failed",
     "tokens": "Tokens",
     "tabs": {
-      "activity": "Activity & tasks",
+      "activity": "Activity",
       "scenarios": "Scenarios",
-      "kpis": "KPIs & performance",
+      "kpis": "KPIs",
       "memory": "Memory",
       "settings": "Settings"
     },
-    "capabilities": "Employee capabilities (tools)",
+    "capabilities": "Capabilities",
     "capabilitiesNote": "These change with the modules enabled for your company.",
     "performanceScore": "Performance score",
     "monthlyTokens": "Monthly token usage",
@@ -801,7 +801,9 @@
     "memoryTitle": "Long-term memory",
     "memorySubtitle": "What this employee has learned and remembers — stored as vectors for recall.",
     "noMemory": "No memories yet. They build up as the employee works.",
-    "importance": "Importance"
+    "importance": "Importance",
+    "archiveTitle": "Archive this agent",
+    "archiveNote": "Hides it from your workforce. Chat history and task records are kept — you can restore it later."
   },
   "agentForm": {
     "identity": "Identity",

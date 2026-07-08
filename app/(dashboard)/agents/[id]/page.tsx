@@ -11,6 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { AgentForm, type AgentFormValues } from '@/components/dashboard/agent-form';
 import { ArchiveAgentButton } from '@/components/dashboard/archive-agent-button';
+import { PauseAgentButton } from '@/components/dashboard/pause-agent-button';
 import { AgentSchedules } from '@/components/dashboard/agent-schedules';
 import { AgentActivity } from '@/components/dashboard/agent-activity';
 import { getToolsForAgent } from '@/lib/agent/tools';
@@ -32,7 +33,7 @@ export default async function AgentProfilePage({
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
 
-  const [agent, departments, managers, schedules, settings, tasks, company, scenarios, memories] = await Promise.all([
+  const [agent, departments, managers, schedules, settings, tasks, company, scenarios, memories, pendingApprovals] = await Promise.all([
     db.agent.findFirst({
       where: { id, companyId },
       include: { department: { select: { name: true, nameEn: true, color: true } } },
@@ -85,6 +86,11 @@ export default async function AgentProfilePage({
       take: 50,
       select: { id: true, summary: true, importance: true, category: true, createdAt: true },
     }),
+    db.approval.findMany({
+      where: { agentId: id, companyId, status: 'PENDING' },
+      orderBy: { createdAt: 'desc' },
+      select: { id: true, decision: true },
+    }),
   ]);
 
   if (!agent) notFound();
@@ -126,18 +132,30 @@ export default async function AgentProfilePage({
   const tierLabel = ({ HAIKU: 'Fast', SONNET: 'Balanced', OPUS: 'Advanced' } as const)[agent.model];
   const avatarStatus =
     agent.status === 'ONBOARDING' ? 'ONBOARDING' : agent.status === 'PAUSED' ? 'PAUSED' : agent.status === 'OFFLINE' ? 'IDLE' : 'ONLINE';
+  const needsYou = pendingApprovals.length > 0;
+
+  // Header/rail status pill: "NEEDS YOU" (amber) when the agent paused a
+  // decision for the owner, otherwise the live agent status.
+  const statusPill = needsYou ? (
+    <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+      <span className="size-1.5 rounded-full bg-amber-500" /> NEEDS YOU
+    </span>
+  ) : (
+    <span className="dept-tint-bg dept-accent-text rounded-full px-2.5 py-0.5 text-xs font-semibold">
+      {ta(`status.${agent.status}`)}
+    </span>
+  );
 
   return (
     <div style={{ ['--dept-h' as string]: String(hue) }} className="space-y-6">
       {/* Department-accent banner */}
       <div className="h-2 rounded-full dept-accent-bg" />
 
-      <div className="flex items-center justify-between">
+      <div>
         <Link href="/overview" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowRight className="h-4 w-4 rtl:rotate-180" />
           {t('backToCenter')}
         </Link>
-        <ArchiveAgentButton id={agent.id} />
       </div>
 
       {/* Header */}
@@ -149,15 +167,18 @@ export default async function AgentProfilePage({
               <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground" dir="ltr">{agent.ref}</span>
             )}
             <h1 className="text-2xl font-bold">{agent.name}</h1>
-            <span className="dept-tint-bg dept-accent-text rounded-full px-2.5 py-0.5 text-xs font-semibold">{ta(`status.${agent.status}`)}</span>
+            {statusPill}
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">
             {roleLabel} · {deptName} · {t('reportsTo')} {manager?.name ?? t('owner')}
           </p>
         </div>
-        <span className="shrink-0 rounded-full bg-[hsl(var(--muted))] px-3 py-1 text-xs text-muted-foreground">
-          {tierLabel} {t('model')}
-        </span>
+        <div className="flex shrink-0 items-center gap-2">
+          <span className="rounded-full bg-[hsl(var(--muted))] px-3 py-1 text-xs text-muted-foreground">
+            {tierLabel} {t('model')}
+          </span>
+          <PauseAgentButton id={agent.id} paused={agent.status === 'PAUSED'} />
+        </div>
       </div>
 
       {/* Persona callout */}
@@ -178,23 +199,6 @@ export default async function AgentProfilePage({
         </TabsList>
 
         <TabsContent value="activity" className="space-y-4">
-          <Card>
-            <CardContent className="p-4">
-              <p className="mb-2 flex items-center gap-2 text-sm font-medium">
-                <Sparkles className="h-4 w-4 text-primary" />
-                {t('capabilities')}
-              </p>
-              <div className="flex flex-wrap gap-2">
-                {tools.map((tool) => (
-                  <span key={tool.name} className="rounded-full bg-primary/10 px-3 py-1 text-xs text-primary">
-                    {TOOL_LABELS[tool.name] ?? tool.name}
-                  </span>
-                ))}
-              </div>
-              <p className="mt-2 text-[11px] text-muted-foreground">{t('capabilitiesNote')}</p>
-            </CardContent>
-          </Card>
-
           <AgentActivity
             tasks={tasks.map((t) => ({
               id: t.id,
@@ -210,6 +214,7 @@ export default async function AgentProfilePage({
               nextRunAt: s.nextRunAt?.toISOString() ?? null,
               runCount: s.runCount,
             }))}
+            approvals={pendingApprovals.map((a) => ({ id: a.id, decision: a.decision }))}
           />
         </TabsContent>
 
@@ -336,6 +341,14 @@ export default async function AgentProfilePage({
               runCount: s.runCount,
             }))}
           />
+          {/* Danger zone — archiving keeps chat history + task records. */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-destructive/30 bg-destructive/5 p-4">
+            <div>
+              <p className="text-sm font-medium">{t('archiveTitle')}</p>
+              <p className="text-xs text-muted-foreground">{t('archiveNote')}</p>
+            </div>
+            <ArchiveAgentButton id={agent.id} />
+          </div>
         </TabsContent>
         </Tabs>
 
@@ -343,7 +356,7 @@ export default async function AgentProfilePage({
         <aside className="space-y-4">
           <div className="rounded-2xl border bg-card p-4">
             {[
-              { l: t('factStatus'), v: <span className="dept-tint-bg dept-accent-text rounded-full px-2 py-0.5 text-xs font-semibold">{ta(`status.${agent.status}`)}</span> },
+              { l: t('factStatus'), v: statusPill },
               { l: t('factModel'), v: tierLabel },
               { l: t('factReportsTo'), v: manager?.name ?? t('owner') },
               { l: t('factDepartment'), v: deptName },
@@ -371,6 +384,21 @@ export default async function AgentProfilePage({
               </div>
             )}
             <p className="mt-2 text-[11px] text-muted-foreground">{t('capNote')}</p>
+          </div>
+
+          {/* Capabilities = the tools it actually receives (modules ∩ permissions). */}
+          <div className="rounded-2xl border bg-card p-4">
+            <p className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5 dept-accent-text" />
+              {t('capabilities')}
+            </p>
+            <div className="flex flex-wrap gap-1.5">
+              {tools.map((tool) => (
+                <span key={tool.name} className="dept-tint-bg dept-accent-text rounded-full px-2.5 py-0.5 text-[11px]">
+                  {TOOL_LABELS[tool.name] ?? tool.name}
+                </span>
+              ))}
+            </div>
           </div>
         </aside>
       </div>
