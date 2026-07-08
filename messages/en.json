@@ -231,12 +231,17 @@
     "services": "Services",
     "subscription": "Subscription",
     "sections": {
+      "command": "Command Center",
+      "workforce": "Workforce",
+      "operations": "Operations",
+      "catalog": "Catalog & knowledge",
+      "growth": "Growth",
+      "configure": "Settings",
       "workspace": "Workspace",
       "team": "Team",
       "sales": "Sales",
       "knowledge": "Knowledge & automation",
-      "billing": "Billing",
-      "configure": "Configure"
+      "billing": "Billing"
     }
   },
   "wallet": {

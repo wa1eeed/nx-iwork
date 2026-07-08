@@ -231,12 +231,17 @@
     "services": "الخدمات",
     "subscription": "الاشتراك",
     "sections": {
+      "command": "مركز القيادة",
+      "workforce": "قوة العمل",
+      "operations": "العمليات",
+      "catalog": "الكتالوج والمعرفة",
+      "growth": "النمو",
+      "configure": "الإعدادات",
       "workspace": "مساحة العمل",
       "team": "الفريق",
       "sales": "المبيعات",
       "knowledge": "المعرفة والأتمتة",
-      "billing": "الفوترة",
-      "configure": "الإعدادات"
+      "billing": "الفوترة"
     }
   },
   "wallet": {

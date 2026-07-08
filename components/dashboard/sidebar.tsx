@@ -48,38 +48,41 @@ interface NavSection {
 // Exported so the mobile tab strip / bottom bar reuse the exact same source.
 export const NAV_SECTIONS: NavSection[] = [
   {
-    sectionKey: 'workspace',
+    // The Command Center + talking to the workforce.
+    sectionKey: 'command',
     items: [
       { href: '/overview', icon: LayoutDashboard, labelKey: 'overview' },
       { href: '/chat', icon: MessageSquare, labelKey: 'chat' },
     ],
   },
   {
-    sectionKey: 'team',
+    // The AI workforce: employees + the departments they belong to.
+    sectionKey: 'workforce',
     items: [
       { href: '/agents', icon: Bot, labelKey: 'agents' },
       { href: '/departments', icon: Building2, labelKey: 'departments' },
     ],
   },
   {
-    sectionKey: 'sales',
+    // What the workforce operates on: opportunities, customers, orders, bookings, tasks.
+    sectionKey: 'operations',
     items: [
       { href: '/customers', icon: Contact, labelKey: 'customers' },
       { href: '/clients', icon: UserCheck, labelKey: 'clients' },
-      { href: '/products', icon: Package, labelKey: 'products', module: 'hasEcommerce' },
       { href: '/orders', icon: ShoppingBag, labelKey: 'orders' },
       { href: '/bookings', icon: CalendarCheck, labelKey: 'bookings', module: 'hasBookings' },
-    ],
-  },
-  {
-    sectionKey: 'knowledge',
-    items: [
-      { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
       { href: '/tasks', icon: ListChecks, labelKey: 'tasks' },
     ],
   },
   {
-    sectionKey: 'billing',
+    sectionKey: 'catalog',
+    items: [
+      { href: '/products', icon: Package, labelKey: 'products', module: 'hasEcommerce' },
+      { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
+    ],
+  },
+  {
+    sectionKey: 'growth',
     items: [
       { href: '/subscription', icon: Gem, labelKey: 'subscription' },
       { href: '/wallet', icon: Wallet, labelKey: 'wallet' },
@@ -87,10 +90,11 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
+    // Guardrails + platform config.
     sectionKey: 'configure',
     items: [
-      { href: '/modules', icon: LayoutGrid, labelKey: 'modules' },
       { href: '/settings', icon: Settings, labelKey: 'settings' },
+      { href: '/modules', icon: LayoutGrid, labelKey: 'modules' },
     ],
   },
 ];
