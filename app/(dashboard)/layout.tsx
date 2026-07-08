@@ -30,10 +30,13 @@ export default async function DashboardLayout({
     redirect(isSuperAdmin ? '/admin' : '/onboarding');
   }
 
-  const company = await db.company.findUnique({
-    where: { id: companyId },
-    select: { hasEcommerce: true, hasBookings: true },
-  });
+  const [company, pendingApprovals] = await Promise.all([
+    db.company.findUnique({
+      where: { id: companyId },
+      select: { hasEcommerce: true, hasBookings: true, tokenBalance: true, plan: true },
+    }),
+    db.approval.count({ where: { companyId, status: 'PENDING' } }),
+  ]);
 
   const modules = {
     hasEcommerce: company?.hasEcommerce ?? true,
@@ -48,6 +51,9 @@ export default async function DashboardLayout({
           userName={session.user.name ?? ''}
           userEmail={session.user.email ?? ''}
           isSuperAdmin={isSuperAdmin}
+          tokenBalance={company?.tokenBalance ?? 0}
+          plan={company?.plan ?? 'STARTER'}
+          pendingApprovals={pendingApprovals}
         />
         {/* Phone-only swipeable section strip; desktop uses the sidebar. */}
         <MobileSectionCarousel modules={modules} />
