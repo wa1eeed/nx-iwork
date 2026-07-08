@@ -10,6 +10,7 @@ import {
   BookOpen,
   CalendarCheck,
   CheckCircle,
+  CircleDollarSign,
   Contact,
   ShoppingBag,
   LayoutDashboard,
@@ -29,6 +30,7 @@ import { cn } from '@/lib/utils';
 
 export interface NavModules {
   hasEcommerce: boolean;
+  hasServices: boolean;
   hasBookings: boolean;
 }
 
@@ -49,12 +51,13 @@ interface NavSection {
 // Exported so the mobile tab strip / bottom bar reuse the exact same source.
 export const NAV_SECTIONS: NavSection[] = [
   {
-    // The Command Center + talking to the workforce.
+    // The Command Center + talking to and tasking the workforce.
     sectionKey: 'command',
     items: [
       { href: '/overview', icon: LayoutDashboard, labelKey: 'overview' },
       { href: '/approvals', icon: CheckCircle, labelKey: 'approvals' },
       { href: '/chat', icon: MessageSquare, labelKey: 'chat' },
+      { href: '/tasks', icon: ListChecks, labelKey: 'tasks' },
     ],
   },
   {
@@ -66,29 +69,31 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    // What the workforce operates on: opportunities, customers, orders, bookings, tasks.
-    sectionKey: 'operations',
+    // The commercial heart: financials + everything that earns revenue.
+    sectionKey: 'sales',
     items: [
+      { href: '/sales', icon: CircleDollarSign, labelKey: 'financials' },
+      { href: '/orders', icon: ShoppingBag, labelKey: 'orders' },
       { href: '/customers', icon: Contact, labelKey: 'customers' },
       { href: '/clients', icon: UserCheck, labelKey: 'clients' },
-      { href: '/orders', icon: ShoppingBag, labelKey: 'orders' },
       { href: '/bookings', icon: CalendarCheck, labelKey: 'bookings', module: 'hasBookings' },
-      { href: '/tasks', icon: ListChecks, labelKey: 'tasks' },
     ],
   },
   {
+    // What the business sells + the knowledge its agents draw on.
     sectionKey: 'catalog',
     items: [
       { href: '/products', icon: Package, labelKey: 'products', module: 'hasEcommerce' },
+      { href: '/services', icon: Store, labelKey: 'services', module: 'hasServices' },
       { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
     ],
   },
   {
-    sectionKey: 'growth',
+    // The owner's account with the platform.
+    sectionKey: 'billing',
     items: [
       { href: '/subscription', icon: Gem, labelKey: 'subscription' },
       { href: '/wallet', icon: Wallet, labelKey: 'wallet' },
-      { href: '/services', icon: Store, labelKey: 'services' },
     ],
   },
   {

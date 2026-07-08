@@ -35,6 +35,7 @@ export default async function DashboardLayout({
       where: { id: companyId },
       select: {
         hasEcommerce: true,
+        hasServices: true,
         hasBookings: true,
         tokenBalance: true,
         plan: true,
@@ -46,6 +47,7 @@ export default async function DashboardLayout({
 
   const modules = {
     hasEcommerce: company?.hasEcommerce ?? true,
+    hasServices: company?.hasServices ?? true,
     hasBookings: company?.hasBookings ?? false,
   };
 

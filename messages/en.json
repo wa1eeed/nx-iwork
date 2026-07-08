@@ -231,11 +231,12 @@
     "wallet": "Wallet",
     "services": "Services",
     "subscription": "Subscription",
+    "financials": "Financials",
     "sections": {
       "command": "Command Center",
       "workforce": "Workforce",
       "operations": "Operations",
-      "catalog": "Catalog & knowledge",
+      "catalog": "Products & Services",
       "growth": "Growth",
       "configure": "Settings",
       "workspace": "Workspace",

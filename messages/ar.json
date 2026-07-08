@@ -231,11 +231,12 @@
     "wallet": "المحفظة",
     "services": "الخدمات",
     "subscription": "الاشتراك",
+    "financials": "المالية",
     "sections": {
       "command": "مركز القيادة",
       "workforce": "قوة العمل",
       "operations": "العمليات",
-      "catalog": "الكتالوج والمعرفة",
+      "catalog": "المنتجات والخدمات",
       "growth": "النمو",
       "configure": "الإعدادات",
       "workspace": "مساحة العمل",
