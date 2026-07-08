@@ -1,0 +1,141 @@
+import { NextResponse } from 'next/server';
+import { db } from '@/lib/db';
+import { nextRef } from '@/lib/refs';
+import { createBooking, checkSlotAvailable, BookingError } from '@/lib/booking/engine';
+import { sendTenantEmail } from '@/lib/notifications/tenant-email';
+
+export const dynamic = 'force-dynamic';
+
+const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/;
+
+// Per-visitor/IP rate limit (single-instance MVP guard), mirroring the order route.
+const hits = new Map<string, number[]>();
+function rateLimited(key: string): boolean {
+  const now = Date.now();
+  const arr = (hits.get(key) ?? []).filter((t) => now - t < 60_000);
+  arr.push(now);
+  hits.set(key, arr);
+  return arr.length > 8;
+}
+
+// A visitor books a slot from the public page. The slot + capacity are validated
+// by the deterministic engine (createBooking runs the capacity check inside a
+// transaction), so this route is a thin, safe wrapper — no booking logic here.
+export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+
+  let body: Record<string, unknown>;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ ok: false, reason: 'bad_json' }, { status: 400 });
+  }
+
+  const serviceId = typeof body.serviceId === 'string' ? body.serviceId : '';
+  const startAtISO = typeof body.startAt === 'string' ? body.startAt : '';
+  const customerName = typeof body.customerName === 'string' ? body.customerName.trim() : '';
+  const customerPhone = typeof body.customerPhone === 'string' ? body.customerPhone.trim() : '';
+  const rawEmail = typeof body.customerEmail === 'string' ? body.customerEmail.trim().toLowerCase() : '';
+  const customerEmail = EMAIL_RE.test(rawEmail) ? rawEmail : null;
+  const notes = typeof body.notes === 'string' ? body.notes.trim().slice(0, 1000) : null;
+  const startAt = new Date(startAtISO);
+  if (!serviceId || !customerName || Number.isNaN(startAt.getTime())) {
+    return NextResponse.json({ ok: false, reason: 'invalid' }, { status: 400 });
+  }
+
+  const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ?? 'unknown';
+  if (rateLimited(`${slug}:${ip}`)) {
+    return NextResponse.json({ ok: false, reason: 'rate_limited' }, { status: 429 });
+  }
+
+  const company = await db.company.findUnique({
+    where: { slug },
+    select: {
+      id: true,
+      status: true,
+      settings: { select: { primaryLanguage: true } },
+    },
+  });
+  if (!company || company.status === 'SUSPENDED') {
+    return NextResponse.json({ ok: false, reason: 'unavailable' }, { status: 404 });
+  }
+
+  const svc = await db.service.findFirst({
+    where: { id: serviceId, companyId: company.id, isActive: true },
+    select: { title: true },
+  });
+  if (!svc) return NextResponse.json({ ok: false, reason: 'item' }, { status: 404 });
+
+  // Fast pre-check for a friendly message (createBooking re-checks atomically).
+  const pre = await checkSlotAvailable(company.id, serviceId, startAtISO);
+  if (!pre.ok) return NextResponse.json({ ok: false, reason: pre.reason ?? 'unavailable' }, { status: 409 });
+
+  // Find-or-create the CRM customer (by phone within the company).
+  let customerId: string | undefined;
+  if (customerPhone) {
+    const existing = await db.customer.findFirst({
+      where: { companyId: company.id, phone: customerPhone },
+      select: { id: true },
+    });
+    customerId =
+      existing?.id ??
+      (await db.customer.create({
+        data: {
+          companyId: company.id,
+          ref: await nextRef(company.id, 'customer'),
+          name: customerName,
+          phone: customerPhone,
+          email: customerEmail,
+          status: 'INTERESTED',
+          source: 'public_booking',
+        },
+        select: { id: true },
+      })).id;
+  }
+
+  let booking;
+  try {
+    booking = await createBooking({
+      companyId: company.id,
+      serviceId,
+      customerId,
+      title: svc.title,
+      startAt,
+      notes,
+      status: 'PENDING',
+      source: 'public_booking',
+    });
+  } catch (err) {
+    if (err instanceof BookingError) {
+      return NextResponse.json({ ok: false, reason: err.code }, { status: 409 });
+    }
+    throw err;
+  }
+
+  // Confirmation to the customer — from the TENANT's brand, localized. Fire-and-forget.
+  if (customerEmail) {
+    const ar = (company.settings?.primaryLanguage ?? 'ar') === 'ar';
+    const when = new Intl.DateTimeFormat(ar ? 'ar' : 'en', { dateStyle: 'full', timeStyle: 'short' }).format(booking.startAt);
+    void sendTenantEmail(company.id, {
+      to: customerEmail,
+      subject: ar ? `تأكيد حجزك ${booking.ref ?? ''}`.trim() : `Booking confirmation ${booking.ref ?? ''}`.trim(),
+      heading: ar ? `شكراً ${customerName} 🗓️` : `Thank you, ${customerName} 🗓️`,
+      intro: ar
+        ? 'تم استلام حجزك.\nسيتم تأكيده قريباً وستصلك أي تحديثات.'
+        : 'We’ve received your booking.\nIt will be confirmed shortly and we’ll keep you posted.',
+      rows: [
+        { label: ar ? 'الخدمة' : 'Service', value: svc.title },
+        { label: ar ? 'الموعد' : 'When', value: when },
+        ...(booking.ref ? [{ label: ar ? 'رقم الحجز' : 'Reference', value: booking.ref }] : []),
+      ],
+      footnote: ar ? 'هذه رسالة تأكيد آلية.' : 'This is an automated confirmation.',
+    }).catch((e) => console.error('[book] confirmation email failed:', e));
+  }
+
+  return NextResponse.json({
+    ok: true,
+    ref: booking.ref,
+    startAt: booking.startAt.toISOString(),
+    title: svc.title,
+  });
+}

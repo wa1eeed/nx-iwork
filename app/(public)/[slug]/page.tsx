@@ -4,6 +4,7 @@ import { Phone, Mail, MessageCircle } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ChatWidget } from '@/components/public/chat-widget';
 import { OrderButton } from '@/components/public/order-button';
+import { BookingButton } from '@/components/public/booking-button';
 
 export const dynamic = 'force-dynamic';
 
@@ -38,7 +39,11 @@ export default async function PublicBusinessPage({
           where: { companyId: company.id, isActive: true },
           orderBy: { sortOrder: 'asc' },
           take: 12,
-          select: { id: true, title: true, description: true, price: true, priceLabel: true },
+          select: {
+            id: true, title: true, description: true, price: true, priceLabel: true,
+            durationMin: true,
+            availability: { select: { id: true }, take: 1 },
+          },
         })
       : [],
     company.hasEcommerce && wc?.showProducts !== false
@@ -112,7 +117,11 @@ export default async function PublicBusinessPage({
                     {s.priceLabel || `${s.price} ر.س`}
                   </p>
                 )}
-                <OrderButton slug={slug} serviceId={s.id} label="اطلب الخدمة" color={accent} />
+                {s.durationMin != null && s.availability.length > 0 ? (
+                  <BookingButton slug={slug} serviceId={s.id} color={accent} />
+                ) : (
+                  <OrderButton slug={slug} serviceId={s.id} label="اطلب الخدمة" color={accent} />
+                )}
               </div>
             ))}
           </div>
