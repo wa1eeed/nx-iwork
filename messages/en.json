@@ -798,6 +798,8 @@
     "kpiTargets": "KPI targets",
     "noKpis": "No KPIs set for this employee.",
     "target": "Target",
+    "chatTitle": "Chat with {name}",
+    "chatSubtitle": "Talk to this employee directly — internal mode, as the owner.",
     "threeLayer": "3-layer memory",
     "workingTitle": "Working memory",
     "workingDesc": "The short-term window — the most recent messages the agent keeps in context during a live chat.",

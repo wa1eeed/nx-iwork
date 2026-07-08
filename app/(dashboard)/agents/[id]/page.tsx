@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { ArrowRight, Sparkles, Gauge, Brain, Database, Network } from 'lucide-react';
+import { ArrowRight, Sparkles, Gauge, Brain, Database, Network, MessageSquare } from 'lucide-react';
 import { HolographicAvatar } from '@/components/dashboard/holographic-avatar';
 import { deptHue } from '@/lib/ui/dept-accent';
 import { auth } from '@/lib/auth';
@@ -220,6 +220,21 @@ export default async function AgentProfilePage({
             }))}
             approvals={pendingApprovals.map((a) => ({ id: a.id, decision: a.decision }))}
           />
+
+          {/* Internal-mode chat entry point (design View 2 → Activity). */}
+          <Link
+            href={`/chat?agent=${agent.id}`}
+            className="flex items-center gap-3 rounded-2xl border bg-card p-4 transition hover:bg-accent"
+          >
+            <span className="dept-tint-bg dept-accent-text flex size-10 shrink-0 items-center justify-center rounded-xl">
+              <MessageSquare className="size-5" />
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold">{t('chatTitle', { name: agent.name })}</p>
+              <p className="text-sm text-muted-foreground">{t('chatSubtitle')}</p>
+            </div>
+            <ArrowRight className="size-4 shrink-0 text-muted-foreground rtl:rotate-180" />
+          </Link>
         </TabsContent>
 
         <TabsContent value="scenarios" className="space-y-4">

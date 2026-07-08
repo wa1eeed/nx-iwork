@@ -39,13 +39,20 @@ export function ChatClient({
   keyReady,
   provider,
   initialThreads = {},
+  initialAgentId,
 }: {
   agents: AgentSummary[];
   keyReady: boolean;
   provider: string;
   initialThreads?: Record<string, ChatMessage[]>;
+  // Preselect an agent (e.g. deep-linked from the agent workspace).
+  initialAgentId?: string;
 }) {
-  const [activeId, setActiveId] = useState(agents[0].id);
+  const [activeId, setActiveId] = useState(
+    initialAgentId && agents.some((a) => a.id === initialAgentId)
+      ? initialAgentId
+      : agents[0].id
+  );
   // Seeded from the saved ChatMessage history (per agent), then appended live.
   const [threads, setThreads] = useState<Record<string, ChatMessage[]>>(initialThreads);
   const [input, setInput] = useState('');

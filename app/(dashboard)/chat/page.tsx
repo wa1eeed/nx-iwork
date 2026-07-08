@@ -7,7 +7,12 @@ import { ChatEmptyState } from '@/components/dashboard/chat-empty-state';
 
 // Server component: loads the company's agents, then hands off to the client
 // chat UI. Tenant isolation comes from scoping every query by companyId.
-export default async function ChatPage() {
+export default async function ChatPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ agent?: string }>;
+}) {
+  const { agent: agentParam } = await searchParams;
   const session = await auth();
   const companyId = session?.user?.id
     ? await getUserCompany(session.user.id)
@@ -61,7 +66,16 @@ export default async function ChatPage() {
     });
   }
 
+  // Preselect a deep-linked agent (from the agent workspace) when valid.
+  const initialAgentId = agentParam && agents.some((a) => a.id === agentParam) ? agentParam : undefined;
+
   return (
-    <ChatClient agents={agents} keyReady={keyReady} provider={provider} initialThreads={initialThreads} />
+    <ChatClient
+      agents={agents}
+      keyReady={keyReady}
+      provider={provider}
+      initialThreads={initialThreads}
+      initialAgentId={initialAgentId}
+    />
   );
 }
