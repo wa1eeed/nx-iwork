@@ -2,6 +2,8 @@ import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { ArrowRight, Sparkles, Gauge, Brain } from 'lucide-react';
+import { HolographicAvatar } from '@/components/dashboard/holographic-avatar';
+import { deptHue } from '@/lib/ui/dept-accent';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
@@ -33,7 +35,7 @@ export default async function AgentProfilePage({
   const [agent, departments, managers, schedules, settings, tasks, company, scenarios, memories] = await Promise.all([
     db.agent.findFirst({
       where: { id, companyId },
-      include: { department: { select: { name: true, color: true } } },
+      include: { department: { select: { name: true, nameEn: true, color: true } } },
     }),
     db.department.findMany({
       where: { companyId },
@@ -115,58 +117,54 @@ export default async function AgentProfilePage({
     permissions: agent.permissions,
   };
 
+  const en = locale === 'en';
+  const hue = deptHue({ name: agent.department.name, nameEn: agent.department.nameEn, id: agent.departmentId });
+  const deptName = en ? agent.department.nameEn || agent.department.name : agent.department.name;
+  const roleLabel = en ? agent.roleEn || agent.role : agent.role;
+  const manager = managers.find((m) => m.id === agent.parentId);
+  const tierLabel = ({ HAIKU: 'Fast', SONNET: 'Balanced', OPUS: 'Advanced' } as const)[agent.model];
+  const avatarStatus =
+    agent.status === 'ONBOARDING' ? 'ONBOARDING' : agent.status === 'PAUSED' ? 'PAUSED' : agent.status === 'OFFLINE' ? 'IDLE' : 'ONLINE';
+
   return (
-    <div className="space-y-6">
+    <div style={{ ['--dept-h' as string]: String(hue) }} className="space-y-6">
+      {/* Department-accent banner */}
+      <div className="h-2 rounded-full dept-accent-bg" />
+
       <div className="flex items-center justify-between">
-        <Link
-          href="/agents"
-          className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-        >
+        <Link href="/overview" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowRight className="h-4 w-4 rtl:rotate-180" />
-          {t('back')}
+          {t('backToCenter')}
         </Link>
         <ArchiveAgentButton id={agent.id} />
       </div>
 
-      {/* Profile header */}
-      <Card>
-        <CardContent className="flex flex-wrap items-center gap-4 p-5">
-          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/15 text-2xl font-bold text-primary">
-            {agent.initial}
-          </span>
-          <div className="min-w-0 flex-1">
-            <h1 className="flex items-center gap-2 text-xl font-semibold">
-              {agent.ref && (
-                <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground" dir="ltr">
-                  {agent.ref}
-                </span>
-              )}
-              {agent.name}
-            </h1>
-            <p className="text-sm text-muted-foreground">
-              {agent.role} · <span style={{ color: agent.department.color }}>{agent.department.name}</span> ·{' '}
-              <span className="inline-flex items-center gap-1">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
-                {ta(`status.${agent.status}`)}
-              </span>
-            </p>
+      {/* Header */}
+      <div className="flex flex-wrap items-center gap-4">
+        <HolographicAvatar seed={agent.id} hue={hue} size={72} status={avatarStatus} />
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            {agent.ref && (
+              <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground" dir="ltr">{agent.ref}</span>
+            )}
+            <h1 className="text-2xl font-bold">{agent.name}</h1>
+            <span className="dept-tint-bg dept-accent-text rounded-full px-2.5 py-0.5 text-xs font-semibold">{ta(`status.${agent.status}`)}</span>
           </div>
-          <div className="flex gap-6 text-center">
-            <div>
-              <p className="text-lg font-semibold text-emerald-500">{agent.tasksCompleted}</p>
-              <p className="text-[11px] text-muted-foreground">{t('completed')}</p>
-            </div>
-            <div>
-              <p className="text-lg font-semibold text-destructive">{agent.tasksFailed}</p>
-              <p className="text-[11px] text-muted-foreground">{t('failed')}</p>
-            </div>
-            <div>
-              <p className="text-lg font-semibold">{formatNumber(agent.totalTokensUsed, locale)}</p>
-              <p className="text-[11px] text-muted-foreground">{t('tokens')}</p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          <p className="mt-0.5 text-sm text-muted-foreground">
+            {roleLabel} · {deptName} · {t('reportsTo')} {manager?.name ?? t('owner')}
+          </p>
+        </div>
+        <span className="shrink-0 rounded-full bg-[hsl(var(--muted))] px-3 py-1 text-xs text-muted-foreground">
+          {tierLabel} {t('model')}
+        </span>
+      </div>
+
+      {/* Persona callout */}
+      {agent.persona && (
+        <div className="dept-tint-bg dept-accent-border rounded-2xl border p-4 text-sm leading-relaxed text-foreground/85">
+          {agent.persona}
+        </div>
+      )}
 
       <Tabs defaultValue="activity">
         <TabsList className="flex-wrap h-auto">

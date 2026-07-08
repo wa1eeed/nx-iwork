@@ -757,6 +757,10 @@
   },
   "agentProfile": {
     "back": "الموظفون",
+    "backToCenter": "رجوع لمركز القيادة",
+    "reportsTo": "يتبع",
+    "owner": "أنت (المالك)",
+    "model": "نموذج",
     "completed": "منجزة",
     "failed": "فشل",
     "tokens": "توكنز",

@@ -757,6 +757,10 @@
   },
   "agentProfile": {
     "back": "Employees",
+    "backToCenter": "Back to Command Center",
+    "reportsTo": "reports to",
+    "owner": "You (owner)",
+    "model": "model",
     "completed": "Completed",
     "failed": "Failed",
     "tokens": "Tokens",
