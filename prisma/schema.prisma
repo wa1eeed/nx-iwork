@@ -291,6 +291,11 @@ model Agent {
   roleEn  String?
   persona String  @db.Text
 
+  // Job Description "constitution" — the agent's mandate/charter: what it does,
+  // its responsibilities and boundaries. Distinct from `persona` (personality);
+  // this governs the agent's decisions and is injected into buildSystemPrompt.
+  jobDescription String? @db.Text
+
   // Agent lifecycle system: hybrid creation (from a system template or custom),
   // structured KPIs, and a rolling performance score (0–100).
   templateId       String?

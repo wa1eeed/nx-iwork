@@ -8,7 +8,7 @@ import type { Agent, Company, CompanyDNA, BusinessSettings } from '@prisma/clien
 export interface AgentPromptContext {
   agent: Pick<
     Agent,
-    'name' | 'nameEn' | 'role' | 'roleEn' | 'persona' | 'systemPrompt'
+    'name' | 'nameEn' | 'role' | 'roleEn' | 'persona' | 'jobDescription' | 'systemPrompt'
   >;
   company: Pick<Company, 'name' | 'nameEn' | 'brandVoice' | 'industry'>;
   dna?: Pick<
@@ -34,6 +34,16 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
   );
 
   sections.push(`شخصيتك وأسلوبك:\n${agent.persona}`);
+
+  // Job Description "constitution" — the agent's mandate: what it's responsible
+  // for and its boundaries. Governs its decisions (distinct from personality),
+  // and anchors the two-layer contract at the agent level.
+  if (agent.jobDescription?.trim()) {
+    sections.push(
+      `وصفك الوظيفي (دستورك):\n${agent.jobDescription}\n` +
+        'التزم بنطاق مسؤولياتك أعلاه. النظام يتولّى المعاملات الحتمية (الفواتير/الحجوزات/الطلبات) برمجياً؛ ودورك أنت الحكم والتواصل والمتابعة والتنسيق — نفّذ عبر أدواتك المتاحة فقط ولا تتجاوز صلاحياتك.'
+    );
+  }
 
   // Company knowledge — the structured-data context the agent answers from.
   if (dna?.aboutUs) sections.push(`عن الشركة:\n${dna.aboutUs}`);

@@ -41,6 +41,7 @@ export interface DeployPayload {
   role?: string;
   roleEn?: string | null;
   persona?: string;
+  jobDescription?: string | null; // the "constitution" — mandate + boundaries
   model?: ClaudeModel;
   temperature?: number;
   systemPrompt?: string | null;
@@ -186,6 +187,7 @@ export class HRAgentService {
         role: payload.role.trim(),
         roleEn: payload.roleEn || null,
         persona: payload.persona.trim(),
+        jobDescription: payload.jobDescription?.trim() || null,
         model: payload.model ?? 'HAIKU',
         temperature: payload.temperature ?? 0.6,
         systemPrompt: payload.systemPrompt || null,

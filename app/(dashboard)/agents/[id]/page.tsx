@@ -106,6 +106,7 @@ export default async function AgentProfilePage({
     role: agent.role,
     roleEn: agent.roleEn ?? '',
     persona: agent.persona,
+    jobDescription: agent.jobDescription ?? '',
     departmentId: agent.departmentId,
     parentId: agent.parentId ?? '',
     model: agent.model,

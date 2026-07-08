@@ -36,6 +36,7 @@ export interface AgentFormValues {
   role: string;
   roleEn: string;
   persona: string;
+  jobDescription: string;
   departmentId: string;
   parentId: string;
   model: 'HAIKU' | 'SONNET' | 'OPUS';
@@ -50,6 +51,7 @@ const DEFAULTS: AgentFormValues = {
   role: '',
   roleEn: '',
   persona: '',
+  jobDescription: '',
   departmentId: '',
   parentId: '',
   model: 'HAIKU',
@@ -138,6 +140,7 @@ export function AgentForm({
       role: v.role.trim(),
       roleEn: v.roleEn.trim() || null,
       persona: v.persona.trim(),
+      jobDescription: v.jobDescription.trim() || null,
       departmentId: v.departmentId,
       parentId: v.parentId || null,
       model: v.model,
@@ -228,6 +231,14 @@ export function AgentForm({
             <Label>{t('persona')} *</Label>
             <Textarea rows={5} value={v.persona} onChange={(e) => set('persona', e.target.value)} placeholder={t('personaPlaceholder')} dir="auto" />
             <p className="text-xs text-muted-foreground">{t('personaHelp')}</p>
+          </div>
+          <div className="space-y-2">
+            <Label>{t('jobDescription')}</Label>
+            <Textarea rows={5} value={v.jobDescription} onChange={(e) => set('jobDescription', e.target.value)} placeholder={t('jobDescriptionPlaceholder')} dir="auto" />
+            <p className="text-xs text-muted-foreground">{t('jobDescriptionHelp')}</p>
+            <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+              <span className="font-medium text-foreground">{t('justifyTitle')}</span> {t('justifyBody')}
+            </div>
           </div>
           <div className="space-y-2">
             <Label>{t('extraInstructions')}</Label>

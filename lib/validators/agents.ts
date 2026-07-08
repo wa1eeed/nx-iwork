@@ -8,6 +8,9 @@ export const agentSchema = z.object({
   role: z.string().trim().min(1).max(80),
   roleEn: z.string().trim().max(80).optional().nullable(),
   persona: z.string().trim().min(1).max(4000),
+  // Job Description "constitution" — mandate + responsibilities + boundaries
+  // (distinct from persona=personality). Governs the agent's decisions.
+  jobDescription: z.string().trim().max(4000).optional().nullable(),
   departmentId: z.string().trim().min(1),
   // Optional manager (another agent in the same company).
   parentId: z.string().trim().optional().nullable(),
