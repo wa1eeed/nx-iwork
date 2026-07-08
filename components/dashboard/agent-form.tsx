@@ -15,7 +15,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { createAgent, updateAgent } from '@/lib/actions/agents';
 import { celebrate } from '@/lib/ui/celebrate';
 import { TRIGGER_EVENTS } from '@/lib/agent/events-catalog';
-import { TOOL_CATALOG } from '@/lib/agent/tool-labels';
+import { TOOL_CATALOG, TOOL_GROUPS, type ToolGroup } from '@/lib/agent/tool-labels';
 import type { AgentInput } from '@/lib/validators/agents';
 import type { ConflictResult } from '@/lib/agent/conflict-check';
 
@@ -77,6 +77,15 @@ export function AgentForm({
   const tc = useTranslations('common');
   const te = useTranslations('events');
   const router = useRouter();
+  // Functional-area (department) labels for the per-department permission matrix.
+  const groupLabel: Record<ToolGroup, string> = {
+    sales: t('toolGroups.sales'),
+    catalog: t('toolGroups.catalog'),
+    bookings: t('toolGroups.bookings'),
+    support: t('toolGroups.support'),
+    operations: t('toolGroups.operations'),
+    memory: t('toolGroups.memory'),
+  };
   const [v, setV] = useState<AgentFormValues>(
     initial ?? { ...DEFAULTS, departmentId: departments[0]?.id ?? '' }
   );
@@ -297,26 +306,35 @@ export function AgentForm({
             {t('permissionsTitle')}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3">
+        <CardContent className="space-y-4">
           <p className="text-xs text-muted-foreground">{t('permissionsHelp')}</p>
-          <div className="flex flex-wrap gap-2">
-            {TOOL_CATALOG.map((tool) => {
-              const on = v.permissions.includes(tool.id);
-              return (
-                <button
-                  key={tool.id}
-                  type="button"
-                  onClick={() => togglePerm(tool.id)}
-                  className={cn(
-                    'rounded-full border px-3 py-1 text-xs transition-colors',
-                    on ? 'border-primary bg-primary/10 text-primary' : 'border-input text-muted-foreground hover:bg-accent'
-                  )}
-                >
-                  {tool.label}
-                </button>
-              );
-            })}
-          </div>
+          {TOOL_GROUPS.map((group) => {
+            const tools = TOOL_CATALOG.filter((tl) => tl.group === group);
+            if (tools.length === 0) return null;
+            return (
+              <div key={group} className="space-y-2">
+                <p className="text-xs font-semibold text-foreground">{groupLabel[group]}</p>
+                <div className="flex flex-wrap gap-2">
+                  {tools.map((tool) => {
+                    const on = v.permissions.includes(tool.id);
+                    return (
+                      <button
+                        key={tool.id}
+                        type="button"
+                        onClick={() => togglePerm(tool.id)}
+                        className={cn(
+                          'rounded-full border px-3 py-1 text-xs transition-colors',
+                          on ? 'border-primary bg-primary/10 text-primary' : 'border-input text-muted-foreground hover:bg-accent'
+                        )}
+                      >
+                        {tool.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
         </CardContent>
       </Card>
 

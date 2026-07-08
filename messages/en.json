@@ -769,7 +769,15 @@
     "conflictTitle": "Possible role conflict",
     "createAnyway": "Create anyway",
     "permissionsTitle": "Tools & permissions",
-    "permissionsHelp": "The actions this employee may take in the system. It can never use a tool that's off. Leave all off to allow every tool your modules enable.",
+    "permissionsHelp": "Capabilities grouped by department. Grant only what this role needs — an agent can be given capabilities from any department (cross-department). It can never use a tool that's off. Leave all off to allow every tool your modules enable.",
+    "toolGroups": {
+      "sales": "Sales & CRM",
+      "catalog": "Catalog",
+      "bookings": "Bookings",
+      "support": "Support & knowledge",
+      "operations": "Operations & tasks",
+      "memory": "Memory"
+    },
     "scenariosTitle": "Auto scenarios (If-Then)",
     "scenariosHelp": "What this employee does automatically when a business event happens.",
     "addScenario": "Add scenario",
