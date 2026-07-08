@@ -1,0 +1,492 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  body{margin:0;background:#efe9dd;font-family:"Instrument Sans",system-ui,sans-serif;color:#211d17}
+  a{color:inherit}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes bar{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+  .dv-turn{padding:44px 48px 36px;border-bottom:1px solid rgba(0,0,0,.08);scroll-margin-top:16px}
+  .dv-thd{display:flex;align-items:baseline;gap:10px;margin:0 0 22px}
+  .dv-tid{font:600 10px ui-monospace,Menlo,monospace;padding:3px 7px;background:#211d17;color:#efe9dd;border-radius:4px;text-decoration:none}
+  .dv-tname{font:600 13px/1.2 "Instrument Sans",sans-serif;color:#211d17}
+  .dv-opts{display:flex;flex-wrap:wrap;gap:34px;align-items:flex-start}
+  .dv-opt{flex:none;display:flex;flex-direction:column;gap:11px;scroll-margin-top:16px}
+  .dv-oid{font:600 10.5px ui-monospace,Menlo,monospace;padding:3px 7px;background:rgba(0,0,0,.08);color:#211d17;border-radius:5px;text-decoration:none}
+  .dv-olabel{display:flex;align-items:baseline;gap:8px;font:400 11.5px/1.3 "Instrument Sans",sans-serif;color:rgba(0,0,0,.5)}
+  .dv-opt:target .dv-oid{background:#c2593a;color:#fff}
+  .dv-next{margin:24px 0 0;font:12px/1.6 "Instrument Sans",sans-serif;color:rgba(0,0,0,.5)}
+  .frame{background:#f6f2ea;border:1px solid #e3dbcc;border-radius:18px;box-shadow:0 24px 60px -24px rgba(40,32,20,.32);overflow:hidden}
+</style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd"><a class="dv-tid" href="#t1">1</a><span class="dv-tname">AI-run company — supervise, don't operate · warm roster · vibrant multi-accent</span></div>
+  <div class="dv-opts">
+
+    <!-- ============ 1a : COMMAND CENTER ============ -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a>Command Center — watch the whole company work at a glance</div>
+      <div class="frame" style="width:1460px;height:948px;display:flex;flex-direction:column">
+
+        <!-- top bar -->
+        <div style="height:66px;flex:none;display:flex;align-items:center;gap:18px;padding:0 22px;border-bottom:1px solid #e8e1d3;background:#fffdf9">
+          <div style="display:flex;align-items:center;gap:11px">
+            <div style="width:30px;height:30px;border-radius:9px;background:#211d17;color:#f6f2ea;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">◆</div>
+            <div style="display:flex;flex-direction:column;line-height:1.05">
+              <span style="font-family:'Bricolage Grotesque';font-weight:700;font-size:16px;letter-spacing:-.01em">Northwind</span>
+              <span style="font-size:10.5px;color:#9a9082;letter-spacing:.02em">Autonomous company</span>
+            </div>
+          </div>
+          <div style="flex:1"></div>
+          <div style="display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:oklch(0.95 0.04 155);border:1px solid oklch(0.85 0.06 155)">
+            <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.6 0.14 155);animation:pulse 2s infinite"></span>
+            <span style="font-size:12.5px;font-weight:600;color:oklch(0.45 0.1 155)">Autopilot on</span>
+          </div>
+          <div style="position:relative;display:flex;align-items:center;gap:8px;padding:7px 13px;border-radius:999px;background:#fff;border:1px solid #e8e1d3;font-size:12.5px;font-weight:600;color:#c2593a">
+            <span style="width:16px;height:16px">🔔</span>3 need you
+          </div>
+          <div style="width:36px;height:36px;border-radius:50%;background:#211d17;color:#f6f2ea;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">You</div>
+        </div>
+
+        <!-- body -->
+        <div style="flex:1;display:flex;min-height:0">
+
+          <!-- left sidebar -->
+          <div style="width:238px;flex:none;border-right:1px solid #e8e1d3;background:#fffdf9;padding:18px 14px;display:flex;flex-direction:column;gap:5px">
+            <div style="font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#a89d8c;padding:0 8px 8px">Departments</div>
+
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;background:#f0ebe0;font-weight:600;font-size:13px">
+              <span style="width:9px;height:9px;border-radius:3px;background:oklch(0.62 0.14 250)"></span>Engineering<span style="flex:1"></span><span style="color:#a89d8c;font-weight:500">2</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;font-size:13px">
+              <span style="width:9px;height:9px;border-radius:3px;background:oklch(0.66 0.15 40)"></span>Marketing<span style="flex:1"></span><span style="color:#a89d8c">2</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;font-size:13px">
+              <span style="width:9px;height:9px;border-radius:3px;background:oklch(0.64 0.13 155)"></span>Sales<span style="flex:1"></span><span style="color:#a89d8c">2</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;font-size:13px">
+              <span style="width:9px;height:9px;border-radius:3px;background:oklch(0.62 0.14 305)"></span>Support<span style="flex:1"></span><span style="color:#a89d8c">1</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:10px;font-size:13px">
+              <span style="width:9px;height:9px;border-radius:3px;background:oklch(0.7 0.13 80)"></span>Finance<span style="flex:1"></span><span style="color:#a89d8c">1</span>
+            </div>
+
+            <button style="margin-top:6px;display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;border:1px dashed #d8cfbd;background:none;color:#8a8073;font-size:13px;font-family:inherit;cursor:pointer;font-weight:500">＋ New department</button>
+
+            <div style="flex:1"></div>
+            <div style="border-radius:12px;background:#211d17;color:#efe9dd;padding:14px;display:flex;flex-direction:column;gap:9px">
+              <div style="font-size:11px;color:#b9b0a1;letter-spacing:.03em">TODAY'S OUTPUT</div>
+              <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:'Bricolage Grotesque';font-weight:700;font-size:26px">248</span><span style="font-size:11.5px;color:#b9b0a1">tasks done</span></div>
+              <div style="height:5px;border-radius:3px;background:#3a342a;overflow:hidden"><div style="height:100%;width:72%;background:oklch(0.64 0.13 155)"></div></div>
+              <div style="font-size:11px;color:#b9b0a1">8 agents · 6 working now</div>
+            </div>
+          </div>
+
+          <!-- center : workforce roster -->
+          <div style="flex:1;min-width:0;padding:20px 22px;overflow:hidden;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;align-items:baseline;gap:12px">
+              <h2 style="margin:0;font-family:'Bricolage Grotesque';font-weight:700;font-size:22px;letter-spacing:-.01em">Your workforce</h2>
+              <span style="font-size:12.5px;color:#9a9082">Live · updated just now</span>
+              <span style="flex:1"></span>
+              <div style="display:flex;gap:4px;background:#efe9dd;border-radius:9px;padding:3px">
+                <span style="padding:5px 11px;border-radius:7px;background:#fffdf9;font-size:12px;font-weight:600;box-shadow:0 1px 2px rgba(0,0,0,.05)">Roster</span>
+                <span style="padding:5px 11px;border-radius:7px;font-size:12px;color:#9a9082">Activity</span>
+                <span style="padding:5px 11px;border-radius:7px;font-size:12px;color:#9a9082">Org</span>
+              </div>
+            </div>
+
+            <!-- ENGINEERING line -->
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="width:9px;height:9px;border-radius:3px;background:oklch(0.62 0.14 250)"></span>
+              <span style="font-weight:600;font-size:13px">Engineering</span>
+              <span style="font-size:11.5px;color:#a89d8c">reports to you</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+              <!-- card: working -->
+              <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:14px;display:flex;gap:13px">
+                <div style="position:relative;flex:none">
+                  <div style="width:46px;height:46px;border-radius:50%;background:oklch(0.95 0.04 250);border:2px solid oklch(0.62 0.14 250);color:oklch(0.42 0.12 250);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">AK</div>
+                  <span style="position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;background:oklch(0.6 0.14 155);border:2.5px solid #fffdf9"></span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:baseline;gap:7px"><span style="font-weight:700;font-size:14px">Ada K.</span><span style="font-size:11.5px;color:#9a9082">Backend Engineer</span></div>
+                  <div style="font-size:12.5px;color:#4d463b">Deploying auth service to prod</div>
+                  <div style="height:5px;border-radius:3px;background:#efe9dd;overflow:hidden;margin-top:1px"><div style="height:100%;width:64%;background:oklch(0.62 0.14 250)"></div></div>
+                  <div style="display:flex;gap:5px;margin-top:2px">
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:oklch(0.95 0.04 250);color:oklch(0.42 0.12 250);font-weight:500">⚡ on PR merged</span>
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:#f0ebe0;color:#8a8073">GitHub</span>
+                  </div>
+                </div>
+              </div>
+              <!-- card: working -->
+              <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:14px;display:flex;gap:13px">
+                <div style="position:relative;flex:none">
+                  <div style="width:46px;height:46px;border-radius:50%;background:oklch(0.95 0.04 250);border:2px solid oklch(0.62 0.14 250);color:oklch(0.42 0.12 250);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">LO</div>
+                  <span style="position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;background:oklch(0.6 0.14 155);border:2.5px solid #fffdf9"></span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:baseline;gap:7px"><span style="font-weight:700;font-size:14px">Lin O.</span><span style="font-size:11.5px;color:#9a9082">QA Engineer</span></div>
+                  <div style="font-size:12.5px;color:#4d463b">Running regression suite · 412 tests</div>
+                  <div style="height:5px;border-radius:3px;background:#efe9dd;overflow:hidden;margin-top:1px"><div style="height:100%;width:88%;background:oklch(0.62 0.14 250)"></div></div>
+                  <div style="display:flex;gap:5px;margin-top:2px">
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:oklch(0.95 0.04 250);color:oklch(0.42 0.12 250);font-weight:500">⚡ on deploy</span>
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:#f0ebe0;color:#8a8073">CI</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- MARKETING line -->
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="width:9px;height:9px;border-radius:3px;background:oklch(0.66 0.15 40)"></span>
+              <span style="font-weight:600;font-size:13px">Marketing</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+              <!-- card: NEEDS APPROVAL -->
+              <div style="background:oklch(0.98 0.02 40);border:1.5px solid oklch(0.66 0.15 40);border-radius:14px;padding:14px;display:flex;gap:13px">
+                <div style="position:relative;flex:none">
+                  <div style="width:46px;height:46px;border-radius:50%;background:oklch(0.95 0.04 40);border:2px solid oklch(0.66 0.15 40);color:oklch(0.46 0.13 40);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">NR</div>
+                  <span style="position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;background:oklch(0.66 0.15 40);border:2.5px solid #fffdf9"></span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:baseline;gap:7px"><span style="font-weight:700;font-size:14px">Nova R.</span><span style="font-size:11.5px;color:#9a9082">Content Lead</span></div>
+                  <div style="font-size:12.5px;color:#4d463b">Q3 launch email — <b style="color:oklch(0.46 0.13 40)">waiting on you</b></div>
+                  <div style="display:flex;gap:7px;margin-top:3px">
+                    <button style="font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:8px;border:none;background:oklch(0.62 0.13 155);color:#fff;font-family:inherit;cursor:pointer">Approve</button>
+                    <button style="font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:8px;border:1px solid #e0d7c7;background:#fff;color:#4d463b;font-family:inherit;cursor:pointer">Review</button>
+                  </div>
+                </div>
+              </div>
+              <!-- card: working -->
+              <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:14px;display:flex;gap:13px">
+                <div style="position:relative;flex:none">
+                  <div style="width:46px;height:46px;border-radius:50%;background:oklch(0.95 0.04 40);border:2px solid oklch(0.66 0.15 40);color:oklch(0.46 0.13 40);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">TM</div>
+                  <span style="position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;background:oklch(0.6 0.14 155);border:2.5px solid #fffdf9"></span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:baseline;gap:7px"><span style="font-weight:700;font-size:14px">Theo M.</span><span style="font-size:11.5px;color:#9a9082">Social Manager</span></div>
+                  <div style="font-size:12.5px;color:#4d463b">Scheduling 12 posts for the week</div>
+                  <div style="height:5px;border-radius:3px;background:#efe9dd;overflow:hidden;margin-top:1px"><div style="height:100%;width:40%;background:oklch(0.66 0.15 40)"></div></div>
+                  <div style="display:flex;gap:5px;margin-top:2px">
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:oklch(0.95 0.04 40);color:oklch(0.46 0.13 40);font-weight:500">⚡ daily 9:00</span>
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:#f0ebe0;color:#8a8073">LinkedIn</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SALES line -->
+            <div style="display:flex;align-items:center;gap:9px">
+              <span style="width:9px;height:9px;border-radius:3px;background:oklch(0.64 0.13 155)"></span>
+              <span style="font-weight:600;font-size:13px">Sales</span>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+              <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:14px;display:flex;gap:13px">
+                <div style="position:relative;flex:none">
+                  <div style="width:46px;height:46px;border-radius:50%;background:oklch(0.95 0.04 155);border:2px solid oklch(0.64 0.13 155);color:oklch(0.42 0.11 155);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">IP</div>
+                  <span style="position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;background:oklch(0.6 0.14 155);border:2.5px solid #fffdf9"></span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:baseline;gap:7px"><span style="font-weight:700;font-size:14px">Iris P.</span><span style="font-size:11.5px;color:#9a9082">SDR</span></div>
+                  <div style="font-size:12.5px;color:#4d463b">Following up 24 warm leads</div>
+                  <div style="height:5px;border-radius:3px;background:#efe9dd;overflow:hidden;margin-top:1px"><div style="height:100%;width:55%;background:oklch(0.64 0.13 155)"></div></div>
+                  <div style="display:flex;gap:5px;margin-top:2px">
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:oklch(0.95 0.04 155);color:oklch(0.42 0.11 155);font-weight:500">⚡ on new lead</span>
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:#f0ebe0;color:#8a8073">HubSpot</span>
+                  </div>
+                </div>
+              </div>
+              <!-- needs approval -->
+              <div style="background:oklch(0.98 0.02 155);border:1.5px solid oklch(0.64 0.13 155);border-radius:14px;padding:14px;display:flex;gap:13px">
+                <div style="position:relative;flex:none">
+                  <div style="width:46px;height:46px;border-radius:50%;background:oklch(0.95 0.04 155);border:2px solid oklch(0.64 0.13 155);color:oklch(0.42 0.11 155);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">SD</div>
+                  <span style="position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;background:oklch(0.7 0.13 80);border:2.5px solid #fffdf9"></span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:baseline;gap:7px"><span style="font-weight:700;font-size:14px">Sam D.</span><span style="font-size:11.5px;color:#9a9082">Account Exec</span></div>
+                  <div style="font-size:12.5px;color:#4d463b">12% discount for Acme — <b style="color:oklch(0.42 0.11 155)">approve?</b></div>
+                  <div style="display:flex;gap:7px;margin-top:3px">
+                    <button style="font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:8px;border:none;background:oklch(0.62 0.13 155);color:#fff;font-family:inherit;cursor:pointer">Approve</button>
+                    <button style="font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:8px;border:1px solid #e0d7c7;background:#fff;color:#4d463b;font-family:inherit;cursor:pointer">Decline</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- SUPPORT + FINANCE compact line -->
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+              <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:14px;display:flex;gap:13px">
+                <div style="position:relative;flex:none">
+                  <div style="width:46px;height:46px;border-radius:50%;background:oklch(0.95 0.04 305);border:2px solid oklch(0.62 0.14 305);color:oklch(0.44 0.13 305);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">KT</div>
+                  <span style="position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;background:oklch(0.6 0.14 155);border:2.5px solid #fffdf9"></span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:baseline;gap:7px"><span style="font-weight:700;font-size:14px">Kai T.</span><span style="font-size:11.5px;color:#9a9082">Support · Purple team</span></div>
+                  <div style="font-size:12.5px;color:#4d463b">Answered 38 tickets · 2 escalated</div>
+                  <div style="display:flex;gap:5px;margin-top:2px">
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:oklch(0.95 0.04 305);color:oklch(0.44 0.13 305);font-weight:500">⚡ on new ticket</span>
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:#f0ebe0;color:#8a8073">Zendesk</span>
+                  </div>
+                </div>
+              </div>
+              <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:14px;display:flex;gap:13px;opacity:.86">
+                <div style="position:relative;flex:none">
+                  <div style="width:46px;height:46px;border-radius:50%;background:oklch(0.95 0.04 80);border:2px solid oklch(0.7 0.13 80);color:oklch(0.5 0.12 80);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">OV</div>
+                  <span style="position:absolute;right:-1px;bottom:-1px;width:13px;height:13px;border-radius:50%;background:#c9c0af;border:2.5px solid #fffdf9"></span>
+                </div>
+                <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                  <div style="display:flex;align-items:baseline;gap:7px"><span style="font-weight:700;font-size:14px">Otto V.</span><span style="font-size:11.5px;color:#9a9082">Bookkeeper</span></div>
+                  <div style="font-size:12.5px;color:#9a9082">Idle · next run in 2h (month-end close)</div>
+                  <div style="display:flex;gap:5px;margin-top:2px">
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:oklch(0.95 0.04 80);color:oklch(0.5 0.12 80);font-weight:500">⚡ monthly</span>
+                    <span style="font-size:10px;padding:2.5px 7px;border-radius:6px;background:#f0ebe0;color:#8a8073">QuickBooks</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- right : attention + feed -->
+          <div style="width:326px;flex:none;border-left:1px solid #e8e1d3;background:#fffdf9;padding:20px 18px;display:flex;flex-direction:column;gap:16px;overflow:hidden">
+            <div style="display:flex;align-items:center;gap:8px">
+              <h3 style="margin:0;font-family:'Bricolage Grotesque';font-weight:700;font-size:16px">Needs your attention</h3>
+              <span style="font-size:11px;font-weight:700;color:#fff;background:#c2593a;border-radius:999px;padding:2px 8px">3</span>
+            </div>
+
+            <div style="border:1px solid #eee4d2;border-radius:13px;padding:13px;display:flex;flex-direction:column;gap:9px;background:#fff">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:28px;height:28px;border-radius:50%;background:oklch(0.95 0.04 40);color:oklch(0.46 0.13 40);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">NR</div>
+                <div style="line-height:1.15"><div style="font-size:12.5px;font-weight:600">Q3 launch email</div><div style="font-size:11px;color:#9a9082">Nova R. · Marketing</div></div>
+              </div>
+              <div style="font-size:11.5px;color:#6b6355;background:#faf6ee;border:1px solid #eee4d2;border-radius:8px;padding:8px;line-height:1.4">"Introducing Northwind 2.0 — the update your team has been waiting for…"</div>
+              <div style="display:flex;gap:7px">
+                <button style="flex:1;font-size:11.5px;font-weight:600;padding:6px;border-radius:8px;border:none;background:oklch(0.62 0.13 155);color:#fff;font-family:inherit;cursor:pointer">Approve & send</button>
+                <button style="font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid #e0d7c7;background:#fff;font-family:inherit;cursor:pointer">Edit</button>
+              </div>
+            </div>
+
+            <div style="border:1px solid #eee4d2;border-radius:13px;padding:13px;display:flex;flex-direction:column;gap:9px;background:#fff">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:28px;height:28px;border-radius:50%;background:oklch(0.95 0.04 155);color:oklch(0.42 0.11 155);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">SD</div>
+                <div style="line-height:1.15"><div style="font-size:12.5px;font-weight:600">Acme discount · 12%</div><div style="font-size:11px;color:#9a9082">Sam D. · Sales · over 10% cap</div></div>
+              </div>
+              <div style="display:flex;gap:7px">
+                <button style="flex:1;font-size:11.5px;font-weight:600;padding:6px;border-radius:8px;border:none;background:oklch(0.62 0.13 155);color:#fff;font-family:inherit;cursor:pointer">Approve</button>
+                <button style="font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid #e0d7c7;background:#fff;font-family:inherit;cursor:pointer">Decline</button>
+              </div>
+            </div>
+
+            <div style="border:1px solid #eee4d2;border-radius:13px;padding:13px;display:flex;flex-direction:column;gap:9px;background:#fff">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="width:28px;height:28px;border-radius:50%;background:oklch(0.95 0.04 80);color:oklch(0.5 0.12 80);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">OV</div>
+                <div style="line-height:1.15"><div style="font-size:12.5px;font-weight:600">Increase ad spend +$2k</div><div style="font-size:11px;color:#9a9082">Finance rule · budget change</div></div>
+              </div>
+              <div style="display:flex;gap:7px">
+                <button style="flex:1;font-size:11.5px;font-weight:600;padding:6px;border-radius:8px;border:none;background:oklch(0.62 0.13 155);color:#fff;font-family:inherit;cursor:pointer">Approve</button>
+                <button style="font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid #e0d7c7;background:#fff;font-family:inherit;cursor:pointer">Hold</button>
+              </div>
+            </div>
+
+            <div style="height:1px;background:#eee4d2;margin:2px 0"></div>
+            <div style="font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#a89d8c">Live activity</div>
+            <div style="display:flex;flex-direction:column;gap:12px;font-size:12px;color:#4d463b">
+              <div style="display:flex;gap:9px"><span style="color:#b3a894;width:26px;flex:none">2m</span><span>Kai closed 5 tickets under 4 min each</span></div>
+              <div style="display:flex;gap:9px"><span style="color:#b3a894;width:26px;flex:none">8m</span><span>Iris booked a demo with <b>Acme Corp</b></span></div>
+              <div style="display:flex;gap:9px"><span style="color:#b3a894;width:26px;flex:none">14m</span><span>Theo published a post to LinkedIn</span></div>
+              <div style="display:flex;gap:9px"><span style="color:#b3a894;width:26px;flex:none">20m</span><span>Ada merged PR #482 to <b>main</b></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1b : EMPLOYEE DETAIL / HIRE ============ -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a>AI employee — job description, triggers & autonomy (hire / configure)</div>
+      <div class="frame" style="width:508px;height:948px;display:flex;flex-direction:column;background:#fffdf9">
+        <div style="height:8px;flex:none;background:oklch(0.66 0.15 40)"></div>
+        <div style="padding:22px 24px;display:flex;flex-direction:column;gap:20px;overflow:hidden">
+          <!-- header -->
+          <div style="display:flex;align-items:center;gap:15px">
+            <div style="position:relative;flex:none">
+              <div style="width:64px;height:64px;border-radius:50%;background:oklch(0.95 0.04 40);border:2.5px solid oklch(0.66 0.15 40);color:oklch(0.46 0.13 40);display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px">NR</div>
+              <span style="position:absolute;right:0;bottom:0;width:16px;height:16px;border-radius:50%;background:oklch(0.6 0.14 155);border:3px solid #fffdf9"></span>
+            </div>
+            <div style="flex:1">
+              <div style="font-family:'Bricolage Grotesque';font-weight:700;font-size:22px;letter-spacing:-.01em">Nova R.</div>
+              <div style="font-size:13px;color:#8a8073">Content Lead · Marketing</div>
+            </div>
+            <button style="font-size:12px;font-weight:600;padding:7px 13px;border-radius:9px;border:1px solid #e0d7c7;background:#fff;font-family:inherit;cursor:pointer">Pause</button>
+          </div>
+
+          <div style="font-size:12.5px;line-height:1.5;color:#5a5346;background:#faf6ee;border:1px solid #eee4d2;border-radius:11px;padding:12px 13px">
+            <span style="font-size:15px">🌱</span>&nbsp; Warm, brand-obsessed writer. Ships fast, always on-voice, flags anything risky before it goes out.
+          </div>
+
+          <!-- job description -->
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c">Job description</span>
+              <span style="font-size:11px;color:#b3a894">edit</span>
+            </div>
+            <div style="font-size:13px;line-height:1.55;color:#3f382d;border:1px solid #e8e1d3;border-radius:11px;padding:12px 13px;background:#fff">Own all outbound content for Northwind. Draft launch emails, blog posts, and social copy in the brand voice. Keep a consistent weekly cadence, cite sources, and route anything customer-facing for approval before publishing.</div>
+          </div>
+
+          <!-- triggers -->
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c">Triggers — when Nova acts</span>
+            <div style="display:flex;align-items:center;gap:11px;border:1px solid #e8e1d3;border-radius:11px;padding:11px 12px;background:#fff">
+              <span style="width:30px;height:30px;flex:none;border-radius:8px;background:oklch(0.95 0.04 40);color:oklch(0.46 0.13 40);display:flex;align-items:center;justify-content:center;font-size:14px">⚡</span>
+              <div style="flex:1;font-size:12.5px"><b>Every Monday 9:00</b><div style="color:#9a9082;font-size:11.5px">Draft the week's content plan</div></div>
+              <span style="width:34px;height:20px;border-radius:999px;background:oklch(0.62 0.13 155);position:relative;flex:none"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff"></span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:11px;border:1px solid #e8e1d3;border-radius:11px;padding:11px 12px;background:#fff">
+              <span style="width:30px;height:30px;flex:none;border-radius:8px;background:oklch(0.95 0.04 40);color:oklch(0.46 0.13 40);display:flex;align-items:center;justify-content:center;font-size:14px">🚀</span>
+              <div style="flex:1;font-size:12.5px"><b>On product launch</b><div style="color:#9a9082;font-size:11.5px">Write announcement email + 3 posts</div></div>
+              <span style="width:34px;height:20px;border-radius:999px;background:oklch(0.62 0.13 155);position:relative;flex:none"><span style="position:absolute;right:2px;top:2px;width:16px;height:16px;border-radius:50%;background:#fff"></span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:11px;border:1px dashed #d8cfbd;border-radius:11px;padding:11px 12px;color:#8a8073;font-size:12.5px;font-weight:500">＋ Add trigger</div>
+          </div>
+
+          <!-- autonomy -->
+          <div style="display:flex;flex-direction:column;gap:9px">
+            <span style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c">Autonomy</span>
+            <div style="display:flex;gap:5px;background:#efe9dd;border-radius:11px;padding:4px">
+              <span style="flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;color:#9a9082">Suggest only</span>
+              <span style="flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;font-weight:600;background:#fffdf9;box-shadow:0 1px 2px rgba(0,0,0,.06)">Ask to send</span>
+              <span style="flex:1;text-align:center;padding:8px;border-radius:8px;font-size:12px;color:#9a9082">Full autopilot</span>
+            </div>
+            <div style="font-size:11.5px;color:#9a9082;line-height:1.4">Nova drafts and prepares everything, then waits for your approval before anything goes to customers.</div>
+          </div>
+
+          <div style="flex:1"></div>
+          <div style="display:flex;gap:10px;border-top:1px solid #eee4d2;padding-top:16px">
+            <button style="flex:1;font-size:13.5px;font-weight:600;padding:12px;border-radius:11px;border:none;background:#211d17;color:#f6f2ea;font-family:inherit;cursor:pointer">Save employee</button>
+            <button style="font-size:13.5px;font-weight:600;padding:12px 16px;border-radius:11px;border:1px solid #e0d7c7;background:#fff;font-family:inherit;cursor:pointer">Message</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ============ 1c : LINEUP / FORMATION ============ -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a>The lineup — your company as a starting formation</div>
+      <div class="frame" style="width:760px;height:948px;background:linear-gradient(160deg,#26221b,#1a1712);display:flex;flex-direction:column;padding:26px 28px">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:6px">
+          <div style="font-family:'Bricolage Grotesque';font-weight:800;font-size:22px;color:#f6f2ea;letter-spacing:-.01em">Today's lineup</div>
+          <span style="flex:1"></span>
+          <span style="display:flex;align-items:center;gap:7px;font-size:12px;color:#b9b0a1;background:#312b22;border:1px solid #40382c;border-radius:999px;padding:6px 12px"><span style="width:8px;height:8px;border-radius:50%;background:oklch(0.66 0.15 145);animation:pulse 2s infinite"></span>6 on the field</span>
+        </div>
+        <div style="font-size:12.5px;color:#8f8676;margin-bottom:20px">Formation 2-2-2 · you're the manager on the sideline</div>
+
+        <!-- field -->
+        <div style="flex:1;border-radius:20px;background:repeating-linear-gradient(0deg,#20291d,#20291d 76px,#233020 76px,#233020 152px);border:1px solid #3a4432;position:relative;padding:26px 0;display:flex;flex-direction:column;justify-content:space-between">
+
+          <!-- line 1 : leadership -->
+          <div style="text-align:center">
+            <div style="font-size:10px;letter-spacing:.14em;color:#7f8a72;text-transform:uppercase;margin-bottom:12px">Ops · Chief of Staff</div>
+            <div style="display:flex;justify-content:center;gap:60px">
+              <!-- token -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                <div style="width:54px;height:54px;border-radius:50%;background:oklch(0.72 0.13 80);color:#211d17;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;box-shadow:0 6px 16px -4px rgba(0,0,0,.5)">CS</div>
+                <div style="font-size:12px;color:#f6f2ea;font-weight:600">Ruth A.</div>
+                <div style="font-size:10px;color:#9aa08d">routing work</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- line 2 : eng + sales -->
+          <div style="display:flex;justify-content:center;gap:80px">
+            <div style="display:flex;gap:40px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                <div style="position:relative"><div style="width:54px;height:54px;border-radius:50%;background:oklch(0.66 0.14 250);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;box-shadow:0 6px 16px -4px rgba(0,0,0,.5)">AK</div><span style="position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:oklch(0.66 0.15 145);border:2.5px solid #223020"></span></div>
+                <div style="font-size:12px;color:#f6f2ea;font-weight:600">Ada K.</div>
+                <div style="font-size:10px;color:#9aa08d">deploying</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                <div style="position:relative"><div style="width:54px;height:54px;border-radius:50%;background:oklch(0.66 0.14 250);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;box-shadow:0 6px 16px -4px rgba(0,0,0,.5)">LO</div><span style="position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:oklch(0.66 0.15 145);border:2.5px solid #223020"></span></div>
+                <div style="font-size:12px;color:#f6f2ea;font-weight:600">Lin O.</div>
+                <div style="font-size:10px;color:#9aa08d">testing</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:40px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                <div style="position:relative"><div style="width:54px;height:54px;border-radius:50%;background:oklch(0.66 0.13 150);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;box-shadow:0 6px 16px -4px rgba(0,0,0,.5)">IP</div><span style="position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:oklch(0.66 0.15 145);border:2.5px solid #223020"></span></div>
+                <div style="font-size:12px;color:#f6f2ea;font-weight:600">Iris P.</div>
+                <div style="font-size:10px;color:#9aa08d">24 leads</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                <div style="position:relative"><div style="width:54px;height:54px;border-radius:50%;background:oklch(0.66 0.13 150);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;box-shadow:0 6px 16px -4px rgba(0,0,0,.5)">SD</div><span style="position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:oklch(0.7 0.13 80);border:2.5px solid #223020"></span></div>
+                <div style="font-size:12px;color:#f6f2ea;font-weight:600">Sam D.</div>
+                <div style="font-size:10px;color:oklch(0.78 0.11 80)">needs you</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- line 3 : marketing + support -->
+          <div style="display:flex;justify-content:center;gap:80px">
+            <div style="display:flex;gap:40px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                <div style="position:relative"><div style="width:54px;height:54px;border-radius:50%;background:oklch(0.68 0.15 40);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;box-shadow:0 6px 16px -4px rgba(0,0,0,.5)">NR</div><span style="position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:oklch(0.7 0.13 80);border:2.5px solid #223020"></span></div>
+                <div style="font-size:12px;color:#f6f2ea;font-weight:600">Nova R.</div>
+                <div style="font-size:10px;color:oklch(0.78 0.11 80)">needs you</div>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                <div style="position:relative"><div style="width:54px;height:54px;border-radius:50%;background:oklch(0.68 0.15 40);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;box-shadow:0 6px 16px -4px rgba(0,0,0,.5)">TM</div><span style="position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:oklch(0.66 0.15 145);border:2.5px solid #223020"></span></div>
+                <div style="font-size:12px;color:#f6f2ea;font-weight:600">Theo M.</div>
+                <div style="font-size:10px;color:#9aa08d">scheduling</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:40px">
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+                <div style="position:relative"><div style="width:54px;height:54px;border-radius:50%;background:oklch(0.64 0.14 305);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px;box-shadow:0 6px 16px -4px rgba(0,0,0,.5)">KT</div><span style="position:absolute;right:0;bottom:0;width:14px;height:14px;border-radius:50%;background:oklch(0.66 0.15 145);border:2.5px solid #223020"></span></div>
+                <div style="font-size:12px;color:#f6f2ea;font-weight:600">Kai T.</div>
+                <div style="font-size:10px;color:#9aa08d">38 tickets</div>
+              </div>
+              <!-- bench / add -->
+              <div style="display:flex;flex-direction:column;align-items:center;gap:6px;opacity:.6">
+                <div style="width:54px;height:54px;border-radius:50%;border:2px dashed #5c6650;color:#8f9a7f;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:22px">＋</div>
+                <div style="font-size:12px;color:#c3c9b8;font-weight:600">Hire</div>
+                <div style="font-size:10px;color:#8f9a7f">open slot</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- sideline bench -->
+        <div style="margin-top:18px;display:flex;align-items:center;gap:12px">
+          <span style="font-size:10px;letter-spacing:.14em;color:#7f8a72;text-transform:uppercase">Bench</span>
+          <div style="display:flex;gap:8px;flex:1">
+            <div style="display:flex;align-items:center;gap:8px;background:#2b261e;border:1px solid #40382c;border-radius:999px;padding:5px 12px 5px 5px">
+              <div style="width:28px;height:28px;border-radius:50%;background:oklch(0.72 0.13 80);color:#211d17;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">OV</div>
+              <span style="font-size:12px;color:#e7e0d2">Otto V. · resting</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;background:#2b261e;border:1px solid #40382c;border-radius:999px;padding:5px 12px 5px 5px">
+              <div style="width:28px;height:28px;border-radius:50%;background:#4a4234;color:#e7e0d2;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:11px">?</div>
+              <span style="font-size:12px;color:#e7e0d2">Recruiting: Designer</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <p class="dv-next">Try next: "make <a class="dv-oid" href="#1a">1a</a> a clickable prototype — approvals actually clear" · "a hire flow: pick role → write job description → set triggers" · "show one agent's live work log" · "new visual directions"</p>
+</section>
+
+</x-dc>
+</body>
+</html>

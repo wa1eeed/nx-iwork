@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,500;12..96,600;12..96,700;12..96,800&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:#efe9dd;font-family:"Instrument Sans",system-ui,sans-serif;color:#211d17}
+  a{color:inherit}
+  button{font-family:inherit}
+  input,textarea{font-family:inherit}
+  ::placeholder{color:#b3a894}
+  @keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+  @keyframes fadein{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+  @keyframes pop{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:none}}
+  .scroll::-webkit-scrollbar{width:9px}
+  .scroll::-webkit-scrollbar-thumb{background:#ddd3c1;border-radius:6px;border:2px solid #fffdf9}
+</style>
+</helmet>
+
+<div style="height:100vh;display:flex;flex-direction:column;background:#f6f2ea">
+
+  <!-- top bar -->
+  <div style="height:64px;flex:none;display:flex;align-items:center;gap:14px;padding:0 20px;border-bottom:1px solid #e8e1d3;background:#fffdf9;z-index:5">
+    <div style="display:flex;align-items:center;gap:11px">
+      <div style="width:30px;height:30px;border-radius:9px;background:#211d17;color:#f6f2ea;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:15px">◆</div>
+      <div style="display:flex;flex-direction:column;line-height:1.05">
+        <span style="font-family:'Bricolage Grotesque';font-weight:700;font-size:16px;letter-spacing:-.01em">Zahra Home</span>
+        <span style="font-size:10.5px;color:#9a9082">Powered by NX iWork</span>
+      </div>
+    </div>
+    <div style="flex:1"></div>
+    <div style="display:flex;align-items:center;gap:8px;padding:7px 12px;border-radius:999px;background:#fff;border:1px solid #e8e1d3;font-size:12px;color:#4d463b" title="Managed token bank">
+      <span style="width:8px;height:8px;border-radius:50%;background:oklch(0.64 0.13 250)"></span>
+      <span style="font-weight:600">{{ tokenBank }}</span><span style="color:#9a9082">tokens</span>
+      <span style="width:1px;height:14px;background:#e8e1d3;margin:0 2px"></span>
+      <span style="font-weight:600;color:oklch(0.44 0.12 40)">{{ plan }}</span>
+    </div>
+    <button style="display:flex;align-items:center;gap:9px;padding:6px 9px 6px 13px;border-radius:999px;border:1px solid #e0d7c7;cursor:pointer;background:#fff" onClick="{{ toggleAutopilot }}">
+      <span style="{{ apDotStyle }}"></span>
+      <span style="{{ apLabelStyle }}">{{ apLabel }}</span>
+      <span style="{{ apTrackStyle }}"><span style="{{ apKnobStyle }}"></span></span>
+    </button>
+    <button style="{{ needStyle }}" onClick="{{ goApprovals }}">🔔 {{ needLabel }}</button>
+    <div style="width:36px;height:36px;border-radius:50%;background:#211d17;color:#f6f2ea;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:13px">You</div>
+  </div>
+
+  <!-- body -->
+  <div style="flex:1;display:flex;min-height:0">
+
+    <!-- left nav -->
+    <div style="width:240px;flex:none;border-right:1px solid #e8e1d3;background:#fffdf9;padding:16px 13px;display:flex;flex-direction:column;gap:4px">
+      <button style="{{ navHomeStyle }}" onClick="{{ goHome }}"><span style="width:17px">▦</span>Command Center</button>
+      <button style="{{ navApprStyle }}" onClick="{{ goApprovals }}"><span style="width:17px">✔</span>Approvals<span style="flex:1"></span><sc-if value="{{ hasApprovals }}"><span style="font-size:11px;font-weight:700;color:#fff;background:#c2593a;border-radius:999px;padding:1px 7px">{{ approvalsCount }}</span></sc-if></button>
+      <button style="{{ navSetStyle }}" onClick="{{ goSettings }}"><span style="width:17px">⚙</span>Guardrails</button>
+
+      <div style="font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#a89d8c;padding:16px 8px 8px">Departments</div>
+      <sc-for list="{{ departments }}" as="d" hint-placeholder-count="6">
+        <button style="display:flex;align-items:center;gap:10px;padding:8px 10px;border-radius:10px;font-size:13px;border:none;background:none;cursor:pointer;text-align:left;width:100%" onClick="{{ d.onHire }}">
+          <span style="{{ d.dotStyle }}"></span>{{ d.name }}<span style="flex:1"></span><span style="color:#a89d8c">{{ d.count }}</span>
+        </button>
+      </sc-for>
+      <button style="margin-top:6px;display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:10px;border:1px dashed #d8cfbd;background:none;color:#8a8073;font-size:13px;cursor:pointer;font-weight:500" onClick="{{ openNewDept }}">＋ New department</button>
+
+      <div style="flex:1"></div>
+      <div style="border-radius:12px;background:#211d17;color:#efe9dd;padding:14px;display:flex;flex-direction:column;gap:9px">
+        <div style="font-size:11px;color:#b9b0a1;letter-spacing:.03em">TODAY'S OUTPUT</div>
+        <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:'Bricolage Grotesque';font-weight:700;font-size:26px">{{ tasksDone }}</span><span style="font-size:11.5px;color:#b9b0a1">tasks done</span></div>
+        <div style="height:5px;border-radius:3px;background:#3a342a;overflow:hidden"><div style="{{ outputBarStyle }}"></div></div>
+        <div style="font-size:11px;color:#b9b0a1">{{ workforceLabel }}</div>
+      </div>
+    </div>
+
+    <!-- ============ HOME ============ -->
+    <sc-if value="{{ showHome }}" hint-placeholder-val="{{ true }}">
+      <div style="flex:1;display:flex;min-width:0">
+        <div class="scroll" style="flex:1;min-width:0;padding:20px 22px;overflow-y:auto;display:flex;flex-direction:column;gap:18px">
+          <div style="display:flex;align-items:baseline;gap:12px">
+            <h2 style="margin:0;font-family:'Bricolage Grotesque';font-weight:700;font-size:22px;letter-spacing:-.01em">Your workforce</h2>
+            <span style="font-size:12.5px;color:#9a9082">{{ liveLabel }}</span>
+            <span style="flex:1"></span>
+            <button style="font-size:12.5px;font-weight:600;padding:8px 14px;border-radius:9px;border:none;background:#211d17;color:#f6f2ea;cursor:pointer" onClick="{{ openHire }}">＋ Hire AI employee</button>
+          </div>
+
+          <sc-for list="{{ departments }}" as="d" hint-placeholder-count="6">
+            <div style="display:flex;flex-direction:column;gap:13px">
+              <div style="display:flex;align-items:center;gap:9px">
+                <span style="{{ d.dotStyle }}"></span>
+                <span style="font-weight:600;font-size:13px">{{ d.name }}</span>
+                <span style="font-size:11px;color:#b3a894">· led by {{ d.lead }}</span>
+                <button style="font-size:11px;color:#a89d8c;border:none;background:none;cursor:pointer" onClick="{{ d.onHire }}">＋ add</button>
+              </div>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:13px">
+                <sc-for list="{{ d.agents }}" as="a" hint-placeholder-count="2">
+                  <div style="{{ a.cardStyle }}" onClick="{{ a.onOpen }}">
+                    <div style="position:relative;flex:none">
+                      <div style="{{ a.avatarStyle }}">{{ a.initials }}</div>
+                      <span style="{{ a.dotStyle }}"></span>
+                    </div>
+                    <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:5px">
+                      <div style="display:flex;align-items:baseline;gap:7px"><span style="font-weight:700;font-size:14px">{{ a.name }}</span><span style="font-size:11.5px;color:#9a9082">{{ a.role }}</span></div>
+                      <div style="font-size:12.5px;color:#4d463b">{{ a.task }}</div>
+                      <sc-if value="{{ a.showProgress }}" hint-placeholder-val="{{ true }}">
+                        <div style="height:5px;border-radius:3px;background:#efe9dd;overflow:hidden;margin-top:1px"><div style="{{ a.progressStyle }}"></div></div>
+                      </sc-if>
+                      <sc-if value="{{ a.showApprove }}">
+                        <div style="display:flex;gap:7px;margin-top:3px">
+                          <button style="font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:8px;border:none;background:oklch(0.62 0.13 155);color:#fff;cursor:pointer" onClick="{{ a.onApprove }}">Approve</button>
+                          <button style="font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:8px;border:1px solid #e0d7c7;background:#fff;color:#4d463b;cursor:pointer" onClick="{{ a.onDecline }}">Send back</button>
+                        </div>
+                      </sc-if>
+                      <sc-if value="{{ a.showChips }}" hint-placeholder-val="{{ true }}">
+                        <div style="display:flex;gap:5px;margin-top:2px;align-items:center">
+                          <span style="{{ a.chipStyle }}">⚡ {{ a.trigger }}</span>
+                          <span style="{{ a.modelChipStyle }}"><span style="{{ a.modelDotStyle }}"></span>{{ a.model }}</span>
+                        </div>
+                      </sc-if>
+                    </div>
+                  </div>
+                </sc-for>
+                <sc-if value="{{ d.empty }}"><button style="border:1px dashed #d8cfbd;border-radius:14px;padding:14px;display:flex;align-items:center;gap:10px;background:none;cursor:pointer;color:#8a8073;font-size:12.5px" onClick="{{ d.onHire }}"><span style="width:40px;height:40px;border-radius:50%;border:2px dashed #d8cfbd;display:flex;align-items:center;justify-content:center;font-size:18px">＋</span>Hire your first {{ d.name }} agent</button></sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- right rail -->
+        <div class="scroll" style="width:322px;flex:none;border-left:1px solid #e8e1d3;background:#fffdf9;padding:20px 18px;display:flex;flex-direction:column;gap:16px;overflow-y:auto">
+          <div style="display:flex;align-items:center;gap:8px">
+            <h3 style="margin:0;font-family:'Bricolage Grotesque';font-weight:700;font-size:16px">Needs your attention</h3>
+            <sc-if value="{{ hasApprovals }}" hint-placeholder-val="{{ true }}"><span style="font-size:11px;font-weight:700;color:#fff;background:#c2593a;border-radius:999px;padding:2px 8px">{{ approvalsCount }}</span></sc-if>
+          </div>
+          <div style="font-size:11.5px;color:#9a9082;line-height:1.4;margin-top:-8px">Agents route sensitive decisions to you via <b style="color:#6b6355">request_approval</b>.</div>
+          <sc-for list="{{ approvals }}" as="p" hint-placeholder-count="3">
+            <div style="border:1px solid #eee4d2;border-radius:13px;padding:13px;display:flex;flex-direction:column;gap:9px;background:#fff;animation:fadein .25s ease">
+              <div style="display:flex;align-items:center;gap:9px">
+                <div style="{{ p.avatarStyle }}">{{ p.initials }}</div>
+                <div style="line-height:1.15"><div style="font-size:12.5px;font-weight:600">{{ p.title }}</div><div style="font-size:11px;color:#9a9082">{{ p.sub }}</div></div>
+              </div>
+              <sc-if value="{{ p.preview }}"><div style="font-size:11.5px;color:#6b6355;background:#faf6ee;border:1px solid #eee4d2;border-radius:8px;padding:8px;line-height:1.4">{{ p.preview }}</div></sc-if>
+              <div style="display:flex;gap:7px">
+                <button style="flex:1;font-size:11.5px;font-weight:600;padding:6px;border-radius:8px;border:none;background:oklch(0.62 0.13 155);color:#fff;cursor:pointer" onClick="{{ p.onApprove }}">{{ p.primary }}</button>
+                <button style="font-size:11.5px;font-weight:600;padding:6px 11px;border-radius:8px;border:1px solid #e0d7c7;background:#fff;cursor:pointer" onClick="{{ p.onDecline }}">{{ p.secondary }}</button>
+              </div>
+            </div>
+          </sc-for>
+          <sc-if value="{{ allClear }}"><div style="border:1px dashed #d8cfbd;border-radius:13px;padding:20px;text-align:center;color:#9a9082;font-size:12.5px;line-height:1.5">🌿 All caught up.<br>Your team is running on its own.</div></sc-if>
+
+          <div style="height:1px;background:#eee4d2"></div>
+          <div style="font-size:10.5px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#a89d8c">Live activity · timeline</div>
+          <div style="display:flex;flex-direction:column;gap:12px;font-size:12px;color:#4d463b">
+            <sc-for list="{{ activity }}" as="ev" hint-placeholder-count="4">
+              <div style="display:flex;gap:9px;animation:fadein .3s ease"><span style="color:#b3a894;width:30px;flex:none">{{ ev.ago }}</span><span>{{ ev.text }}</span></div>
+            </sc-for>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ AGENT WORKSPACE ============ -->
+    <sc-if value="{{ showAgent }}">
+      <div class="scroll" style="flex:1;min-width:0;overflow-y:auto;background:#f6f2ea">
+        <div style="{{ agentBannerStyle }}"></div>
+        <div style="max-width:940px;margin:0 auto;padding:0 30px 40px">
+          <button style="margin:18px 0 0;font-size:12.5px;color:#8a8073;border:none;background:none;cursor:pointer" onClick="{{ goHome }}">← Back to Command Center</button>
+          <div style="display:flex;align-items:center;gap:16px;margin-top:16px">
+            <div style="position:relative;flex:none"><div style="{{ agent.bigAvatarStyle }}">{{ agent.initials }}</div><span style="{{ agent.bigDotStyle }}"></span></div>
+            <div style="flex:1">
+              <div style="display:flex;align-items:center;gap:10px"><span style="font-family:'Bricolage Grotesque';font-weight:700;font-size:26px;letter-spacing:-.01em">{{ agent.name }}</span><span style="{{ agent.statusPillStyle }}">{{ agent.statusLabel }}</span></div>
+              <div style="font-size:13.5px;color:#8a8073">{{ agent.role }} · {{ agent.dept }} · reports to {{ agent.reportsTo }}</div>
+            </div>
+            <span style="{{ agent.modelPillStyle }}">{{ agent.model }} model</span>
+            <button style="font-size:12.5px;font-weight:600;padding:9px 15px;border-radius:10px;border:1px solid #e0d7c7;background:#fff;cursor:pointer">Pause agent</button>
+          </div>
+          <div style="{{ agent.personaStyle }}">{{ agent.persona }}</div>
+
+          <!-- tabs -->
+          <div style="display:flex;gap:4px;margin-top:22px;border-bottom:1px solid #e8e1d3">
+            <button style="{{ agent.tabActivityStyle }}" onClick="{{ agent.goActivity }}">Activity</button>
+            <button style="{{ agent.tabScenariosStyle }}" onClick="{{ agent.goScenarios }}">Scenarios</button>
+            <button style="{{ agent.tabKpisStyle }}" onClick="{{ agent.goKpis }}">KPIs</button>
+            <button style="{{ agent.tabMemoryStyle }}" onClick="{{ agent.goMemory }}">Memory</button>
+            <button style="{{ agent.tabSettingsStyle }}" onClick="{{ agent.goSettingsTab }}">Settings</button>
+          </div>
+
+          <div style="display:grid;grid-template-columns:1fr 300px;gap:22px;margin-top:20px;align-items:start">
+            <!-- tab content -->
+            <div style="display:flex;flex-direction:column;gap:14px">
+
+              <sc-if value="{{ agent.tabActivity }}" hint-placeholder-val="{{ true }}">
+                <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c">Work log</div>
+                <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:6px 16px">
+                  <sc-for list="{{ agent.log }}" as="l" hint-placeholder-count="4">
+                    <div style="display:flex;gap:14px;padding:12px 0;border-bottom:1px solid #f0ebe0">
+                      <span style="{{ l.dotStyle }}"></span>
+                      <div style="flex:1"><div style="font-size:13px;color:#3f382d">{{ l.text }}</div><div style="font-size:11px;color:#b3a894;margin-top:2px">{{ l.time }}</div></div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c;margin-top:6px">Direct {{ agent.first }} · internal mode</div>
+                <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:14px;display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;flex-direction:column;gap:9px;min-height:40px">
+                    <sc-for list="{{ agent.chat }}" as="m" hint-placeholder-count="0">
+                      <div style="{{ m.rowStyle }}"><div style="{{ m.bubbleStyle }}">{{ m.text }}</div></div>
+                    </sc-for>
+                    <sc-if value="{{ agent.chatEmpty }}"><div style="font-size:12.5px;color:#b3a894;text-align:center;padding:8px">Give {{ agent.first }} a directive — they act via their tools and report back.</div></sc-if>
+                  </div>
+                  <div style="display:flex;gap:8px">
+                    <input value="{{ chatInput }}" onInput="{{ onChatInput }}" onKeyDown="{{ onChatKey }}" placeholder="Message {{ agent.first }}…" style="flex:1;font-size:13px;padding:10px 12px;border-radius:9px;border:1px solid #e0d7c7;background:#fff;outline:none">
+                    <button style="font-size:13px;font-weight:600;padding:10px 16px;border-radius:9px;border:none;background:#211d17;color:#f6f2ea;cursor:pointer" onClick="{{ sendChat }}">Send</button>
+                  </div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ agent.tabScenarios }}">
+                <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c">If-then scenarios → wake triggers</div>
+                <sc-for list="{{ agent.scenarioRows }}" as="s" hint-placeholder-count="2">
+                  <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:14px;display:flex;align-items:center;gap:12px">
+                    <span style="{{ agent.trigIconStyle }}">⚡</span>
+                    <div style="flex:1;font-size:13px"><span style="color:#9a9082">When </span><b>{{ s.when }}</b><span style="color:#9a9082"> → </span>{{ s.then }}</div>
+                    <span style="font-size:10px;padding:3px 8px;border-radius:6px;background:#f0ebe0;color:#8a8073">{{ s.kind }}</span>
+                  </div>
+                </sc-for>
+                <button style="border:1px dashed #d8cfbd;border-radius:12px;padding:12px;color:#8a8073;font-size:12.5px;background:none;cursor:pointer">＋ Add scenario</button>
+              </sc-if>
+
+              <sc-if value="{{ agent.tabKpis }}">
+                <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c">KPIs & performance</div>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+                  <sc-for list="{{ agent.kpis }}" as="k" hint-placeholder-count="3">
+                    <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px">
+                      <div style="font-size:11.5px;color:#9a9082">{{ k.label }}</div>
+                      <div style="font-family:'Bricolage Grotesque';font-weight:700;font-size:24px;margin-top:4px">{{ k.value }}</div>
+                      <div style="{{ k.trendStyle }}">{{ k.trend }}</div>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px;display:flex;align-items:center;gap:14px;margin-top:2px">
+                  <div style="flex:1"><div style="font-size:13px;font-weight:600">Tasks completed</div><div style="font-size:11.5px;color:#9a9082">Since {{ agent.first }} was hired</div></div>
+                  <div style="font-family:'Bricolage Grotesque';font-weight:700;font-size:22px">{{ agent.tasksCompleted }}</div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ agent.tabMemory }}">
+                <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c">3-layer memory</div>
+                <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px;display:flex;gap:13px;align-items:flex-start">
+                  <span style="font-size:18px">🧠</span><div style="flex:1"><div style="font-size:13.5px;font-weight:600">Working memory</div><div style="font-size:12px;color:#6b6355;line-height:1.5;margin-top:3px">Last {{ agent.mem.working }} messages held in context this session (~5K tokens).</div></div>
+                </div>
+                <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px;display:flex;gap:13px;align-items:flex-start">
+                  <span style="font-size:18px">🗂️</span><div style="flex:1"><div style="font-size:13.5px;font-weight:600">Episodic memory</div><div style="font-size:12px;color:#6b6355;line-height:1.5;margin-top:3px">{{ agent.mem.episodic }} past tasks & conversations stored in Postgres.</div></div>
+                </div>
+                <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px;display:flex;gap:13px;align-items:flex-start">
+                  <span style="font-size:18px">🔮</span><div style="flex:1"><div style="font-size:13.5px;font-weight:600">Semantic memory</div><div style="font-size:12px;color:#6b6355;line-height:1.5;margin-top:3px">{{ agent.mem.semantic }} long-term memories as 1536-dim vectors (pgvector). Nightly summary consolidates the day.</div></div>
+                </div>
+              </sc-if>
+
+              <sc-if value="{{ agent.tabSettings }}">
+                <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c">Job description — governs this agent</div>
+                <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px;font-size:13px;line-height:1.55;color:#3f382d">{{ agent.job }}</div>
+                <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c;margin-top:6px">Tool permissions — function-calling allow-list</div>
+                <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px;display:flex;flex-wrap:wrap;gap:7px">
+                  <sc-for list="{{ agent.permChips }}" as="c" hint-placeholder-count="4">
+                    <span style="font-size:11.5px;font-family:'Instrument Sans';padding:6px 10px;border-radius:8px;background:#f0ebe0;color:#4d463b">{{ c }}</span>
+                  </sc-for>
+                </div>
+                <div style="font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#a89d8c;margin-top:6px">Autonomy — what {{ agent.first }} can do alone</div>
+                <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:10px">
+                  <div style="display:flex;gap:5px;background:#efe9dd;border-radius:10px;padding:4px">
+                    <button style="{{ agent.autoSuggestStyle }}" onClick="{{ agent.setSuggest }}">Suggest</button>
+                    <button style="{{ agent.autoAskStyle }}" onClick="{{ agent.setAsk }}">Ask</button>
+                    <button style="{{ agent.autoAutoStyle }}" onClick="{{ agent.setAuto }}">Autopilot</button>
+                  </div>
+                  <div style="font-size:11.5px;color:#9a9082;line-height:1.4">{{ agent.autoDesc }}</div>
+                </div>
+              </sc-if>
+            </div>
+
+            <!-- right: quick facts (always) -->
+            <div style="display:flex;flex-direction:column;gap:14px">
+              <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:12px">
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;color:#9a9082">Status</span><span style="{{ agent.statusPillStyle }}">{{ agent.statusLabel }}</span></div>
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;color:#9a9082">Model tier</span><span style="font-size:12.5px;font-weight:600">{{ agent.model }}</span></div>
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;color:#9a9082">Reports to</span><span style="font-size:12.5px;font-weight:600">{{ agent.reportsTo }}</span></div>
+                <div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:12px;color:#9a9082">Department</span><span style="font-size:12.5px;font-weight:600">{{ agent.dept }}</span></div>
+              </div>
+              <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:15px;display:flex;flex-direction:column;gap:8px">
+                <div style="font-size:12px;color:#9a9082">Tokens this month</div>
+                <div style="display:flex;align-items:baseline;gap:6px"><span style="font-family:'Bricolage Grotesque';font-weight:700;font-size:18px">{{ agent.tokUsed }}</span><span style="font-size:11.5px;color:#9a9082">of {{ agent.tokCap }} cap</span></div>
+                <div style="height:6px;border-radius:3px;background:#efe9dd;overflow:hidden"><div style="{{ agent.tokBarStyle }}"></div></div>
+                <div style="font-size:11px;color:#b3a894">Per-agent cap protects the shared token bank.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ APPROVALS ============ -->
+    <sc-if value="{{ showApprovals }}">
+      <div class="scroll" style="flex:1;min-width:0;overflow-y:auto;padding:26px 30px">
+        <div style="max-width:640px;margin:0 auto">
+          <h2 style="margin:0 0 4px;font-family:'Bricolage Grotesque';font-weight:700;font-size:24px;letter-spacing:-.01em">Approvals</h2>
+          <p style="margin:0 0 22px;font-size:13px;color:#9a9082">Sensitive decisions your agents paused for. Approving wakes them to continue.</p>
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <sc-for list="{{ approvals }}" as="p" hint-placeholder-count="3">
+              <div style="border:1px solid #eee4d2;border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:11px;background:#fffdf9;animation:fadein .25s ease">
+                <div style="display:flex;align-items:center;gap:11px">
+                  <div style="{{ p.bigAvatarStyle }}">{{ p.initials }}</div>
+                  <div style="flex:1"><div style="font-size:14.5px;font-weight:700">{{ p.title }}</div><div style="font-size:12px;color:#9a9082">{{ p.sub }}</div></div>
+                </div>
+                <sc-if value="{{ p.preview }}"><div style="font-size:12.5px;color:#6b6355;background:#faf6ee;border:1px solid #eee4d2;border-radius:9px;padding:11px;line-height:1.5">{{ p.preview }}</div></sc-if>
+                <div style="display:flex;gap:9px">
+                  <button style="font-size:12.5px;font-weight:600;padding:9px 18px;border-radius:9px;border:none;background:oklch(0.62 0.13 155);color:#fff;cursor:pointer" onClick="{{ p.onApprove }}">{{ p.primary }}</button>
+                  <button style="font-size:12.5px;font-weight:600;padding:9px 18px;border-radius:9px;border:1px solid #e0d7c7;background:#fff;cursor:pointer" onClick="{{ p.onDecline }}">{{ p.secondary }}</button>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ allClear }}"><div style="border:1px dashed #d8cfbd;border-radius:14px;padding:40px;text-align:center;color:#9a9082;font-size:14px;line-height:1.6">🌿 Nothing needs you right now.<br>Your company is running on its own.</div></sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ GUARDRAILS ============ -->
+    <sc-if value="{{ showSettings }}">
+      <div class="scroll" style="flex:1;min-width:0;overflow-y:auto;padding:26px 30px">
+        <div style="max-width:620px;margin:0 auto">
+          <h2 style="margin:0 0 4px;font-family:'Bricolage Grotesque';font-weight:700;font-size:24px;letter-spacing:-.01em">Guardrails</h2>
+          <p style="margin:0 0 22px;font-size:13px;color:#9a9082">The rules that keep your autonomous company safe. Agents act freely inside these lines.</p>
+
+          <div style="background:#211d17;color:#efe9dd;border-radius:14px;padding:18px;display:flex;gap:18px;margin-bottom:16px">
+            <div style="flex:1"><div style="font-size:11px;color:#b9b0a1;letter-spacing:.03em">MANAGED TOKEN BANK</div><div style="display:flex;align-items:baseline;gap:6px;margin-top:4px"><span style="font-family:'Bricolage Grotesque';font-weight:700;font-size:24px">{{ tokenBank }}</span><span style="font-size:12px;color:#b9b0a1">of 5.0M · {{ plan }} plan</span></div><div style="height:5px;border-radius:3px;background:#3a342a;overflow:hidden;margin-top:8px"><div style="height:100%;width:94%;background:oklch(0.64 0.13 250)"></div></div></div>
+            <div style="width:1px;background:#3a342a"></div>
+            <div style="flex:1"><div style="font-size:11px;color:#b9b0a1;letter-spacing:.03em">WALLET</div><div style="display:flex;align-items:baseline;gap:6px;margin-top:4px"><span style="font-family:'Bricolage Grotesque';font-weight:700;font-size:24px">{{ walletSar }}</span><span style="font-size:12px;color:#b9b0a1">SAR</span></div><button style="margin-top:8px;font-size:11.5px;font-weight:600;padding:6px 12px;border-radius:8px;border:none;background:#efe9dd;color:#211d17;cursor:pointer">Buy tokens</button></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:14px">
+            <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px">
+              <div style="flex:1"><div style="font-size:14px;font-weight:600">Sensitive decisions need approval</div><div style="font-size:12px;color:#9a9082;margin-top:2px">Discounts over policy, refunds, and spend over cap wait for you.</div></div>
+              <button style="{{ g1TrackStyle }}" onClick="{{ toggleG1 }}"><span style="{{ g1KnobStyle }}"></span></button>
+            </div>
+            <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px">
+              <div style="flex:1"><div style="font-size:14px;font-weight:600">Customer-facing messages need review</div><div style="font-size:12px;color:#9a9082;margin-top:2px">Emails, posts & campaigns route to you before sending.</div></div>
+              <button style="{{ g2TrackStyle }}" onClick="{{ toggleG2 }}"><span style="{{ g2KnobStyle }}"></span></button>
+            </div>
+            <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px">
+              <div style="flex:1"><div style="font-size:14px;font-weight:600">Spend approval cap</div><div style="font-size:12px;color:#9a9082;margin-top:2px">Any single payment above this waits for you.</div></div>
+              <div style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px;color:#4d463b"><span style="font-family:'Bricolage Grotesque'">500</span> SAR</div>
+              <button style="{{ g3TrackStyle }}" onClick="{{ toggleG3 }}"><span style="{{ g3KnobStyle }}"></span></button>
+            </div>
+            <div style="background:#fffdf9;border:1px solid #e8e1d3;border-radius:14px;padding:16px;display:flex;align-items:center;gap:14px">
+              <div style="flex:1"><div style="font-size:14px;font-weight:600">Per-agent monthly token cap</div><div style="font-size:12px;color:#9a9082;margin-top:2px">No single agent can drain the shared bank.</div></div>
+              <div style="display:flex;align-items:center;gap:6px;font-weight:600;font-size:13px;color:#4d463b"><span style="font-family:'Bricolage Grotesque'">600K</span></div>
+            </div>
+            <div style="background:#211d17;color:#efe9dd;border-radius:14px;padding:18px;display:flex;align-items:center;gap:14px;margin-top:6px">
+              <div style="flex:1"><div style="font-size:15px;font-weight:600">Scheduler & triggers</div><div style="font-size:12px;color:#b9b0a1;margin-top:2px">{{ apMasterDesc }}</div></div>
+              <button style="{{ apMasterTrackStyle }}" onClick="{{ toggleAutopilot }}"><span style="{{ apMasterKnobStyle }}"></span></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ============ HIRE MODAL (HR gateway) ============ -->
+  <sc-if value="{{ showHire }}">
+    <div style="position:fixed;inset:0;background:rgba(33,29,23,.42);display:flex;align-items:center;justify-content:center;z-index:20;padding:24px" onClick="{{ closeModal }}">
+      <div style="width:660px;max-width:100%;max-height:92vh;overflow-y:auto;background:#f6f2ea;border-radius:18px;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);animation:pop .2s ease" class="scroll" onClick="{{ stop }}">
+        <div style="{{ hireBannerStyle }}"></div>
+        <div style="padding:22px 26px 26px">
+          <!-- STEP 0: pick template or custom -->
+          <sc-if value="{{ hireStep0 }}">
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <h3 style="margin:0;font-family:'Bricolage Grotesque';font-weight:700;font-size:20px">Hire an AI employee</h3>
+              <button style="font-size:18px;color:#9a9082;border:none;background:none;cursor:pointer" onClick="{{ closeModal }}">✕</button>
+            </div>
+            <p style="margin:6px 0 18px;font-size:13px;color:#9a9082">Start from a system template — HR checks for overlap before onboarding.</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+              <sc-for list="{{ hireRoles }}" as="r" hint-placeholder-count="9">
+                <button style="text-align:left;border:1px solid #e8e1d3;background:#fffdf9;border-radius:13px;padding:14px;display:flex;gap:12px;cursor:pointer" onClick="{{ r.onPick }}">
+                  <span style="{{ r.iconStyle }}">{{ r.emoji }}</span>
+                  <span style="flex:1"><span style="display:block;font-weight:700;font-size:14px">{{ r.role }}</span><span style="display:block;font-size:11.5px;color:#9a9082;margin-top:2px">{{ r.dept }} · {{ r.model }}</span></span>
+                </button>
+              </sc-for>
+            </div>
+            <button style="margin-top:12px;width:100%;border:1px dashed #d8cfbd;background:none;border-radius:13px;padding:14px;cursor:pointer;color:#6b6355;font-size:13px;font-weight:600" onClick="{{ pickCustom }}">＋ Build a custom agent from scratch</button>
+          </sc-if>
+
+          <!-- STEP 1: configure -->
+          <sc-if value="{{ hireStep1 }}">
+            <div style="display:flex;align-items:center;gap:12px">
+              <button style="font-size:12.5px;color:#8a8073;border:none;background:none;cursor:pointer" onClick="{{ hireBack }}">←</button>
+              <h3 style="margin:0;font-family:'Bricolage Grotesque';font-weight:700;font-size:20px">Set up your {{ hire.role }}</h3>
+              <span style="flex:1"></span>
+              <button style="font-size:18px;color:#9a9082;border:none;background:none;cursor:pointer" onClick="{{ closeModal }}">✕</button>
+            </div>
+
+            <!-- HR advisory -->
+            <div style="{{ hireAdvisoryStyle }}"><span style="font-size:14px">{{ hireAdvisoryIcon }}</span><span>{{ hireAdvisoryText }}</span></div>
+
+            <div style="display:flex;flex-direction:column;gap:16px;margin-top:16px">
+              <div style="display:flex;gap:14px">
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                  <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">Name</label>
+                  <input value="{{ hire.name }}" onInput="{{ onHireName }}" placeholder="e.g. Sara M." style="font-size:13.5px;padding:10px 12px;border-radius:9px;border:1px solid #e0d7c7;background:#fff;outline:none">
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                  <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">Reports to</label>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ hireManagers }}" as="m" hint-placeholder-count="3">
+                      <button style="{{ m.style }}" onClick="{{ m.onPick }}">{{ m.name }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:14px">
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                  <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">Department</label>
+                  <div style="display:flex;flex-wrap:wrap;gap:6px">
+                    <sc-for list="{{ hireDeptOptions }}" as="o" hint-placeholder-count="6">
+                      <button style="{{ o.style }}" onClick="{{ o.onPick }}"><span style="{{ o.dotStyle }}"></span>{{ o.name }}</button>
+                    </sc-for>
+                  </div>
+                </div>
+                <div style="flex:1;display:flex;flex-direction:column;gap:6px">
+                  <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">Model tier</label>
+                  <div style="display:flex;gap:5px;background:#efe9dd;border-radius:10px;padding:4px">
+                    <button style="{{ hireFastStyle }}" onClick="{{ setModelFast }}">Fast</button>
+                    <button style="{{ hireBalStyle }}" onClick="{{ setModelBal }}">Balanced</button>
+                    <button style="{{ hireAdvStyle }}" onClick="{{ setModelAdv }}">Advanced</button>
+                  </div>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">Job description — governs the agent</label>
+                <textarea value="{{ hire.desc }}" onInput="{{ onHireDesc }}" placeholder="What does this employee own?" style="font-size:13px;line-height:1.55;padding:11px 12px;border-radius:10px;border:1px solid #e0d7c7;background:#fff;outline:none;resize:vertical;min-height:88px"></textarea>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">Tool permissions — allow-list</label>
+                <div style="display:flex;flex-wrap:wrap;gap:7px">
+                  <sc-for list="{{ hireTools }}" as="t" hint-placeholder-count="6">
+                    <button style="{{ t.style }}" onClick="{{ t.onToggle }}">{{ t.check }} {{ t.name }}</button>
+                  </sc-for>
+                </div>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">If-then scenarios → wake triggers</label>
+                <sc-for list="{{ hireScenarioRows }}" as="s" hint-placeholder-count="2">
+                  <div style="display:flex;align-items:center;gap:9px;border:1px solid #e8e1d3;border-radius:10px;padding:10px 12px;background:#fff;font-size:12.5px"><span style="{{ hireTrigIconStyle }}">⚡</span><span><span style="color:#9a9082">When </span><b>{{ s.when }}</b><span style="color:#9a9082"> → </span>{{ s.then }}</span></div>
+                </sc-for>
+              </div>
+
+              <div style="display:flex;flex-direction:column;gap:8px">
+                <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">Autonomy</label>
+                <div style="display:flex;gap:5px;background:#efe9dd;border-radius:10px;padding:4px">
+                  <button style="{{ hireSuggestStyle }}" onClick="{{ setHireSuggest }}">Suggest only</button>
+                  <button style="{{ hireAskStyle }}" onClick="{{ setHireAsk }}">Ask to act</button>
+                  <button style="{{ hireAutoStyle }}" onClick="{{ setHireAuto }}">Full autopilot</button>
+                </div>
+              </div>
+
+              <div style="display:flex;gap:10px;border-top:1px solid #eee4d2;padding-top:16px;margin-top:2px">
+                <button style="flex:1;font-size:13.5px;font-weight:600;padding:12px;border-radius:11px;border:none;background:#211d17;color:#f6f2ea;cursor:pointer" onClick="{{ confirmHire }}">Onboard & hire {{ hireNameOrRole }}</button>
+                <button style="font-size:13.5px;font-weight:600;padding:12px 18px;border-radius:11px;border:1px solid #e0d7c7;background:#fff;cursor:pointer" onClick="{{ closeModal }}">Cancel</button>
+              </div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+  <!-- ============ NEW DEPARTMENT MODAL ============ -->
+  <sc-if value="{{ showNewDept }}">
+    <div style="position:fixed;inset:0;background:rgba(33,29,23,.42);display:flex;align-items:center;justify-content:center;z-index:20;padding:24px" onClick="{{ closeModal }}">
+      <div style="width:440px;max-width:100%;background:#f6f2ea;border-radius:18px;box-shadow:0 30px 80px -20px rgba(0,0,0,.5);padding:24px;animation:pop .2s ease" onClick="{{ stop }}">
+        <div style="display:flex;align-items:baseline;justify-content:space-between">
+          <h3 style="margin:0;font-family:'Bricolage Grotesque';font-weight:700;font-size:20px">New department</h3>
+          <button style="font-size:18px;color:#9a9082;border:none;background:none;cursor:pointer" onClick="{{ closeModal }}">✕</button>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:16px;margin-top:18px">
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">Name</label>
+            <input value="{{ newDept.name }}" onInput="{{ onDeptName }}" placeholder="e.g. Procurement, Legal…" style="font-size:14px;padding:11px 13px;border-radius:9px;border:1px solid #e0d7c7;background:#fff;outline:none">
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <label style="font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:#a89d8c">Color</label>
+            <div style="display:flex;gap:9px">
+              <sc-for list="{{ deptHues }}" as="h" hint-placeholder-count="6">
+                <button style="{{ h.style }}" onClick="{{ h.onPick }}"></button>
+              </sc-for>
+            </div>
+          </div>
+          <button style="{{ confirmDeptStyle }}" onClick="{{ confirmNewDept }}">Create department</button>
+        </div>
+      </div>
+    </div>
+  </sc-if>
+
+</div>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  ALL_TOOLS = ['search_catalog','find_customer','create_lead','update_lead','create_task','save_memory'];
+  TEMPLATES = [
+    { id:'sales',   role:'Sales',                dept:'Sales',        hue:155, emoji:'💼', model:'Balanced', persona:'Consultative closer. Warm, confident, reads intent fast.', desc:'Own the sales conversation end to end: understand needs, recommend from the catalog, build quotes within pricing policy, and move deals forward. Escalate discounts over policy.', scenarios:['New qualified lead → reach out within 5 min','Deal stalls 3 days → follow up'], kpis:['Deals won','Response time','Pipeline'], permissions:['search_catalog','find_customer','create_lead','update_lead','create_task'], triggers:['On new lead','On deal stage change'] },
+    { id:'support', role:'Support',              dept:'Support',      hue:305, emoji:'💬', model:'Fast',     persona:'Patient and clear. Calm under pressure, empathetic.', desc:'Answer customer tickets and public-chat questions from the catalog and FAQ. Resolve common issues, capture leads, and escalate angry or edge cases.', scenarios:['Negative sentiment → escalate to owner','Unknown question → log knowledge gap'], kpis:['CSAT','Resolved','Escalations'], permissions:['search_catalog','find_customer','create_task','save_memory'], triggers:['On new ticket','On negative rating'] },
+    { id:'marketing',role:'Marketing',          dept:'Marketing',    hue:40,  emoji:'📣', model:'Balanced', persona:'Brand-obsessed and on-voice. Ships fast, flags risk.', desc:'Plan and draft campaigns, emails, and blog copy in the brand voice on a weekly cadence. Route customer-facing content for approval before publishing.', scenarios:['Every Monday 9:00 → draft weekly plan','On product launch → announcement + posts'], kpis:['Reach','Engagement','Shipped'], permissions:['search_catalog','create_task','save_memory'], triggers:['Every Monday 9:00','On product launch'] },
+    { id:'ops',     role:'Operations',           dept:'Operations',   hue:200, emoji:'🗂️', model:'Balanced', persona:'Organized and reliable. Keeps the trains running.', desc:'Coordinate fulfillment and internal tasks across departments. Track orders, keep the catalog tidy, and unblock the team.', scenarios:['New order → create fulfillment task','Low stock → alert owner'], kpis:['On-time','Cleared','Backlog'], permissions:['search_catalog','find_customer','update_lead','create_task'], triggers:['On new order','Daily 8:00 standup'] },
+    { id:'finance', role:'Finance',              dept:'Finance',      hue:80,  emoji:'📊', model:'Advanced', persona:'Precise and tidy. Never misses a decimal.', desc:'Reconcile invoices, categorize expenses, and prepare month-end close. Flag any spend over policy for approval (SAR).', scenarios:['New invoice → reconcile','Spend over cap → request approval'], kpis:['On-time close','Anomalies','Accuracy'], permissions:['find_customer','create_task','save_memory'], triggers:['Monthly close','On new invoice'] },
+    { id:'appt',    role:'Appointments',         dept:'Appointments', hue:250, emoji:'📅', model:'Fast',     persona:'Punctual and friendly. Protects everyone\u2019s calendar.', desc:'Book, confirm, and reschedule customer appointments. Send reminders and avoid double-booking.', scenarios:['New booking request → confirm slot','24h before → send reminder'], kpis:['Bookings','No-show','Utilization'], permissions:['find_customer','create_task','search_catalog'], triggers:['On booking request','Daily reminders'] },
+    { id:'sdr',     role:'Lead Qualifier (SDR)', dept:'Sales',        hue:155, emoji:'📈', model:'Fast',     persona:'Persistent and friendly. Never lets a lead go cold.', desc:'Qualify inbound leads, ask the right questions, score them, and hand warm ones to an Account Manager. Log every touch.', scenarios:['New lead → qualify + score','Warm lead → hand to Account Manager'], kpis:['Qualified','Conversion','Speed'], permissions:['find_customer','create_lead','update_lead','create_task'], triggers:['On new lead','Daily 8:00 follow-ups'] },
+    { id:'social',  role:'Social Media',         dept:'Marketing',    hue:40,  emoji:'📱', model:'Fast',     persona:'Playful and consistent. Keeps the feed alive.', desc:'Plan, draft, and schedule social posts, engage mentions, and report weekly on reach. Route promotions for approval.', scenarios:['Daily 9:00 → schedule posts','On mention → draft reply'], kpis:['Followers','Engagement','Posts/wk'], permissions:['search_catalog','create_task','save_memory'], triggers:['Daily 9:00','On mention'] },
+    { id:'account', role:'Account Manager',      dept:'Sales',        hue:155, emoji:'🤝', model:'Balanced', persona:'Relationship-first. Keeps clients happy and renewing.', desc:'Own key client relationships: proposals, renewals, and upsells within policy. Escalate large discounts.', scenarios:['Renewal 30d out → prepare offer','At-risk account → alert owner'], kpis:['Retention','Upsell','NPS'], permissions:['search_catalog','find_customer','update_lead','create_task'], triggers:['On renewal window','On deal stage change'] },
+  ];
+  NAMES = ['Sara M.','Faisal A.','Noura S.','Khalid R.','Omar T.','Reem D.','Huda N.','Layla H.','Yousef K.','Maha B.','Tariq S.','Lina F.'];
+  REPLIES = ['On it — I\u2019ll handle that and report back here.','Got it. Starting now.','Understood. I\u2019ll flag anything that needs your sign-off before it goes out.','Makes sense — executing via my tools now.'];
+  DONE = { sara:'Sara drafted the weekly content plan', layla:'Layla scheduled 9 posts for the week', noura:'Noura qualified 6 new leads', khalid:'Khalid resolved 12 tickets · CSAT 4.9', omar:'Omar cleared the fulfillment backlog', huda:'Huda confirmed 4 appointments' };
+  NEXT = { sara:'Outlining the Eid case study', layla:'Analyzing last week\u2019s engagement', noura:'Drafting outreach to 18 new leads', khalid:'Answering ticket queue · fresh batch', omar:'Reconciling today\u2019s orders', huda:'Sending tomorrow\u2019s reminders' };
+
+  state = {
+    view:'home', activeAgentId:null, agentTab:'activity', modal:null,
+    autopilot:true, tasksDone:248,
+    tokenBank:'4.7M', plan:'Growth', walletSar:'1,250',
+    chatInput:'', chats:{},
+    guard:{ g1:true, g2:true, g3:true },
+    hire:{ step:0, role:'', dept:'', hue:250, emoji:'', persona:'', name:'', desc:'', model:'Balanced', reportsTo:'You (owner)', tools:[], triggers:[], scenarios:[], kpis:[], autonomy:'ask' },
+    newDept:{ name:'', hue:200 },
+    departments:[
+      { name:'Sales', hue:155, lead:'Faisal A.' }, { name:'Marketing', hue:40, lead:'Sara M.' }, { name:'Support', hue:305, lead:'Khalid R.' }, { name:'Operations', hue:200, lead:'Omar T.' }, { name:'Finance', hue:80, lead:'Reem D.' }, { name:'Appointments', hue:250, lead:'Huda N.' },
+    ],
+    agents:[
+      { id:'faisal', name:'Faisal A.', initials:'FA', role:'Account Manager', dept:'Sales', hue:155, status:'await', task:'15% discount for Al Rashed — approve?', trigger:'on deal stage', model:'Balanced', autonomy:'ask', reportsTo:'You (owner)', approvalId:'ap1', manager:true, persona:'Relationship-first. Keeps clients happy and renewing.', desc:'Own key client relationships: proposals, renewals, and upsells within policy. Escalate large discounts.', scenarios:['Renewal 30d out → prepare offer','At-risk account → alert owner'], triggers:['On renewal window','On deal stage change'], permissions:['search_catalog','find_customer','update_lead','create_task'], kpis:[{label:'Retention',value:'92%'},{label:'Upsell',value:'SAR 41K'},{label:'NPS',value:'71'}], tasksCompleted:184, tokUsed:210000, tokCap:600000, mem:{working:20,episodic:143,semantic:38} },
+      { id:'noura', name:'Noura S.', initials:'NS', role:'Lead Qualifier (SDR)', dept:'Sales', hue:155, status:'online', task:'Qualifying 24 inbound leads', progress:55, trigger:'on new lead', model:'Fast', autonomy:'auto', reportsTo:'Faisal A.', persona:'Persistent and friendly. Never lets a lead go cold.', desc:'Qualify inbound leads, score them, and hand warm ones to an Account Manager.', scenarios:['New lead → qualify + score','Warm lead → hand to Account Manager'], triggers:['On new lead','Daily 8:00 follow-ups'], permissions:['find_customer','create_lead','update_lead','create_task'], kpis:[{label:'Qualified',value:'128'},{label:'Conversion',value:'34%'},{label:'Speed',value:'3 min'}], tasksCompleted:302, tokUsed:96000, tokCap:600000, mem:{working:20,episodic:221,semantic:29} },
+      { id:'sara', name:'Sara M.', initials:'SM', role:'Marketing', dept:'Marketing', hue:40, status:'await', task:'Eid campaign — waiting on you', trigger:'weekly', model:'Balanced', autonomy:'ask', reportsTo:'You (owner)', approvalId:'ap3', manager:true, persona:'Brand-obsessed and on-voice. Ships fast, flags risk.', desc:'Plan and draft campaigns, emails, and blog copy in the brand voice. Route customer-facing content for approval.', scenarios:['Every Monday 9:00 → draft weekly plan','On product launch → announcement + posts'], triggers:['Every Monday 9:00','On product launch'], permissions:['search_catalog','create_task','save_memory'], kpis:[{label:'Reach',value:'46K'},{label:'Engagement',value:'5.2%'},{label:'Shipped',value:'23'}], tasksCompleted:96, tokUsed:340000, tokCap:600000, mem:{working:20,episodic:88,semantic:41} },
+      { id:'layla', name:'Layla H.', initials:'LH', role:'Social Media', dept:'Marketing', hue:40, status:'online', task:'Scheduling 12 posts for the week', progress:40, trigger:'daily 9:00', model:'Fast', autonomy:'auto', reportsTo:'Sara M.', persona:'Playful and consistent. Keeps the feed alive.', desc:'Plan, draft, and schedule social posts, engage mentions, and report weekly on reach.', scenarios:['Daily 9:00 → schedule posts','On mention → draft reply'], triggers:['Daily 9:00','On mention'], permissions:['search_catalog','create_task','save_memory'], kpis:[{label:'Followers',value:'18.4K'},{label:'Engagement',value:'6.1%'},{label:'Posts/wk',value:'12'}], tasksCompleted:210, tokUsed:72000, tokCap:600000, mem:{working:20,episodic:190,semantic:22} },
+      { id:'khalid', name:'Khalid R.', initials:'KR', role:'Support', dept:'Support', hue:305, status:'online', task:'Answering ticket queue · 38 today', progress:72, trigger:'on new ticket', model:'Fast', autonomy:'auto', reportsTo:'You (owner)', manager:true, persona:'Patient and clear. Calm under pressure, empathetic.', desc:'Answer customer tickets and public-chat questions. Resolve common issues and escalate edge cases.', scenarios:['Negative sentiment → escalate to owner','Unknown question → log knowledge gap'], triggers:['On new ticket','On negative rating'], permissions:['search_catalog','find_customer','create_task','save_memory'], kpis:[{label:'CSAT',value:'4.9'},{label:'Resolved',value:'512'},{label:'Escalations',value:'3%'}], tasksCompleted:640, tokUsed:150000, tokCap:600000, mem:{working:20,episodic:410,semantic:55} },
+      { id:'omar', name:'Omar T.', initials:'OT', role:'Operations', dept:'Operations', hue:200, status:'online', task:'Creating fulfillment tasks for 9 orders', progress:60, trigger:'on new order', model:'Balanced', autonomy:'auto', reportsTo:'You (owner)', manager:true, persona:'Organized and reliable. Keeps the trains running.', desc:'Coordinate fulfillment and internal tasks. Track orders, keep the catalog tidy, unblock the team.', scenarios:['New order → create fulfillment task','Low stock → alert owner'], triggers:['On new order','Daily 8:00 standup'], permissions:['search_catalog','find_customer','update_lead','create_task'], kpis:[{label:'On-time',value:'97%'},{label:'Cleared',value:'88'},{label:'Backlog',value:'4'}], tasksCompleted:150, tokUsed:120000, tokCap:600000, mem:{working:20,episodic:130,semantic:18} },
+      { id:'reem', name:'Reem D.', initials:'RD', role:'Finance', dept:'Finance', hue:80, status:'await', task:'Pay supplier invoice SAR 4,200 — approve?', trigger:'on new invoice', model:'Advanced', autonomy:'ask', reportsTo:'You (owner)', approvalId:'ap2', manager:true, persona:'Precise and tidy. Never misses a decimal.', desc:'Reconcile invoices, categorize expenses, prepare month-end close. Flag spend over policy (SAR).', scenarios:['New invoice → reconcile','Spend over cap → request approval'], triggers:['Monthly close','On new invoice'], permissions:['find_customer','create_task','save_memory'], kpis:[{label:'On-time close',value:'100%'},{label:'Anomalies',value:'6'},{label:'Accuracy',value:'99.8%'}], tasksCompleted:74, tokUsed:280000, tokCap:600000, mem:{working:20,episodic:70,semantic:31} },
+      { id:'huda', name:'Huda N.', initials:'HN', role:'Appointments', dept:'Appointments', hue:250, status:'idle', task:'Idle · next reminders run in 2h', trigger:'daily reminders', model:'Fast', autonomy:'auto', reportsTo:'You (owner)', manager:true, persona:'Punctual and friendly. Protects everyone\u2019s calendar.', desc:'Book, confirm, and reschedule appointments. Send reminders and avoid double-booking.', scenarios:['New booking request → confirm slot','24h before → send reminder'], triggers:['On booking request','Daily reminders'], permissions:['find_customer','create_task','search_catalog'], kpis:[{label:'Bookings',value:'96'},{label:'No-show',value:'7%'},{label:'Utilization',value:'82%'}], tasksCompleted:118, tokUsed:44000, tokCap:600000, mem:{working:20,episodic:110,semantic:14} },
+    ],
+    approvals:[
+      { id:'ap1', agentId:'faisal', initials:'FA', hue:155, title:'15% discount · Al Rashed order', sub:'Faisal A. · Sales · over 10% cap', preview:'Client requests 15% on a SAR 8,400 order to close today. Policy cap is 10%.', primary:'Approve', secondary:'Decline', resultTask:'Closing the Al Rashed order' },
+      { id:'ap2', agentId:'reem', initials:'RD', hue:80, title:'Pay supplier invoice · SAR 4,200', sub:'Reem D. · Finance · over spend cap', primary:'Approve', secondary:'Hold', resultTask:'Paying the supplier invoice' },
+      { id:'ap3', agentId:'sara', initials:'SM', hue:40, title:'Eid campaign → 2,300 customers', sub:'Sara M. · Marketing · customer-facing', preview:'“Eid Mubarak from Zahra Home — 20% off across the home collection…”', primary:'Approve & send', secondary:'Send back', resultTask:'Sending the Eid campaign' },
+    ],
+    activity:[
+      { id:'s1', ago:'2m',  text:'Khalid resolved 5 tickets under 4 min each' },
+      { id:'s2', ago:'8m',  text:'Noura qualified a lead and handed it to Faisal' },
+      { id:'s3', ago:'14m', text:'Layla published a post to Instagram' },
+      { id:'s4', ago:'20m', text:'Omar created 3 fulfillment tasks from new orders' },
+    ],
+  };
+
+  uid(){ return 'e' + Date.now() + Math.floor(Math.random()*999); }
+  col(h){ return { accent:`oklch(0.64 0.13 ${h})`, ink:`oklch(0.44 0.12 ${h})`, tint:`oklch(0.95 0.04 ${h})` }; }
+  fmtTok(n){ return n>=1e6 ? (n/1e6).toFixed(1)+'M' : n>=1e3 ? Math.round(n/1e3)+'K' : ''+n; }
+  modelHue(m){ return m==='Fast'?155 : m==='Advanced'?305 : 80; }
+
+  componentDidMount(){
+    this._t = setInterval(() => {
+      if (!this.state.autopilot) return;
+      this.setState(s => {
+        const working = s.agents.filter(a => a.status === 'online');
+        if (!working.length) return null;
+        const pick = working[Math.floor(Math.random()*working.length)];
+        const np = (pick.progress || 0) + (10 + Math.floor(Math.random()*18));
+        if (np >= 100 && this.DONE[pick.id]) {
+          const agents = s.agents.map(a => a.id===pick.id ? { ...a, progress:6+Math.floor(Math.random()*10), task:this.NEXT[pick.id]||a.task } : a);
+          const activity = [{ id:this.uid(), ago:'now', text:this.DONE[pick.id] }, ...s.activity].slice(0,7);
+          return { agents, activity, tasksDone:s.tasksDone+1 };
+        }
+        return { agents: s.agents.map(a => a.id===pick.id ? { ...a, progress:Math.min(96,np) } : a) };
+      });
+    }, 3600);
+  }
+  componentWillUnmount(){ clearInterval(this._t); }
+
+  go(view){ this.setState({ view }); }
+  toggleAutopilot = () => this.setState(s => ({ autopilot: !s.autopilot }));
+
+  approve = (id) => this.setState(s => {
+    const p = s.approvals.find(x => x.id === id); if (!p) return null;
+    const approvals = s.approvals.filter(x => x.id !== id);
+    const activity = [{ id:this.uid(), ago:'now', text:`You approved “${p.title}”` }, ...s.activity].slice(0,7);
+    let agents = s.agents;
+    if (p.resultTask) agents = agents.map(a => a.id===p.agentId ? { ...a, status:'online', task:p.resultTask, progress:8 } : a);
+    else agents = agents.map(a => a.id===p.agentId ? { ...a, status:'online' } : a);
+    return { approvals, activity, agents, tasksDone:s.tasksDone+1 };
+  });
+  decline = (id) => this.setState(s => {
+    const p = s.approvals.find(x => x.id === id); if (!p) return null;
+    const approvals = s.approvals.filter(x => x.id !== id);
+    const activity = [{ id:this.uid(), ago:'now', text:`You sent “${p.title}” back for changes` }, ...s.activity].slice(0,7);
+    const agents = s.agents.map(a => a.id===p.agentId ? { ...a, status:'online', task:'Revising per your feedback', progress:12 } : a);
+    return { approvals, activity, agents };
+  });
+
+  openAgent = (id) => this.setState({ view:'agent', activeAgentId:id, agentTab:'activity', chatInput:'' });
+  setAgentTab(tab){ this.setState({ agentTab:tab }); }
+  setAgentAutonomy(id, level){ this.setState(s => ({ agents: s.agents.map(a => a.id===id ? { ...a, autonomy:level } : a) })); }
+
+  onChatInput = (e) => this.setState({ chatInput: e.target.value });
+  onChatKey = (e) => { if (e.key === 'Enter') this.sendChat(); };
+  sendChat = () => {
+    const id = this.state.activeAgentId; const text = (this.state.chatInput||'').trim();
+    if (!id || !text) return;
+    this.setState(s => ({ chatInput:'', chats:{ ...s.chats, [id]:[ ...(s.chats[id]||[]), { from:'you', text } ] } }));
+    setTimeout(() => this.setState(s => ({ chats:{ ...s.chats, [id]:[ ...(s.chats[id]||[]), { from:'agent', text:this.REPLIES[Math.floor(Math.random()*this.REPLIES.length)] } ] } })), 650);
+  };
+
+  // hire
+  freshHire(patch){ return { step:0, role:'', dept:'', hue:250, emoji:'', persona:'', name:'', desc:'', model:'Balanced', reportsTo:'You (owner)', tools:[], triggers:[], scenarios:[], kpis:[], autonomy:'ask', ...patch }; }
+  openHire = () => this.setState({ modal:'hire', hire:this.freshHire({}) });
+  openHireDept = (dept, hue) => this.setState({ modal:'hire', hire:this.freshHire({ dept, hue }) });
+  pickCustom = () => this.setState(s => ({ hire:{ ...s.hire, step:1, role:'Custom agent', dept:s.hire.dept||'Sales', hue:s.hire.dept?s.hire.hue:155, desc:'', tools:['create_task'], scenarios:[], triggers:[] } }));
+  pickRole = (rid) => { const r = this.TEMPLATES.find(x => x.id===rid); this.setState(s => ({ hire:{ ...s.hire, step:1, role:r.role, dept:r.dept, hue:r.hue, emoji:r.emoji, persona:r.persona, desc:r.desc, model:r.model, tools:[...r.permissions], triggers:[...r.triggers], scenarios:[...r.scenarios], kpis:[...r.kpis] } })); };
+  hireBack = () => this.setState(s => ({ hire:{ ...s.hire, step:0 } }));
+  setHire(patch){ this.setState(s => ({ hire:{ ...s.hire, ...patch } })); }
+  onHireName = (e) => this.setHire({ name:e.target.value });
+  onHireDesc = (e) => this.setHire({ desc:e.target.value });
+  pickHireDept = (name, hue) => this.setHire({ dept:name, hue });
+  pickHireManager = (name) => this.setHire({ reportsTo:name });
+  toggleHireTool = (t) => this.setState(s => { const has = s.hire.tools.includes(t); return { hire:{ ...s.hire, tools: has ? s.hire.tools.filter(x=>x!==t) : [...s.hire.tools, t] } }; });
+  confirmHire = () => {
+    let newId;
+    this.setState(s => {
+      const h = s.hire;
+      const name = (h.name||'').trim() || this.NAMES[Math.floor(Math.random()*this.NAMES.length)];
+      const initials = name.split(/\s+/).map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      newId = 'a' + Date.now();
+      const agent = { id:newId, name, initials, role:h.role, dept:h.dept, hue:h.hue, status:'onboarding', task:'Onboarding — learning your business', trigger:(h.triggers[0]||'on schedule').toLowerCase(), model:h.model, autonomy:h.autonomy, reportsTo:h.reportsTo, persona:h.persona, desc:h.desc, scenarios:h.scenarios, triggers:h.triggers, permissions:h.tools, kpis:(h.kpis||[]).map(k=>({label:typeof k==='string'?k:k.label,value:'—'})), tasksCompleted:0, tokUsed:0, tokCap:600000, mem:{working:0,episodic:0,semantic:0} };
+      const activity = [{ id:this.uid(), ago:'now', text:`HR onboarding ${name} as ${h.role}…` }, ...s.activity].slice(0,7);
+      return { agents:[...s.agents, agent], activity, modal:null, view:'agent', activeAgentId:newId, agentTab:'activity', chatInput:'' };
+    });
+    setTimeout(() => this.setState(s => {
+      const ag = s.agents.find(a=>a.id===newId); if(!ag) return null;
+      const agents = s.agents.map(a => a.id===newId ? { ...a, status:'online', task:`Getting started — first ${a.role} tasks`, progress:8, mem:{working:2,episodic:0,semantic:6} } : a);
+      const activity = [{ id:this.uid(), ago:'now', text:`${ag.name} finished onboarding → ONLINE` }, ...s.activity].slice(0,7);
+      return { agents, activity };
+    }), 1500);
+  };
+
+  // new dept
+  openNewDept = () => this.setState({ modal:'newdept', newDept:{ name:'', hue:200 } });
+  onDeptName = (e) => this.setState(s => ({ newDept:{ ...s.newDept, name:e.target.value } }));
+  pickDeptHue = (hue) => this.setState(s => ({ newDept:{ ...s.newDept, hue } }));
+  confirmNewDept = () => this.setState(s => {
+    const name = (s.newDept.name||'').trim(); if (!name) return null;
+    return { departments:[ ...s.departments, { name, hue:s.newDept.hue, lead:'—' } ], modal:null, view:'home' };
+  });
+
+  closeModal = () => this.setState({ modal:null });
+  stop = (e) => { e.stopPropagation(); };
+  toggleGuard(k){ this.setState(s => ({ guard:{ ...s.guard, [k]:!s.guard[k] } })); }
+
+  seg(active, accent){ return { flex:1, textAlign:'center', padding:'9px 6px', borderRadius:'8px', fontSize:'12px', fontWeight: active?600:400, border:'none', cursor:'pointer', background: active?'#fffdf9':'transparent', color: active?(accent||'#211d17'):'#9a9082', boxShadow: active?'0 1px 2px rgba(0,0,0,.06)':'none' }; }
+  toggle(on){ return { track:{ width:'42px', height:'24px', borderRadius:'999px', border:'none', position:'relative', cursor:'pointer', background: on?'oklch(0.62 0.13 155)':'#d8cfbd', transition:'background .2s', flex:'none' }, knob:{ position:'absolute', top:'3px', left: on?'21px':'3px', width:'18px', height:'18px', borderRadius:'50%', background:'#fff', transition:'left .2s' } }; }
+  tab(active){ return { padding:'10px 14px', fontSize:'13px', fontWeight: active?600:500, border:'none', background:'none', cursor:'pointer', color: active?'#211d17':'#9a9082', borderBottom: active?'2px solid #211d17':'2px solid transparent', marginBottom:'-1px' }; }
+  statusPill(status){
+    const map = { online:{bg:'oklch(0.95 0.04 155)',fg:'oklch(0.42 0.11 155)',t:'● ONLINE'}, await:{bg:'oklch(0.96 0.03 40)',fg:'oklch(0.46 0.13 40)',t:'● NEEDS YOU'}, onboarding:{bg:'oklch(0.95 0.04 80)',fg:'oklch(0.5 0.12 80)',t:'● ONBOARDING'}, idle:{bg:'#f0ebe0',fg:'#8a8073',t:'● IDLE'}, paused:{bg:'#f0ebe0',fg:'#8a8073',t:'● PAUSED'} };
+    const m = map[status]||map.idle;
+    return { style:{ fontSize:'10.5px', fontWeight:700, letterSpacing:'.04em', padding:'3px 9px', borderRadius:'999px', background:m.bg, color:m.fg }, label:m.t };
+  }
+
+  renderVals(){
+    const S = this.state, green = 'oklch(0.6 0.14 155)';
+    const navBase = { display:'flex', alignItems:'center', gap:'10px', padding:'9px 11px', borderRadius:'10px', fontSize:'13.5px', fontWeight:500, border:'none', cursor:'pointer', width:'100%', textAlign:'left' };
+    const navOn = { ...navBase, background:'#f0ebe0', fontWeight:600 };
+    const navOff = { ...navBase, background:'none', color:'#4d463b' };
+
+    const modelChip = (m) => { const h=this.modelHue(m); return { chip:{ display:'inline-flex', alignItems:'center', gap:'5px', fontSize:'10px', padding:'2.5px 7px', borderRadius:'6px', background:'#f0ebe0', color:'#6b6355', fontWeight:500 }, dot:{ width:'6px', height:'6px', borderRadius:'50%', background:`oklch(0.62 0.13 ${h})` } }; };
+
+    const buildAgent = (a) => {
+      const c = this.col(a.hue); const mc = modelChip(a.model);
+      const isAwait = a.status==='await';
+      const dotColor = a.status==='online' ? green : (isAwait ? c.accent : (a.status==='onboarding' ? 'oklch(0.7 0.13 80)' : '#c9c0af'));
+      return { ...a,
+        cardStyle:{ background:isAwait?c.tint:'#fffdf9', border:`${isAwait?1.5:1}px solid ${isAwait?c.accent:'#e8e1d3'}`, borderRadius:'14px', padding:'14px', display:'flex', gap:'13px', opacity:a.status==='idle'?0.86:1, cursor:'pointer' },
+        avatarStyle:{ width:'46px', height:'46px', borderRadius:'50%', background:c.tint, border:`2px solid ${c.accent}`, color:c.ink, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:'15px' },
+        dotStyle:{ position:'absolute', right:'-1px', bottom:'-1px', width:'13px', height:'13px', borderRadius:'50%', background:dotColor, border:'2.5px solid #fffdf9', animation:a.status==='onboarding'?'pulse 1.5s infinite':'none' },
+        progressStyle:{ height:'100%', width:(a.progress||0)+'%', background:c.accent, transition:'width .5s' },
+        chipStyle:{ fontSize:'10px', padding:'2.5px 7px', borderRadius:'6px', background:c.tint, color:c.ink, fontWeight:500 },
+        modelChipStyle:mc.chip, modelDotStyle:mc.dot,
+        showProgress:a.status==='online' && typeof a.progress==='number',
+        showApprove:isAwait, showChips:a.status!=='await',
+        onOpen:()=>this.openAgent(a.id),
+        onApprove:a.approvalId?()=>this.approve(a.approvalId):(()=>{}),
+        onDecline:a.approvalId?()=>this.decline(a.approvalId):(()=>{}),
+      };
+    };
+
+    const departments = S.departments.map(d => {
+      const list = S.agents.filter(a => a.dept===d.name);
+      return { name:d.name, count:list.length, empty:list.length===0, lead:d.lead||'—',
+        dotStyle:{ width:'9px', height:'9px', borderRadius:'3px', background:`oklch(0.64 0.13 ${d.hue})` },
+        agents:list.map(buildAgent), onHire:()=>this.openHireDept(d.name, d.hue) };
+    });
+
+    const approvals = S.approvals.map(p => { const c=this.col(p.hue); return { ...p,
+      avatarStyle:{ width:'28px', height:'28px', borderRadius:'50%', background:c.tint, color:c.ink, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:'11px' },
+      bigAvatarStyle:{ width:'40px', height:'40px', borderRadius:'50%', background:c.tint, color:c.ink, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:'14px' },
+      onApprove:()=>this.approve(p.id), onDecline:()=>this.decline(p.id) }; });
+
+    const ap = S.autopilot, n = S.approvals.length, working = S.agents.filter(a=>a.status==='online').length;
+
+    // active agent
+    let agent = null;
+    const A = S.agents.find(a => a.id===S.activeAgentId);
+    if (A) {
+      const c = this.col(A.hue); const tab = S.agentTab; const sp = this.statusPill(A.status);
+      const chatArr = (S.chats[A.id]||[]).map(m => ({ text:m.text,
+        rowStyle:{ display:'flex', justifyContent: m.from==='you'?'flex-end':'flex-start' },
+        bubbleStyle:{ maxWidth:'78%', fontSize:'12.5px', lineHeight:1.45, padding:'8px 12px', borderRadius:'12px', background: m.from==='you'?'#211d17':c.tint, color: m.from==='you'?'#f6f2ea':c.ink } }));
+      const first = A.name.split(' ')[0];
+      const autoDesc = A.autonomy==='suggest' ? `${first} proposes work but never acts without you.` : A.autonomy==='ask' ? `${first} prepares everything, then waits for your approval.` : `${first} runs fully on their own inside your guardrails.`;
+      const mh = this.modelHue(A.model);
+      const kindFor = (w) => /min|daily|monday|monthly|reminder|9:00|8:00|window|close/i.test(w) ? 'Schedule' : /mention|order|invoice|lead|ticket|booking|rating|launch|renewal|sentiment/i.test(w) ? 'Event' : 'Inter-agent';
+      const scenarioRows = (A.scenarios||[]).map(str => { const [w,t] = str.split('→'); return { when:(w||'').trim(), then:(t||'').trim(), kind:kindFor(w||'') }; });
+      agent = { ...A, first, chat:chatArr, chatEmpty:chatArr.length===0, autoDesc,
+        statusPillStyle:sp.style, statusLabel:sp.label,
+        modelPillStyle:{ fontSize:'11px', fontWeight:600, padding:'6px 11px', borderRadius:'999px', background:`oklch(0.95 0.04 ${mh})`, color:`oklch(0.44 0.12 ${mh})` },
+        bigAvatarStyle:{ width:'72px', height:'72px', borderRadius:'50%', background:c.tint, border:`3px solid ${c.accent}`, color:c.ink, display:'flex', alignItems:'center', justifyContent:'center', fontWeight:700, fontSize:'26px' },
+        bigDotStyle:{ position:'absolute', right:'2px', bottom:'2px', width:'17px', height:'17px', borderRadius:'50%', background:A.status==='online'?green:(A.status==='await'?c.accent:(A.status==='onboarding'?'oklch(0.7 0.13 80)':'#c9c0af')), border:'3px solid #f6f2ea' },
+        personaStyle:{ fontSize:'13px', lineHeight:1.5, color:'#5a5346', background:c.tint, border:`1px solid ${c.accent}`, borderRadius:'12px', padding:'12px 14px', marginTop:'16px' },
+        trigIconStyle:{ width:'26px', height:'26px', flex:'none', borderRadius:'7px', background:c.tint, color:c.ink, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:'12px' },
+        log:[
+          { text:`Currently: ${A.task}`, time:'just now', dotStyle:{ width:'9px', height:'9px', borderRadius:'50%', background:green, marginTop:'5px', flex:'none' } },
+          { text:`Picked up work from the ${A.dept} queue`, time:'12 min ago', dotStyle:{ width:'9px', height:'9px', borderRadius:'50%', background:c.accent, marginTop:'5px', flex:'none' } },
+          { text:`Trigger fired — ${A.trigger}`, time:'34 min ago', dotStyle:{ width:'9px', height:'9px', borderRadius:'50%', background:'#d8cfbd', marginTop:'5px', flex:'none' } },
+          { text:`Recalled 3 relevant memories (pgvector)`, time:'34 min ago', dotStyle:{ width:'9px', height:'9px', borderRadius:'50%', background:'#d8cfbd', marginTop:'5px', flex:'none' } },
+        ],
+        scenarioRows, kpis:A.kpis.map(k=>({ ...k, trend:'▲ vs last week', trendStyle:{ fontSize:'11px', color:'oklch(0.5 0.1 155)', marginTop:'4px' } })),
+        permChips:(A.permissions&&A.permissions.length)?A.permissions:['all module tools'],
+        tokUsed:this.fmtTok(A.tokUsed), tokCap:this.fmtTok(A.tokCap),
+        tokBarStyle:{ height:'100%', width:Math.min(100, Math.round(A.tokUsed/A.tokCap*100))+'%', background:`oklch(0.64 0.13 ${A.hue})`, transition:'width .5s' },
+        tabActivity:tab==='activity', tabScenarios:tab==='scenarios', tabKpis:tab==='kpis', tabMemory:tab==='memory', tabSettings:tab==='settings',
+        tabActivityStyle:this.tab(tab==='activity'), tabScenariosStyle:this.tab(tab==='scenarios'), tabKpisStyle:this.tab(tab==='kpis'), tabMemoryStyle:this.tab(tab==='memory'), tabSettingsStyle:this.tab(tab==='settings'),
+        goActivity:()=>this.setAgentTab('activity'), goScenarios:()=>this.setAgentTab('scenarios'), goKpis:()=>this.setAgentTab('kpis'), goMemory:()=>this.setAgentTab('memory'), goSettingsTab:()=>this.setAgentTab('settings'),
+        autoSuggestStyle:this.seg(A.autonomy==='suggest', c.ink), autoAskStyle:this.seg(A.autonomy==='ask', c.ink), autoAutoStyle:this.seg(A.autonomy==='auto', c.ink),
+        setSuggest:()=>this.setAgentAutonomy(A.id,'suggest'), setAsk:()=>this.setAgentAutonomy(A.id,'ask'), setAuto:()=>this.setAgentAutonomy(A.id,'auto'),
+      };
+    }
+
+    // hire derived
+    const h = S.hire, hc = this.col(h.hue);
+    const hireRoles = this.TEMPLATES.map(r => { const c=this.col(r.hue); return { ...r,
+      iconStyle:{ width:'40px', height:'40px', flex:'none', borderRadius:'10px', background:c.tint, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:'19px' }, onPick:()=>this.pickRole(r.id) }; });
+    const hireDeptOptions = S.departments.map(d => { const sel=h.dept===d.name; const c=this.col(d.hue); return { name:d.name,
+      style:{ display:'inline-flex', alignItems:'center', gap:'6px', fontSize:'11.5px', fontWeight: sel?600:500, padding:'6px 10px', borderRadius:'8px', cursor:'pointer', border:`1px solid ${sel?c.accent:'#e0d7c7'}`, background: sel?c.tint:'#fff', color: sel?c.ink:'#4d463b' },
+      dotStyle:{ width:'8px', height:'8px', borderRadius:'2px', background:c.accent }, onPick:()=>this.pickHireDept(d.name, d.hue) }; });
+    const mgrNames = ['You (owner)', ...S.agents.filter(a=>a.manager).map(a=>a.name)];
+    const hireManagers = mgrNames.map(nm => { const sel=h.reportsTo===nm; return { name:nm,
+      style:{ fontSize:'11.5px', fontWeight: sel?600:500, padding:'6px 10px', borderRadius:'8px', cursor:'pointer', border:`1px solid ${sel?hc.accent:'#e0d7c7'}`, background: sel?hc.tint:'#fff', color: sel?hc.ink:'#4d463b' }, onPick:()=>this.pickHireManager(nm) }; });
+    const hireTools = this.ALL_TOOLS.map(t => { const on=h.tools.includes(t); return { name:t, check:on?'✓':'+',
+      style:{ fontSize:'12px', fontWeight:500, padding:'7px 12px', borderRadius:'999px', cursor:'pointer', border:`1px solid ${on?hc.accent:'#e0d7c7'}`, background:on?hc.tint:'#fff', color:on?hc.ink:'#6b6355' }, onToggle:()=>this.toggleHireTool(t) }; });
+    const hireScenarioRows = (h.scenarios||[]).map(str => { const [w,t]=str.split('→'); return { when:(w||'').trim(), then:(t||'').trim() }; });
+    // HR conflict advisory
+    const dup = S.agents.find(a => a.role===h.role && a.dept===h.dept);
+    const advisory = dup
+      ? { ok:false, icon:'⚠', text:`HR check: ${dup.name} already covers ${h.role} in ${h.dept} (86% overlap). Consider editing them instead.` }
+      : { ok:true, icon:'✓', text:`HR check: no overlapping role found in ${h.dept||'this department'}. Clear to onboard.` };
+
+    const g = S.guard;
+    const t1=this.toggle(g.g1), t2=this.toggle(g.g2), t3=this.toggle(g.g3), tm=this.toggle(ap);
+    const tmTrack = { ...tm.track, background: ap?'oklch(0.66 0.14 155)':'#5a5044' };
+    const deptHues = [250,40,155,305,80,200,340,20].map(hue => { const sel=S.newDept.hue===hue; return {
+      style:{ width:'34px', height:'34px', borderRadius:'50%', cursor:'pointer', background:`oklch(0.64 0.13 ${hue})`, border: sel?'3px solid #211d17':'3px solid transparent', boxShadow: sel?'0 0 0 2px #fff inset':'none' }, onPick:()=>this.pickDeptHue(hue) }; });
+
+    return {
+      showHome:S.view==='home', showAgent:S.view==='agent'&&!!agent, showApprovals:S.view==='approvals', showSettings:S.view==='settings',
+      showHire:S.modal==='hire', showNewDept:S.modal==='newdept',
+      goHome:()=>this.go('home'), goApprovals:()=>this.go('approvals'), goSettings:()=>this.go('settings'),
+      navHomeStyle:S.view==='home'?navOn:navOff, navApprStyle:S.view==='approvals'?navOn:navOff, navSetStyle:S.view==='settings'?navOn:navOff,
+      toggleAutopilot:this.toggleAutopilot, openHire:this.openHire, openNewDept:this.openNewDept, closeModal:this.closeModal, stop:this.stop,
+      tokenBank:S.tokenBank, plan:S.plan, walletSar:S.walletSar,
+      apLabel: ap?'Automation on':'Paused',
+      apDotStyle:{ width:'8px', height:'8px', borderRadius:'50%', background: ap?green:'#c9c0af', animation: ap?'pulse 2s infinite':'none' },
+      apLabelStyle:{ fontSize:'12.5px', fontWeight:600, color: ap?'oklch(0.45 0.1 155)':'#8a8073' },
+      apTrackStyle:{ width:'34px', height:'20px', borderRadius:'999px', position:'relative', background: ap?green:'#d8cfbd', transition:'background .2s', display:'inline-block' },
+      apKnobStyle:{ position:'absolute', top:'2px', left: ap?'16px':'2px', width:'16px', height:'16px', borderRadius:'50%', background:'#fff', transition:'left .2s' },
+      needStyle:{ display:'flex', alignItems:'center', gap:'6px', padding:'7px 13px', borderRadius:'999px', background:'#fff', border:'1px solid #e8e1d3', fontSize:'12.5px', fontWeight:600, cursor:'pointer', color: n>0?'#c2593a':'#7a9a6a' },
+      needLabel: n>0?`${n} need you`:'All clear',
+      departments, approvals, activity:S.activity, agent,
+      tasksDone:S.tasksDone, approvalsCount:n, hasApprovals:n>0, allClear:n===0,
+      liveLabel: ap?'Live · agents acting on triggers':'Paused — you\u2019re in manual control',
+      workforceLabel:`${S.agents.length} agents · ${working} online now`,
+      outputBarStyle:{ height:'100%', width: Math.min(96, 45 + working*7)+'%', background:'oklch(0.64 0.13 155)', transition:'width .5s' },
+      chatInput:S.chatInput, onChatInput:this.onChatInput, onChatKey:this.onChatKey, sendChat:this.sendChat,
+      agentBannerStyle:{ height:'8px', background: A?`oklch(0.64 0.13 ${A.hue})`:'#ccc' },
+      // hire
+      hireStep0:h.step===0, hireStep1:h.step===1, hire:h, hireBack:this.hireBack, pickCustom:this.pickCustom,
+      hireBannerStyle:{ height:'7px', background: h.step===1?hc.accent:'#e0d7c7' },
+      hireRoles, hireDeptOptions, hireManagers, hireTools, hireScenarioRows,
+      onHireName:this.onHireName, onHireDesc:this.onHireDesc, confirmHire:this.confirmHire,
+      hireNameOrRole:(h.name||'').trim()||h.role,
+      hireTrigIconStyle:{ width:'26px', height:'26px', flex:'none', borderRadius:'7px', background:hc.tint, color:hc.ink, display:'inline-flex', alignItems:'center', justifyContent:'center', fontSize:'12px' },
+      hireAdvisoryIcon:advisory.icon, hireAdvisoryText:advisory.text,
+      hireAdvisoryStyle:{ display:'flex', alignItems:'flex-start', gap:'9px', fontSize:'12.5px', lineHeight:1.4, marginTop:'14px', padding:'11px 13px', borderRadius:'11px', background: advisory.ok?'oklch(0.96 0.03 155)':'oklch(0.96 0.03 40)', border:`1px solid ${advisory.ok?'oklch(0.82 0.07 155)':'oklch(0.82 0.09 40)'}`, color: advisory.ok?'oklch(0.4 0.1 155)':'oklch(0.44 0.13 40)' },
+      hireFastStyle:this.seg(h.model==='Fast', hc.ink), hireBalStyle:this.seg(h.model==='Balanced', hc.ink), hireAdvStyle:this.seg(h.model==='Advanced', hc.ink),
+      setModelFast:()=>this.setHire({model:'Fast'}), setModelBal:()=>this.setHire({model:'Balanced'}), setModelAdv:()=>this.setHire({model:'Advanced'}),
+      hireSuggestStyle:this.seg(h.autonomy==='suggest', hc.ink), hireAskStyle:this.seg(h.autonomy==='ask', hc.ink), hireAutoStyle:this.seg(h.autonomy==='auto', hc.ink),
+      setHireSuggest:()=>this.setHire({autonomy:'suggest'}), setHireAsk:()=>this.setHire({autonomy:'ask'}), setHireAuto:()=>this.setHire({autonomy:'auto'}),
+      newDept:S.newDept, onDeptName:this.onDeptName, deptHues, confirmNewDept:this.confirmNewDept,
+      confirmDeptStyle:{ fontSize:'13.5px', fontWeight:600, padding:'12px', borderRadius:'11px', border:'none', cursor:'pointer', background:'#211d17', color:'#f6f2ea', marginTop:'4px', opacity:(S.newDept.name||'').trim()?1:0.5 },
+      toggleG1:()=>this.toggleGuard('g1'), toggleG2:()=>this.toggleGuard('g2'), toggleG3:()=>this.toggleGuard('g3'),
+      g1TrackStyle:t1.track, g1KnobStyle:t1.knob, g2TrackStyle:t2.track, g2KnobStyle:t2.knob, g3TrackStyle:t3.track, g3KnobStyle:t3.knob,
+      apMasterTrackStyle:tmTrack, apMasterKnobStyle:tm.knob, apMasterDesc: ap?'Cron + event triggers are waking agents automatically.':'All triggers paused — nothing wakes without you.',
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,167 @@
+# File storage architecture
+
+> How NX iWork stores tenant files. This is the **as-built** reality (verified
+> against the code), followed by an honest gap list. Pattern: *decouple the file
+> body from its identity* — exactly what Shopify / Slack / Notion / Salesforce do.
+
+## TL;DR
+
+The file **body** goes to object storage (Cloudflare R2, S3-compatible); the app
+server only **signs** the transfer and never proxies the bytes. Tenants are
+isolated by a per-company key **prefix**. The storage layer is provider-agnostic
+(`lib/storage/`), so R2 → AWS S3 → Alibaba OSS is an endpoint + credentials change.
+
+```
+client ──(presigned PUT)──▶  Cloudflare R2 bucket
+   ▲                          companies/<companyId>/<purpose>/<uuid>.<ext>
+   │ presigned URL
+   └── app server (signs only; bytes never transit the VPS)
+```
+
+## 1) The body → object storage (R2)
+
+- **Provider-agnostic interface:** `lib/storage/types.ts` (`StorageProvider`) — business
+  code never touches a vendor SDK. R2 adapter: `lib/storage/r2.ts` (AWS S3 v3 SDK
+  pointed at R2). Swap to S3/OSS = change `R2_ENDPOINT` + keys only.
+- **Direct-to-bucket uploads:** `app/api/uploads/sign/route.ts` mints a **presigned
+  PUT** URL; the browser uploads straight to R2 (`components/dashboard/image-upload.tsx`).
+  The file bytes **never touch the app server / VPS** — storage scales independently.
+- **Per-tenant prefix (isolation):** `companyKey(companyId, ...parts)` →
+  `companies/<companyId>/<purpose>/<uuid>.<ext>`. The prefix is computed **server-side
+  from the authenticated user's company** — a client cannot target another tenant's
+  prefix. Keys are sanitised (no `..`, no path traversal, safe chars only).
+- **Random object names:** `randomUUID()` filenames → no collisions, no guessable URLs.
+- **Type allowlist + security:** only `image/png|jpeg|webp|gif` and `application/pdf`.
+  **SVG is excluded on purpose** (script-in-SVG XSS risk).
+- **CDN:** the public bucket is served via a Cloudflare custom domain
+  (`R2_PUBLIC_BASE_URL`, e.g. `cdn.bznss.one`) → edge-cached, zero egress.
+
+## 2) The identity → the database (the hybrid rule)
+
+The DB stays **light** because it never holds file bytes — only the **reference**:
+
+- **File body** → R2 (image, PDF, …).
+- **URL/key** → a plain **text** column on the owning record. Verified examples:
+  `Company.logo`, `Company.logoUrl`, `User.image`, `Product.images String[]`,
+  `Invoice.pdfUrl` — all `String`/`String[]`. The bytes are never in Postgres
+  (no `bytea`/Buffer/base64 anywhere in the schema — checked).
+
+### The one exception: AI embeddings (pgvector)
+
+The only thing we store **deep** in the DB is the numeric **vectors** Gemini
+produces from a tenant's knowledge text — because they're math, not files, and the
+agent compares them by similarity for fast retrieval:
+
+- `AgentMemory.embedding Unsupported("vector(1536)")` (pgvector, HNSW index).
+- `lib/agent/memory.ts`: `getEmbedding(summary)` → stored as `::vector`. We embed
+  the **text summary**; the **original uploaded file stays in R2**.
+
+So: Postgres holds tiny references + vectors and stays MB-sized; the actual files
+live in R2 (effectively unlimited, zero-egress). This is the exact hybrid the
+global platforms use.
+
+## 3) Private files & temporary signed links
+
+The storage layer already supports **presigned GET** (`createDownloadUrl(key,
+expiresIn)`, default 300s) — the Slack/Notion pattern: a private object is only
+reachable through a short-lived signed URL that expires. The **capability exists**;
+a full private-document flow (private bucket + signed-download-only + per-file
+access checks) is **not wired yet** — current uploads are public assets (logos,
+product images).
+
+## Image compression (sharp)
+
+Images are compressed **server-side** before they reach R2 (the bytes pass
+through the server only for this momentary pass — the one deliberate exception to
+the direct-presigned rule). Route: `app/api/uploads/image` (`runtime = 'nodejs'`),
+logic in `lib/storage/image.ts`:
+
+1. **WebP** — every image is converted to `image/webp`.
+2. **Quality 80** — keeps text legible for Gemini OCR while cutting size to a few
+   hundred KB.
+3. **Resize ≤ 1200px** width (`withoutEnlargement`) — never process oversized
+   resolutions; EXIF orientation is honored (`.rotate()`).
+4. **Graceful fallback** — any sharp failure logs explicitly and uploads the
+   **original** bytes, so a bad/odd image never blocks an upload. Non-images
+   (PDF) pass through untouched.
+
+Flow: compress → quota pre-check → `getStorage().put()` (server-side) → atomic
+`reserveAndRecordFile` (on quota race / DB error the just-written object is
+deleted). The `ImageUpload` component POSTs multipart to this route. The presigned
+`/sign` route remains for direct (non-compressed) uploads. `sharp` is a direct
+dependency; the Docker `node:20-alpine` image ships its musl binary.
+
+## Comparison vs the global standard
+
+| Dimension | Global standard | NX iWork (as built) |
+|---|---|---|
+| Storage location | Independent object store (R2/S3) | ✅ Cloudflare R2 |
+| Body path | Direct to bucket, presigned; bytes skip app | ✅ Presigned PUT, bytes skip the VPS |
+| Tenant isolation | Per-tenant key prefix | ✅ `companies/<companyId>/…`, server-enforced |
+| Portability | Vendor-swappable | ✅ S3-compatible interface |
+| CDN delivery | Edge-cached | ✅ R2 public domain on Cloudflare |
+| Upload security | Auth + type/size limits | ✅ Auth + type allowlist · ⚠️ no server-side size cap |
+| Body vs DB | URL reference in DB, bytes in store | ✅ URL as text; **no bytes in Postgres** |
+| AI embeddings | Vectors in DB, file in store | ✅ `vector(1536)` in pgvector; file in R2 |
+| File metadata (uuid/size/mime) | Optional central `tenant_files` table | ✅ `File` registry (key/url/mime/size/uploadedById) + RLS |
+| Private files | Private bucket + signed-only + access control | ⚠️ Capability present; flow not wired |
+
+**Verdict:** the core architecture — the **hybrid rule** (file → R2, URL → text,
+vectors → pgvector, **zero bytes in the DB**), per-tenant isolation, presigned
+direct uploads, provider portability, CDN — is **fully in place and competitive**.
+A central files table is an **optional** enhancement (it stores references +
+metadata, never bytes, so the DB stays light); private files + a size cap remain.
+
+## Implemented registry
+
+**`File` table** (`prisma`, migration `20260622120000_tenant_files`) — the central
+metadata registry: `{ id, companyId, key (unique), url, purpose, mimeType, size,
+uploadedById, createdAt }`, with the standard tenant **RLS** policy. The sign
+route (`app/api/uploads/sign`) writes a row on every presigned upload
+(best-effort, non-blocking); the client sends `size`. References + metadata only —
+**never bytes**, so the DB stays light. Enables audit, quota, orphan cleanup, and
+per-tenant file listing.
+
+## Storage quota (implemented)
+
+Per-tenant byte quota (migration `20260622130000_storage_quota`):
+
+- **Ceiling:** `Company.storageLimitBytes` (admin per-tenant override) or, when
+  null, the plan's `Plan.maxStorageBytes`. Seeded defaults: Starter 5 GB ·
+  Growth 10 GB · Scale 20 GB (Free 1 · Enterprise 50). `lib/storage/quota.ts`.
+- **Enforcement:** the sign route signs first (no side effect) then calls
+  `reserveAndRecordFile` — an **atomic** tx that increments `storageUsedBytes`
+  and writes the `File` row; if the new usage exceeds the ceiling the tx rolls
+  back and the route returns **HTTP 403** (*"Storage quota exceeded… Please
+  upgrade your storage ceiling."*). The over-quota request never gets an upload URL.
+- **Delete:** `/api/uploads/delete` → `deleteTenantFile` removes the R2 object,
+  deletes the `File` row, and decrements `storageUsedBytes` (atomic). The uploader
+  calls it when an image is removed.
+- **Admin:** `/admin/plans` edits per-plan ceilings + an ecosystem-usage telemetry
+  widget (total used + top consumers, ≥90% flagged red). Per-tenant override on
+  the company detail page (`setCompanyStorageLimit`) — a premium customer gets a
+  bigger ceiling with no code change.
+
+## Gaps / roadmap
+
+1. **Private / confidential files** — a private bucket (or private prefix), served
+   only via short-lived `createDownloadUrl`, with a per-file access check. For
+   customer documents / financial reports.
+2. **Server-side size cap** — switch presigned **PUT** → presigned **POST** with a
+   `content-length-range` policy so the bucket itself rejects oversized uploads
+   (today: client-reported size only).
+3. **Orphan cleanup + reconcile** — a periodic job using the `File` registry to
+   delete rows whose R2 object never landed and re-sync `storageUsedBytes`.
+
+## Env
+
+```
+R2_ENDPOINT="https://<accountid>.r2.cloudflarestorage.com"
+R2_ACCESS_KEY_ID="…"
+R2_SECRET_ACCESS_KEY="…"
+R2_BUCKET="…"
+R2_PUBLIC_BASE_URL="https://cdn.bznss.one"   # public bucket custom domain (CDN)
+```
+
+Without these, `isStorageConfigured()` is false and the upload route returns
+`503 storage_not_configured` (the UI shows "storage not set up").

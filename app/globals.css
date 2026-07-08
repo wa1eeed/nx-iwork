@@ -192,3 +192,52 @@
     }
   }
 }
+
+/* =========================================================================
+   Command Center theme — warm neutral palette for the (dashboard) surfaces.
+   Scoped via .theme-command on the dashboard root so the marketing site keeps
+   the Aurora theme. Values from the design handoff (design_handoff_ai_company).
+   ========================================================================= */
+@layer base {
+  .theme-command {
+    --background: 40 33% 90%; /* canvas #efe9dd */
+    --foreground: 38 18% 11%; /* ink #211d17 */
+    --card: 43 60% 99%; /* #fffdf9 */
+    --card-foreground: 38 18% 11%;
+    --popover: 43 60% 99%;
+    --popover-foreground: 38 18% 11%;
+    --primary: 38 18% 11%; /* ink — dark primary buttons */
+    --primary-foreground: 43 60% 99%;
+    --secondary: 40 35% 94%; /* surface #f6f2ea */
+    --secondary-foreground: 38 17% 21%;
+    --muted: 40 30% 92%;
+    --muted-foreground: 35 10% 50%; /* #8a8073 */
+    --accent: 40 33% 92%;
+    --accent-foreground: 38 18% 11%;
+    --destructive: 14 52% 49%; /* alert #c2593a */
+    --destructive-foreground: 43 60% 99%;
+    --success: 150 42% 42%;
+    --warning: 40 60% 52%;
+    --border: 40 28% 87%; /* #e8e1d3 */
+    --input: 40 26% 85%;
+    --ring: 38 16% 30%;
+    --radius: 0.875rem; /* 14px cards */
+    /* Neutralize the Aurora brand gradient → warm ink within this theme. */
+    --brand-from: 38 18% 14%;
+    --brand-to: 38 22% 26%;
+    --glass: 43 60% 99%;
+    --glass-border: 40 28% 87%;
+    background-image: none;
+  }
+}
+
+@layer utilities {
+  /* Per-department accent — one hue per department. Set --dept-h on the element
+     (see lib/ui/dept-accent.ts); harmony comes from shared oklch chroma/lightness. */
+  .dept-dot { background-color: oklch(0.62 0.14 var(--dept-h, 200)); }
+  .dept-accent-text { color: oklch(0.5 0.12 var(--dept-h, 200)); }
+  .dept-accent-bg { background-color: oklch(0.64 0.13 var(--dept-h, 200)); }
+  .dept-tint-bg { background-color: oklch(0.95 0.04 var(--dept-h, 200)); }
+  .dept-accent-border { border-color: oklch(0.64 0.13 var(--dept-h, 200)); }
+  .dept-accent-ring { box-shadow: 0 0 0 2px oklch(0.64 0.13 var(--dept-h, 200)); }
+}
