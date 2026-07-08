@@ -643,12 +643,31 @@
       "cancel": "Cancel",
       "markDone": "Mark done",
       "actionFailed": "Couldn't update. Try again.",
+      "manageAvailability": "Manage availability",
       "status": {
         "PENDING": "Pending confirmation",
         "CONFIRMED": "Confirmed",
         "CANCELLED": "Cancelled",
         "COMPLETED": "Completed"
       }
+    },
+    "availability": {
+      "back": "Back to bookings",
+      "title": "Booking availability",
+      "subtitle": "Make a service bookable: set its duration and weekly hours. Customers can only book generated slots.",
+      "noServices": "No services yet. Services are set up during onboarding.",
+      "bookable": "Bookable",
+      "notBookable": "Not bookable",
+      "duration": "Duration (min)",
+      "buffer": "Buffer (min)",
+      "capacity": "Capacity per slot",
+      "weeklyWindows": "Weekly hours",
+      "addWindow": "Add window",
+      "save": "Save",
+      "saving": "Saving...",
+      "saved": "Saved",
+      "saveError": "Couldn't save. Try again.",
+      "days": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
     },
     "departments": {
       "title": "Departments",

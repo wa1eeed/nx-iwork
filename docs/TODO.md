@@ -139,6 +139,10 @@ proration on mid-cycle upgrades, a DB Plan-catalog editor in the admin (plans ar
 seeded; editing still needs UI).
 
 ### Other
+- **Landing redesign (DEFERRED — after the platform is functional):** level up the
+  marketing landing (`app/page.tsx`) into a product-led feature showcase inspired by
+  `attio.com/platform/ask` — analyze its hero + the below-hero feature-showcase pattern
+  and adopt both for iWork's real features. English/Arabic, RTL, Aurora.
 - Bookings module: interactive calendar + business-hours/availability + manual create.
 - Per-trigger conditions (e.g. cart-value thresholds in `abandoned_cart` scenarios).
 - Email pro tier: verified custom sending domain (Resend Domains API) + billing receipts.
