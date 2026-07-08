@@ -946,9 +946,11 @@ The customer-facing + storage arc:
   Resend account from the platform domain; these brand the sender + gate
   marketing). Public orders now capture `Order.customerEmail` / `Customer.email`.
   See `lib/notifications/tenant-email.ts`.
-- **No schema change** for the multi-agent direction yet: the planned
-  `Agent.jobDescription` "constitution" + per-department permission matrix are
-  **not in the schema** — they arrive with Phase 1 (see `docs/AGENT_SYSTEM.md`).
+- **Multi-agent Phase 1 (foundation):** `Agent.jobDescription` (nullable TEXT) —
+  the agent's "constitution" (mandate + boundaries, distinct from `persona`),
+  injected into the system prompt. The **per-department permission matrix** is a UI
+  grouping over the existing `Agent.permissions` hard gate (no schema change). Later
+  phases (Skills, orchestration) are not in the schema yet. See `docs/AGENT_SYSTEM.md`.
 - **Env/observability** are code-only (no schema): `APP_ENV` three-environment
   config (`lib/env.ts`), Sentry, and `GET /api/health`.
 

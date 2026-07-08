@@ -10,10 +10,11 @@ The next major build. Make every department's AI employee worthwhile alongside t
 deterministic workflow — the **two-layer contract**: the system owns transactions
 (invoices/bookings/orders/CRM records) programmatically; agents do the human work
 (judgment, communication, coordination) and *trigger* workflows.
-- **Phase 1 — Job Spec:** a Job Description "constitution" (`Agent.jobDescription`,
-  distinct from `persona`) + a granular **per-department permission matrix** over the
-  existing `getToolsForAgent` hard gate + a **"justification test"** in the creation UX
-  (deterministic responsibility → workflow; judgment responsibility → agent).
+- **Phase 1 — Job Spec — ✅ DONE.** Job Description "constitution"
+  (`Agent.jobDescription`, injected into `buildSystemPrompt`, distinct from `persona`) +
+  a **per-department permission matrix** (tool toggles grouped by functional area over
+  the existing `getToolsForAgent` hard gate, incl. cross-department) + a **"justification
+  test"** callout in the creation UX.
 - **Phase 2 — Skills:** a composable skills system (OpenClaw-class, more organized).
 - **Phase 3 — Orchestration:** internal event bus + `delegate_to_agent` /
   `request_from_agent` / `depends_on`, autonomous via the scheduler.

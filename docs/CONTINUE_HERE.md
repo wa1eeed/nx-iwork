@@ -80,20 +80,24 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
     `lib/notifications/tenant-email.ts` (`sendPlatformEmail` / `sendTenantEmail`, marketing
     gated + List-Unsubscribe). Wired: **welcome on signup** + **order confirmation**
     (tenant sender, localized to the storefront language); public order form captures email.
+21. **Multi-agent architecture — Phase 1 foundation.** `Agent.jobDescription`
+    "constitution" (distinct from `persona`, injected into `buildSystemPrompt` and
+    anchoring the two-layer contract) + a **per-department permission matrix** (the
+    tool toggles grouped by functional area over the existing `getToolsForAgent` hard
+    gate) + a **"justification test"** callout in the agent-creation form.
 
 ---
 
 ## 🔜 Next up (resume here, in priority order)
 
-1. **🎯 Multi-agent architecture — Phase 1 (the headline).** Job Description
-   "constitution" (`Agent.jobDescription`, distinct from `persona`) + a granular
-   **per-department permission matrix** over the existing `getToolsForAgent` hard gate +
-   a **"justification test"** in the agent-creation UX (deterministic responsibility →
-   workflow; judgment responsibility → agent). Then Phase 2 **Skills**, Phase 3
-   **orchestration** (internal event bus + `delegate_to_agent`/`request_from_agent`/
-   `depends_on`), Phase 4 **ops command center**. Guiding law: the two-layer contract
-   (system = deterministic transactions; agents = the human/judgment work). See
-   `docs/AGENT_SYSTEM.md`.
+1. **🎯 Multi-agent architecture — Phase 2+ (the headline).** Phase 1 foundation
+   **shipped** this session: the Job Description "constitution" (`Agent.jobDescription`,
+   injected into the prompt) + the **per-department permission matrix** (grouped over the
+   existing `getToolsForAgent` hard gate) + the **"justification test"** in the creation
+   UX. **Next:** Phase 2 **Skills** (composable capabilities), Phase 3 **orchestration**
+   (internal event bus + `delegate_to_agent` / `request_from_agent` / `depends_on`),
+   Phase 4 **ops command center**. Guiding law: the two-layer contract (system =
+   deterministic transactions; agents = the human/judgment work). See `docs/AGENT_SYSTEM.md`.
 2. **Tap subscription auto-renewal** — recurring charge + webhook idempotency +
    dunning/retry on failure + receipt email.
 3. **Deep-component i18n (English-primary)** — the remaining translation long-tail
