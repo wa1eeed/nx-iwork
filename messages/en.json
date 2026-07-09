@@ -103,6 +103,41 @@
       "deleted": "Page deleted.",
       "deleteError": "Could not delete.",
       "confirmDelete": "Delete the “{name}” page?"
+    },
+    "detail": {
+      "back": "Back",
+      "customer": "Customer",
+      "walkIn": "Walk-in — no CRM record",
+      "contact": "Contact",
+      "phone": "Phone",
+      "email": "Email",
+      "appointment": "Appointment",
+      "date": "Date",
+      "time": "Time",
+      "duration": "Duration",
+      "minutes": "min",
+      "service": "Service",
+      "clinic": "Clinic",
+      "staff": "Staff member",
+      "unassigned": "Unassigned",
+      "status": "Status",
+      "notes": "Notes",
+      "none": "—",
+      "items": "Items",
+      "subtotal": "Subtotal",
+      "discount": "Discount",
+      "vat": "VAT",
+      "total": "Total",
+      "payment": "Payment",
+      "coupon": "Coupon",
+      "createdAt": "Created",
+      "viewCustomer": "View customer profile",
+      "recentOrders": "Orders",
+      "recentBookings": "Bookings",
+      "todayQueue": "Appointment queue",
+      "commission": "Commission",
+      "attributedSales": "Attributed sales (this month)",
+      "empty": "Nothing yet."
     }
   },
   "common": {
@@ -786,6 +821,7 @@
       "calendar": "Calendar",
       "list": "List",
       "noBookingsThisDay": "No bookings on this day.",
+      "viewDetails": "View details",
       "confirm": "Confirm",
       "cancel": "Cancel",
       "markDone": "Mark done",
@@ -795,7 +831,8 @@
         "PENDING": "Pending confirmation",
         "CONFIRMED": "Confirmed",
         "CANCELLED": "Cancelled",
-        "COMPLETED": "Completed"
+        "COMPLETED": "Completed",
+        "WAITLIST": "Waitlist"
       }
     },
     "availability": {

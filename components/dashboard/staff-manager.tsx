@@ -1,8 +1,9 @@
 'use client';
 
 import { useEffect, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Plus, Pencil, Trash2, Loader2, X, UserRound } from 'lucide-react';
+import { Plus, Pencil, Trash2, Loader2, X, UserRound, ArrowUpRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -166,12 +167,17 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
         ) : (
           staff.map((s) => (
             <div key={s.id} className="flex items-center gap-4 rounded-2xl border bg-card p-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-                <UserRound className="h-5 w-5" />
-              </div>
+              {s.image ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img src={s.image} alt={s.name} className="h-11 w-11 shrink-0 rounded-xl object-cover" />
+              ) : (
+                <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                  <UserRound className="h-5 w-5" />
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium">{s.name}</p>
+                  <Link href={`/staff/${s.id}`} className="font-medium hover:underline">{s.name}</Link>
                   {s.role && <span className="text-xs text-muted-foreground">{s.role}</span>}
                   {!s.isActive && (
                     <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">Inactive</span>
@@ -179,6 +185,13 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
                 </div>
                 <p className="mt-0.5 text-xs text-muted-foreground">{commissionSummary(s)}</p>
               </div>
+              <Link
+                href={`/staff/${s.id}`}
+                className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                title="Profile"
+              >
+                <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" />
+              </Link>
               <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
                 <Pencil className="h-4 w-4" />
               </Button>

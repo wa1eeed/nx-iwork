@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ShoppingBag, Trash2, Loader2 } from 'lucide-react';
+import { ShoppingBag, Trash2, Loader2, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { StaggerList, MotionItem } from '@/components/ui/motion';
@@ -109,7 +109,7 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
                 <CardContent className="flex flex-wrap items-center gap-3 p-3">
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">
-                      #{o.orderNumber}{' '}
+                      <Link href={`/orders/${o.id}`} className="hover:underline">#{o.orderNumber}</Link>{' '}
                       <span className="text-sm font-normal text-muted-foreground">· {o.total} ر.س</span>
                     </p>
                     <p className="text-xs text-muted-foreground">
@@ -146,6 +146,13 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
                       <option key={s} value={s}>{STATUS[s].label}</option>
                     ))}
                   </select>
+                  <Link
+                    href={`/orders/${o.id}`}
+                    className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                    title="التفاصيل"
+                  >
+                    <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" />
+                  </Link>
                   <Button variant="ghost" size="icon" onClick={() => remove(o.id)} className="text-destructive hover:text-destructive">
                     <Trash2 className="h-4 w-4" />
                   </Button>

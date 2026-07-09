@@ -1,8 +1,9 @@
 'use client';
 
 import { useMemo, useState, useTransition } from 'react';
+import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronLeft, ChevronRight, CalendarDays, List, Check, X, CheckCheck } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, List, Check, X, CheckCheck, ArrowUpRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -209,6 +210,13 @@ export function BookingsCalendar({
                       <span className={cn('h-2 w-2 shrink-0 rounded-full', DOT[b.status])} />
                       <span className="text-xs font-medium" dir="ltr">{time(b.startAt)}</span>
                       <span className="min-w-0 flex-1 truncate text-xs">{b.customerName || b.title}</span>
+                      <Link
+                        href={`/bookings/${b.id}`}
+                        className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+                        title={t('viewDetails')}
+                      >
+                        <ArrowUpRight className="h-3.5 w-3.5 rtl:-scale-x-100" />
+                      </Link>
                     </div>
                     {(b.customerName && b.title) && <p className="mt-0.5 ps-4 text-[11px] text-muted-foreground truncate">{b.title}</p>}
                     <div className="mt-1.5 flex flex-wrap items-center gap-1 ps-4">
@@ -260,7 +268,11 @@ function BookingList({ bookings, time, locale, t }: { bookings: CalBooking[]; ti
   return (
     <div className="grid gap-2">
       {bookings.map((b) => (
-        <div key={b.id} className="flex items-center gap-3 rounded-lg border p-3">
+        <Link
+          key={b.id}
+          href={`/bookings/${b.id}`}
+          className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-accent/50"
+        >
           <span className={cn('h-2.5 w-2.5 shrink-0 rounded-full', DOT[b.status])} />
           <div className="min-w-0 flex-1">
             <p className="flex items-center gap-2 truncate text-sm font-medium">
@@ -270,7 +282,8 @@ function BookingList({ bookings, time, locale, t }: { bookings: CalBooking[]; ti
             <p className="text-xs text-muted-foreground" dir="ltr">{day(b.startAt)} · {time(b.startAt)}</p>
           </div>
           <span className="shrink-0 text-xs text-muted-foreground">{t(`status.${b.status}`)}</span>
-        </div>
+          <ArrowUpRight className="h-4 w-4 shrink-0 text-muted-foreground rtl:-scale-x-100" />
+        </Link>
       ))}
     </div>
   );

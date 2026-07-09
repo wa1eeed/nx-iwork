@@ -103,6 +103,41 @@
       "deleted": "تم حذف الصفحة.",
       "deleteError": "تعذّر الحذف.",
       "confirmDelete": "حذف صفحة «{name}»؟"
+    },
+    "detail": {
+      "back": "رجوع",
+      "customer": "العميل",
+      "walkIn": "زائر — بدون سجل في النظام",
+      "contact": "التواصل",
+      "phone": "الجوال",
+      "email": "البريد",
+      "appointment": "الموعد",
+      "date": "التاريخ",
+      "time": "الوقت",
+      "duration": "المدة",
+      "minutes": "دقيقة",
+      "service": "الخدمة",
+      "clinic": "العيادة",
+      "staff": "مقدّم الخدمة",
+      "unassigned": "غير محدّد",
+      "status": "الحالة",
+      "notes": "ملاحظات",
+      "none": "—",
+      "items": "العناصر",
+      "subtotal": "الإجمالي الفرعي",
+      "discount": "الخصم",
+      "vat": "الضريبة",
+      "total": "الإجمالي",
+      "payment": "الدفع",
+      "coupon": "الكوبون",
+      "createdAt": "أُنشئ",
+      "viewCustomer": "عرض ملف العميل",
+      "recentOrders": "الطلبات",
+      "recentBookings": "الحجوزات",
+      "todayQueue": "طابور المواعيد",
+      "commission": "العمولة",
+      "attributedSales": "المبيعات المنسوبة (هذا الشهر)",
+      "empty": "لا شيء بعد."
     }
   },
   "common": {
@@ -786,6 +821,7 @@
       "calendar": "تقويم",
       "list": "قائمة",
       "noBookingsThisDay": "لا حجوزات في هذا اليوم.",
+      "viewDetails": "عرض التفاصيل",
       "confirm": "تأكيد",
       "cancel": "إلغاء",
       "markDone": "إتمام",
@@ -795,7 +831,8 @@
         "PENDING": "بانتظار التأكيد",
         "CONFIRMED": "مؤكّد",
         "CANCELLED": "ملغى",
-        "COMPLETED": "مكتمل"
+        "COMPLETED": "مكتمل",
+        "WAITLIST": "قائمة الانتظار"
       }
     },
     "availability": {
