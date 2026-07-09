@@ -13,6 +13,36 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-07-09 — Service-business platform: booking-first, module nav, agent fixes
+
+Reframe the platform for service businesses (clinics, salons, any booking-based
+business) — the first subscribers — and reorganize the whole dashboard.
+
+### Added / Changed
+- **Booking-first (م1).** Departments double as customer-facing **clinics**
+  (`landingVisible`, `tagline`); `Service.departmentId` groups services under them;
+  `Service.allowWaitlist`. New **tenant catalog-Service editor** at `/services`
+  (was missing entirely); the platform add-ons marketplace moved to `/marketplace`.
+  Public **storefront redesigned as a real website** (`/[slug]`): sticky nav, hero,
+  clinics-as-sections with service cards, team cards, footer; a **per-service detail
+  page** (`/[slug]/service/[id]`). **Waitlist** end-to-end: `BookingStatus.WAITLIST`
+  (never holds capacity), engine + `/slots` + `/book` + public form + calendar.
+- **Module navigation + CRM hub (م2).** Nav regrouped into modules — Command Center ·
+  **CRM** · Operations (orders first) · **AI workforce** · **Team** (human) · Finance ·
+  Configure. New `/crm` hub merges **opportunities + customers + tasks** with a
+  relationship counter strip + shared tabs; `/customers` → `/crm` (360° detail intact).
+- **Agent fixes (م4).** `buildSystemPrompt` injects the **current date/time in the
+  business timezone** (fixes wrong dates on every surface); the customer prompt now
+  books via **check_availability → create_booking** (not `create_task`); a
+  booking-enabled business's public agent is always granted the booking tools.
+- **م5.** Dashboard top-bar **"View site"** shortcut → the owner's landing; **coupon
+  redemption in the public order/payment flow** (validate + discount + usedCount).
+
+### Migrations (additive)
+`20260709140000_clinic_departments`, `20260709160000_booking_waitlist`.
+
+---
+
 ## 2026-07-09 — Business modules: 360° counters, coupons, inventory, staff commissions
 
 Broaden the platform to cover the whole business, not just the AI workforce.

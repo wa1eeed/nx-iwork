@@ -149,6 +149,22 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
       the agent `create_order` tool redeems an optional `couponCode` (validate →
       discount → `usedCount++`). **Follow-up:** coupon redemption in the *public*
       storefront order flow (customer-entered code) + staff/coupon on manual create.
+34. **Service-business platform (م1–م5), all shipped to `main`.**
+    - **م1 booking-first:** departments = customer-facing **clinics** (`landingVisible`/
+      `tagline`); `Service.departmentId` + `allowWaitlist`; a **tenant catalog-Service
+      editor** at `/services` (marketplace → `/marketplace`); the **storefront is a real
+      website** (`/[slug]`: nav/hero/clinics-as-sections/team/footer) + a per-service
+      **detail page**; **waitlist** end-to-end (`BookingStatus.WAITLIST`).
+    - **م2:** nav → **modules** (Command · CRM · Operations[orders-first] · AI workforce ·
+      Team · Finance · Configure); **`/crm` hub** merges opportunities + customers + tasks
+      (counter strip + shared tabs); `/customers` → `/crm`.
+    - **م4 agent fixes:** current **date/time in business tz** injected into the prompt
+      (accurate dates everywhere); customer prompt books via **check_availability →
+      create_booking**; public agent auto-granted booking tools when `hasBookings`.
+    - **م5:** top-bar **"View site"** shortcut; **coupon redemption in the public order
+      flow**. Migrations `20260709140000_clinic_departments`, `20260709160000_booking_waitlist`.
+    - **Follow-ups:** advanced pipeline board (IBP deal cards) · per-staff landing flag ·
+      "website chatbot" badge + a public-conversations view · service images upload.
 
 ---
 
