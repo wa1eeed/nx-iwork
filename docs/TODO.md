@@ -21,6 +21,19 @@ deterministic workflow — the **two-layer contract**: the system owns transacti
 - **Phase 4 — Ops command center:** bookings calendar + agent scheduled-task calendar +
   task-tracking page. See `docs/AGENT_SYSTEM.md`.
 
+### ✅ Shipped this session (2026-07-09) — design-handoff redesign complete
+- **Command Center chrome** — top bar (token bank + real Automation toggle + "N need
+  you" bell); **Guardrails** screen (View 4) with **enforced** flags (gate the scheduler
+  + injected into `buildSystemPrompt`); **Autonomy** dial end-to-end.
+- **Agent workspace (View 2)** — NEEDS-YOU pill, real **Pause agent**, **WORK LOG**,
+  **3-layer memory**, internal-mode chat entry (`/chat?agent=`). **Approvals** inbox (View
+  3). **New-department modal** (Modal B).
+- **Business-first nav** (Command · Workforce · **Sales** · **Products & Services** ·
+  Billing · Configure) + `hasServices` gating.
+- **Sales financials** (`/sales`) — revenue KPIs, pipeline, invoices, wallet/plan.
+- **Demo seed** (`npm run seed:demo`, "Zahra Home", idempotent) + **vitest** suites
+  (guardrails/autonomy + dept-accent, 9 passing).
+
 ### ✅ Shipped this session (2026-07-08)
 - **Three environments** via `APP_ENV` (`lib/env.ts`, dev/staging/prod) + boot
   guardrails · **Sentry** (no-op without DSN) · **`GET /api/health`**.

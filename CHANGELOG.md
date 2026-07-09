@@ -13,6 +13,49 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-07-09 — Design-handoff redesign complete + business-first nav + Sales + demo/tests
+
+Finishes the `design_handoff_ai_company` rebuild and makes the autonomous-workforce
+mechanics **real** (not cosmetic), then reorganizes the platform around how a
+business owner actually thinks.
+
+### Added
+- **Global top bar (View 1 chrome).** Token-bank pill (`Company.tokenBalance` + plan),
+  a **real Automation toggle** (`AutomationToggle`), and a **"N need you" bell** (pending
+  approvals → `/approvals`) — data wired through `app/(dashboard)/layout.tsx`.
+- **Guardrails (View 4, `/settings` default tab).** New `Company` flags
+  (`automationEnabled`, `requireApprovalForSensitive`, `requireMessageReview`,
+  `spendApprovalCapEnabled`, `spendApprovalCapSar`; additive migration) +
+  `updateGuardrails` action + `GuardrailsTab` (dark token/wallet card, design-exact
+  42×24 toggles, spend-cap SAR, plan-derived per-agent cap).
+- **Autonomy dial** — `AutonomyLevel` (`SUGGEST`/`ASK`/`AUTOPILOT`) surfaced in the
+  agent workspace + creation form; drives `request_approval` aggressiveness.
+- **Agent workspace (View 2).** NEEDS-YOU pill, real **Pause agent** (`setAgentPaused`),
+  the **WORK LOG** (flat, English, relative-time), the **3-layer memory** view
+  (Working/Episodic/Semantic with real per-agent counts), an internal-mode **chat entry**
+  (`/chat?agent=<id>` — `ChatClient` gains `initialAgentId`).
+- **Approvals (View 3)** — dedicated `/approvals` inbox + design-proportioned `ApprovalCard`.
+- **New-department modal (Modal B)** — 440px overlay with 34px hue swatches.
+- **Sales financial section (`/sales`)** — revenue KPIs, orders-by-status pipeline,
+  invoices (`Invoice` model, PDF links), wallet/plan; all tenant-scoped real data.
+- **Demo seed** — `scripts/seed-demo.ts` (`npm run seed:demo`): an idempotent,
+  self-contained **"Zahra Home"** tenant across every surface (departments, agents,
+  customers, catalog, orders, invoices, bookings, tasks, pending approvals, timeline,
+  memories, schedules).
+- **Tests (vitest)** — guardrails/autonomy prompt injection + dept-accent hues (9 passing).
+
+### Changed
+- **Business-first navigation.** Regrouped into Command Center · Workforce (agents +
+  departments) · **Sales** (financials, orders, customers, clients, bookings) ·
+  **Products & Services** · Billing · Configure. Adds `hasServices` gating; the mobile
+  tab bar + section carousel inherit it.
+- **Guardrails are enforced.** The Automation switch **gates the scheduler**
+  (`runDueSchedules`/`runDueTasks` skip `automationEnabled=false` tenants and `PAUSED`
+  agents); the guardrail flags are **injected into `buildSystemPrompt`**, overriding the
+  autonomy dial.
+
+---
+
 ## 2026-07-08 — Command Center redesign (from the design handoff)
 
 Rebuild the owner dashboard to the `design_handoff_ai_company` spec (the new

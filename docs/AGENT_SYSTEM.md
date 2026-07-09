@@ -703,6 +703,48 @@ hires get the template's `defaultPermissions`; custom agents pick via toggles in
 the agent form (create + edit). Shown on the profile as the agent's real
 capabilities.
 
+## 🛡️ Guardrails & Autonomy (built 2026-07-09)
+
+The owner's controls over the workforce — the human-in-the-loop half of the
+two-layer contract, made concrete.
+
+**Autonomy dial** (`Agent.autonomy`, enum `AutonomyLevel`) — how far an agent acts
+before pausing for the owner:
+- `SUGGEST` — propose only; never act. Always `request_approval` first.
+- `ASK` (default) — do routine work directly; `request_approval` for sensitive or
+  irreversible decisions.
+- `AUTOPILOT` — act within policy; approval only for the truly exceptional.
+
+It's injected into `buildSystemPrompt` as an explicit instruction block, so the
+model's `request_approval` behaviour follows the dial.
+
+**Company guardrails** (`Company.*`, editable from the Guardrails tab at `/settings`
+and the top-bar Automation toggle) — these **override** the autonomy dial:
+- `automationEnabled` — master switch for the scheduler + event triggers. When
+  `false`, `runDueSchedules`/`runDueTasks` (`lib/agent/scheduler.ts`) **skip the
+  whole tenant** — every agent is effectively paused. (Individual agents are also
+  skipped when `status = PAUSED`, via the workspace "Pause agent" action.)
+- `requireApprovalForSensitive` — sensitive/irreversible decisions must pause via
+  `request_approval`.
+- `spendApprovalCapEnabled` + `spendApprovalCapSar` — any spend/discount above the
+  cap needs approval.
+- `requireMessageReview` — customer-facing drafts wait for owner review before send.
+
+The active guardrails are passed to `buildSystemPrompt({ guardrails })` (loaded in
+`loadAgentWithContext`, wired by `run.ts` + `task.ts`) and rendered as a mandatory
+"قواعد الحوكمة (إلزامية)" block that **takes precedence over the autonomy level**.
+
+**Approval loop** (both halves): the agent calls `request_approval` → an `Approval`
+row (`PENDING`) + an `APPROVAL_REQUESTED` timeline event → surfaced in the Command
+Center rail, the `/approvals` inbox, and the agent's NEEDS-YOU state → the owner
+resolves via `resolveApproval` (`lib/actions/approvals.ts`), which records the
+decision and **wakes the agent** with a follow-up `AGENT_TOOL` task.
+
+> **Autonomy only happens if the scheduler runs.** In production the scheduler is
+> driven by an external cron hitting `POST /api/cron/run` (header
+> `x-cron-secret: $CRON_SECRET`) every minute, or the `npm run scheduler` worker.
+> If `CRON_SECRET` is unset the cron endpoint is disabled (503) → no autonomous runs.
+
 ## 🛡️ Resilience & token accounting
 
 - **Rate limiter** (`lib/ai/retry.ts` `withAiRetry`) — exponential backoff + full

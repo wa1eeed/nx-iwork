@@ -24,7 +24,9 @@ CRM + Customers directory · catalog + public storefront + agent widget + order 
 R2 storage (hybrid principle) + quota + image compression + "buy extra storage" add-on ·
 Wallet + Tap top-ups + Subscription page + Services marketplace · per-tenant email
 (Resend) · three-environment config (`APP_ENV`) + Sentry + `/api/health` · Aurora design +
-mobile-first dashboard. See [`CHANGELOG.md`](../CHANGELOG.md).
+mobile-first dashboard · **Command Center redesign** (design handoff) with **Guardrails &
+Autonomy** (enforced), the **Sales** financials section, and **business-first navigation** ·
+`npm run seed:demo`. See [`CHANGELOG.md`](../CHANGELOG.md).
 
 ## 🎯 Now → next
 

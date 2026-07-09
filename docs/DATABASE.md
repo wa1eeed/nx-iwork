@@ -158,7 +158,18 @@ model Company {
   
   customDomain   String?       @unique  // إذا ربط دومينه الخاص
   customDomainVerified Boolean @default(false)
-  
+
+  // Managed AI billing
+  plan           PlanTier      @default(STARTER)
+  tokenBalance   Int           @default(5000000) // prepaid AI token bank
+
+  // Guardrails (owner governance — see docs/AGENT_SYSTEM.md → Guardrails & Autonomy)
+  automationEnabled           Boolean @default(true)  // master scheduler switch
+  requireApprovalForSensitive Boolean @default(true)
+  requireMessageReview        Boolean @default(false)
+  spendApprovalCapEnabled     Boolean @default(true)
+  spendApprovalCapSar         Int     @default(500)
+
   // Configurable Settings
   settings       BusinessSettings?
   

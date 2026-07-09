@@ -23,6 +23,9 @@
   الشائعة، يسجّلون العملاء في الـ CRM، ينشئون المهام والحجوزات
 - ⏰ **يتحركون تلقائياً** — جدولة زمنية (Cron) + **مشغّلات أحداث** (عميل جديد → يصحى
   وكيل المبيعات)
+- 🛡️ **حوكمة وتحكّم** — **مركز قيادة** ببنك توكنز ومفتاح أتمتة رئيسي، قواعد موافقة
+  (قرارات حسّاسة / سقف صرف / مراجعة الرسائل)، و**مقياس استقلالية** لكل وكيل
+  (اقتراح / تنفيذ‑مع‑مراجعة / تلقائي) — تُحقن في سلوك الوكيل وتُوقف المجدول عند الإيقاف
 - 🧠 **يتذكّرون** — ذاكرة دلالية عبر pgvector
 - 🧩 **معمارية نمطية** — موديولات تُفعَّل حسب النشاط (تجارة / حجوزات / خدمات)،
   والوكيل يحصل **أدوات الموديولات المفعّلة فقط**
@@ -68,9 +71,12 @@
 
 ```
 app/
-├── (dashboard)/            ← لوحة تحكم رائد الأعمال
-│   ├── overview · agents · departments · products · bookings
-│   ├── knowledge (FAQ + triggers) · tasks · chat · modules · settings
+├── (dashboard)/            ← مركز القيادة (Command Center) — قائمة مجمّعة حسب البزنس
+│   ├── overview · approvals · chat · tasks              ← القيادة
+│   ├── agents · departments                             ← قوة العمل
+│   ├── sales · orders · customers · clients · bookings  ← المبيعات
+│   ├── products · services · knowledge                  ← المنتجات والخدمات
+│   ├── wallet · subscription · settings (guardrails) · modules
 ├── (public)/[slug]/        ← الصفحة العامة لكل بزنس + ودجت الوكيل
 ├── (auth)/ · (onboarding)/
 └── api/
@@ -101,6 +107,9 @@ CRON_SECRET=<سر عشوائي>
 ```
 
 **النشر:** الـ `Dockerfile` يشغّل `prisma migrate deploy` تلقائياً ثم التطبيق.
+
+**بيانات ديمو (اختياري):** لمعاينة المنصة كاملةً، `DATABASE_URL=… npm run seed:demo`
+يبني مستأجراً تجريبياً «Zahra Home» (idempotent) عبر كل الشاشات ويطبع بيانات الدخول.
 
 **الأتمتة (الوكلاء يتحركون تلقائياً):** أضف Scheduled Task في Coolify كل دقيقة:
 ```bash

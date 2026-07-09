@@ -6,7 +6,7 @@
 > `docs/ADMIN.md`; infra/CDN/Cloud-Run in `docs/INFRA.md`; file storage in
 > `docs/STORAGE.md`.
 
-**Last updated:** 2026-07-08
+**Last updated:** 2026-07-09
 **Live:** https://bznss.one/ · repo `github.com/wa1eeed/nx-iwork`
 **Deploy:** `git push origin HEAD:main` → Coolify builds & runs
 `prisma migrate deploy && node server.js`. **`main` is the deploy branch**, not
@@ -98,6 +98,37 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
     status (isolated enum migration), a dedicated confirmation page, a `BOOKING_CREATED`
     trigger event.
 
+### Then this session (2026-07-09), shipped to `main` — design-handoff redesign **complete**
+23. **Command Center global chrome (top bar).** Token-bank pill (`tokenBalance` +
+    plan → `/wallet`), a **real Automation toggle** (`AutomationToggle`), and a
+    **"N need you" bell** (pending-approval count → `/approvals`), wired through the
+    dashboard layout.
+24. **Guardrails (design View 4, `/settings` default tab) — real, not cosmetic.**
+    New `Company` flags (`automationEnabled`, `requireApprovalForSensitive`,
+    `requireMessageReview`, `spendApprovalCapEnabled`, `spendApprovalCapSar`);
+    `updateGuardrails` action; design-exact toggles + dark token/wallet card. They
+    **enforce**: the Automation switch **gates the scheduler** (`runDueSchedules`/
+    `runDueTasks` skip paused tenants), and the flags are **injected into
+    `buildSystemPrompt`** (approval-required / spend-cap / message-review govern
+    `request_approval`, overriding the autonomy dial).
+25. **Autonomy dial** — `AutonomyLevel` (`SUGGEST`/`ASK`/`AUTOPILOT`) end-to-end:
+    schema + creation-form segmented control + prompt injection.
+26. **Agent workspace (View 2)** — NEEDS-YOU pill (pending approval), a real **Pause
+    agent** action (`setAgentPaused`; the scheduler skips PAUSED agents), the **WORK
+    LOG** (flat, relative-time), the **3-layer memory** view (Working/Episodic/Semantic
+    with real counts), and an internal-mode **chat entry** (`/chat?agent=<id>`).
+27. **Approvals (View 3)** — dedicated `/approvals` inbox + polished `ApprovalCard`
+    (avatar + decision + context + Approve/Send-back → `resolveApproval` wakes the agent).
+28. **New-department modal (Modal B)** — 440px overlay, 34px hue swatches.
+29. **Business-first navigation** — regrouped: Command Center · Workforce (agents +
+    departments) · **Sales** · **Products & Services** · Billing · Configure. Adds
+    `hasServices` gating; mobile nav inherits it.
+30. **Sales financial section (`/sales`)** — revenue KPIs, orders-by-status pipeline,
+    invoices (from `Invoice`), wallet/plan — all tenant-scoped real data.
+31. **Demo seed + tests.** `scripts/seed-demo.ts` (`npm run seed:demo`) rebuilds a
+    self-contained **"Zahra Home"** tenant (idempotent). Vitest suites for the
+    guardrails/autonomy prompt logic + dept-accent hues (9 tests passing).
+
 ---
 
 ## 🔜 Next up (resume here, in priority order)
@@ -129,6 +160,19 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
 ## ⚠️ Invariants & gotchas (don't relearn these the hard way)
 
 - **Deploy = push to `origin/main`** (Coolify). Keep migrations **additive**.
+- **Autonomous agents run ONLY if the scheduler runs.** Two ways: (a) an external
+  cron hits `POST /api/cron/run` with header `x-cron-secret: $CRON_SECRET` **every
+  minute** (a Coolify Scheduled Task on the app service), or (b) the standalone
+  `npm run scheduler` worker. **If `CRON_SECRET` is unset the endpoint is disabled
+  (503)** → no autonomous runs at all. Per-tenant gating: the scheduler skips
+  companies with `automationEnabled=false` and agents with `status=PAUSED`.
+- **Guardrails are enforced, not decorative.** `Company.{requireApprovalForSensitive,
+  requireMessageReview,spendApprovalCapEnabled,spendApprovalCapSar}` are injected into
+  `buildSystemPrompt` and **override the autonomy dial**; `automationEnabled` gates the
+  scheduler. Edit via the Guardrails tab (`/settings`) or the top-bar Automation toggle.
+- **Demo data:** `DATABASE_URL=… npm run seed:demo` rebuilds the idempotent **"Zahra
+  Home"** demo tenant (login printed on completion). Safe to re-run; it wipes only that
+  demo company's data. Never point it at a real tenant.
 - **English is primary**, Arabic secondary. New UI uses `next-intl` (`messages/en.json`
   + `ar.json`); don't hardcode strings.
 - **All agent creation MUST go through the HR gateway** (`hrAgent.onboardAndDeployAgent`
@@ -166,4 +210,4 @@ git checkout release/full-platform && git pull          # local working branch
 git log --oneline origin/main..HEAD                      # what's unpushed (if any)
 npm install && npm run type-check                        # sanity
 ```
-Then read this file's "Next up", pick item 1 (deep-component i18n), and continue.
+Then read this file's "Next up", pick the top item, and continue.
