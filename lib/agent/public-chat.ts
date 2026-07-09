@@ -89,7 +89,16 @@ export async function runPublicAgentChat(input: PublicChatInput): Promise<Public
   // agent (non-empty list) to avoid accidentally narrowing it.
   let perms = agent.permissions;
   if (perms.length > 0 && agent.company.hasBookings) {
-    perms = Array.from(new Set([...perms, 'check_availability', 'create_booking', 'find_customer']));
+    perms = Array.from(
+      new Set([
+        ...perms,
+        'check_availability',
+        'list_open_slots',
+        'create_booking',
+        'find_customer',
+        'create_lead',
+      ])
+    );
   }
 
   let reply: string;

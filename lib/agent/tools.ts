@@ -11,7 +11,7 @@ import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import type { AiTool } from '@/lib/ai';
 import { nextRef } from '@/lib/refs';
-import { createBooking, BookingError } from '@/lib/booking/engine';
+import { createBooking, BookingError, generateDaySlots } from '@/lib/booking/engine';
 import { saveMemory } from './memory';
 import { dispatchEvent } from './events';
 
@@ -29,7 +29,7 @@ export interface CompanyModules {
 
 // Sales/catalog tools need e-commerce or services; booking tools need bookings.
 const SALES_TOOLS = new Set(['search_catalog', 'create_order']);
-const BOOKING_TOOLS = new Set(['check_availability', 'create_booking', 'update_booking']);
+const BOOKING_TOOLS = new Set(['check_availability', 'list_open_slots', 'create_booking', 'update_booking']);
 
 // Dynamic tools: only hand the model the tools for the modules this company has
 // enabled (cheaper context + the agent never offers what the business can't do).
@@ -89,16 +89,32 @@ export const AGENT_TOOLS: AiTool[] = [
     },
   },
   {
-    name: 'create_booking',
-    description: 'أنشئ حجزاً/موعداً لعميل (موديول الحجوزات). تحقّق بـ check_availability أولاً.',
+    name: 'list_open_slots',
+    description:
+      'اعرض المواعيد المتاحة فعلاً لخدمة قابلة للحجز في يوم محدّد (يحسبها النظام من توفّر الخدمة وسعتها والحجوزات القائمة). استخدمها قبل create_booking لعرض الأوقات على العميل، وعند امتلاء وقتٍ لاقتراح بدائل. إن لم يتوفّر شيء في اليوم المطلوب يعيد أقرب يوم متاح.',
     parameters: {
       type: 'object',
       properties: {
-        title: { type: 'string', description: 'وصف الحجز (مثل: موعد كشف)' },
-        startAt: { type: 'string', description: 'وقت البداية ISO 8601' },
-        endAt: { type: 'string', description: 'وقت النهاية ISO 8601 (اختياري)' },
-        serviceId: { type: 'string', description: 'معرّف الخدمة القابلة للحجز (يفرض النظام السعة تلقائياً)' },
-        customerId: { type: 'string', description: 'معرّف العميل من الـ CRM إن وُجد' },
+        serviceId: { type: 'string', description: 'معرّف الخدمة (من search_catalog)' },
+        date: { type: 'string', description: 'اليوم المطلوب YYYY-MM-DD (بتوقيت النشاط)' },
+      },
+      required: ['serviceId', 'date'],
+    },
+  },
+  {
+    name: 'create_booking',
+    description:
+      'ثبّت حجز موعد لعميل (موديول الحجوزات). قبل استدعائها: (1) احصل على معرّف الخدمة serviceId من search_catalog، (2) اطلب اسم العميل ورقم جواله ومرّرهما (customerName + customerPhone) أو معرّف عميل موجود customerId — لا يُقبل حجز بلا هوية عميل، (3) اعرض الأوقات المتاحة عبر list_open_slots واختر وقتاً منها. النظام يفرض السعة ويتحقق من التعارض تلقائياً، ويقترح بدائل إن كان الوقت ممتلئاً.',
+    parameters: {
+      type: 'object',
+      properties: {
+        title: { type: 'string', description: 'وصف الحجز (مثل: موعد تنظيف أسنان)' },
+        startAt: { type: 'string', description: 'وقت البداية ISO 8601 (من أوقات list_open_slots)' },
+        endAt: { type: 'string', description: 'وقت النهاية ISO 8601 (اختياري — يحسبه النظام من مدة الخدمة)' },
+        serviceId: { type: 'string', description: 'معرّف الخدمة القابلة للحجز (مطلوب لفرض السعة والتحقق من التوفّر)' },
+        customerId: { type: 'string', description: 'معرّف العميل من الـ CRM إن كان مسجّلاً' },
+        customerName: { type: 'string', description: 'اسم العميل — مطلوب إن لم يوجد customerId (يُنشأ سجل تلقائياً)' },
+        customerPhone: { type: 'string', description: 'رقم جوال العميل للتواصل والتأكيد' },
         notes: { type: 'string' },
       },
       required: ['title', 'startAt'],
@@ -279,12 +295,19 @@ const checkAvailabilityArgs = z.object({
   to: z.string().trim(),
 });
 
+const listOpenSlotsArgs = z.object({
+  serviceId: z.string().trim().min(1),
+  date: z.string().trim().min(1),
+});
+
 const createBookingArgs = z.object({
   title: z.string().trim().min(1).max(300),
   startAt: z.string().trim(),
   endAt: z.string().trim().optional(),
   serviceId: z.string().trim().optional(), // when set, the engine enforces slot capacity
   customerId: z.string().trim().optional(),
+  customerName: z.string().trim().max(200).optional(),
+  customerPhone: z.string().trim().max(40).optional(),
   notes: z.string().trim().max(2000).optional(),
 });
 
@@ -368,6 +391,47 @@ function parseDate(value?: string): Date | null | undefined {
   return Number.isNaN(d.getTime()) ? null : d;
 }
 
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// A business-local YYYY-MM-DD for an instant, in the company timezone.
+function localDateISO(d: Date, tz: string): string {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+  }).format(d);
+}
+
+async function companyTimezone(companyId: string): Promise<string> {
+  const s = await db.businessSettings.findUnique({
+    where: { companyId }, select: { timezone: true },
+  });
+  return s?.timezone || 'Asia/Riyadh';
+}
+
+// Concrete open slots for a service starting at (or after) a given instant, so
+// the agent can offer real alternatives when a requested time is full. Scans up
+// to `days` calendar days forward and returns the first handful of open slots.
+async function suggestAlternatives(
+  companyId: string,
+  serviceId: string,
+  from: Date,
+  tz: string,
+  days = 7,
+  limit = 6,
+): Promise<{ date: string; time: string; startAt: string }[]> {
+  const out: { date: string; time: string; startAt: string }[] = [];
+  for (let i = 0; i < days && out.length < limit; i++) {
+    const dateISO = localDateISO(new Date(from.getTime() + i * DAY_MS), tz);
+    const slots = await generateDaySlots(companyId, serviceId, dateISO);
+    for (const s of slots) {
+      if (s.available) {
+        out.push({ date: dateISO, time: s.label, startAt: s.startAt });
+        if (out.length >= limit) break;
+      }
+    }
+  }
+  return out;
+}
+
 export async function executeTool(
   name: string,
   rawArgs: Record<string, unknown>,
@@ -434,6 +498,21 @@ export async function executeTool(
         });
       }
 
+      case 'list_open_slots': {
+        const args = listOpenSlotsArgs.parse(rawArgs);
+        const tz = await companyTimezone(ctx.companyId);
+        const slots = await generateDaySlots(ctx.companyId, args.serviceId, args.date);
+        const open = slots.filter((s) => s.available).map((s) => ({ time: s.label, startAt: s.startAt }));
+        const waitlist = slots.filter((s) => !s.available && s.waitlist).map((s) => ({ time: s.label, startAt: s.startAt }));
+        // Nothing open on the requested day → surface the closest day that has room.
+        let nextAvailable: { date: string; time: string; startAt: string }[] = [];
+        if (open.length === 0) {
+          const tomorrow = new Date(new Date(`${args.date}T00:00:00Z`).getTime() + DAY_MS);
+          nextAvailable = await suggestAlternatives(ctx.companyId, args.serviceId, tomorrow, tz);
+        }
+        return ok({ date: args.date, open, waitlist, nextAvailable });
+      }
+
       case 'check_availability': {
         const args = checkAvailabilityArgs.parse(rawArgs);
         const from = parseDate(args.from);
@@ -463,14 +542,11 @@ export async function executeTool(
         const args = createBookingArgs.parse(rawArgs);
         const startAt = parseDate(args.startAt);
         if (!startAt) return fail('صيغة التاريخ غير صحيحة. استخدم ISO 8601.');
-        const endAt = args.endAt ? parseDate(args.endAt) : null;
-        if (args.customerId) {
-          const exists = await db.customer.findFirst({
-            where: { id: args.customerId, companyId: ctx.companyId },
-            select: { id: true },
-          });
-          if (!exists) return fail('العميل المرتبط غير موجود.');
+        if (startAt.getTime() <= Date.now()) {
+          return fail('لا يمكن الحجز في وقت مضى. اعرض على العميل موعداً قادماً عبر list_open_slots.');
         }
+        const endAt = args.endAt ? parseDate(args.endAt) : null;
+
         if (args.serviceId) {
           const svc = await db.service.findFirst({
             where: { id: args.serviceId, companyId: ctx.companyId },
@@ -478,19 +554,61 @@ export async function executeTool(
           });
           if (!svc) return fail('الخدمة غير موجودة.');
         }
+
+        // Every booking must belong to a real customer — the agent must have
+        // collected who it's for. Verify an existing id, or find-or-create from
+        // the name/phone it gathered; refuse a booking with no identity at all.
+        let customerId = args.customerId;
+        if (customerId) {
+          const exists = await db.customer.findFirst({
+            where: { id: customerId, companyId: ctx.companyId },
+            select: { id: true },
+          });
+          if (!exists) return fail('العميل المرتبط غير موجود.');
+        } else if (args.customerName) {
+          const found = args.customerPhone
+            ? await db.customer.findFirst({
+                where: { companyId: ctx.companyId, phone: { contains: args.customerPhone } },
+                select: { id: true },
+              })
+            : null;
+          if (found) {
+            customerId = found.id;
+          } else {
+            const created = await db.customer.create({
+              data: {
+                companyId: ctx.companyId,
+                ref: await nextRef(ctx.companyId, 'customer'),
+                assignedAgentId: ctx.agentId,
+                name: args.customerName,
+                phone: args.customerPhone,
+                status: 'NEW',
+                source: 'agent-booking',
+              },
+              select: { id: true },
+            });
+            customerId = created.id;
+          }
+        } else {
+          return fail(
+            'قبل تثبيت الحجز اطلب اسم العميل ورقم جواله للتواصل والتأكيد، ثم مرّرهما (customerName و customerPhone) أو معرّف عميل موجود customerId.'
+          );
+        }
+
         // Route through the deterministic engine: when a serviceId is given it
         // enforces slot capacity atomically; otherwise it creates an ad-hoc booking.
         try {
           const booking = await createBooking({
             companyId: ctx.companyId,
             serviceId: args.serviceId,
-            customerId: args.customerId,
+            customerId,
             title: args.title,
             startAt,
             endAt,
             notes: args.notes,
             source: 'agent',
           });
+          const waitlisted = booking.status === 'WAITLIST';
           return ok({
             booking: {
               id: booking.id,
@@ -499,13 +617,28 @@ export async function executeTool(
               startAt: booking.startAt.toISOString(),
               status: booking.status,
             },
-            message: 'تم تسجيل الحجز.',
+            waitlisted,
+            message: waitlisted
+              ? 'الفترة ممتلئة، وسُجّل العميل في قائمة الانتظار — أخبره أنه سيُبلَّغ عند توفّر مكان.'
+              : 'تم تأكيد الحجز. أكّد للعميل الخدمة والتاريخ والوقت ورقم الحجز.',
           });
         } catch (err) {
           if (err instanceof BookingError) {
+            if (err.code === 'slot_full' && args.serviceId) {
+              // Full and no waitlist — hand the agent real alternatives to offer.
+              const tz = await companyTimezone(ctx.companyId);
+              const suggestions = await suggestAlternatives(ctx.companyId, args.serviceId, startAt, tz);
+              return JSON.stringify({
+                ok: false,
+                reason: 'slot_full',
+                error:
+                  'هذا الوقت ممتلئ ولا يتوفّر انتظار. اعرض على العميل الأوقات البديلة التالية واطلب منه الاختيار.',
+                suggestions,
+              });
+            }
             const msg =
               err.code === 'slot_full'
-                ? 'الفترة مكتملة، اقترح على العميل وقتاً آخر.'
+                ? 'الفترة مكتملة، اقترح على العميل وقتاً آخر عبر list_open_slots.'
                 : err.code === 'not_bookable'
                   ? 'هذه الخدمة غير مهيّأة للحجز بفترات (اضبط توفّرها أولاً).'
                   : 'تعذّر إنشاء الحجز في هذا الوقت.';
