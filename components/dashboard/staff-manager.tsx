@@ -3,6 +3,7 @@
 import { useEffect, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Pencil, Trash2, Loader2, X, UserRound, ArrowUpRight } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -27,26 +28,29 @@ export interface StaffRow {
   isActive: boolean;
 }
 
-const TYPES: { value: CommissionType; label: string }[] = [
-  { value: 'PERCENT_SALES', label: '% of sales' },
-  { value: 'FIXED_PER_ORDER', label: 'Per order' },
-  { value: 'TARGET_BONUS', label: 'Target bonus' },
+type Translator = (key: string, values?: Record<string, string | number>) => string;
+
+const TYPE_VALUES: { value: CommissionType; labelKey: string }[] = [
+  { value: 'PERCENT_SALES', labelKey: 'typePercentSales' },
+  { value: 'FIXED_PER_ORDER', labelKey: 'typePerOrder' },
+  { value: 'TARGET_BONUS', labelKey: 'typeTargetBonus' },
 ];
 
-function rateLabel(t: CommissionType) {
-  if (t === 'PERCENT_SALES') return 'Rate (%)';
-  if (t === 'FIXED_PER_ORDER') return 'Amount / order (SAR)';
-  return 'Bonus (SAR)';
+function rateLabel(t: Translator, type: CommissionType) {
+  if (type === 'PERCENT_SALES') return t('rateLabelPercent');
+  if (type === 'FIXED_PER_ORDER') return t('rateLabelPerOrder');
+  return t('rateLabelBonus');
 }
 
-export function commissionSummary(row: {
-  commissionType: CommissionType;
-  commissionRate: number;
-  monthlyTarget: number | null;
-}) {
-  if (row.commissionType === 'PERCENT_SALES') return `${row.commissionRate}% of sales`;
-  if (row.commissionType === 'FIXED_PER_ORDER') return `${row.commissionRate} SAR / order`;
-  return `${row.commissionRate} SAR at ${row.monthlyTarget ?? 0} SAR target`;
+// Exported + used by the commissions page too, so it takes a translator (the
+// caller passes its own staffMgr translator).
+export function commissionSummary(
+  row: { commissionType: CommissionType; commissionRate: number; monthlyTarget: number | null },
+  t: Translator
+) {
+  if (row.commissionType === 'PERCENT_SALES') return t('summaryPercent', { rate: row.commissionRate });
+  if (row.commissionType === 'FIXED_PER_ORDER') return t('summaryPerOrder', { rate: row.commissionRate });
+  return t('summaryTargetBonus', { rate: row.commissionRate, target: row.monthlyTarget ?? 0 });
 }
 
 interface FormState {
@@ -76,6 +80,7 @@ const EMPTY: FormState = {
 };
 
 export function StaffManager({ staff }: { staff: StaffRow[] }) {
+  const t = useTranslations('staffMgr');
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -118,7 +123,7 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
   }
 
   function save() {
-    if (!form.name.trim()) return toast.error('Name is required.');
+    if (!form.name.trim()) return toast.error(t('errNameRequired'));
     const payload: StaffInput = {
       name: form.name,
       role: form.role || null,
@@ -134,21 +139,21 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
     startSave(async () => {
       const res = editingId ? await updateStaff(editingId, payload) : await createStaff(payload);
       if (res.ok) {
-        toast.success(editingId ? 'Staff updated.' : 'Staff added.');
+        toast.success(editingId ? t('toastUpdated') : t('toastAdded'));
         cancel();
         router.refresh();
-      } else toast.error('Could not save.');
+      } else toast.error(t('toastSaveError'));
     });
   }
 
   function remove(s: StaffRow) {
-    if (!window.confirm(`Remove “${s.name}”? Their past orders/bookings stay, unattributed.`)) return;
+    if (!window.confirm(t('confirmRemove', { name: s.name }))) return;
     startSave(async () => {
       const res = await deleteStaff(s.id);
       if (res.ok) {
-        toast.success('Staff removed.');
+        toast.success(t('toastRemoved'));
         router.refresh();
-      } else toast.error('Could not remove.');
+      } else toast.error(t('toastRemoveError'));
     });
   }
 
@@ -156,13 +161,13 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
     <div className="space-y-4">
       <Button onClick={openAdd}>
         <Plus className="me-1 h-4 w-4" />
-        New staff member
+        {t('newStaff')}
       </Button>
 
       <div className="grid gap-3">
         {staff.length === 0 ? (
           <div className="rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
-            No staff yet — add the people who deliver your services, then set how they earn commission.
+            {t('emptyState')}
           </div>
         ) : (
           staff.map((s) => (
@@ -180,15 +185,15 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
                   <Link href={`/staff/${s.id}`} className="font-medium hover:underline">{s.name}</Link>
                   {s.role && <span className="text-xs text-muted-foreground">{s.role}</span>}
                   {!s.isActive && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">Inactive</span>
+                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">{t('inactive')}</span>
                   )}
                 </div>
-                <p className="mt-0.5 text-xs text-muted-foreground">{commissionSummary(s)}</p>
+                <p className="mt-0.5 text-xs text-muted-foreground">{commissionSummary(s, t)}</p>
               </div>
               <Link
                 href={`/staff/${s.id}`}
                 className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                title="Profile"
+                title={t('profile')}
               >
                 <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" />
               </Link>
@@ -213,8 +218,8 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && cancel()} />
           <div className="relative z-10 w-full max-w-[460px] rounded-2xl border bg-card p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{editingId ? 'Edit staff member' : 'New staff member'}</h2>
-              <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label="Close">
+              <h2 className="text-lg font-semibold">{editingId ? t('editStaff') : t('newStaff')}</h2>
+              <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label={t('cancel')}>
                 <X className="size-4" />
               </button>
             </div>
@@ -222,54 +227,54 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Name</Label>
-                  <Input autoFocus value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Dr. Sara" />
+                  <Label>{t('name')}</Label>
+                  <Input autoFocus value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t('namePlaceholder')} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Role</Label>
-                  <Input value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} placeholder="Dentist" />
+                  <Label>{t('role')}</Label>
+                  <Input value={form.role} onChange={(e) => setForm({ ...form, role: e.target.value })} placeholder={t('rolePlaceholder')} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Phone</Label>
+                  <Label>{t('phone')}</Label>
                   <Input dir="ltr" value={form.phone} onChange={(e) => setForm({ ...form, phone: e.target.value })} placeholder="—" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Email</Label>
+                  <Label>{t('email')}</Label>
                   <Input dir="ltr" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="—" />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label>Photo URL</Label>
+                <Label>{t('photoUrl')}</Label>
                 <Input dir="ltr" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://…" />
               </div>
               <div className="space-y-1.5">
-                <Label>Bio</Label>
+                <Label>{t('bio')}</Label>
                 <textarea
                   rows={3}
                   value={form.bio}
                   onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                  placeholder="A short intro shown on the public team page."
+                  placeholder={t('bioPlaceholder')}
                   className="w-full rounded-lg border bg-background px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label>Commission</Label>
+                <Label>{t('commission')}</Label>
                 <div className="flex rounded-lg border p-0.5">
-                  {TYPES.map((t) => (
+                  {TYPE_VALUES.map((ct) => (
                     <button
-                      key={t.value}
+                      key={ct.value}
                       type="button"
-                      onClick={() => setForm({ ...form, commissionType: t.value })}
+                      onClick={() => setForm({ ...form, commissionType: ct.value })}
                       className={cn(
                         'flex-1 rounded-md py-1.5 text-xs font-medium transition',
-                        form.commissionType === t.value ? 'bg-foreground text-background' : 'text-muted-foreground'
+                        form.commissionType === ct.value ? 'bg-foreground text-background' : 'text-muted-foreground'
                       )}
                     >
-                      {t.label}
+                      {t(ct.labelKey)}
                     </button>
                   ))}
                 </div>
@@ -277,28 +282,28 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>{rateLabel(form.commissionType)}</Label>
+                  <Label>{rateLabel(t, form.commissionType)}</Label>
                   <Input inputMode="numeric" value={form.commissionRate} onChange={(e) => setForm({ ...form, commissionRate: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Monthly target (SAR)</Label>
+                  <Label>{t('monthlyTarget')}</Label>
                   <Input inputMode="numeric" value={form.monthlyTarget} onChange={(e) => setForm({ ...form, monthlyTarget: e.target.value })} placeholder="—" />
                 </div>
               </div>
 
               <label className="flex items-center gap-2 text-sm">
                 <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="size-4 rounded border" />
-                Active
+                {t('active')}
               </label>
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
               <Button variant="ghost" onClick={cancel} disabled={saving}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button onClick={save} disabled={saving || !form.name.trim()}>
                 {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
-                {editingId ? 'Save changes' : 'Add staff'}
+                {editingId ? t('saveChanges') : t('addStaff')}
               </Button>
             </div>
           </div>
