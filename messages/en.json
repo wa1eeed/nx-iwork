@@ -1,4 +1,33 @@
 {
+  "biz": {
+    "crmTabs": { "pipeline": "Pipeline", "customers": "Customers", "tasks": "Tasks" },
+    "crmHub": {
+      "subtitle": "Pipeline, customers, and tasks — follow every opportunity in one place.",
+      "openOpportunities": "Open opportunities",
+      "overdueTasks": "Overdue tasks",
+      "customers": "Customers",
+      "upcomingBookings": "Upcoming bookings",
+      "openOrders": "Open orders"
+    },
+    "counters": {
+      "customers": "Customers",
+      "bookingsUpcoming": "Bookings (upcoming)",
+      "revenueMonth": "Revenue (this month)",
+      "orders": "Orders",
+      "workforceOnline": "Workforce online",
+      "inventoryItems": "Inventory items",
+      "needYou": "{n} need you",
+      "low": "{n} low",
+      "won": "Won",
+      "negotiating": "Negotiating",
+      "interested": "Interested",
+      "new": "New",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "inProgress": "In progress"
+    }
+  },
   "common": {
     "appName": "NX iWork",
     "tagline": "Build AI-powered companies",

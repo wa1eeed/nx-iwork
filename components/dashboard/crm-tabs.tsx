@@ -2,22 +2,24 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { GitBranch, Users, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Sub-navigation for the CRM module — the pipeline, the customer directory, and
 // tasks all live under one roof so the owner follows opportunities in one place.
 const TABS = [
-  { href: '/crm', label: 'Pipeline', icon: GitBranch },
-  { href: '/clients', label: 'Customers', icon: Users },
-  { href: '/tasks', label: 'Tasks', icon: ListChecks },
-];
+  { href: '/crm', key: 'pipeline', icon: GitBranch },
+  { href: '/clients', key: 'customers', icon: Users },
+  { href: '/tasks', key: 'tasks', icon: ListChecks },
+] as const;
 
 export function CrmTabs() {
+  const t = useTranslations('biz.crmTabs');
   const pathname = usePathname();
   return (
     <div className="flex gap-1 overflow-x-auto border-b">
-      {TABS.map(({ href, label, icon: Icon }) => {
+      {TABS.map(({ href, key, icon: Icon }) => {
         const active =
           href === '/crm'
             ? pathname === '/crm' || pathname.startsWith('/customers')
@@ -34,7 +36,7 @@ export function CrmTabs() {
             )}
           >
             <Icon className="size-4" />
-            {label}
+            {t(key)}
           </Link>
         );
       })}

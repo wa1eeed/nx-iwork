@@ -11,6 +11,7 @@ import { CrmTabs } from '@/components/dashboard/crm-tabs';
 // fronted by a whole-relationship counter strip (IBP-style).
 export default async function CrmPage() {
   const t = await getTranslations('crm');
+  const tb = await getTranslations('biz.crmHub');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
@@ -41,20 +42,18 @@ export default async function CrmPage() {
 
   const num = (n: number) => n.toLocaleString('en');
   const COUNTERS = [
-    { label: 'Open opportunities', value: openOpps, icon: Target, accent: 'text-sky-500' },
-    { label: 'Overdue tasks', value: overdueTasks, icon: AlarmClock, accent: overdueTasks > 0 ? 'text-rose-500' : 'text-muted-foreground' },
-    { label: 'Customers', value: wonCustomers, icon: UserCheck, accent: 'text-emerald-500' },
-    { label: 'Upcoming bookings', value: upcomingBookings, icon: CalendarCheck, accent: 'text-indigo-500' },
-    { label: 'Open orders', value: openOrders, icon: ShoppingBag, accent: 'text-amber-500' },
+    { label: tb('openOpportunities'), value: openOpps, icon: Target, accent: 'text-sky-500' },
+    { label: tb('overdueTasks'), value: overdueTasks, icon: AlarmClock, accent: overdueTasks > 0 ? 'text-rose-500' : 'text-muted-foreground' },
+    { label: tb('customers'), value: wonCustomers, icon: UserCheck, accent: 'text-emerald-500' },
+    { label: tb('upcomingBookings'), value: upcomingBookings, icon: CalendarCheck, accent: 'text-indigo-500' },
+    { label: tb('openOrders'), value: openOrders, icon: ShoppingBag, accent: 'text-amber-500' },
   ];
 
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">
-          Pipeline, customers, and tasks — follow every opportunity in one place.
-        </p>
+        <p className="text-sm text-muted-foreground">{tb('subtitle')}</p>
       </div>
 
       {/* Relationship counters. */}

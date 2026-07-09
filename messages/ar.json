@@ -1,4 +1,33 @@
 {
+  "biz": {
+    "crmTabs": { "pipeline": "خط الأنابيب", "customers": "العملاء", "tasks": "المهام" },
+    "crmHub": {
+      "subtitle": "خط الأنابيب والعملاء والمهام — تابع كل فرصة في مكان واحد.",
+      "openOpportunities": "فرص مفتوحة",
+      "overdueTasks": "مهام متأخّرة",
+      "customers": "العملاء",
+      "upcomingBookings": "حجوزات قادمة",
+      "openOrders": "طلبات مفتوحة"
+    },
+    "counters": {
+      "customers": "العملاء",
+      "bookingsUpcoming": "الحجوزات (القادمة)",
+      "revenueMonth": "الإيراد (هذا الشهر)",
+      "orders": "الطلبات",
+      "workforceOnline": "الوكلاء المتصلون",
+      "inventoryItems": "أصناف المخزون",
+      "needYou": "{n} تحتاجك",
+      "low": "{n} منخفض",
+      "won": "ناجحة",
+      "negotiating": "تفاوض",
+      "interested": "مهتم",
+      "new": "جديد",
+      "confirmed": "مؤكّد",
+      "completed": "مكتمل",
+      "cancelled": "ملغى",
+      "inProgress": "قيد التنفيذ"
+    }
+  },
   "common": {
     "appName": "NX iWork",
     "tagline": "منصة بناء شركات الذكاء الاصطناعي",

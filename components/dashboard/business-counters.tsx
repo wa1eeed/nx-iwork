@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import {
   Contact,
   CalendarCheck,
@@ -18,6 +19,7 @@ const num = (n: number) => n.toLocaleString('en');
 // revenue, orders, workforce, and inventory — each with a quick breakdown.
 // Self-contained (its own tenant-scoped queries) so it composes anywhere.
 export async function BusinessCounters({ companyId }: { companyId: string }) {
+  const t = await getTranslations('biz.counters');
   const now = new Date();
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
@@ -68,32 +70,32 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
       href: '/customers',
       icon: Contact,
       accent: 'text-emerald-500',
-      label: 'Customers',
+      label: t('customers'),
       value: num(custTotal),
       breakdown: [
-        chip('Won', cBy.get('WON') ?? 0),
-        chip('Negotiating', cBy.get('NEGOTIATING') ?? 0),
-        chip('Interested', cBy.get('INTERESTED') ?? 0),
-        chip('New', cBy.get('NEW') ?? 0),
+        chip(t('won'), cBy.get('WON') ?? 0),
+        chip(t('negotiating'), cBy.get('NEGOTIATING') ?? 0),
+        chip(t('interested'), cBy.get('INTERESTED') ?? 0),
+        chip(t('new'), cBy.get('NEW') ?? 0),
       ],
     },
     {
       href: '/bookings',
       icon: CalendarCheck,
       accent: 'text-indigo-500',
-      label: 'Bookings (upcoming)',
+      label: t('bookingsUpcoming'),
       value: num(bookUpcoming),
       breakdown: [
-        chip('Confirmed', bBy.get('CONFIRMED') ?? 0),
-        chip('Completed', bBy.get('COMPLETED') ?? 0),
-        chip('Cancelled', bBy.get('CANCELLED') ?? 0),
+        chip(t('confirmed'), bBy.get('CONFIRMED') ?? 0),
+        chip(t('completed'), bBy.get('COMPLETED') ?? 0),
+        chip(t('cancelled'), bBy.get('CANCELLED') ?? 0),
       ],
     },
     {
       href: '/sales',
       icon: CircleDollarSign,
       accent: 'text-amber-500',
-      label: 'Revenue (this month)',
+      label: t('revenueMonth'),
       value: sar(Number(monthRevenue._sum.total ?? 0)),
       breakdown: [],
     },
@@ -101,19 +103,19 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
       href: '/orders',
       icon: ShoppingBag,
       accent: 'text-sky-500',
-      label: 'Orders',
+      label: t('orders'),
       value: num(orderTotal),
       breakdown: [
-        chip('Completed', oBy.get('COMPLETED') ?? 0),
-        chip('In progress', oBy.get('IN_PROGRESS') ?? 0),
-        chip('New', oBy.get('NEW') ?? 0),
+        chip(t('completed'), oBy.get('COMPLETED') ?? 0),
+        chip(t('inProgress'), oBy.get('IN_PROGRESS') ?? 0),
+        chip(t('new'), oBy.get('NEW') ?? 0),
       ],
     },
     {
       href: '/agents',
       icon: Bot,
       accent: 'text-fuchsia-500',
-      label: 'Workforce online',
+      label: t('workforceOnline'),
       value: num(agentsOnline),
       breakdown: [
         pendingApprovals > 0 ? (
@@ -122,7 +124,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
             href="/approvals"
             className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-600 tabular-nums hover:underline dark:text-amber-400"
           >
-            {num(pendingApprovals)} need you
+            {t('needYou', { n: num(pendingApprovals) })}
           </Link>
         ) : null,
       ],
@@ -131,7 +133,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
       href: '/inventory',
       icon: Package2,
       accent: lowStock > 0 ? 'text-amber-500' : 'text-muted-foreground',
-      label: 'Inventory items',
+      label: t('inventoryItems'),
       value: num(inventory.length),
       breakdown: [
         lowStock > 0 ? (
@@ -139,7 +141,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
             key="low"
             className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-medium text-amber-600 tabular-nums dark:text-amber-400"
           >
-            {num(lowStock)} low
+            {t('low', { n: num(lowStock) })}
           </span>
         ) : null,
       ],
