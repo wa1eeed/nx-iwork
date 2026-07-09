@@ -128,7 +128,11 @@ export default async function CommissionsPage() {
           {rows.map(({ staff: s, revenue, count, commission, basis, target }) => {
             const pct = target && target > 0 ? Math.min(100, Math.round((revenue / target) * 100)) : null;
             return (
-              <div key={s.id} className="rounded-2xl border bg-card p-4">
+              <Link
+                key={s.id}
+                href={`/commissions/${s.id}`}
+                className="block rounded-2xl border bg-card p-4 transition hover:shadow-md"
+              >
                 <div className="flex items-center gap-4">
                   <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                     <UserRound className="h-5 w-5" />
@@ -160,7 +164,7 @@ export default async function CommissionsPage() {
                     </div>
                   </div>
                 )}
-              </div>
+              </Link>
             );
           })}
         </div>

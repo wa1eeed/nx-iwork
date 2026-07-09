@@ -1431,7 +1431,12 @@
     "basisPerOrder": "{count} × {amount}",
     "basisTargetHit": "Target reached — {amount} bonus",
     "basisTargetProgress": "{revenue} / {target} target",
-    "currency": "SAR"
+    "currency": "SAR",
+    "back": "Back to commissions",
+    "breakdown": "Breakdown ({month})",
+    "orderTag": "Order",
+    "bookingTag": "Booking",
+    "noItems": "No attributed orders or bookings this month."
   },
   "couponMgr": {
     "scopeAll": "Everything",

@@ -1431,7 +1431,12 @@
     "basisPerOrder": "{count} × {amount}",
     "basisTargetHit": "تحقّق الهدف — مكافأة {amount}",
     "basisTargetProgress": "{revenue} / {target}",
-    "currency": "ر.س"
+    "currency": "ر.س",
+    "back": "رجوع للعمولات",
+    "breakdown": "التفصيل ({month})",
+    "orderTag": "طلب",
+    "bookingTag": "حجز",
+    "noItems": "لا طلبات أو حجوزات منسوبة هذا الشهر."
   },
   "couponMgr": {
     "scopeAll": "كل شيء",
