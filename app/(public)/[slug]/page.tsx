@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, Mail, MessageCircle, Clock, CalendarCheck, CheckCircle2 } from 'lucide-react';
+import { Phone, Mail, MessageCircle, Clock, CalendarCheck, CheckCircle2, Sparkles } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ChatWidget } from '@/components/public/chat-widget';
 import { OrderButton } from '@/components/public/order-button';
@@ -53,6 +53,7 @@ export default async function PublicBusinessPage({
           select: {
             id: true,
             title: true,
+            subtitle: true,
             description: true,
             price: true,
             priceLabel: true,
@@ -114,23 +115,36 @@ export default async function PublicBusinessPage({
   const clinicSections = departments
     .map((d) => ({ dept: d, items: byDept.get(d.id) ?? [] }))
     .filter((c) => c.items.length > 0);
-  const ServiceCard = ({ s }: { s: Svc }) => (
-    <div className="group flex flex-col overflow-hidden rounded-2xl border bg-card transition hover:shadow-md">
+  const ServiceCard = ({ s, coverColor }: { s: Svc; coverColor: string }) => (
+    <div className="group flex h-full flex-col overflow-hidden rounded-2xl border bg-card transition hover:shadow-md">
       <Link href={`/${slug}/service/${s.id}`} className="block">
-        {s.image && (
-          <div className="relative aspect-[16/10] bg-muted">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={s.image} alt={s.title} className="h-full w-full object-cover" />
-          </div>
-        )}
+        <div className="relative aspect-[16/10] overflow-hidden">
+          {s.image ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={s.image}
+              alt={s.title}
+              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+            />
+          ) : (
+            <div
+              className="flex h-full w-full items-center justify-center"
+              style={{ background: `linear-gradient(135deg, ${coverColor}26, ${coverColor}70)` }}
+            >
+              <Sparkles className="size-8 text-white/80" />
+            </div>
+          )}
+        </div>
       </Link>
       <div className="flex flex-1 flex-col p-4">
         <Link href={`/${slug}/service/${s.id}`} className="font-semibold hover:underline">
           {s.title}
         </Link>
-        {s.description && (
-          <p className="mt-1 line-clamp-3 flex-1 text-sm text-muted-foreground">{s.description}</p>
-        )}
+        {s.subtitle ? (
+          <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">{s.subtitle}</p>
+        ) : s.description ? (
+          <p className="mt-1 line-clamp-2 flex-1 text-sm text-muted-foreground">{s.description}</p>
+        ) : null}
         <div className="mt-3 flex items-center justify-between gap-2">
           <span className="text-sm font-bold" style={{ color: accent }}>
             {s.priceLabel || (s.price != null ? `${s.price} ر.س` : '')}
@@ -141,18 +155,12 @@ export default async function PublicBusinessPage({
             </span>
           )}
         </div>
-        <div className="mt-3 space-y-2">
+        <div className="mt-3">
           {s.durationMin != null && s.availability.length > 0 ? (
             <BookingButton slug={slug} serviceId={s.id} color={accent} />
           ) : (
             <OrderButton slug={slug} serviceId={s.id} label="اطلب الخدمة" color={accent} />
           )}
-          <Link
-            href={`/${slug}/service/${s.id}`}
-            className="block text-center text-xs text-muted-foreground hover:text-foreground"
-          >
-            عرض التفاصيل
-          </Link>
         </div>
       </div>
     </div>
@@ -251,9 +259,11 @@ export default async function PublicBusinessPage({
                   {dept.tagline && <p className="text-sm text-muted-foreground">{dept.tagline}</p>}
                 </div>
               </div>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="-mx-1 flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-4 [scrollbar-width:thin]">
                 {items.map((s) => (
-                  <ServiceCard key={s.id} s={s} />
+                  <div key={s.id} className="w-[270px] shrink-0 snap-start sm:w-[300px]">
+                    <ServiceCard s={s} coverColor={dept.color} />
+                  </div>
                 ))}
               </div>
             </section>
@@ -262,9 +272,11 @@ export default async function PublicBusinessPage({
           {ungrouped.length > 0 && (
             <section>
               <h2 className="mb-6 text-2xl font-bold">خدماتنا</h2>
-              <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="-mx-1 flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-4 [scrollbar-width:thin]">
                 {ungrouped.map((s) => (
-                  <ServiceCard key={s.id} s={s} />
+                  <div key={s.id} className="w-[270px] shrink-0 snap-start sm:w-[300px]">
+                    <ServiceCard s={s} coverColor={accent} />
+                  </div>
                 ))}
               </div>
             </section>
@@ -371,7 +383,14 @@ export default async function PublicBusinessPage({
         </section>
       )}
 
-      <SiteFooter companyName={company.name} year={new Date().getFullYear()} links={footerLinks} />
+      <SiteFooter
+        companyName={company.name}
+        year={new Date().getFullYear()}
+        links={footerLinks}
+        sections={headerNav}
+        contact={{ phone: wc?.phone, whatsapp: wc?.whatsapp, email: wc?.email, address: wc?.address }}
+        accent={accent}
+      />
 
       {/* Chat widget */}
       {wc?.chatEnabled !== false && widgetAgent && (
