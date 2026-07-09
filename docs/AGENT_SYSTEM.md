@@ -37,6 +37,34 @@
 
 ---
 
+## 🧩 نموذج الأدوار ثلاثي الطبقات (حيادي القطاعات)
+
+كل وكيل يُعرّف بثلاث طبقات، كلّها قابلة للتعديل من واجهة الإنشاء/التعديل:
+
+1. **النمط (Archetype)** — حزمة قدرات جاهزة في [`lib/agent/archetypes.ts`](../lib/agent/archetypes.ts):
+   ٦ أنماط حيادية قطاعياً (`front_desk` · `sales` · `care` · `marketing` ·
+   `operations` · `finance`)، كل نمط يبذر: الصلاحيات (أدوات) + المؤشرات + أنواع
+   المخرجات + الاستقلالية الافتراضية + شخصية مبدئية + **النطاق** (`surface`).
+2. **الشخصية (Persona) — مهيكلة** في [`lib/agent/persona.ts`](../lib/agent/persona.ts):
+   نبرة + إسهاب + سياسة اللغة + «التزم/تجنّب» + عبارات، تُترجَم حتمياً للـ prompt عبر
+   `compilePersona`. الحقل الحر `Agent.persona` صار ملخّصاً/احتياطياً فقط.
+3. **التفويض (Mandate)** — `Agent.jobDescription` + `autonomy` + ضوابط الحوكمة.
+
+**قصر خدمة العملاء (`Agent.surface`):** `CUSTOMER_FACING` فقط يخدم ويدجت الموقع؛
+`INTERNAL` (تسويق/مالية/عمليات) لا يردّ العميل أبداً — يعمل بالخلفية ويُسلّم للمركز.
+مُطبَّق في [`public-chat.ts`](../lib/agent/public-chat.ts) + مسار الويدجت + الاستقبال.
+أدوات `list_bookings` / `set_booking_staff` داخلية فقط (تحمل PII / إجراء مالك).
+
+## 📦 مركز مخرجات الوكلاء (Agent Workspace)
+
+مكان موحّد `/outputs` لكل ما يُنتجه الفريق: نموذج `AgentOutput`
+(`MESSAGE`/`REPORT`/`PLAN`/`CONTENT`/`ANALYSIS`/`ACTION_LOG`، بدورة حياة
+`DRAFT→READY→APPROVED→PUBLISHED`/`ARCHIVED`). الوكلاء الخلفيون يُسلّمون عبر أداة
+`create_output` بدل مجرد المحادثة، وتظهر شريحة كل وكيل في ملفه (`/agents/[id]` تبويب
+المخرجات). المراجعة عبر `setOutputStatus` ([`lib/actions/outputs.ts`](../lib/actions/outputs.ts)).
+
+---
+
 ## 🏗️ Architecture الكامل
 
 ```
