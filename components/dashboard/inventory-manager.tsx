@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Pencil, Trash2, Loader2, X, Package2, Minus, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,7 @@ const EMPTY: FormState = {
 };
 
 export function InventoryManager({ items }: { items: InventoryRow[] }) {
+  const t = useTranslations('invMgr');
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -93,7 +95,7 @@ export function InventoryManager({ items }: { items: InventoryRow[] }) {
   }
 
   function save() {
-    if (!form.name.trim()) return toast.error('Item name is required.');
+    if (!form.name.trim()) return toast.error(t('nameRequired'));
     const payload: InventoryInput = {
       name: form.name,
       sku: form.sku || null,
@@ -109,21 +111,21 @@ export function InventoryManager({ items }: { items: InventoryRow[] }) {
         ? await updateInventoryItem(editingId, payload)
         : await createInventoryItem(payload);
       if (res.ok) {
-        toast.success(editingId ? 'Item updated.' : 'Item added.');
+        toast.success(editingId ? t('toastUpdated') : t('toastAdded'));
         cancel();
         router.refresh();
-      } else toast.error('Could not save the item.');
+      } else toast.error(t('saveError'));
     });
   }
 
   function remove(it: InventoryRow) {
-    if (!window.confirm(`Delete “${it.name}”?`)) return;
+    if (!window.confirm(t('confirmDelete', { name: it.name }))) return;
     startSave(async () => {
       const res = await deleteInventoryItem(it.id);
       if (res.ok) {
-        toast.success('Item deleted.');
+        toast.success(t('toastDeleted'));
         router.refresh();
-      } else toast.error('Could not delete.');
+      } else toast.error(t('deleteError'));
     });
   }
 
@@ -133,7 +135,7 @@ export function InventoryManager({ items }: { items: InventoryRow[] }) {
       const res = await adjustStock(it.id, delta);
       setBusyId(null);
       if (res.ok) router.refresh();
-      else toast.error('Could not adjust stock.');
+      else toast.error(t('adjustError'));
     });
   }
 
@@ -141,13 +143,13 @@ export function InventoryManager({ items }: { items: InventoryRow[] }) {
     <div className="space-y-4">
       <Button onClick={openAdd}>
         <Plus className="me-1 h-4 w-4" />
-        New item
+        {t('newItem')}
       </Button>
 
       <div className="grid gap-3">
         {items.length === 0 ? (
           <div className="rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
-            No inventory yet — add the consumables and raw materials your business uses.
+            {t('emptyState')}
           </div>
         ) : (
           items.map((it) => {
@@ -167,12 +169,12 @@ export function InventoryManager({ items }: { items: InventoryRow[] }) {
                     <p className="font-medium">{it.name}</p>
                     {low && (
                       <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-600 dark:text-amber-400">
-                        Low stock
+                        {t('lowStock')}
                       </span>
                     )}
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                    {it.sku ? `${it.sku} · ` : ''}reorder at {it.reorderLevel} {it.unit}
+                    {it.sku ? `${it.sku} · ` : ''}{t('reorderAt', { level: it.reorderLevel, unit: it.unit })}
                     {it.supplier ? ` · ${it.supplier}` : ''}
                   </p>
                 </div>
@@ -228,54 +230,54 @@ export function InventoryManager({ items }: { items: InventoryRow[] }) {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && cancel()} />
           <div className="relative z-10 w-full max-w-[460px] rounded-2xl border bg-card p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{editingId ? 'Edit item' : 'New item'}</h2>
-              <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label="Close">
+              <h2 className="text-lg font-semibold">{editingId ? t('editItem') : t('newItem')}</h2>
+              <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label={t('cancel')}>
                 <X className="size-4" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Name</Label>
-                <Input autoFocus value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder="e.g. Disposable gloves" />
+                <Label>{t('name')}</Label>
+                <Input autoFocus value={form.name} onChange={(e) => setForm({ ...form, name: e.target.value })} placeholder={t('namePlaceholder')} />
               </div>
               <div className="grid grid-cols-3 gap-3">
                 <div className="space-y-1.5">
-                  <Label>SKU</Label>
+                  <Label>{t('sku')}</Label>
                   <Input dir="ltr" value={form.sku} onChange={(e) => setForm({ ...form, sku: e.target.value })} placeholder="—" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Unit</Label>
-                  <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder="box" />
+                  <Label>{t('unit')}</Label>
+                  <Input value={form.unit} onChange={(e) => setForm({ ...form, unit: e.target.value })} placeholder={t('unitPlaceholder')} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Unit cost</Label>
-                  <Input inputMode="numeric" value={form.unitCost} onChange={(e) => setForm({ ...form, unitCost: e.target.value })} placeholder="SAR" />
+                  <Label>{t('unitCost')}</Label>
+                  <Input inputMode="numeric" value={form.unitCost} onChange={(e) => setForm({ ...form, unitCost: e.target.value })} placeholder={t('unitCostPlaceholder')} />
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Quantity on hand</Label>
+                  <Label>{t('quantityOnHand')}</Label>
                   <Input inputMode="numeric" value={form.quantityOnHand} onChange={(e) => setForm({ ...form, quantityOnHand: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Reorder at</Label>
+                  <Label>{t('reorderLevel')}</Label>
                   <Input inputMode="numeric" value={form.reorderLevel} onChange={(e) => setForm({ ...form, reorderLevel: e.target.value })} />
                 </div>
               </div>
               <div className="space-y-1.5">
-                <Label>Supplier (optional)</Label>
+                <Label>{t('supplier')}</Label>
                 <Input value={form.supplier} onChange={(e) => setForm({ ...form, supplier: e.target.value })} placeholder="—" />
               </div>
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
               <Button variant="ghost" onClick={cancel} disabled={saving}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button onClick={save} disabled={saving || !form.name.trim()}>
                 {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
-                {editingId ? 'Save changes' : 'Add item'}
+                {editingId ? t('saveChanges') : t('addItem')}
               </Button>
             </div>
           </div>

@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Pencil, Trash2, Loader2, X, TicketPercent } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -27,11 +28,11 @@ export interface CouponRow {
   isActive: boolean;
 }
 
-const SCOPES: { value: CouponScope; label: string }[] = [
-  { value: 'ALL', label: 'Everything' },
-  { value: 'PRODUCTS', label: 'Products' },
-  { value: 'SERVICES', label: 'Services' },
-  { value: 'BOOKINGS', label: 'Bookings' },
+const SCOPES: { value: CouponScope; labelKey: string }[] = [
+  { value: 'ALL', labelKey: 'scopeAll' },
+  { value: 'PRODUCTS', labelKey: 'scopeProducts' },
+  { value: 'SERVICES', labelKey: 'scopeServices' },
+  { value: 'BOOKINGS', labelKey: 'scopeBookings' },
 ];
 
 interface FormState {
@@ -61,6 +62,7 @@ const EMPTY: FormState = {
 const dateOnly = (iso: string | null) => (iso ? iso.slice(0, 10) : '');
 
 export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
+  const t = useTranslations('couponMgr');
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -102,7 +104,7 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
   }
 
   function save() {
-    if (!form.code.trim()) return toast.error('Coupon code is required.');
+    if (!form.code.trim()) return toast.error(t('codeRequired'));
     const payload: CouponInput = {
       code: form.code,
       type: form.type,
@@ -117,39 +119,39 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
     startSave(async () => {
       const res = editingId ? await updateCoupon(editingId, payload) : await createCoupon(payload);
       if (res.ok) {
-        toast.success(editingId ? 'Coupon updated.' : 'Coupon created.');
+        toast.success(editingId ? t('toastUpdated') : t('toastCreated'));
         cancel();
         router.refresh();
       } else {
-        toast.error(res.error === 'duplicate' ? 'That code already exists.' : 'Could not save the coupon.');
+        toast.error(res.error === 'duplicate' ? t('duplicate') : t('saveError'));
       }
     });
   }
 
   function remove(c: CouponRow) {
-    if (!window.confirm(`Delete coupon “${c.code}”?`)) return;
+    if (!window.confirm(t('confirmDelete', { code: c.code }))) return;
     startSave(async () => {
       const res = await deleteCoupon(c.id);
       if (res.ok) {
-        toast.success('Coupon deleted.');
+        toast.success(t('toastDeleted'));
         router.refresh();
-      } else toast.error('Could not delete.');
+      } else toast.error(t('deleteError'));
     });
   }
 
-  const fmtVal = (c: CouponRow) => (c.type === 'PERCENT' ? `${c.value}%` : `${c.value} SAR`);
+  const fmtVal = (c: CouponRow) => (c.type === 'PERCENT' ? `${c.value}%` : `${c.value} ${t('currency')}`);
 
   return (
     <div className="space-y-4">
       <Button onClick={openAdd}>
         <Plus className="me-1 h-4 w-4" />
-        New coupon
+        {t('newCoupon')}
       </Button>
 
       <div className="grid gap-3">
         {coupons.length === 0 ? (
           <div className="rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
-            No coupons yet — create one to offer a discount on products, services, or bookings.
+            {t('emptyState')}
           </div>
         ) : (
           coupons.map((c) => {
@@ -166,7 +168,7 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
                       {c.code}
                     </p>
                     <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] font-medium">
-                      {fmtVal(c)} · {SCOPES.find((s) => s.value === c.scope)?.label}
+                      {fmtVal(c)} · {t(SCOPES.find((s) => s.value === c.scope)?.labelKey ?? 'scopeAll')}
                     </span>
                     <span
                       className={cn(
@@ -176,14 +178,14 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
                           : 'bg-muted text-muted-foreground'
                       )}
                     >
-                      {expired ? 'Expired' : c.isActive ? 'Active' : 'Paused'}
+                      {expired ? t('expired') : c.isActive ? t('active') : t('paused')}
                     </span>
                   </div>
                   <p className="mt-0.5 text-xs text-muted-foreground tabular-nums">
-                    Used {c.usedCount}
+                    {t('used', { count: c.usedCount })}
                     {c.maxRedemptions != null ? ` / ${c.maxRedemptions}` : ''}
-                    {c.minSubtotal ? ` · min ${c.minSubtotal} SAR` : ''}
-                    {c.expiresAt ? ` · ends ${dateOnly(c.expiresAt)}` : ''}
+                    {c.minSubtotal ? ` · ${t('minSubtotal', { n: c.minSubtotal, cur: t('currency') })}` : ''}
+                    {c.expiresAt ? ` · ${t('ends', { date: dateOnly(c.expiresAt) })}` : ''}
                   </p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => openEdit(c)}>
@@ -208,8 +210,8 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && cancel()} />
           <div className="relative z-10 w-full max-w-[460px] rounded-2xl border bg-card p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{editingId ? 'Edit coupon' : 'New coupon'}</h2>
-              <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label="Close">
+              <h2 className="text-lg font-semibold">{editingId ? t('editCoupon') : t('newCoupon')}</h2>
+              <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label={t('cancel')}>
                 <X className="size-4" />
               </button>
             </div>
@@ -217,7 +219,7 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Code</Label>
+                  <Label>{t('code')}</Label>
                   <Input
                     autoFocus
                     dir="ltr"
@@ -227,7 +229,7 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Applies to</Label>
+                  <Label>{t('appliesTo')}</Label>
                   <select
                     value={form.scope}
                     onChange={(e) => setForm({ ...form, scope: e.target.value as CouponScope })}
@@ -235,7 +237,7 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
                   >
                     {SCOPES.map((s) => (
                       <option key={s.value} value={s.value}>
-                        {s.label}
+                        {t(s.labelKey)}
                       </option>
                     ))}
                   </select>
@@ -244,25 +246,25 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Type</Label>
+                  <Label>{t('type')}</Label>
                   <div className="flex rounded-lg border p-0.5">
-                    {(['PERCENT', 'FIXED'] as CouponType[]).map((t) => (
+                    {(['PERCENT', 'FIXED'] as CouponType[]).map((ct) => (
                       <button
-                        key={t}
+                        key={ct}
                         type="button"
-                        onClick={() => setForm({ ...form, type: t })}
+                        onClick={() => setForm({ ...form, type: ct })}
                         className={cn(
                           'flex-1 rounded-md py-1.5 text-xs font-medium transition',
-                          form.type === t ? 'bg-foreground text-background' : 'text-muted-foreground'
+                          form.type === ct ? 'bg-foreground text-background' : 'text-muted-foreground'
                         )}
                       >
-                        {t === 'PERCENT' ? 'Percent %' : 'Fixed SAR'}
+                        {ct === 'PERCENT' ? t('percent') : t('fixed')}
                       </button>
                     ))}
                   </div>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>{form.type === 'PERCENT' ? 'Value (%)' : 'Value (SAR)'}</Label>
+                  <Label>{form.type === 'PERCENT' ? t('valuePercent') : t('valueFixed')}</Label>
                   <Input
                     inputMode="numeric"
                     value={form.value}
@@ -274,7 +276,7 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Min subtotal (optional)</Label>
+                  <Label>{t('minSubtotalLabel')}</Label>
                   <Input
                     inputMode="numeric"
                     value={form.minSubtotal}
@@ -283,23 +285,23 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Max uses (optional)</Label>
+                  <Label>{t('maxUses')}</Label>
                   <Input
                     inputMode="numeric"
                     value={form.maxRedemptions}
                     onChange={(e) => setForm({ ...form, maxRedemptions: e.target.value })}
-                    placeholder="Unlimited"
+                    placeholder={t('unlimited')}
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Starts (optional)</Label>
+                  <Label>{t('starts')}</Label>
                   <Input type="date" value={form.startsAt} onChange={(e) => setForm({ ...form, startsAt: e.target.value })} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Expires (optional)</Label>
+                  <Label>{t('expires')}</Label>
                   <Input type="date" value={form.expiresAt} onChange={(e) => setForm({ ...form, expiresAt: e.target.value })} />
                 </div>
               </div>
@@ -311,17 +313,17 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
                   onChange={(e) => setForm({ ...form, isActive: e.target.checked })}
                   className="size-4 rounded border"
                 />
-                Active
+                {t('activeLabel')}
               </label>
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
               <Button variant="ghost" onClick={cancel} disabled={saving}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button onClick={save} disabled={saving || !form.code.trim()}>
                 {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
-                {editingId ? 'Save changes' : 'Create coupon'}
+                {editingId ? t('saveChanges') : t('createCoupon')}
               </Button>
             </div>
           </div>
