@@ -12,10 +12,11 @@ import { AgentsView } from '@/components/dashboard/agents-view';
 export default async function AgentsPage() {
   const t = await getTranslations('pages.agents');
   const tc = await getTranslations('common');
+  const th = await getTranslations('biz.agentsHub');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
-  const [departments, hasDept] = companyId
+  const [departments, hasDept, pendingApprovals, openTasks] = companyId
     ? await Promise.all([
         db.department.findMany({
           where: { companyId },
@@ -42,10 +43,15 @@ export default async function AgentsPage() {
           },
         }),
         db.department.count({ where: { companyId } }),
+        db.approval.count({ where: { companyId, status: 'PENDING' } }),
+        db.task.count({ where: { companyId, status: { in: ['WORKING', 'PENDING'] }, agentId: { not: null } } }),
       ])
-    : [[], 0];
+    : [[], 0, 0, 0];
 
   const totalAgents = departments.reduce((n, d) => n + d.agents.length, 0);
+  const agentsFlat = departments.flatMap((d) => d.agents);
+  const online = agentsFlat.filter((a) => a.status === 'ONLINE').length;
+  const working = agentsFlat.filter((a) => a.status === 'WORKING').length;
 
   // Flat node list for the org chart (linked by direct_manager_id = parentId).
   const orgNodes = departments.flatMap((d) =>
@@ -65,7 +71,7 @@ export default async function AgentsPage() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-semibold">{t('title')}</h1>
+          <h1 className="text-xl font-semibold">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
         {hasDept > 0 && (
@@ -77,6 +83,24 @@ export default async function AgentsPage() {
           </Button>
         )}
       </div>
+
+      {/* Agent metrics dashboard. */}
+      {totalAgents > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+          {[
+            { label: th('total'), value: totalAgents },
+            { label: th('online'), value: online },
+            { label: th('working'), value: working },
+            { label: th('needsYou'), value: pendingApprovals },
+            { label: th('tasksInProgress'), value: openTasks },
+          ].map((c) => (
+            <div key={c.label} className="rounded-2xl border bg-card p-4">
+              <p className="text-xs text-muted-foreground">{c.label}</p>
+              <p className="mt-1.5 text-2xl font-bold tabular-nums">{c.value.toLocaleString('en')}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       {hasDept === 0 ? (
         <Card>

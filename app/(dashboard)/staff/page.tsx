@@ -32,7 +32,7 @@ export default async function StaffPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Staff</h1>
+          <h1 className="text-xl font-semibold tracking-tight">Staff</h1>
           <p className="text-sm text-muted-foreground">
             The people who deliver your services, and how they earn commission.
           </p>

@@ -12,7 +12,7 @@ export default function NewProductPage() {
         <ArrowRight className="h-4 w-4" />
         المنتجات
       </Link>
-      <h1 className="text-2xl font-semibold">منتج جديد</h1>
+      <h1 className="text-xl font-semibold">منتج جديد</h1>
       <ProductForm />
     </div>
   );

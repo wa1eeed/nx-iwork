@@ -53,7 +53,7 @@ export default async function AvailabilityPage() {
           <ChevronLeft className="h-3.5 w-3.5 rtl:rotate-180" />
           {t('back')}
         </Link>
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
+        <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
       <AvailabilityEditor services={services} />

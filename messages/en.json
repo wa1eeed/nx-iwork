@@ -26,6 +26,24 @@
       "completed": "Completed",
       "cancelled": "Cancelled",
       "inProgress": "In progress"
+    },
+    "overview": {
+      "title": "Overview",
+      "subtitle": "A live snapshot of your business.",
+      "upcomingBookings": "Upcoming bookings",
+      "recentOrders": "Recent orders",
+      "agentTasks": "Agent tasks in progress",
+      "noBookings": "No upcoming bookings.",
+      "noOrders": "No orders yet.",
+      "noTasks": "No agent tasks in progress.",
+      "all": "View all"
+    },
+    "agentsHub": {
+      "total": "AI agents",
+      "online": "Online",
+      "working": "Working",
+      "needsYou": "Need you",
+      "tasksInProgress": "Tasks in progress"
     }
   },
   "common": {
@@ -231,7 +249,7 @@
   "dashboard": {
     "welcomeBack": "Welcome back, {name}",
     "overview": "Overview",
-    "agents": "Agents",
+    "agents": "AI agents",
     "departments": "Departments",
     "products": "Products",
     "tasks": "Tasks",

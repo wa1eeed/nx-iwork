@@ -32,7 +32,7 @@ export default async function InventoryPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Inventory</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Inventory</h1>
         <p className="text-sm text-muted-foreground">
           Consumables and raw materials your business uses
           {lowCount > 0 ? ` — ${lowCount} item${lowCount === 1 ? '' : 's'} low on stock.` : '.'}

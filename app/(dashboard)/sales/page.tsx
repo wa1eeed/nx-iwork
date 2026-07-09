@@ -105,7 +105,7 @@ export default async function SalesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Sales &amp; financials</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Sales &amp; financials</h1>
         <p className="text-sm text-muted-foreground">
           Revenue, orders, and invoices across your business.
         </p>

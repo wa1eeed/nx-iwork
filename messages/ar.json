@@ -26,6 +26,24 @@
       "completed": "مكتمل",
       "cancelled": "ملغى",
       "inProgress": "قيد التنفيذ"
+    },
+    "overview": {
+      "title": "نظرة عامة",
+      "subtitle": "لقطة حيّة عن بزنسك.",
+      "upcomingBookings": "الحجوزات القادمة",
+      "recentOrders": "أحدث الطلبات",
+      "agentTasks": "مهام الوكلاء الجارية",
+      "noBookings": "لا حجوزات قادمة.",
+      "noOrders": "لا طلبات بعد.",
+      "noTasks": "لا مهام جارية للوكلاء.",
+      "all": "عرض الكل"
+    },
+    "agentsHub": {
+      "total": "وكلاء الذكاء",
+      "online": "متصل",
+      "working": "يعمل الآن",
+      "needsYou": "تحتاجك",
+      "tasksInProgress": "مهام جارية"
     }
   },
   "common": {
@@ -231,7 +249,7 @@
   "dashboard": {
     "welcomeBack": "مرحباً، {name}",
     "overview": "النظرة العامة",
-    "agents": "الموظفون",
+    "agents": "وكلاء الذكاء",
     "departments": "الأقسام",
     "products": "المنتجات",
     "tasks": "المهام",
@@ -269,7 +287,7 @@
     "sections": {
       "command": "مركز القيادة",
       "crm": "إدارة العلاقات",
-      "workforce": "وكلاء الذكاء",
+      "workforce": "الذكاء الاصطناعي",
       "operations": "العمليات",
       "team": "الفريق",
       "finance": "المالية والفوترة",

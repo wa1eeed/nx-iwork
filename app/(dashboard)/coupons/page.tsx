@@ -31,7 +31,7 @@ export default async function CouponsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Discount coupons</h1>
+        <h1 className="text-xl font-semibold tracking-tight">Discount coupons</h1>
         <p className="text-sm text-muted-foreground">
           Offer a percentage or fixed discount on products, services, or bookings.
         </p>

@@ -67,7 +67,7 @@ export default async function NewAgentPage() {
         <ArrowRight className="h-4 w-4 rtl:rotate-180" />
         {t('back')}
       </Link>
-      <h1 className="text-2xl font-semibold">{t('title')}</h1>
+      <h1 className="text-xl font-semibold">{t('title')}</h1>
       <AgentCreator templates={cards} departments={departments} managers={managers} />
     </div>
   );

@@ -170,7 +170,7 @@ export default async function AgentProfilePage({
             {agent.ref && (
               <span className="rounded bg-muted px-1.5 py-0.5 font-mono text-xs text-muted-foreground" dir="ltr">{agent.ref}</span>
             )}
-            <h1 className="text-2xl font-bold">{agent.name}</h1>
+            <h1 className="text-xl font-bold">{agent.name}</h1>
             {statusPill}
           </div>
           <p className="mt-0.5 text-sm text-muted-foreground">

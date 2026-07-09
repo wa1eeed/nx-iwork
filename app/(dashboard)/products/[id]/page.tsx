@@ -59,7 +59,7 @@ export default async function EditProductPage({
         </Link>
         <DeleteProductButton id={product.id} />
       </div>
-      <h1 className="text-2xl font-semibold">تعديل المنتج</h1>
+      <h1 className="text-xl font-semibold">تعديل المنتج</h1>
       <ProductForm initial={initial} />
     </div>
   );
