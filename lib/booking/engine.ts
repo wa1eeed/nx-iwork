@@ -51,9 +51,11 @@ function zonedToUtc(y: number, mo: number, d: number, hh: number, mm: number, tz
   return new Date(guess - (seenAsUtc - guess));
 }
 
+// Slot display label — 12-hour with Latin digits + Arabic meridiem (ص/م), e.g.
+// "5:30 م". Display only; the real instants live in startAt/endAt.
 function hhmm(date: Date, tz: string): string {
-  return new Intl.DateTimeFormat('en-GB', {
-    timeZone: tz, hour: '2-digit', minute: '2-digit', hour12: false,
+  return new Intl.DateTimeFormat('ar-SA-u-nu-latn', {
+    timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true,
   }).format(date);
 }
 

@@ -44,16 +44,28 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
 
   sections.push(`شخصيتك وأسلوبك:\n${agent.persona}`);
 
-  // Current date/time in the business timezone — so the agent computes "today /
-  // tomorrow / next week" correctly instead of guessing (a common failure).
+  // Current date/time + a precomputed calendar anchor. LLMs are unreliable at
+  // weekday arithmetic ("day after tomorrow = ?"), so we do the math server-side
+  // and inject an explicit date→weekday table the model must read literally —
+  // never compute weekdays itself. Clock is 12-hour to match the UI.
   const tz = settings?.timezone || 'Asia/Riyadh';
-  const nowStr = new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'ar-SA', {
-    timeZone: tz,
-    dateStyle: 'full',
-    timeStyle: 'short',
-  }).format(new Date());
+  const now = new Date();
+  const dayFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'ar-SA', { timeZone: tz, weekday: 'long' });
+  const isoFmt = new Intl.DateTimeFormat('en-CA', { timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit' });
+  const timeFmt = new Intl.DateTimeFormat(lang === 'en' ? 'en-US' : 'ar-SA', { timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true });
+  const relLabel = (i: number) =>
+    i === 0 ? (lang === 'en' ? 'today' : 'اليوم')
+    : i === 1 ? (lang === 'en' ? 'tomorrow' : 'غداً')
+    : i === 2 ? (lang === 'en' ? 'day after tomorrow' : 'بعد غد')
+    : '';
+  const calendar = Array.from({ length: 10 }, (_, i) => {
+    const d = new Date(now.getTime() + i * 86_400_000);
+    const rel = relLabel(i);
+    return `- ${isoFmt.format(d)} = ${dayFmt.format(d)}${rel ? ` (${rel})` : ''}`;
+  }).join('\n');
   sections.push(
-    `التاريخ والوقت الآن: ${nowStr} (المنطقة الزمنية ${tz}). اعتمد عليه كمرجع لأي حساب زمني (اليوم/غداً/الأسبوع القادم/تاريخ محدد) ولا تخمّن التواريخ أبداً.`
+    `الوقت الآن: ${timeFmt.format(now)} — المنطقة الزمنية ${tz}.\n` +
+      `التقويم المرجعي (استخدم هذه التطابقات حرفياً بين التاريخ واسم اليوم، ولا تحسب أسماء الأيام أو التواريخ بنفسك أبداً — أي طلب مثل «غداً/بعد غد/الخميس القادم» حوّله لتاريخ من هذا الجدول ومرّره لأداة قوائم المواعيد):\n${calendar}`
   );
 
   // Job Description "constitution" — the agent's mandate: what it's responsible
@@ -136,20 +148,20 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
         '- للأسئلة عن السياسات/المواعيد/الشحن/الاسترجاع، استخدم أداة search_faq.',
         '- إذا أبدى العميل اهتماماً أو ترك بياناته، سجّله في الـ CRM عبر create_lead (بعد find_customer).',
         'بروتوكول حجز المواعيد (اتبع الخطوات بالترتيب ولا تتخطّى أياً منها، ولا تستخدم create_task للحجوزات):',
-        '  1) حدّد الخدمة المطلوبة عبر search_catalog للحصول على معرّفها (serviceId).',
+        '  1) تأكّد أولاً أن الخدمة المطلوبة موجودة فعلاً عبر search_catalog واحصل على معرّفها (serviceId). إن لم تكن ضمن خدمات الشركة فأخبر العميل بلطف أنها غير متوفّرة واعرض عليه البدائل المتاحة — لا تعده بموعد لخدمة غير موجودة.',
         '  2) اطلب من العميل اسمه الكامل ورقم جواله للتواصل والتأكيد — ولا تُثبّت أي حجز قبل الحصول عليهما.',
         '  3) تحقّق إن كان عميلاً مسجّلاً عبر find_customer (بالجوال). إن لم يكن موجوداً فسيُنشأ سجله تلقائياً عند الحجز أو أنشئه بـ create_lead.',
-        '  4) اعرض الأوقات المتاحة فعلاً عبر list_open_slots (serviceId + اليوم المطلوب)، واقترح على العميل من الأوقات المتاحة فقط — لا تخترع أوقاتاً أبداً.',
+        '  4) حوّل اليوم المطلوب إلى تاريخ من «التقويم المرجعي» أعلاه، ثم اعرض الأوقات المتاحة فعلاً عبر list_open_slots (serviceId + التاريخ). اعرض للعميل الأوقات المتاحة (open) فقط ولا تخترع أوقاتاً. إن لم يتوفّر شيء في اليوم المطلوب: إن كانت هناك أماكن انتظار (waitlist) فاعرض عليه التسجيل في قائمة الانتظار، وإلا اعرض عليه أقرب يوم متاح (nextAvailable) — لا تقل «غير متاح» وتتوقف أبداً.',
         '  5) بعد اختيار العميل، ثبّت الحجز عبر create_booking ممرّراً serviceId والوقت المختار (ISO) واسم العميل ورقم جواله (customerName + customerPhone) أو customerId.',
         '  6) إن ردّ النظام بأن الوقت ممتلئ: إن سُجِّل في قائمة الانتظار (waitlisted) فأبلغه بذلك؛ وإن عاد بـ suggestions/nextAvailable فاعرض عليه هذه البدائل (نفس اليوم أو أقرب يوم متاح) واطلب منه الاختيار — لا تتركه دون خيار.',
-        '  7) بعد التثبيت أكّد له تفاصيل الحجز النهائية: الخدمة والتاريخ والوقت ورقم الحجز (ref).',
+        '  7) بعد التثبيت أكّد له تفاصيل الحجز النهائية: الخدمة والتاريخ واليوم والوقت (بنظام ١٢ ساعة) ورقم الحجز (ref).',
         '- إذا طلب منك صاحب العمل تنفيذ شيء، سجّله **فوراً** بـ create_task وأكّد له أنك سجّلته وستنفّذه — لا تتجاهل أي طلب حتى لو كنت مشغولاً بغيره (النظام ينفّذ المهام المسجّلة تلقائياً).',
         '- إذا عرفت معلومة تستحق التذكّر (تفضيل عميل، قرار، حقيقة متكررة)، احفظها بـ save_memory.',
         '- إذا لم تعرف الإجابة بدقة، قل ذلك بصدق واعرض تحويل العميل لزميل بشري.',
-        '- حافظ على نبرة الشركة في كل رد.',
+        '- حافظ على نبرة الشركة في كل رد، وكن ذكياً وموجزاً ومباشراً.',
         lang === 'en'
-          ? "- Reply in the customer's language; default to English."
-          : '- رد بنفس لغة العميل، والافتراضي هو العربية.',
+          ? "- Mirror the customer's language, dialect, and tone; keep it warm and natural. Default to English."
+          : '- جارِ لهجة العميل وأسلوبه ونبرته (إن كتب بالعامية بادِله بعامية مهذّبة وقريبة من لهجته، وإن كتب بالفصحى فبالفصحى)، والافتراضي العربية.',
       ].join('\n')
     );
   }

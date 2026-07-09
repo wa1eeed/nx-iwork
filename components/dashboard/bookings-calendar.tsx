@@ -88,7 +88,7 @@ export function BookingsCalendar({
   const todayKey = dayKey(new Date());
   const selectedList = byDay.get(selected) ?? [];
   const time = (iso: string) =>
-    new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' }).format(new Date(iso));
+    new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', hour12: true }).format(new Date(iso));
 
   const act = (id: string, status: BookingStatus) =>
     startTransition(async () => {

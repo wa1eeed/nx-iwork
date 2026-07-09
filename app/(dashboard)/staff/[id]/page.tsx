@@ -58,7 +58,7 @@ export default async function StaffProfilePage({ params }: { params: Promise<{ i
   ]);
 
   const attributed = Number(salesAgg._sum.total ?? 0);
-  const timeFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+  const timeFmt = new Intl.DateTimeFormat(locale, { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true });
   const money = (v: unknown) => `${Math.round(Number(v)).toLocaleString('en')} ${en ? 'SAR' : 'ر.س'}`;
 
   return (

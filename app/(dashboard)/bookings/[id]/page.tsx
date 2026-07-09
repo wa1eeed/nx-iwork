@@ -48,7 +48,7 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
   if (!b) notFound();
 
   const dateFmt = new Intl.DateTimeFormat(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
-  const timeFmt = new Intl.DateTimeFormat(locale, { hour: '2-digit', minute: '2-digit' });
+  const timeFmt = new Intl.DateTimeFormat(locale, { hour: 'numeric', minute: '2-digit', hour12: true });
   const durationMin =
     b.service?.durationMin ??
     (b.endAt ? Math.round((b.endAt.getTime() - b.startAt.getTime()) / 60000) : null);
