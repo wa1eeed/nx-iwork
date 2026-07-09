@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { ChevronDown, CalendarClock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Countdown } from '@/components/dashboard/countdown';
@@ -49,6 +50,7 @@ export function AgentActivity({
   schedules: AgentScheduleRow[];
   approvals?: AgentApprovalRow[];
 }) {
+  const t = useTranslations('agentActivity');
   const router = useRouter();
   const [openId, setOpenId] = useState<string | null>(null);
   // `now` starts null so SSR and first client render agree (no relative times);
@@ -67,12 +69,12 @@ export function AgentActivity({
   function rel(iso: string | null): string {
     if (!iso || now === null) return '';
     const m = Math.round((now - new Date(iso).getTime()) / 60_000);
-    if (m < 1) return 'just now';
-    if (m < 60) return `${m} min ago`;
+    if (m < 1) return t('relJustNow');
+    if (m < 60) return t('relMin', { m });
     const h = Math.round(m / 60);
-    if (h < 24) return `${h} hr ago`;
+    if (h < 24) return t('relHr', { h });
     const d = Math.round(h / 24);
-    return `${d} day${d > 1 ? 's' : ''} ago`;
+    return t('relDay', { d });
   }
 
   // In-progress first, then by recency.
@@ -90,12 +92,12 @@ export function AgentActivity({
     <div className="space-y-6">
       <div>
         <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-          Work log
+          {t('workLog')}
         </p>
 
         {nothing ? (
           <p className="rounded-2xl border border-dashed py-10 text-center text-sm text-muted-foreground">
-            No activity yet — this agent hasn&apos;t picked up any work.
+            {t('empty')}
           </p>
         ) : (
           <ol className="relative">
@@ -106,53 +108,53 @@ export function AgentActivity({
                 <span className="relative mt-1.5 size-2.5 shrink-0 animate-pulse rounded-full bg-amber-500 ring-4 ring-background" />
                 <div className="min-w-0 flex-1 pb-5">
                   <p className="text-sm font-medium">
-                    Currently: {a.decision} —{' '}
+                    {t('currentlyApproval', { decision: a.decision })}{' '}
                     <Link
                       href="/approvals"
                       className="text-amber-600 hover:underline dark:text-amber-400"
                     >
-                      approve?
+                      {t('approve')}
                     </Link>
                   </p>
-                  <p className="mt-0.5 text-[11px] text-muted-foreground">needs you · just now</p>
+                  <p className="mt-0.5 text-[11px] text-muted-foreground">{t('needsYou')}</p>
                 </div>
               </li>
             ))}
 
-            {ordered.map((t, i) => {
-              const inProg = IN_PROGRESS.has(t.status);
+            {ordered.map((task, i) => {
+              const inProg = IN_PROGRESS.has(task.status);
               const last = i === lastIndex;
               return (
-                <li key={t.id} className="relative flex gap-3 ps-2">
+                <li key={task.id} className="relative flex gap-3 ps-2">
                   {!last && <span className="absolute start-[10px] top-5 h-full w-px bg-border" />}
                   <span
                     className={cn(
                       'relative mt-1.5 size-2.5 shrink-0 rounded-full ring-4 ring-background',
-                      DOT[t.status] ?? DOT.PENDING,
-                      t.status === 'WORKING' && 'animate-pulse'
+                      DOT[task.status] ?? DOT.PENDING,
+                      task.status === 'WORKING' && 'animate-pulse'
                     )}
                   />
                   <div className="min-w-0 flex-1 pb-5">
                     <p className="text-sm font-medium">
-                      {inProg ? `Currently: ${t.title}` : t.title}
+                      {inProg ? t('currentlyTask', { title: task.title }) : task.title}
                     </p>
                     <p className="mt-0.5 text-[11px] text-muted-foreground">
-                      {rel(t.completedAt ?? t.createdAt)}
+                      {rel(task.completedAt ?? task.createdAt)}
                     </p>
-                    {t.result && (
+                    {task.result && (
                       <div className="mt-1">
                         <button
-                          onClick={() => setOpenId(openId === t.id ? null : t.id)}
+                          onClick={() => setOpenId(openId === task.id ? null : task.id)}
                           className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
                         >
                           <ChevronDown
-                            className={cn('size-3 transition', openId === t.id && 'rotate-180')}
+                            className={cn('size-3 transition', openId === task.id && 'rotate-180')}
                           />
-                          result
+                          {t('result')}
                         </button>
-                        {openId === t.id && (
+                        {openId === task.id && (
                           <p className="mt-1 whitespace-pre-wrap rounded-lg bg-muted p-3 text-sm">
-                            {t.result}
+                            {task.result}
                           </p>
                         )}
                       </div>
@@ -169,7 +171,7 @@ export function AgentActivity({
       {schedules.length > 0 && (
         <div>
           <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-            Scheduled
+            {t('scheduled')}
           </p>
           <div className="space-y-2">
             {schedules.map((s) => (
@@ -178,7 +180,7 @@ export function AgentActivity({
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{s.name}</p>
                   <p className="text-[11px] text-muted-foreground tabular-nums">
-                    ran {s.runCount}×{s.nextRunAt ? '' : ' · inactive'}
+                    {t('ran', { count: s.runCount })}{s.nextRunAt ? '' : t('inactive')}
                   </p>
                 </div>
                 {s.nextRunAt && (

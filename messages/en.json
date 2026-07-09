@@ -1557,5 +1557,57 @@
       "FAILED": "Failed",
       "REFUNDED": "Refunded"
     }
+  },
+  "guardrails": {
+    "title": "Guardrails",
+    "subtitle": "The boundaries your AI workforce operates within — what they can decide alone, and what pauses for you.",
+    "tokenBank": "Token bank",
+    "tokens": "tokens",
+    "planLabel": "{plan} plan",
+    "wallet": "Wallet",
+    "topUp": "Top up",
+    "sensitiveTitle": "Sensitive decisions need approval",
+    "sensitiveDesc": "Agents pause and ask you before acting on a sensitive call (request_approval).",
+    "reviewTitle": "Customer-facing messages need review",
+    "reviewDesc": "Drafts wait for your OK before they’re sent to a customer.",
+    "spendTitle": "Spend approval cap",
+    "spendDesc": "Money moves above this amount need your approval.",
+    "spendAria": "Spend approval cap",
+    "capTitle": "Per-agent monthly token cap",
+    "capDesc": "Set by your plan — keeps one agent from draining the shared bank.",
+    "unlimited": "Unlimited",
+    "schedulerTitle": "Scheduler & triggers",
+    "schedulerOn": "Agents act on their schedules and event triggers.",
+    "schedulerOff": "Paused — no agent runs until you switch this back on.",
+    "running": "Running…",
+    "runNow": "Run automation now",
+    "runHint": "Runs due schedules + pending autonomous tasks for your workforce right now.",
+    "toastNoDue": "No due work right now.",
+    "toastRan": "Ran {ran} of {due} due item(s).",
+    "toastPaused": "Automation is paused.",
+    "toastError": "Could not run automation.",
+    "plans": {
+      "FREE": "Free",
+      "STARTER": "Starter",
+      "GROWTH": "Growth",
+      "SCALE": "Scale",
+      "ENTERPRISE": "Enterprise"
+    }
+  },
+  "agentActivity": {
+    "workLog": "Work log",
+    "empty": "No activity yet — this agent hasn’t picked up any work.",
+    "relJustNow": "just now",
+    "relMin": "{m} min ago",
+    "relHr": "{h} hr ago",
+    "relDay": "{d, plural, one {# day ago} other {# days ago}}",
+    "currentlyApproval": "Currently: {decision} —",
+    "approve": "approve?",
+    "needsYou": "needs you · just now",
+    "currentlyTask": "Currently: {title}",
+    "result": "result",
+    "scheduled": "Scheduled",
+    "ran": "ran {count}×",
+    "inactive": " · inactive"
   }
 }

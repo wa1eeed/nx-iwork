@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { toast } from 'sonner';
 import {
   Zap,
@@ -16,14 +17,6 @@ import {
   Loader2,
 } from 'lucide-react';
 import { updateGuardrails, runAutomationNow, type GuardrailsPatch } from '@/lib/actions/guardrails';
-
-const PLAN_LABEL: Record<string, string> = {
-  FREE: 'Free',
-  STARTER: 'Starter',
-  GROWTH: 'Growth',
-  SCALE: 'Scale',
-  ENTERPRISE: 'Enterprise',
-};
 
 function compact(n: number) {
   return new Intl.NumberFormat('en', {
@@ -115,6 +108,7 @@ export function GuardrailsTab({
   walletBalance: number;
   currency: string;
 }) {
+  const t = useTranslations('guardrails');
   const [state, setState] = useState<GuardrailsInitial>(initial);
   const [capInput, setCapInput] = useState(String(initial.spendApprovalCapSar));
   const [, startTransition] = useTransition();
@@ -140,26 +134,23 @@ export function GuardrailsTab({
     startRun(async () => {
       const res = await runAutomationNow();
       if (res.ok) {
-        toast.success(
-          res.due === 0 ? 'No due work right now.' : `Ran ${res.ran} of ${res.due} due item(s).`
-        );
+        toast.success(res.due === 0 ? t('toastNoDue') : t('toastRan', { ran: res.ran, due: res.due }));
       } else {
-        toast.error(
-          res.error === 'automation_paused' ? 'Automation is paused.' : 'Could not run automation.'
-        );
+        toast.error(res.error === 'automation_paused' ? t('toastPaused') : t('toastError'));
       }
     });
   }
 
-  const planLabel = PLAN_LABEL[plan] ?? plan;
+  const planLabel = ['FREE', 'STARTER', 'GROWTH', 'SCALE', 'ENTERPRISE'].includes(plan)
+    ? t(`plans.${plan}`)
+    : plan;
 
   return (
     <div className="space-y-5">
       <div>
-        <h2 className="text-lg font-semibold">Guardrails</h2>
+        <h2 className="text-lg font-semibold">{t('title')}</h2>
         <p className="text-sm text-muted-foreground">
-          The boundaries your AI workforce operates within — what they can decide alone, and
-          what pauses for you.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -171,12 +162,12 @@ export function GuardrailsTab({
               <Zap className="size-5 text-amber-400" />
             </span>
             <div>
-              <div className="text-[11px] uppercase tracking-wide text-white/50">Token bank</div>
+              <div className="text-[11px] uppercase tracking-wide text-white/50">{t('tokenBank')}</div>
               <div className="text-lg font-semibold tabular-nums">
                 {compact(tokenBalance)}{' '}
-                <span className="text-sm font-normal text-white/60">tokens</span>
+                <span className="text-sm font-normal text-white/60">{t('tokens')}</span>
               </div>
-              <div className="text-xs text-white/50">{planLabel} plan</div>
+              <div className="text-xs text-white/50">{t('planLabel', { plan: planLabel })}</div>
             </div>
           </div>
           <div className="flex items-center gap-3 sm:justify-self-end">
@@ -184,7 +175,7 @@ export function GuardrailsTab({
               <WalletIcon className="size-5 text-emerald-400" />
             </span>
             <div>
-              <div className="text-[11px] uppercase tracking-wide text-white/50">Wallet</div>
+              <div className="text-[11px] uppercase tracking-wide text-white/50">{t('wallet')}</div>
               <div className="text-lg font-semibold tabular-nums">
                 {walletBalance.toLocaleString('en')}{' '}
                 <span className="text-sm font-normal text-white/60">{currency}</span>
@@ -193,7 +184,7 @@ export function GuardrailsTab({
                 href="/wallet"
                 className="inline-flex items-center gap-1 text-xs text-amber-300 hover:underline"
               >
-                Top up <ArrowRight className="size-3" />
+                {t('topUp')} <ArrowRight className="size-3" />
               </Link>
             </div>
           </div>
@@ -204,8 +195,8 @@ export function GuardrailsTab({
       <div className="divide-y rounded-2xl border bg-card">
         <RuleRow
           icon={ShieldCheck}
-          title="Sensitive decisions need approval"
-          desc="Agents pause and ask you before acting on a sensitive call (request_approval)."
+          title={t('sensitiveTitle')}
+          desc={t('sensitiveDesc')}
         >
           <Toggle
             on={state.requireApprovalForSensitive}
@@ -215,8 +206,8 @@ export function GuardrailsTab({
 
         <RuleRow
           icon={MessageSquareText}
-          title="Customer-facing messages need review"
-          desc="Drafts wait for your OK before they're sent to a customer."
+          title={t('reviewTitle')}
+          desc={t('reviewDesc')}
         >
           <Toggle
             on={state.requireMessageReview}
@@ -226,8 +217,8 @@ export function GuardrailsTab({
 
         <RuleRow
           icon={CircleDollarSign}
-          title="Spend approval cap"
-          desc="Money moves above this amount need your approval."
+          title={t('spendTitle')}
+          desc={t('spendDesc')}
         >
           <div className="flex items-center gap-3">
             <div className="flex items-center rounded-lg border bg-background ps-2 pe-2">
@@ -239,7 +230,7 @@ export function GuardrailsTab({
                   if (e.key === 'Enter') (e.target as HTMLInputElement).blur();
                 }}
                 inputMode="numeric"
-                aria-label="Spend approval cap"
+                aria-label={t('spendAria')}
                 disabled={!state.spendApprovalCapEnabled}
                 className="w-16 bg-transparent py-1.5 text-end tabular-nums outline-none disabled:opacity-50"
               />
@@ -254,11 +245,11 @@ export function GuardrailsTab({
 
         <RuleRow
           icon={Gauge}
-          title="Per-agent monthly token cap"
-          desc="Set by your plan — keeps one agent from draining the shared bank."
+          title={t('capTitle')}
+          desc={t('capDesc')}
         >
           <span className="rounded-full bg-muted px-3 py-1 text-sm font-medium tabular-nums">
-            {perAgentTokenCap === 0 ? 'Unlimited' : compact(perAgentTokenCap)}
+            {perAgentTokenCap === 0 ? t('unlimited') : compact(perAgentTokenCap)}
           </span>
         </RuleRow>
       </div>
@@ -276,11 +267,9 @@ export function GuardrailsTab({
             />
           </span>
           <div>
-            <div className="font-semibold">Scheduler &amp; triggers</div>
+            <div className="font-semibold">{t('schedulerTitle')}</div>
             <div className="text-xs text-white/60">
-              {state.automationEnabled
-                ? 'Agents act on their schedules and event triggers.'
-                : 'Paused — no agent runs until you switch this back on.'}
+              {state.automationEnabled ? t('schedulerOn') : t('schedulerOff')}
             </div>
           </div>
         </div>
@@ -300,10 +289,10 @@ export function GuardrailsTab({
         className="flex w-full items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-medium transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
       >
         {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
-        {running ? 'Running…' : 'Run automation now'}
+        {running ? t('running') : t('runNow')}
       </button>
       <p className="-mt-2 text-center text-xs text-muted-foreground">
-        Runs due schedules + pending autonomous tasks for your workforce right now.
+        {t('runHint')}
       </p>
     </div>
   );
