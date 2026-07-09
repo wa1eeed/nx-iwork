@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useLocale, useTranslations } from 'next-intl';
-import { ChevronLeft, ChevronRight, CalendarDays, List, Check, X, CheckCheck, ArrowUpRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, CalendarDays, List, Check, X, CheckCheck, ArrowUpRight, UserX } from 'lucide-react';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ const DOT: Record<BookingStatus, string> = {
   COMPLETED: 'bg-emerald-500',
   CANCELLED: 'bg-rose-500',
   WAITLIST: 'bg-orange-400',
+  NO_SHOW: 'bg-neutral-500',
 };
 const CHIP: Record<BookingStatus, string> = {
   PENDING: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
@@ -33,6 +34,7 @@ const CHIP: Record<BookingStatus, string> = {
   COMPLETED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   CANCELLED: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 line-through',
   WAITLIST: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
+  NO_SHOW: 'bg-neutral-500/10 text-neutral-600 dark:text-neutral-400 line-through',
 };
 
 const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -95,6 +97,7 @@ export function BookingsCalendar({
     startTransition(async () => {
       const res = await setBookingStatus(id, status);
       if (!res.ok) toast.error(t('actionFailed'));
+      else if (res.promoted) toast.success(t('promoted', { ref: res.promoted }));
     });
 
   const changeStaff = (id: string, staffMemberId: string) =>
@@ -115,6 +118,7 @@ export function BookingsCalendar({
       return (
         <>
           <IconBtn label={t('markDone')} onClick={() => act(b.id, 'COMPLETED')} disabled={pending}><CheckCheck className="h-4 w-4" /></IconBtn>
+          <IconBtn label={t('markNoShow')} onClick={() => act(b.id, 'NO_SHOW')} disabled={pending}><UserX className="h-4 w-4" /></IconBtn>
           <IconBtn label={t('cancel')} onClick={() => act(b.id, 'CANCELLED')} disabled={pending}><X className="h-4 w-4" /></IconBtn>
         </>
       );

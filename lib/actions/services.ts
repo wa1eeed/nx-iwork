@@ -22,6 +22,7 @@ export interface ServiceInput {
   bufferMin?: number;
   maxCapacity?: number;
   allowWaitlist?: boolean;
+  waitlistCapacity?: number;
   departmentId?: string | null; // clinic / category
   image?: string | null;
   isActive?: boolean;
@@ -41,6 +42,7 @@ function clean(input: ServiceInput) {
     bufferMin: input.bufferMin != null ? Math.max(0, Math.round(input.bufferMin)) : 0,
     maxCapacity: input.maxCapacity != null ? Math.max(1, Math.round(input.maxCapacity)) : 1,
     allowWaitlist: input.allowWaitlist ?? false,
+    waitlistCapacity: input.waitlistCapacity != null ? Math.max(0, Math.round(input.waitlistCapacity)) : 0,
     image: input.image?.trim() || null,
     isActive: input.isActive ?? true,
   };

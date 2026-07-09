@@ -884,6 +884,7 @@ enum BookingStatus {
   CANCELLED
   COMPLETED
   WAITLIST // slot was full; customer joined the waitlist (doesn't hold capacity)
+  NO_SHOW // customer didn't turn up; frees the slot + promotes the waitlist
 }
 
 // A customer booking a time slot. Enabled per company via Company.hasBookings.
@@ -1038,7 +1039,8 @@ model Service {
   bufferMin   Int  @default(0) // prep/cleanup gap after each slot
   maxCapacity Int  @default(1) // concurrent bookings per slot
   // When a slot is full, customers may join a waitlist instead of being blocked.
-  allowWaitlist Boolean @default(false)
+  allowWaitlist    Boolean @default(false)
+  waitlistCapacity Int     @default(0) // max waitlisted per slot (0 = unlimited)
 
   // Customer-facing grouping: which department/"clinic" section this service
   // lives under on the landing page. Null = ungrouped (a general service).

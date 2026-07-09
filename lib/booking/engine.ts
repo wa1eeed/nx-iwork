@@ -10,7 +10,7 @@ import type { BookingStatus, Prisma } from '@prisma/client';
 
 export class BookingError extends Error {
   constructor(
-    public code: 'not_bookable' | 'invalid_slot' | 'slot_full' | 'past' | 'service_not_found',
+    public code: 'not_bookable' | 'invalid_slot' | 'slot_full' | 'waitlist_full' | 'past' | 'service_not_found',
   ) {
     super(code);
     this.name = 'BookingError';
@@ -79,6 +79,7 @@ type BookableService = {
   bufferMin: number;
   maxCapacity: number;
   allowWaitlist: boolean;
+  waitlistCapacity: number;
   availability: { dayOfWeek: number; startTime: string; endTime: string }[];
 };
 
@@ -91,7 +92,7 @@ export async function getBookableService(
     where: { id: serviceId, companyId, isActive: true },
     select: {
       id: true, title: true, durationMin: true, bufferMin: true, maxCapacity: true,
-      allowWaitlist: true,
+      allowWaitlist: true, waitlistCapacity: true,
       availability: { select: { dayOfWeek: true, startTime: true, endTime: true } },
     },
   });
@@ -249,10 +250,51 @@ export async function createBooking(input: CreateBookingInput) {
     });
     if (taken >= svc.maxCapacity) {
       // Full → join the waitlist when the service opts in; WAITLIST doesn't hold
-      // capacity, so it never blocks a real booking that frees up.
-      if (svc.allowWaitlist) return write(tx, endAt, 'WAITLIST');
+      // capacity, so it never blocks a real booking that frees up. Respect a
+      // per-slot waitlist cap (0 = unlimited).
+      if (svc.allowWaitlist) {
+        if (svc.waitlistCapacity > 0) {
+          const waiting = await tx.booking.count({
+            where: { companyId, serviceId, status: 'WAITLIST', startAt },
+          });
+          if (waiting >= svc.waitlistCapacity) throw new BookingError('waitlist_full');
+        }
+        return write(tx, endAt, 'WAITLIST');
+      }
       throw new BookingError('slot_full');
     }
     return write(tx, endAt);
+  });
+}
+
+/**
+ * When a slot frees up (a booking is cancelled or marked no-show), promote the
+ * longest-waiting person off that slot's waitlist to CONFIRMED — by seniority
+ * (oldest WAITLIST entry first). No-op if the slot is still full, the service
+ * isn't bookable, or the waitlist is empty. Capacity-safe (single transaction).
+ */
+export async function promoteFromWaitlist(
+  companyId: string,
+  serviceId: string,
+  startAt: Date,
+): Promise<{ id: string; ref: string | null; customerId: string | null } | null> {
+  const svc = await getBookableService(companyId, serviceId);
+  if (!svc) return null;
+
+  return db.$transaction(async (tx) => {
+    const taken = await tx.booking.count({
+      where: { companyId, serviceId, status: { in: ACTIVE_STATUSES }, startAt },
+    });
+    if (taken >= svc.maxCapacity) return null; // still full — nothing to promote into
+
+    const next = await tx.booking.findFirst({
+      where: { companyId, serviceId, status: 'WAITLIST', startAt },
+      orderBy: { createdAt: 'asc' }, // priority + seniority: first in, first promoted
+      select: { id: true, ref: true, customerId: true },
+    });
+    if (!next) return null;
+
+    await tx.booking.update({ where: { id: next.id }, data: { status: 'CONFIRMED' } });
+    return next;
   });
 }

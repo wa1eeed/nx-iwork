@@ -898,8 +898,11 @@
         "CONFIRMED": "Confirmed",
         "CANCELLED": "Cancelled",
         "COMPLETED": "Completed",
-        "WAITLIST": "Waitlist"
-      }
+        "WAITLIST": "Waitlist",
+        "NO_SHOW": "No-show"
+      },
+      "markNoShow": "No-show",
+      "promoted": "Promoted {ref} from the waitlist."
     },
     "availability": {
       "back": "Back to bookings",
@@ -1351,7 +1354,8 @@
     "allowWaitlist": "Allow waitlist when full",
     "showOnWebsite": "Show on website",
     "cancel": "Cancel",
-    "saveChanges": "Save changes"
+    "saveChanges": "Save changes",
+    "waitlistCapacity": "Waitlist size (0 = unlimited)"
   },
   "pageHeaders": {
     "staff": {

@@ -87,7 +87,13 @@ export function BookingButton({ slug, serviceId, color }: { slug: string; servic
         setState('done');
       } else {
         setState('idle');
-        setError(data.reason === 'slot_full' ? 'اكتملت هذه الفترة، اختر وقتاً آخر.' : 'تعذّر إتمام الحجز، حاول مجدداً.');
+        setError(
+          data.reason === 'slot_full'
+            ? 'اكتملت هذه الفترة، اختر وقتاً آخر.'
+            : data.reason === 'waitlist_full'
+              ? 'قائمة الانتظار لهذه الفترة ممتلئة، اختر وقتاً آخر.'
+              : 'تعذّر إتمام الحجز، حاول مجدداً.'
+        );
         void loadSlots(date); // refresh availability
       }
     } catch {

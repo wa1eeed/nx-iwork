@@ -898,8 +898,11 @@
         "CONFIRMED": "مؤكّد",
         "CANCELLED": "ملغى",
         "COMPLETED": "مكتمل",
-        "WAITLIST": "قائمة الانتظار"
-      }
+        "WAITLIST": "قائمة الانتظار",
+        "NO_SHOW": "لم يحضر"
+      },
+      "markNoShow": "لم يحضر",
+      "promoted": "تمت ترقية {ref} من قائمة الانتظار."
     },
     "availability": {
       "back": "رجوع للحجوزات",
@@ -1351,7 +1354,8 @@
     "allowWaitlist": "السماح بقائمة الانتظار عند الامتلاء",
     "showOnWebsite": "إظهارها في الموقع",
     "cancel": "إلغاء",
-    "saveChanges": "حفظ التغييرات"
+    "saveChanges": "حفظ التغييرات",
+    "waitlistCapacity": "حجم قائمة الانتظار (0 = غير محدود)"
   },
   "pageHeaders": {
     "staff": {

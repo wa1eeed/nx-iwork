@@ -21,6 +21,7 @@ export interface CatalogServiceRow {
   priceLabel: string | null;
   durationMin: number | null;
   allowWaitlist: boolean;
+  waitlistCapacity: number;
   departmentId: string | null;
   image: string | null;
   isActive: boolean;
@@ -41,6 +42,7 @@ interface FormState {
   durationMin: string;
   maxCapacity: string;
   allowWaitlist: boolean;
+  waitlistCapacity: string;
   image: string;
   isActive: boolean;
 }
@@ -55,6 +57,7 @@ const EMPTY: FormState = {
   durationMin: '',
   maxCapacity: '1',
   allowWaitlist: false,
+  waitlistCapacity: '0',
   image: '',
   isActive: true,
 };
@@ -112,6 +115,7 @@ export function ServiceCatalogManager({
       durationMin: s.durationMin != null ? String(s.durationMin) : '',
       maxCapacity: '1',
       allowWaitlist: s.allowWaitlist,
+      waitlistCapacity: String(s.waitlistCapacity ?? 0),
       image: s.image ?? '',
       isActive: s.isActive,
     });
@@ -135,6 +139,7 @@ export function ServiceCatalogManager({
       durationMin: form.durationMin ? Number(form.durationMin) : null,
       maxCapacity: form.maxCapacity ? Number(form.maxCapacity) : 1,
       allowWaitlist: form.allowWaitlist,
+      waitlistCapacity: form.waitlistCapacity ? Number(form.waitlistCapacity) : 0,
       image: form.image || null,
       isActive: form.isActive,
     };
@@ -304,6 +309,18 @@ export function ServiceCatalogManager({
                   {t('showOnWebsite')}
                 </label>
               </div>
+
+              {form.allowWaitlist && (
+                <div className="space-y-1.5">
+                  <Label>{t('waitlistCapacity')}</Label>
+                  <Input
+                    inputMode="numeric"
+                    value={form.waitlistCapacity}
+                    onChange={(e) => setForm({ ...form, waitlistCapacity: e.target.value })}
+                    placeholder="0"
+                  />
+                </div>
+              )}
             </div>
 
             <div className="mt-5 flex justify-end gap-2">

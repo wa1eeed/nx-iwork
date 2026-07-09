@@ -5,11 +5,15 @@ import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
+import { promoteFromWaitlist } from '@/lib/booking/engine';
 import type { BookingStatus } from '@prisma/client';
 
 type Result = { ok: true } | { ok: false; error: string };
+type StatusResult = { ok: true; promoted?: string | null } | { ok: false; error: string };
 
-const ALLOWED: BookingStatus[] = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED'];
+const ALLOWED: BookingStatus[] = ['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW'];
+const ACTIVE: BookingStatus[] = ['PENDING', 'CONFIRMED'];
+const FREES_SLOT: BookingStatus[] = ['CANCELLED', 'NO_SHOW'];
 
 const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 
@@ -41,15 +45,29 @@ async function authedCompany(): Promise<string | null> {
 // Owner-driven booking lifecycle from the calendar (confirm / complete / cancel).
 // Tenant-scoped: the updateMany where-clause pins companyId so one tenant can
 // never mutate another's booking.
-export async function setBookingStatus(id: string, status: BookingStatus): Promise<Result> {
+export async function setBookingStatus(id: string, status: BookingStatus): Promise<StatusResult> {
   const companyId = await authedCompany();
   if (!companyId) return { ok: false, error: 'unauthenticated' };
   if (!ALLOWED.includes(status)) return { ok: false, error: 'invalid_status' };
 
-  const res = await db.booking.updateMany({ where: { id, companyId }, data: { status } });
-  if (res.count === 0) return { ok: false, error: 'not_found' };
+  const booking = await db.booking.findFirst({
+    where: { id, companyId },
+    select: { status: true, serviceId: true, startAt: true },
+  });
+  if (!booking) return { ok: false, error: 'not_found' };
+
+  await db.booking.update({ where: { id }, data: { status } });
+
+  // Cancelling / no-show frees an active slot → promote the longest-waiting
+  // person off that slot's waitlist (seniority order).
+  let promoted: string | null = null;
+  if (FREES_SLOT.includes(status) && ACTIVE.includes(booking.status) && booking.serviceId) {
+    const result = await promoteFromWaitlist(companyId, booking.serviceId, booking.startAt);
+    promoted = result?.ref ?? null;
+  }
+
   revalidatePath('/bookings');
-  return { ok: true };
+  return { ok: true, promoted };
 }
 
 // Attribute (or clear) the staff member who delivers a booking — feeds the

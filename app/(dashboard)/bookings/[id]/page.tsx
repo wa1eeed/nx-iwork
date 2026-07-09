@@ -13,6 +13,7 @@ const STATUS_CLS: Record<BookingStatus, string> = {
   CANCELLED: 'bg-destructive/15 text-destructive',
   COMPLETED: 'bg-sky-500/15 text-sky-600 dark:text-sky-400',
   WAITLIST: 'bg-violet-500/15 text-violet-600 dark:text-violet-400',
+  NO_SHOW: 'bg-neutral-500/15 text-neutral-600 dark:text-neutral-400',
 };
 
 function Row({ icon: Icon, label, children }: { icon: typeof User; label: string; children: React.ReactNode }) {
