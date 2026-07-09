@@ -144,6 +144,11 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
       `staffMemberId`; `/commissions` computes attributed revenue + earned commission.
     - Nav: Workforce +Staff +Commissions · Sales +Coupons · Products & Services +Inventory.
     - Migration `20260709120000_coupons_inventory_staff` (additive).
+    - **Wired to real activity:** staff attribution selectors on `/orders` +
+      the bookings calendar (`setOrderStaff`/`setBookingStaff` → `/commissions`);
+      the agent `create_order` tool redeems an optional `couponCode` (validate →
+      discount → `usedCount++`). **Follow-up:** coupon redemption in the *public*
+      storefront order flow (customer-entered code) + staff/coupon on manual create.
 
 ---
 
