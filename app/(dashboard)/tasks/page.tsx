@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { TaskManager } from '@/components/dashboard/task-manager';
+import { CrmTabs } from '@/components/dashboard/crm-tabs';
 
 export default async function TasksPage() {
   const t = await getTranslations('pages.tasks');
@@ -53,6 +54,7 @@ export default async function TasksPage() {
         <h1 className="text-2xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
+      <CrmTabs />
 
       <TaskManager
         agents={agents}

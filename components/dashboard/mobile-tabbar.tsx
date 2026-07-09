@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl';
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
-  Bot,
+  ShoppingBag,
   Contact,
   LayoutDashboard,
   MessageSquare,
@@ -19,9 +19,9 @@ import { SidebarBrand, SidebarNav, type NavModules } from '@/components/dashboar
 // The four always-present primary destinations; the fifth slot is "More".
 const PRIMARY = [
   { href: '/overview', icon: LayoutDashboard, labelKey: 'overview' },
+  { href: '/crm', icon: Contact, labelKey: 'crm' },
+  { href: '/orders', icon: ShoppingBag, labelKey: 'orders' },
   { href: '/chat', icon: MessageSquare, labelKey: 'chat' },
-  { href: '/agents', icon: Bot, labelKey: 'agents' },
-  { href: '/customers', icon: Contact, labelKey: 'customers' },
 ];
 
 // Phone-only fixed bottom navigation (native-app feel). Primary sections get a

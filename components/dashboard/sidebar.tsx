@@ -16,7 +16,6 @@ import {
   ShoppingBag,
   LayoutDashboard,
   LayoutGrid,
-  ListChecks,
   MessageSquare,
   Package,
   Package2,
@@ -25,7 +24,6 @@ import {
   Sparkles,
   Store,
   TicketPercent,
-  UserCheck,
   Users,
   Wallet,
   type LucideIcon,
@@ -55,53 +53,55 @@ interface NavSection {
 // Exported so the mobile tab strip / bottom bar reuse the exact same source.
 export const NAV_SECTIONS: NavSection[] = [
   {
-    // The Command Center + talking to and tasking the workforce.
+    // The cockpit — glanceable state + talking to the workforce.
     sectionKey: 'command',
     items: [
       { href: '/overview', icon: LayoutDashboard, labelKey: 'overview' },
       { href: '/approvals', icon: CheckCircle, labelKey: 'approvals' },
       { href: '/chat', icon: MessageSquare, labelKey: 'chat' },
-      { href: '/tasks', icon: ListChecks, labelKey: 'tasks' },
     ],
   },
   {
-    // The workforce (AI agents + human staff) and their org + pay.
+    // Advanced CRM — pipeline (opportunities) + customers + tasks in one place.
+    sectionKey: 'crm',
+    items: [{ href: '/crm', icon: Contact, labelKey: 'crm' }],
+  },
+  {
+    // Day-to-day operations — orders first (most-checked), then bookings + catalog.
+    sectionKey: 'operations',
+    items: [
+      { href: '/orders', icon: ShoppingBag, labelKey: 'orders' },
+      { href: '/bookings', icon: CalendarCheck, labelKey: 'bookings', module: 'hasBookings' },
+      { href: '/services', icon: Store, labelKey: 'services', module: 'hasServices' },
+      { href: '/products', icon: Package, labelKey: 'products', module: 'hasEcommerce' },
+      { href: '/inventory', icon: Package2, labelKey: 'inventory' },
+    ],
+  },
+  {
+    // The AI workforce: employees, their departments, and the knowledge they use.
     sectionKey: 'workforce',
     items: [
       { href: '/agents', icon: Bot, labelKey: 'agents' },
       { href: '/departments', icon: Building2, labelKey: 'departments' },
+      { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
+    ],
+  },
+  {
+    // The human team + how they earn.
+    sectionKey: 'team',
+    items: [
       { href: '/staff', icon: Users, labelKey: 'staff' },
       { href: '/commissions', icon: HandCoins, labelKey: 'commissions' },
     ],
   },
   {
-    // The commercial heart: financials + everything that earns revenue.
-    sectionKey: 'sales',
+    // Money: revenue, discounts, and the account with the platform.
+    sectionKey: 'finance',
     items: [
       { href: '/sales', icon: CircleDollarSign, labelKey: 'financials' },
-      { href: '/orders', icon: ShoppingBag, labelKey: 'orders' },
-      { href: '/customers', icon: Contact, labelKey: 'customers' },
-      { href: '/clients', icon: UserCheck, labelKey: 'clients' },
-      { href: '/bookings', icon: CalendarCheck, labelKey: 'bookings', module: 'hasBookings' },
       { href: '/coupons', icon: TicketPercent, labelKey: 'coupons' },
-    ],
-  },
-  {
-    // What the business sells + stocks + the knowledge its agents draw on.
-    sectionKey: 'catalog',
-    items: [
-      { href: '/products', icon: Package, labelKey: 'products', module: 'hasEcommerce' },
-      { href: '/services', icon: Store, labelKey: 'services', module: 'hasServices' },
-      { href: '/inventory', icon: Package2, labelKey: 'inventory' },
-      { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
-    ],
-  },
-  {
-    // The owner's account with the platform.
-    sectionKey: 'billing',
-    items: [
-      { href: '/subscription', icon: Gem, labelKey: 'subscription' },
       { href: '/wallet', icon: Wallet, labelKey: 'wallet' },
+      { href: '/subscription', icon: Gem, labelKey: 'subscription' },
     ],
   },
   {

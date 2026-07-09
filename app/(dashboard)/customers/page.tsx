@@ -1,49 +1,7 @@
-import { getTranslations } from 'next-intl/server';
-import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
-import { getUserCompany } from '@/lib/companies';
-import { CustomerManager } from '@/components/dashboard/customer-manager';
+import { redirect } from 'next/navigation';
 
-export default async function CustomersPage() {
-  const t = await getTranslations('crm');
-  const session = await auth();
-  const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
-
-  const customers = companyId
-    ? await db.customer.findMany({
-        where: { companyId },
-        orderBy: { updatedAt: 'desc' },
-        take: 300,
-        select: {
-          id: true,
-          ref: true,
-          name: true,
-          phone: true,
-          email: true,
-          status: true,
-          assignedAgent: { select: { name: true } },
-        },
-      })
-    : [];
-
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
-      </div>
-
-      <CustomerManager
-        customers={customers.map((c) => ({
-          id: c.id,
-          ref: c.ref,
-          name: c.name,
-          phone: c.phone,
-          email: c.email,
-          status: c.status,
-          agentName: c.assignedAgent?.name ?? null,
-        }))}
-      />
-    </div>
-  );
+// The opportunities pipeline now lives inside the CRM hub. The 360° person page
+// at /customers/[id] is unaffected.
+export default function CustomersPage() {
+  redirect('/crm');
 }
