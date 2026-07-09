@@ -9,6 +9,7 @@ import { getUserCompany } from '@/lib/companies';
 import { deptHue } from '@/lib/ui/dept-accent';
 import { AgentCard, type AgentCardData } from '@/components/dashboard/agent-card';
 import { ApprovalCard, type ApprovalCardData } from '@/components/dashboard/approval-card';
+import { BusinessCounters } from '@/components/dashboard/business-counters';
 
 const TIER: Record<ClaudeModel, string> = { HAIKU: 'Fast', SONNET: 'Balanced', OPUS: 'Advanced' };
 
@@ -90,7 +91,11 @@ export default async function OverviewPage() {
   }));
 
   return (
-    <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
+    <div className="space-y-5">
+      {/* Whole-business 360° snapshot. */}
+      <BusinessCounters companyId={companyId} />
+
+      <div className="grid gap-5 lg:grid-cols-[1fr_20rem]">
       {/* Roster */}
       <div className="space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -199,6 +204,7 @@ export default async function OverviewPage() {
           )}
         </div>
       </aside>
+      </div>
     </div>
   );
 }

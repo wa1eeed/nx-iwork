@@ -232,6 +232,10 @@
     "services": "Services",
     "subscription": "Subscription",
     "financials": "Financials",
+    "staff": "Staff",
+    "commissions": "Commissions",
+    "coupons": "Coupons",
+    "inventory": "Inventory",
     "sections": {
       "command": "Command Center",
       "workforce": "Workforce",

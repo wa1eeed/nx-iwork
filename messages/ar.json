@@ -232,6 +232,10 @@
     "services": "الخدمات",
     "subscription": "الاشتراك",
     "financials": "المالية",
+    "staff": "الطاقم",
+    "commissions": "العمولات",
+    "coupons": "الكوبونات",
+    "inventory": "المخزون",
     "sections": {
       "command": "مركز القيادة",
       "workforce": "قوة العمل",

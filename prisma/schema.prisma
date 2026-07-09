@@ -172,6 +172,9 @@ model Company {
   publicConversations PublicConversation[]
   wallet              Wallet?
   servicePurchases    ServicePurchase[]
+  coupons             Coupon[]
+  inventoryItems      InventoryItem[]
+  staffMembers        StaffMember[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -892,6 +895,10 @@ model Booking {
   status  BookingStatus @default(CONFIRMED)
   notes   String?       @db.Text
 
+  // Staff member who delivers this appointment (for commissions).
+  staffMemberId String?
+  staffMember   StaffMember? @relation(fields: [staffMemberId], references: [id], onDelete: SetNull)
+
   // Activity-specific attributes (resource, party_size, service_type, …).
   customFields Json?
 
@@ -901,6 +908,7 @@ model Booking {
   @@index([companyId, startAt])
   @@index([customerId])
   @@index([serviceId, startAt])
+  @@index([staffMemberId])
 }
 
 // ========================================
@@ -1128,12 +1136,21 @@ model Order {
 
   // Totals
   subtotal Decimal @default(0) @db.Decimal(10, 2)
+  discount Decimal @default(0) @db.Decimal(10, 2) // applied coupon discount
   vat      Decimal @default(0) @db.Decimal(10, 2)
   total    Decimal @default(0) @db.Decimal(10, 2)
   currency String  @default("SAR")
 
   status        OrderStatus   @default(NEW)
   paymentStatus PaymentStatus @default(PENDING)
+
+  // Applied discount coupon (optional).
+  couponId String?
+  coupon   Coupon? @relation(fields: [couponId], references: [id], onDelete: SetNull)
+
+  // Staff member who sold/delivered this order (for commissions).
+  staffMemberId String?
+  staffMember   StaffMember? @relation(fields: [staffMemberId], references: [id], onDelete: SetNull)
 
   // Source tracking
   agentId        String? // if came through agent chat
@@ -1146,6 +1163,7 @@ model Order {
   @@index([customerId])
   @@index([status])
   @@index([orderNumber])
+  @@index([staffMemberId])
 }
 
 model OrderItem {
@@ -1761,4 +1779,111 @@ model File {
   createdAt DateTime @default(now())
 
   @@index([companyId, createdAt])
+}
+
+// ========================================
+// DISCOUNT COUPONS
+// ========================================
+
+enum CouponType {
+  PERCENT // value is a percentage 0–100
+  FIXED // value is a flat amount in the company currency
+}
+
+enum CouponScope {
+  ALL
+  PRODUCTS
+  SERVICES
+  BOOKINGS
+}
+
+model Coupon {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  code  String // unique per company (case-insensitive by convention)
+  type  CouponType  @default(PERCENT)
+  value Decimal     @db.Decimal(10, 2)
+  scope CouponScope @default(ALL)
+
+  minSubtotal    Decimal? @db.Decimal(10, 2) // minimum order/booking subtotal to qualify
+  maxRedemptions Int? // null = unlimited
+  usedCount      Int      @default(0)
+
+  startsAt  DateTime?
+  expiresAt DateTime?
+  isActive  Boolean   @default(true)
+
+  orders Order[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, code])
+  @@index([companyId])
+}
+
+// ========================================
+// CONSUMABLES / RAW-MATERIALS INVENTORY
+// ========================================
+
+model InventoryItem {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  ref  String? // INV-001 (per-company)
+  name String
+  sku  String?
+  unit String  @default("unit") // box, ml, piece, gram, …
+
+  quantityOnHand Decimal  @default(0) @db.Decimal(12, 2)
+  reorderLevel   Decimal  @default(0) @db.Decimal(12, 2) // low-stock threshold
+  unitCost       Decimal? @db.Decimal(10, 2)
+
+  supplier String?
+  notes    String? @db.Text
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+}
+
+// ========================================
+// STAFF (human) + COMMISSIONS
+// ========================================
+
+enum CommissionType {
+  PERCENT_SALES // commissionRate % of attributed revenue
+  FIXED_PER_ORDER // commissionRate flat amount per attributed order/booking
+  TARGET_BONUS // commissionRate paid once monthlyTarget revenue is reached
+}
+
+model StaffMember {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  ref   String? // STF-001 (per-company)
+  name  String
+  role  String? // e.g. Dentist, Stylist, Technician
+  phone String?
+  email String?
+
+  commissionType CommissionType @default(PERCENT_SALES)
+  commissionRate Decimal        @default(0) @db.Decimal(10, 2) // percent, or flat amount
+  monthlyTarget  Decimal?       @db.Decimal(10, 2) // for TARGET_BONUS / progress
+
+  isActive Boolean @default(true)
+
+  orders   Order[]
+  bookings Booking[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
 }

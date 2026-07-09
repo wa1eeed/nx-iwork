@@ -12,17 +12,21 @@ import {
   CheckCircle,
   CircleDollarSign,
   Contact,
+  HandCoins,
   ShoppingBag,
   LayoutDashboard,
   LayoutGrid,
   ListChecks,
   MessageSquare,
   Package,
+  Package2,
   Gem,
   Settings,
   Sparkles,
   Store,
+  TicketPercent,
   UserCheck,
+  Users,
   Wallet,
   type LucideIcon,
 } from 'lucide-react';
@@ -61,11 +65,13 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    // The AI workforce: employees + the departments they belong to.
+    // The workforce (AI agents + human staff) and their org + pay.
     sectionKey: 'workforce',
     items: [
       { href: '/agents', icon: Bot, labelKey: 'agents' },
       { href: '/departments', icon: Building2, labelKey: 'departments' },
+      { href: '/staff', icon: Users, labelKey: 'staff' },
+      { href: '/commissions', icon: HandCoins, labelKey: 'commissions' },
     ],
   },
   {
@@ -77,14 +83,16 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: '/customers', icon: Contact, labelKey: 'customers' },
       { href: '/clients', icon: UserCheck, labelKey: 'clients' },
       { href: '/bookings', icon: CalendarCheck, labelKey: 'bookings', module: 'hasBookings' },
+      { href: '/coupons', icon: TicketPercent, labelKey: 'coupons' },
     ],
   },
   {
-    // What the business sells + the knowledge its agents draw on.
+    // What the business sells + stocks + the knowledge its agents draw on.
     sectionKey: 'catalog',
     items: [
       { href: '/products', icon: Package, labelKey: 'products', module: 'hasEcommerce' },
       { href: '/services', icon: Store, labelKey: 'services', module: 'hasServices' },
+      { href: '/inventory', icon: Package2, labelKey: 'inventory' },
       { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
     ],
   },
