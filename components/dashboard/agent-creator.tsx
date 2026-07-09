@@ -18,6 +18,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { AgentForm, type AgentFormValues } from '@/components/dashboard/agent-form';
+import { getArchetype, archetypeForTemplate } from '@/lib/agent/archetypes';
 
 export interface TemplateCard {
   templateType: string;
@@ -109,6 +110,10 @@ export function AgentCreator({
 function templateToInitial(tpl: TemplateCard, departments: Dept[]): AgentFormValues {
   const dept =
     departments.find((d) => d.name === tpl.department || d.name === tpl.departmentEn) ?? departments[0];
+  // Seed the role-model archetype (→ scope + structured persona) from the template.
+  const archetype = archetypeForTemplate(tpl.templateType);
+  const arch = getArchetype(archetype);
+  const p = arch?.persona;
   return {
     name: '',
     nameEn: '',
@@ -123,6 +128,14 @@ function templateToInitial(tpl: TemplateCard, departments: Dept[]): AgentFormVal
     temperature: 0.6,
     systemPrompt: '',
     permissions: tpl.permissions,
+    archetype,
+    personaCfg: {
+      tone: p?.tone ?? 'warm',
+      verbosity: p?.verbosity ?? 'balanced',
+      languagePolicy: p?.languagePolicy ?? 'mirror',
+      dos: (p?.dos ?? []).join('\n'),
+      donts: (p?.donts ?? []).join('\n'),
+    },
   };
 }
 

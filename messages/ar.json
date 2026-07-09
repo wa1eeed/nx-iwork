@@ -1120,6 +1120,39 @@
       "sonnetHint": "تفكير أعمق واستخدام الأدوات",
       "opus": "متقدم",
       "opusHint": "المهام المعقّدة والتحليل"
+    },
+    "roleModelSection": "الدور والنطاق",
+    "archetypeLabel": "نمط الدور",
+    "archetypeHelp": "يحدّد القدرات المبدئية وهل يتحدث هذا الوكيل مع العملاء.",
+    "scopeCustomer": "يواجه العملاء",
+    "scopeInternal": "داخلي · خلفي",
+    "toneLabel": "النبرة",
+    "verbosityLabel": "مستوى الإسهاب",
+    "languageLabel": "اللغة",
+    "dosLabel": "التزم بـ (سطر لكل نقطة)",
+    "dontsLabel": "تجنّب (سطر لكل نقطة)",
+    "dosPlaceholder": "تأكيد التفاصيل قبل الحجز",
+    "dontsPlaceholder": "اختلاق أسعار أو أوقات",
+    "tones": {
+      "warm": "ودّي",
+      "confident": "واثق",
+      "empathetic": "متعاطف",
+      "creative": "مبدع",
+      "organized": "منظّم",
+      "precise": "دقيق",
+      "formal": "رسمي",
+      "playful": "خفيف الظل"
+    },
+    "verbosities": {
+      "concise": "موجز",
+      "balanced": "متوازن",
+      "detailed": "مفصّل"
+    },
+    "languages": {
+      "mirror": "يجاري العميل",
+      "business": "لغة النشاط",
+      "formal_ar": "فصحى رسمية",
+      "en": "الإنجليزية"
     }
   },
   "events": {

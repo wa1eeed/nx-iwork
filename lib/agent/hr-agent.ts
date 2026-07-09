@@ -21,25 +21,8 @@ import { nextRef } from '@/lib/refs';
 import { checkRoleConflict } from '@/lib/agent/conflict-check';
 import { cognitiveOnboard } from '@/lib/agent/cognitive-onboarding';
 import { getTemplate, type IfThenScenario } from '@/lib/agent/templates';
-import { getArchetype } from '@/lib/agent/archetypes';
+import { getArchetype, archetypeForTemplate } from '@/lib/agent/archetypes';
 import { agentTokenCap } from '@/lib/plans';
-
-// Map a legacy template key to a role-model archetype, so template hires get the
-// right customer/internal scope + capability bundle. Unknown → front_desk.
-const TEMPLATE_ARCHETYPE: Record<string, string> = {
-  sales: 'sales',
-  support: 'care',
-  marketing: 'marketing',
-  finance: 'finance',
-  operations: 'operations',
-  appointments: 'front_desk',
-  reception: 'front_desk',
-  booking: 'front_desk',
-};
-
-function archetypeForTemplate(templateType: string): string {
-  return TEMPLATE_ARCHETYPE[templateType] ?? 'front_desk';
-}
 
 export interface DeployScenario {
   event: TriggerEvent;

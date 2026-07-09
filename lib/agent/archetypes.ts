@@ -212,6 +212,23 @@ export function getArchetype(key: string | null | undefined): Archetype | null {
 
 export const ARCHETYPE_KEYS = ARCHETYPES.map((a) => a.key);
 
+// Map a legacy template key → a role-model archetype, so template-based hires
+// get the right customer/internal scope + capability bundle. Unknown → front_desk.
+const TEMPLATE_ARCHETYPE: Record<string, string> = {
+  sales: 'sales',
+  support: 'care',
+  marketing: 'marketing',
+  finance: 'finance',
+  operations: 'operations',
+  appointments: 'front_desk',
+  reception: 'front_desk',
+  booking: 'front_desk',
+};
+
+export function archetypeForTemplate(templateType: string): string {
+  return TEMPLATE_ARCHETYPE[templateType] ?? 'front_desk';
+}
+
 // Is this archetype allowed to talk to end customers (i.e. serve the widget)?
 export function isCustomerFacing(key: string | null | undefined): boolean {
   const a = getArchetype(key);

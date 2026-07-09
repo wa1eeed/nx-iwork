@@ -18,6 +18,7 @@ import { getToolsForAgent } from '@/lib/agent/tools';
 import { TOOL_LABELS } from '@/lib/agent/tool-labels';
 import { formatNumber, formatDate } from '@/lib/format';
 import { AgentScenarios } from '@/components/dashboard/agent-scenarios';
+import { parsePersonaConfig } from '@/lib/agent/persona';
 import type { AgentKpi } from '@/lib/agent/templates';
 
 export default async function AgentProfilePage({
@@ -119,6 +120,7 @@ export default async function AgentProfilePage({
     agent.permissions
   );
 
+  const initialPersona = parsePersonaConfig(agent.personaConfig);
   const initial: AgentFormValues = {
     id: agent.id,
     name: agent.name,
@@ -134,6 +136,14 @@ export default async function AgentProfilePage({
     temperature: agent.temperature,
     systemPrompt: agent.systemPrompt ?? '',
     permissions: agent.permissions,
+    archetype: agent.archetype ?? 'front_desk',
+    personaCfg: {
+      tone: initialPersona?.tone ?? 'warm',
+      verbosity: initialPersona?.verbosity ?? 'balanced',
+      languagePolicy: initialPersona?.languagePolicy ?? 'mirror',
+      dos: (initialPersona?.dos ?? []).join('\n'),
+      donts: (initialPersona?.donts ?? []).join('\n'),
+    },
   };
 
   const en = locale === 'en';

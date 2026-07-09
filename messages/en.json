@@ -1120,6 +1120,39 @@
       "sonnetHint": "Deeper thinking and tool use",
       "opus": "Advanced",
       "opusHint": "Complex tasks and analysis"
+    },
+    "roleModelSection": "Role & scope",
+    "archetypeLabel": "Role archetype",
+    "archetypeHelp": "Sets the starting capabilities and whether this agent can talk to customers.",
+    "scopeCustomer": "Customer-facing",
+    "scopeInternal": "Internal · background",
+    "toneLabel": "Tone",
+    "verbosityLabel": "Detail level",
+    "languageLabel": "Language",
+    "dosLabel": "Always (one per line)",
+    "dontsLabel": "Never (one per line)",
+    "dosPlaceholder": "Confirm details before booking",
+    "dontsPlaceholder": "Invent prices or times",
+    "tones": {
+      "warm": "Warm",
+      "confident": "Confident",
+      "empathetic": "Empathetic",
+      "creative": "Creative",
+      "organized": "Organized",
+      "precise": "Precise",
+      "formal": "Formal",
+      "playful": "Playful"
+    },
+    "verbosities": {
+      "concise": "Concise",
+      "balanced": "Balanced",
+      "detailed": "Detailed"
+    },
+    "languages": {
+      "mirror": "Match the customer",
+      "business": "Business default",
+      "formal_ar": "Formal Arabic",
+      "en": "English"
     }
   },
   "events": {

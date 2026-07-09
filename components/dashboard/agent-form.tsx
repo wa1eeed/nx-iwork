@@ -3,7 +3,7 @@
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { Loader2, AlertTriangle, Lightbulb, Plus, Trash2, Zap, Wrench } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -16,8 +16,20 @@ import { createAgent, updateAgent } from '@/lib/actions/agents';
 import { celebrate } from '@/lib/ui/celebrate';
 import { TRIGGER_EVENTS } from '@/lib/agent/events-catalog';
 import { TOOL_CATALOG, TOOL_GROUPS, type ToolGroup } from '@/lib/agent/tool-labels';
+import { ARCHETYPES } from '@/lib/agent/archetypes';
+import type { PersonaTone, PersonaVerbosity, LanguagePolicy } from '@/lib/agent/persona';
 import type { AgentInput } from '@/lib/validators/agents';
 import type { ConflictResult } from '@/lib/agent/conflict-check';
+
+// Persona knobs edited in the form. Lists are newline-delimited textareas here
+// and split into arrays on submit.
+interface PersonaForm {
+  tone: PersonaTone;
+  verbosity: PersonaVerbosity;
+  languagePolicy: LanguagePolicy;
+  dos: string;
+  donts: string;
+}
 
 export interface TemplateHint {
   templateType: string;
@@ -44,6 +56,21 @@ export interface AgentFormValues {
   temperature: number;
   systemPrompt: string;
   permissions: string[];
+  archetype: string;
+  personaCfg: PersonaForm;
+}
+
+const DEFAULT_PERSONA: PersonaForm = {
+  tone: 'warm',
+  verbosity: 'balanced',
+  languagePolicy: 'mirror',
+  dos: '',
+  donts: '',
+};
+
+// Newline-delimited textarea → trimmed, non-empty string array.
+function splitLines(s: string): string[] {
+  return s.split('\n').map((l) => l.trim()).filter(Boolean);
 }
 
 const DEFAULTS: AgentFormValues = {
@@ -60,6 +87,8 @@ const DEFAULTS: AgentFormValues = {
   temperature: 0.6,
   systemPrompt: '',
   permissions: [],
+  archetype: 'front_desk',
+  personaCfg: DEFAULT_PERSONA,
 };
 
 export function AgentForm({
@@ -78,6 +107,8 @@ export function AgentForm({
   const t = useTranslations('agentForm');
   const tc = useTranslations('common');
   const te = useTranslations('events');
+  const locale = useLocale();
+  const en = locale === 'en';
   const router = useRouter();
   // Functional-area (department) labels for the per-department permission matrix.
   const groupLabel: Record<ToolGroup, string> = {
@@ -88,9 +119,13 @@ export function AgentForm({
     operations: t('toolGroups.operations'),
     memory: t('toolGroups.memory'),
   };
-  const [v, setV] = useState<AgentFormValues>(
-    initial ?? { ...DEFAULTS, departmentId: departments[0]?.id ?? '' }
-  );
+  // Always start from DEFAULTS so newer fields (archetype/personaCfg) exist even
+  // when `initial` predates them, then overlay whatever the caller provided.
+  const [v, setV] = useState<AgentFormValues>({
+    ...DEFAULTS,
+    departmentId: departments[0]?.id ?? '',
+    ...(initial ?? {}),
+  });
   const [saving, startSave] = useTransition();
   const [conflict, setConflict] = useState<ConflictResult | null>(null);
   const [scenarios, setScenarios] = useState<FormScenario[]>([]);
@@ -160,6 +195,15 @@ export function AgentForm({
       maxTokens: 4096,
       systemPrompt: v.systemPrompt.trim() || null,
       permissions: v.permissions,
+      archetype: v.archetype,
+      personaConfig: {
+        tone: v.personaCfg.tone,
+        verbosity: v.personaCfg.verbosity,
+        languagePolicy: v.personaCfg.languagePolicy,
+        dos: splitLines(v.personaCfg.dos),
+        donts: splitLines(v.personaCfg.donts),
+        signaturePhrases: [],
+      },
     };
 
     startSave(async () => {
@@ -236,12 +280,117 @@ export function AgentForm({
 
       <Card>
         <CardHeader>
+          <CardTitle className="text-lg">{t('roleModelSection')}</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Archetype — the capability bundle + hard customer/internal scope. */}
+          <div className="space-y-2">
+            <Label>{t('archetypeLabel')}</Label>
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {ARCHETYPES.map((a) => {
+                const active = v.archetype === a.key;
+                return (
+                  <button
+                    key={a.key}
+                    type="button"
+                    onClick={() => set('archetype', a.key)}
+                    className={cn(
+                      'rounded-xl border p-3 text-start transition',
+                      active ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted',
+                    )}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-sm font-semibold">{en ? a.label.en : a.label.ar}</span>
+                      <span
+                        className={cn(
+                          'rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                          a.surface === 'CUSTOMER_FACING'
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-muted text-muted-foreground',
+                        )}
+                      >
+                        {a.surface === 'CUSTOMER_FACING' ? t('scopeCustomer') : t('scopeInternal')}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-muted-foreground">{en ? a.summary.en : a.summary.ar}</p>
+                  </button>
+                );
+              })}
+            </div>
+            <p className="text-xs text-muted-foreground">{t('archetypeHelp')}</p>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-lg">{t('personalitySection')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Structured persona — precise knobs compiled into the prompt. */}
+          <div className="grid gap-3 sm:grid-cols-3">
+            <div className="space-y-1.5">
+              <Label>{t('toneLabel')}</Label>
+              <select
+                className={selectCls}
+                value={v.personaCfg.tone}
+                onChange={(e) => set('personaCfg', { ...v.personaCfg, tone: e.target.value as PersonaForm['tone'] })}
+              >
+                {(['warm', 'confident', 'empathetic', 'creative', 'organized', 'precise', 'formal', 'playful'] as const).map((k) => (
+                  <option key={k} value={k}>{t(`tones.${k}`)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('verbosityLabel')}</Label>
+              <select
+                className={selectCls}
+                value={v.personaCfg.verbosity}
+                onChange={(e) => set('personaCfg', { ...v.personaCfg, verbosity: e.target.value as PersonaForm['verbosity'] })}
+              >
+                {(['concise', 'balanced', 'detailed'] as const).map((k) => (
+                  <option key={k} value={k}>{t(`verbosities.${k}`)}</option>
+                ))}
+              </select>
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('languageLabel')}</Label>
+              <select
+                className={selectCls}
+                value={v.personaCfg.languagePolicy}
+                onChange={(e) => set('personaCfg', { ...v.personaCfg, languagePolicy: e.target.value as PersonaForm['languagePolicy'] })}
+              >
+                {(['mirror', 'business', 'formal_ar', 'en'] as const).map((k) => (
+                  <option key={k} value={k}>{t(`languages.${k}`)}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label>{t('dosLabel')}</Label>
+              <Textarea
+                rows={3}
+                value={v.personaCfg.dos}
+                onChange={(e) => set('personaCfg', { ...v.personaCfg, dos: e.target.value })}
+                placeholder={t('dosPlaceholder')}
+                dir="auto"
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label>{t('dontsLabel')}</Label>
+              <Textarea
+                rows={3}
+                value={v.personaCfg.donts}
+                onChange={(e) => set('personaCfg', { ...v.personaCfg, donts: e.target.value })}
+                placeholder={t('dontsPlaceholder')}
+                dir="auto"
+              />
+            </div>
+          </div>
           <div className="space-y-2">
             <Label>{t('persona')} *</Label>
-            <Textarea rows={5} value={v.persona} onChange={(e) => set('persona', e.target.value)} placeholder={t('personaPlaceholder')} dir="auto" />
+            <Textarea rows={3} value={v.persona} onChange={(e) => set('persona', e.target.value)} placeholder={t('personaPlaceholder')} dir="auto" />
             <p className="text-xs text-muted-foreground">{t('personaHelp')}</p>
           </div>
           <div className="space-y-2">

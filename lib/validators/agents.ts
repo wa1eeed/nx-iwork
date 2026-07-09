@@ -22,6 +22,22 @@ export const agentSchema = z.object({
   systemPrompt: z.string().trim().max(4000).optional().nullable(),
   // Explicit tool-call allow-list. Empty = all module tools.
   permissions: z.array(z.string().trim().max(60)).max(40).optional(),
+  // Role-model archetype (capability bundle → hard customer/internal scope).
+  archetype: z.string().trim().max(40).optional(),
+  // Structured persona (compiled deterministically into the prompt). Partial —
+  // parsePersonaConfig fills any missing knob with a sensible default.
+  personaConfig: z
+    .object({
+      tone: z.enum(['warm', 'confident', 'empathetic', 'creative', 'organized', 'precise', 'formal', 'playful']),
+      verbosity: z.enum(['concise', 'balanced', 'detailed']),
+      languagePolicy: z.enum(['mirror', 'business', 'formal_ar', 'en']),
+      dos: z.array(z.string().trim().max(200)).max(12),
+      donts: z.array(z.string().trim().max(200)).max(12),
+      signaturePhrases: z.array(z.string().trim().max(120)).max(8),
+    })
+    .partial()
+    .optional()
+    .nullable(),
 });
 
 export type AgentInput = z.infer<typeof agentSchema>;
