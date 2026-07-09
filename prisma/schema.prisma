@@ -175,6 +175,7 @@ model Company {
   coupons             Coupon[]
   inventoryItems      InventoryItem[]
   staffMembers        StaffMember[]
+  sitePages           SitePage[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1902,5 +1903,31 @@ model StaffMember {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  @@index([companyId])
+}
+
+// Owner-authored content pages for the public site (Terms, Instructions, About,
+// Privacy…). Rendered inside the same site chrome (header + footer) as the
+// storefront, and optionally linked from the footer and/or the main site nav.
+model SitePage {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  title     String
+  titleEn   String?
+  slug      String // URL segment, unique per company: /{company}/p/{slug}
+  content   String  @db.Text // markdown
+  contentEn String? @db.Text
+
+  showInFooter Boolean @default(true)
+  showInNav    Boolean @default(false)
+  isPublished  Boolean @default(true)
+  sortOrder    Int     @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, slug])
   @@index([companyId])
 }

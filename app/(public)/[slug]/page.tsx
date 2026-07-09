@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { ChatWidget } from '@/components/public/chat-widget';
 import { OrderButton } from '@/components/public/order-button';
 import { BookingButton } from '@/components/public/booking-button';
+import { SiteHeader, SiteFooter, type SiteNavLink } from '@/components/public/site-chrome';
 
 export const dynamic = 'force-dynamic';
 
@@ -36,7 +37,7 @@ export default async function PublicBusinessPage({
 
   const showServices = company.hasServices && wc?.showServices !== false;
 
-  const [departments, services, products, staff, widgetAgent] = await Promise.all([
+  const [departments, services, products, staff, widgetAgent, sitePages] = await Promise.all([
     showServices
       ? db.department.findMany({
           where: { companyId: company.id, landingVisible: true },
@@ -86,6 +87,11 @@ export default async function PublicBusinessPage({
             select: { name: true },
           });
     })(),
+    db.sitePage.findMany({
+      where: { companyId: company.id, isPublished: true },
+      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      select: { title: true, slug: true, showInFooter: true, showInNav: true },
+    }),
   ]);
 
   const heroTitle = wc?.heroTitle || company.name;
@@ -152,33 +158,31 @@ export default async function PublicBusinessPage({
     </div>
   );
 
+  // Owner-authored pages linked from the header nav and/or the footer.
+  const navPages = sitePages.filter((p) => p.showInNav);
+  const footerPages = sitePages.filter((p) => p.showInFooter);
+  const headerNav: SiteNavLink[] = [
+    ...(clinicSections.length > 0 ? [{ label: 'خدماتنا', href: '#services' }] : []),
+    ...(staff.length > 0 ? [{ label: 'فريقنا', href: '#team' }] : []),
+    ...(wc?.phone || wc?.email || wc?.whatsapp ? [{ label: 'تواصل', href: '#contact' }] : []),
+    ...navPages.map((p) => ({ label: p.title, href: `/${slug}/p/${p.slug}` })),
+  ];
+  const footerLinks: SiteNavLink[] = footerPages.map((p) => ({
+    label: p.title,
+    href: `/${slug}/p/${p.slug}`,
+  }));
+
   return (
     <div className="min-h-screen bg-background text-foreground" dir="rtl">
-      {/* Sticky site header + nav */}
-      <header className="sticky top-0 z-40 border-b bg-background/85 backdrop-blur">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-3 px-5 py-3">
-          <div className="flex items-center gap-2.5">
-            {company.logo && (
-              <Image src={company.logo} alt="" width={34} height={34} className="rounded-lg" />
-            )}
-            <span className="text-lg font-bold tracking-tight">{company.name}</span>
-          </div>
-          <nav className="hidden items-center gap-6 text-sm text-muted-foreground sm:flex">
-            {clinicSections.length > 0 && <a href="#services" className="hover:text-foreground">خدماتنا</a>}
-            {staff.length > 0 && <a href="#team" className="hover:text-foreground">فريقنا</a>}
-            {(wc?.phone || wc?.email || wc?.whatsapp) && (
-              <a href="#contact" className="hover:text-foreground">تواصل</a>
-            )}
-          </nav>
-          <a
-            href="#services"
-            className="rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm"
-            style={{ backgroundColor: accent }}
-          >
-            احجز موعد
-          </a>
-        </div>
-      </header>
+      <SiteHeader
+        slug={slug}
+        companyName={company.name}
+        logo={company.logo}
+        accent={accent}
+        navLinks={headerNav}
+        ctaHref="#services"
+        ctaLabel="احجز موعد"
+      />
 
       {/* Hero */}
       <section className="relative overflow-hidden border-b">
@@ -335,9 +339,7 @@ export default async function PublicBusinessPage({
         </section>
       )}
 
-      <footer className="border-t py-8 text-center text-xs text-muted-foreground">
-        © {new Date().getFullYear()} {company.name}
-      </footer>
+      <SiteFooter companyName={company.name} year={new Date().getFullYear()} links={footerLinks} />
 
       {/* Chat widget */}
       {wc?.chatEnabled !== false && widgetAgent && (

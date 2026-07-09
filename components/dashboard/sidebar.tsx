@@ -12,6 +12,7 @@ import {
   CheckCircle,
   CircleDollarSign,
   Contact,
+  FileText,
   HandCoins,
   ShoppingBag,
   LayoutDashboard,
@@ -108,6 +109,7 @@ export const NAV_SECTIONS: NavSection[] = [
     // Guardrails + platform config.
     sectionKey: 'configure',
     items: [
+      { href: '/pages', icon: FileText, labelKey: 'pages' },
       { href: '/settings', icon: Settings, labelKey: 'settings' },
       { href: '/modules', icon: LayoutGrid, labelKey: 'modules' },
     ],
