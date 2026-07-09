@@ -44,6 +44,35 @@
       "working": "Working",
       "needsYou": "Need you",
       "tasksInProgress": "Tasks in progress"
+    },
+    "units": {
+      "new": "New department",
+      "empty": "No departments yet — add one to group your services and the AI agents that run them.",
+      "onWebsite": "On website",
+      "servicesLabel": "Services",
+      "agentsLabel": "AI agents",
+      "editTitle": "Edit department",
+      "newTitle": "New department",
+      "name": "Name",
+      "namePlaceholder": "e.g. Dental Clinic",
+      "color": "Color",
+      "icon": "Icon",
+      "showOnWebsite": "Show as a section on your website",
+      "taglinePlaceholder": "Tagline — e.g. Modern dental care for the whole family",
+      "landingHint": "Its services appear as cards under this section on your public site.",
+      "moreOptions": "More options",
+      "nameEnPlaceholder": "English name (optional)",
+      "descriptionPlaceholder": "Description (optional)",
+      "cancel": "Cancel",
+      "save": "Save changes",
+      "create": "Create department",
+      "created": "Department created.",
+      "updated": "Department updated.",
+      "saveError": "Could not save the department.",
+      "deleted": "Department deleted.",
+      "deleteError": "Could not delete.",
+      "hasAgents": "Move or remove this department’s agents first.",
+      "confirmDelete": "Delete the “{name}” department?"
     }
   },
   "common": {
@@ -758,7 +787,7 @@
     },
     "departments": {
       "title": "Departments",
-      "subtitle": "Organize your company into departments, then assign AI employees to each."
+      "subtitle": "Each department is a unit of your business — it bundles the services you offer and the AI agents that run them, and appears as a section on your website."
     },
     "agents": {
       "title": "Employees",
