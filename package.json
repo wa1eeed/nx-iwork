@@ -13,6 +13,7 @@
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "tsx prisma/seed.ts",
     "seed:demo": "tsx scripts/seed-demo.ts",
+    "seed:refine": "tsx scripts/seed-refine.ts",
     "prisma:studio": "prisma studio",
     "prisma:reset": "prisma migrate reset",
     "test": "vitest",
