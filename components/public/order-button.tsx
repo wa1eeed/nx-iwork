@@ -24,23 +24,38 @@ export function OrderButton({
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [notes, setNotes] = useState('');
+  const [coupon, setCoupon] = useState('');
+  const [error, setError] = useState('');
   const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
   const accent = color || '#06b6d4';
 
   async function submit() {
     if (!name.trim()) return;
     setState('sending');
+    setError('');
     try {
       const res = await fetch(`/api/public/${slug}/order`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ productId, serviceId, customerName: name.trim(), customerPhone: phone.trim(), customerEmail: email.trim(), notes: notes.trim() }),
+        body: JSON.stringify({
+          productId,
+          serviceId,
+          customerName: name.trim(),
+          customerPhone: phone.trim(),
+          customerEmail: email.trim(),
+          notes: notes.trim(),
+          couponCode: coupon.trim(),
+        }),
       });
       const data = await res.json();
       if (data.ok) setState('done');
-      else setState('idle');
+      else {
+        setState('idle');
+        setError(data.reason === 'coupon_invalid' ? 'كود الخصم غير صالح أو لا ينطبق.' : 'تعذّر إرسال الطلب، حاول مجدداً.');
+      }
     } catch {
       setState('idle');
+      setError('تعذّر إرسال الطلب، حاول مجدداً.');
     }
   }
 
@@ -78,6 +93,8 @@ export function OrderButton({
                 <input value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="رقم الجوال" dir="ltr" className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none" />
                 <input value={email} onChange={(e) => setEmail(e.target.value)} type="email" placeholder="البريد الإلكتروني (لإرسال تأكيد الطلب)" dir="ltr" className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm outline-none" />
                 <textarea value={notes} onChange={(e) => setNotes(e.target.value)} placeholder="ملاحظات (اختياري)" rows={2} className="w-full resize-none rounded-lg border bg-transparent px-3 py-2 text-sm outline-none" />
+                <input value={coupon} onChange={(e) => setCoupon(e.target.value.toUpperCase())} placeholder="كود خصم (اختياري)" dir="ltr" className="w-full rounded-lg border bg-transparent px-3 py-2 text-sm uppercase outline-none" />
+                {error && <p className="text-xs text-destructive">{error}</p>}
                 <button
                   onClick={submit}
                   disabled={state === 'sending' || !name.trim()}

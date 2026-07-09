@@ -34,6 +34,7 @@ export default async function DashboardLayout({
     db.company.findUnique({
       where: { id: companyId },
       select: {
+        slug: true,
         hasEcommerce: true,
         hasServices: true,
         hasBookings: true,
@@ -63,6 +64,7 @@ export default async function DashboardLayout({
           plan={company?.plan ?? 'STARTER'}
           pendingApprovals={pendingApprovals}
           automationEnabled={company?.automationEnabled ?? true}
+          slug={company?.slug ?? null}
         />
         {/* Phone-only swipeable section strip; desktop uses the sidebar. */}
         <MobileSectionCarousel modules={modules} />

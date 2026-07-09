@@ -38,6 +38,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   const notes = typeof body.notes === 'string' ? body.notes.trim().slice(0, 1000) : null;
   const productId = typeof body.productId === 'string' ? body.productId : null;
   const serviceId = typeof body.serviceId === 'string' ? body.serviceId : null;
+  const couponCode = typeof body.couponCode === 'string' ? body.couponCode.trim().toUpperCase().slice(0, 40) : '';
   if (!customerName || (!productId && !serviceId)) {
     return NextResponse.json({ ok: false, reason: 'invalid' }, { status: 400 });
   }
@@ -83,6 +84,34 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     price = s.price ? Number(s.price) : 0;
   }
 
+  // Optional coupon redemption — scope/window/min-subtotal/remaining validated.
+  // An invalid code is reported so the customer can fix it rather than overpay.
+  let couponId: string | undefined;
+  let discount = 0;
+  if (couponCode) {
+    const coupon = await db.coupon.findFirst({ where: { companyId: company.id, code: couponCode } });
+    const nowD = new Date();
+    const orderScope = type === 'PRODUCT' ? 'PRODUCTS' : 'SERVICES';
+    const valid =
+      coupon &&
+      coupon.isActive &&
+      (!coupon.startsAt || coupon.startsAt <= nowD) &&
+      (!coupon.expiresAt || coupon.expiresAt >= nowD) &&
+      (coupon.maxRedemptions == null || coupon.usedCount < coupon.maxRedemptions) &&
+      (coupon.scope === 'ALL' || coupon.scope === orderScope) &&
+      (!coupon.minSubtotal || price >= Number(coupon.minSubtotal));
+    if (valid && coupon) {
+      discount =
+        coupon.type === 'PERCENT'
+          ? Math.round(((price * Number(coupon.value)) / 100) * 100) / 100
+          : Math.min(price, Number(coupon.value));
+      couponId = coupon.id;
+    } else {
+      return NextResponse.json({ ok: false, reason: 'coupon_invalid' }, { status: 409 });
+    }
+  }
+  const finalTotal = Math.max(0, price - discount);
+
   // Find-or-create the CRM customer (by phone within the company).
   let customerId: string | undefined;
   if (customerPhone) {
@@ -109,7 +138,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
       customerEmail,
       customerNotes: notes,
       subtotal: price,
-      total: price,
+      discount,
+      total: finalTotal,
+      couponId,
       ...(type === 'SERVICE' ? { serviceId: serviceId! } : {}),
       ...(type === 'PRODUCT'
         ? { items: { create: [{ productId: productId!, quantity: 1, unitPrice: price, total: price }] } }
@@ -117,6 +148,9 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     },
     select: { id: true, orderNumber: true },
   });
+  if (couponId) {
+    await db.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } });
+  }
 
   // A placed order is a realized deal → advance the opportunity to WON
   // (and backfill the email if the customer didn't have one).

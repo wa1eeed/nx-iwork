@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Bell, Sparkles, Zap } from 'lucide-react';
+import { Bell, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { UserMenu } from '@/components/dashboard/user-menu';
@@ -21,6 +21,7 @@ export function Topbar({
   plan = 'STARTER',
   pendingApprovals = 0,
   automationEnabled = true,
+  slug = null,
 }: {
   userName: string;
   userEmail: string;
@@ -29,6 +30,7 @@ export function Topbar({
   plan?: string;
   pendingApprovals?: number;
   automationEnabled?: boolean;
+  slug?: string | null;
 }) {
   // Latin digits everywhere (English-primary), compact so the pill never grows.
   const tokens = new Intl.NumberFormat('en', {
@@ -63,6 +65,20 @@ export function Topbar({
             {planLabel}
           </span>
         </Link>
+
+        {/* Quick shortcut to the owner's public website. */}
+        {slug && (
+          <Link
+            href={`/${slug}`}
+            target="_blank"
+            rel="noreferrer"
+            title="عرض موقعك"
+            className="hidden items-center gap-1.5 rounded-full border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-card sm:flex"
+          >
+            <ExternalLink className="size-3.5" />
+            <span className="hidden lg:inline">View site</span>
+          </Link>
+        )}
 
         {/* Automation toggle — pauses/resumes the scheduler for the tenant. */}
         <AutomationToggle initialOn={automationEnabled} />
