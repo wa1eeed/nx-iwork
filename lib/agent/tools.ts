@@ -7,7 +7,7 @@
 // model as the tool result.
 
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
+import { Prisma, type BookingStatus } from '@prisma/client';
 import { db } from '@/lib/db';
 import type { AiTool } from '@/lib/ai';
 import { nextRef } from '@/lib/refs';
@@ -29,7 +29,7 @@ export interface CompanyModules {
 
 // Sales/catalog tools need e-commerce or services; booking tools need bookings.
 const SALES_TOOLS = new Set(['search_catalog', 'create_order']);
-const BOOKING_TOOLS = new Set(['check_availability', 'list_open_slots', 'create_booking', 'update_booking']);
+const BOOKING_TOOLS = new Set(['check_availability', 'list_open_slots', 'list_bookings', 'create_booking', 'update_booking', 'set_booking_staff']);
 
 // Dynamic tools: only hand the model the tools for the modules this company has
 // enabled (cheaper context + the agent never offers what the business can't do).
@@ -41,15 +41,33 @@ export function getToolsForCompany(m: CompanyModules): AiTool[] {
   });
 }
 
+// Some tools are natural companions of a granted capability. If an agent may
+// book or check availability it must also see the open slots, so `list_open_slots`
+// rides along with any booking grant. This upgrades agents whose stored allow-lists
+// predate that tool (seeded from templates that never listed it) WITHOUT a data
+// migration, and it's safe to expose publicly: open slots carry no customer PII.
+// NOTE: `list_bookings` (returns customer names + phones) and `set_booking_staff`
+// (an owner action) are deliberately NOT companions — they're internal-only and
+// granted explicitly by the dashboard chat path, never to the public widget.
+const TOOL_COMPANIONS: Record<string, string[]> = {
+  check_availability: ['list_open_slots'],
+  create_booking: ['list_open_slots'],
+  update_booking: ['list_open_slots'],
+};
+
 // Per-agent function-calling permissions. An agent receives a tool only if it is
-// BOTH module-enabled AND in the agent's explicit allow-list. An empty allow-list
-// means "all module tools" (backward compatible for agents created before
-// permissions existed). This is the hard gate: the model can never call a tool it
-// wasn't handed, so a tool outside its permissions is unreachable.
+// BOTH module-enabled AND in the agent's (companion-expanded) allow-list. An
+// empty allow-list means "all module tools" (backward compatible for agents
+// created before permissions existed). This is the hard gate: the model can
+// never call a tool it wasn't handed, so a tool outside its permissions is
+// unreachable.
 export function getToolsForAgent(m: CompanyModules, permissions: string[]): AiTool[] {
   const base = getToolsForCompany(m);
   if (!permissions || permissions.length === 0) return base;
   const allowed = new Set(permissions);
+  for (const p of permissions) {
+    for (const c of TOOL_COMPANIONS[p] ?? []) allowed.add(c);
+  }
   return base.filter((t) => allowed.has(t.name));
 }
 
@@ -99,6 +117,35 @@ export const AGENT_TOOLS: AiTool[] = [
         date: { type: 'string', description: 'اليوم المطلوب YYYY-MM-DD (بتوقيت النشاط)' },
       },
       required: ['serviceId', 'date'],
+    },
+  },
+  {
+    name: 'list_bookings',
+    description:
+      'اعرض الحجوزات/المواعيد القائمة في النظام للإجابة مباشرةً عن أسئلة مثل «المواعيد القادمة»، «حجوزات اليوم/الغد»، «مواعيد عميل معيّن»، «طابور مواعيد موظف». لا تطلب من المستخدم نطاقاً زمنياً ولا تُنشئ مهمة لهذا — استعمل هذه الأداة وأجب فوراً. الأوقات تُعاد جاهزة بتوقيت النشاط (نظام ١٢ ساعة). بلا أي معامل = المواعيد القادمة من الآن.',
+    parameters: {
+      type: 'object',
+      properties: {
+        date: { type: 'string', description: 'يوم محدّد YYYY-MM-DD (بتوقيت النشاط) — مثلاً حجوزات اليوم أو الغد' },
+        from: { type: 'string', description: 'بداية نطاق YYYY-MM-DD (اختياري)' },
+        to: { type: 'string', description: 'نهاية نطاق YYYY-MM-DD (اختياري)' },
+        customer: { type: 'string', description: 'اسم العميل أو رقم جواله — لعرض مواعيد عميل معيّن' },
+        staff: { type: 'string', description: 'اسم الموظف — لعرض طابور مواعيده' },
+        status: { type: 'string', enum: ['PENDING', 'CONFIRMED', 'WAITLIST', 'COMPLETED', 'CANCELLED', 'NO_SHOW'], description: 'تصفية بالحالة (اختياري)' },
+      },
+    },
+  },
+  {
+    name: 'set_booking_staff',
+    description:
+      'خصّص موظفاً/مقدّم خدمة لحجز قائم (يُحتسب في العمولات). مرّر معرّف الحجز bookingId (من list_bookings) واسم الموظف staffName. استخدمها عندما يطلب صاحب العمل تعيين طبيب/موظف لموعد.',
+    parameters: {
+      type: 'object',
+      properties: {
+        bookingId: { type: 'string', description: 'معرّف الحجز من list_bookings' },
+        staffName: { type: 'string', description: 'اسم الموظف كما هو مسجّل في الطاقم' },
+      },
+      required: ['bookingId', 'staffName'],
     },
   },
   {
@@ -300,6 +347,20 @@ const listOpenSlotsArgs = z.object({
   date: z.string().trim().min(1),
 });
 
+const listBookingsArgs = z.object({
+  date: z.string().trim().optional(),
+  from: z.string().trim().optional(),
+  to: z.string().trim().optional(),
+  customer: z.string().trim().optional(),
+  staff: z.string().trim().optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'WAITLIST', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).optional(),
+});
+
+const setBookingStaffArgs = z.object({
+  bookingId: z.string().trim().min(1),
+  staffName: z.string().trim().min(1),
+});
+
 const createBookingArgs = z.object({
   title: z.string().trim().min(1).max(300),
   startAt: z.string().trim(),
@@ -432,6 +493,42 @@ async function suggestAlternatives(
   return out;
 }
 
+// Wall-clock (calendar date + HH:MM) in an IANA zone → the exact UTC instant.
+// Mirrors the booking engine's zonedToUtc so day boundaries line up with slots.
+function zonedToUtc(y: number, mo: number, d: number, hh: number, mm: number, tz: string): Date {
+  const guess = Date.UTC(y, mo - 1, d, hh, mm);
+  const parts = new Intl.DateTimeFormat('en-US', {
+    timeZone: tz, year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', hour12: false,
+  }).formatToParts(new Date(guess));
+  const val = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+  let h = val('hour');
+  if (h === 24) h = 0;
+  const seenAsUtc = Date.UTC(val('year'), val('month') - 1, val('day'), h, val('minute'));
+  return new Date(guess - (seenAsUtc - guess));
+}
+
+// UTC [from, to) window covering one business-local calendar day (YYYY-MM-DD),
+// so "bookings on that day" reads correctly regardless of server timezone.
+function localDayRange(dateISO: string, tz: string): { from: Date; to: Date } {
+  const [y, mo, d] = dateISO.split('-').map(Number);
+  const from = zonedToUtc(y, mo, d, 0, 0, tz);
+  return { from, to: new Date(from.getTime() + DAY_MS) };
+}
+
+// Pre-format an instant in the business timezone so the model never does date
+// math: a readable Arabic date + a 12-hour time (Latin digits, ص/م meridiem).
+// Returning these ready-made is what keeps agent-quoted times correct.
+function fmtWhen(d: Date, tz: string): { date: string; time: string; iso: string } {
+  const date = new Intl.DateTimeFormat('ar-SA-u-nu-latn', {
+    timeZone: tz, weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+  }).format(d);
+  const time = new Intl.DateTimeFormat('ar-SA-u-nu-latn', {
+    timeZone: tz, hour: 'numeric', minute: '2-digit', hour12: true,
+  }).format(d);
+  return { date, time, iso: d.toISOString() };
+}
+
 export async function executeTool(
   name: string,
   rawArgs: Record<string, unknown>,
@@ -510,7 +607,10 @@ export async function executeTool(
           const tomorrow = new Date(new Date(`${args.date}T00:00:00Z`).getTime() + DAY_MS);
           nextAvailable = await suggestAlternatives(ctx.companyId, args.serviceId, tomorrow, tz);
         }
-        return ok({ date: args.date, open, waitlist, nextAvailable });
+        return ok({
+          note: 'الأوقات مُنسّقة بتوقيت النشاط (نظام ١٢ ساعة). اقتبسها حرفياً ولا تعِد حسابها.',
+          date: args.date, open, waitlist, nextAvailable,
+        });
       }
 
       case 'check_availability': {
@@ -518,6 +618,7 @@ export async function executeTool(
         const from = parseDate(args.from);
         const to = parseDate(args.to);
         if (!from || !to) return fail('صيغة التاريخ غير صحيحة. استخدم ISO 8601.');
+        const tz = await companyTimezone(ctx.companyId);
         const booked = await db.booking.findMany({
           where: {
             companyId: ctx.companyId,
@@ -529,11 +630,11 @@ export async function executeTool(
           select: { title: true, startAt: true, endAt: true },
         });
         return ok({
-          booked: booked.map((b) => ({
-            title: b.title,
-            startAt: b.startAt.toISOString(),
-            endAt: b.endAt?.toISOString() ?? null,
-          })),
+          note: 'الأوقات مُنسّقة مسبقاً بتوقيت النشاط (نظام ١٢ ساعة). لا تحوّلها ولا تعيد حسابها.',
+          booked: booked.map((b) => {
+            const w = fmtWhen(b.startAt, tz);
+            return { title: b.title, date: w.date, time: w.time };
+          }),
           count: booked.length,
         });
       }
@@ -566,12 +667,23 @@ export async function executeTool(
           });
           if (!exists) return fail('العميل المرتبط غير موجود.');
         } else if (args.customerName) {
-          const found = args.customerPhone
+          // Reuse an existing customer before creating a duplicate: match on
+          // phone first (most reliable), then fall back to an exact name match.
+          let found = args.customerPhone
             ? await db.customer.findFirst({
                 where: { companyId: ctx.companyId, phone: { contains: args.customerPhone } },
                 select: { id: true },
               })
             : null;
+          if (!found) {
+            found = await db.customer.findFirst({
+              where: {
+                companyId: ctx.companyId,
+                name: { equals: args.customerName, mode: Prisma.QueryMode.insensitive },
+              },
+              select: { id: true },
+            });
+          }
           if (found) {
             customerId = found.id;
           } else {
@@ -609,12 +721,15 @@ export async function executeTool(
             source: 'agent',
           });
           const waitlisted = booking.status === 'WAITLIST';
+          const tz = await companyTimezone(ctx.companyId);
+          const when = fmtWhen(booking.startAt, tz);
           return ok({
             booking: {
               id: booking.id,
               ref: booking.ref,
               title: booking.title,
-              startAt: booking.startAt.toISOString(),
+              date: when.date,
+              time: when.time,
               status: booking.status,
             },
             waitlisted,
@@ -648,6 +763,101 @@ export async function executeTool(
           }
           throw err;
         }
+      }
+
+      case 'list_bookings': {
+        const args = listBookingsArgs.parse(rawArgs);
+        const tz = await companyTimezone(ctx.companyId);
+        // Resolve the time window here so the model never computes ranges:
+        //   date → that whole business-local day
+        //   from/to → explicit range
+        //   nothing → upcoming (now onward)
+        let gte: Date | undefined;
+        let lt: Date | undefined;
+        if (args.date) {
+          const r = localDayRange(args.date, tz);
+          gte = r.from;
+          lt = r.to;
+        } else {
+          const f = args.from ? parseDate(args.from) : null;
+          const t2 = args.to ? parseDate(args.to) : null;
+          if (args.from && !f) return fail('صيغة "from" غير صحيحة. استخدم ISO 8601 أو YYYY-MM-DD.');
+          if (args.to && !t2) return fail('صيغة "to" غير صحيحة. استخدم ISO 8601 أو YYYY-MM-DD.');
+          gte = f ?? (args.to ? undefined : new Date());
+          lt = t2 ?? undefined;
+        }
+        const statusFilter: Prisma.BookingWhereInput = args.status
+          ? { status: args.status as BookingStatus }
+          : { status: { in: ['PENDING', 'CONFIRMED', 'WAITLIST'] as BookingStatus[] } };
+        const bookings = await db.booking.findMany({
+          where: {
+            companyId: ctx.companyId,
+            ...statusFilter,
+            ...(gte || lt ? { startAt: { ...(gte ? { gte } : {}), ...(lt ? { lt } : {}) } } : {}),
+            ...(args.customer
+              ? {
+                  customer: {
+                    OR: [
+                      { name: { contains: args.customer, mode: Prisma.QueryMode.insensitive } },
+                      { phone: { contains: args.customer } },
+                    ],
+                  },
+                }
+              : {}),
+            ...(args.staff
+              ? { staffMember: { name: { contains: args.staff, mode: Prisma.QueryMode.insensitive } } }
+              : {}),
+          },
+          orderBy: { startAt: 'asc' },
+          take: 40,
+          select: {
+            id: true,
+            ref: true,
+            title: true,
+            startAt: true,
+            status: true,
+            customer: { select: { name: true, phone: true } },
+            staffMember: { select: { name: true } },
+            service: { select: { title: true } },
+          },
+        });
+        return ok({
+          note: 'الأوقات مُنسّقة مسبقاً بتوقيت النشاط (نظام ١٢ ساعة). اعرضها كما هي دون تحويل.',
+          count: bookings.length,
+          bookings: bookings.map((b) => {
+            const w = fmtWhen(b.startAt, tz);
+            return {
+              id: b.id,
+              ref: b.ref,
+              service: b.service?.title ?? b.title,
+              customer: b.customer?.name ?? null,
+              phone: b.customer?.phone ?? null,
+              staff: b.staffMember?.name ?? null,
+              date: w.date,
+              time: w.time,
+              status: b.status,
+            };
+          }),
+        });
+      }
+
+      case 'set_booking_staff': {
+        const args = setBookingStaffArgs.parse(rawArgs);
+        const staff = await db.staffMember.findFirst({
+          where: {
+            companyId: ctx.companyId,
+            isActive: true,
+            name: { contains: args.staffName, mode: Prisma.QueryMode.insensitive },
+          },
+          select: { id: true, name: true },
+        });
+        if (!staff) return fail('لم أجد موظفاً بهذا الاسم ضمن الطاقم النشط. تحقّق من الاسم.');
+        const result = await db.booking.updateMany({
+          where: { id: args.bookingId, companyId: ctx.companyId },
+          data: { staffMemberId: staff.id },
+        });
+        if (result.count === 0) return fail('لم يُعثر على الحجز.');
+        return ok({ message: `تم إسناد الحجز إلى ${staff.name} لاحتساب العمولة.`, staff: staff.name });
       }
 
       case 'search_faq': {

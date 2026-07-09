@@ -38,7 +38,41 @@ export interface SeedResult {
 export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'refine1234'): Promise<SeedResult> {
   const now = new Date();
   const day = (d: number) => new Date(now.getTime() - d * 86_400_000);
-  const ahead = (h: number) => new Date(now.getTime() + h * 3_600_000);
+
+  // Clean, slot-aligned upcoming times in the business timezone, so demo
+  // bookings sit exactly on the booking grid (11:00 / 12:30 / …) instead of the
+  // arbitrary minutes that "now + N hours" produced — which is what made the
+  // agent quote odd times like ":28". Riyadh is a fixed +3 offset (no DST).
+  const TZ = 'Asia/Riyadh';
+  const zToUtc = (y: number, mo: number, d: number, hh: number, mm: number): Date => {
+    const guess = Date.UTC(y, mo - 1, d, hh, mm);
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date(guess));
+    const val = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+    let h = val('hour');
+    if (h === 24) h = 0;
+    const seen = Date.UTC(val('year'), val('month') - 1, val('day'), h, val('minute'));
+    return new Date(guess - (seen - guess));
+  };
+  const riyadhISO = (dt: Date) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(dt);
+  // Next working days (Fri = 5 is closed), as business-local calendar dates.
+  const workingDays: string[] = [];
+  for (let i = 1; workingDays.length < 6 && i < 20; i++) {
+    const dt = new Date(now.getTime() + i * 86_400_000);
+    const iso = riyadhISO(dt);
+    if (new Date(`${iso}T00:00:00Z`).getUTCDay() !== 5) workingDays.push(iso);
+  }
+  // Clean start times inside the availability windows (11–14, 16–22).
+  const cleanSlots: Array<[number, number]> = [[11, 0], [12, 30], [16, 0], [17, 30], [11, 30]];
+  const bookingSlot = (i: number, durationMin = 60): { startAt: Date; endAt: Date } => {
+    const [y, mo, d] = workingDays[i % workingDays.length].split('-').map(Number);
+    const [hh, mm] = cleanSlots[i % cleanSlots.length];
+    const startAt = zToUtc(y, mo, d, hh, mm);
+    return { startAt, endAt: new Date(startAt.getTime() + durationMin * 60_000) };
+  };
 
   console.log('▸ Seeding client demo "مجمع ريفاين الطبي"…');
 
@@ -405,14 +439,15 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
 
   // ── Upcoming bookings (power the Overview + calendar) ───────────────────────
   const bookDefs = [
-    { title: 'تبييض أسنان — سارة العتيبي', svc: 'تبييض الأسنان بالليزر', cust: 'سارة العتيبي', inH: 6 },
-    { title: 'هيدرافيشل — نوف الشمري', svc: 'تنظيف البشرة العميق (هيدرافيشل)', cust: 'نوف الشمري', inH: 22 },
-    { title: 'ليزر إزالة الشعر — ريم المطيري', svc: 'ليزر إزالة الشعر — كامل الجسم', cust: 'ريم المطيري', inH: 27 },
-    { title: 'كشف أسنان — عبدالله القحطاني', svc: 'كشف وتشخيص الأسنان', cust: 'عبدالله القحطاني', inH: 30 },
-    { title: 'بوتكس — خالد الحربي', svc: 'بوتكس الوجه', cust: 'خالد الحربي', inH: 49 },
+    { title: 'تبييض أسنان — سارة العتيبي', svc: 'تبييض الأسنان بالليزر', cust: 'سارة العتيبي' },
+    { title: 'هيدرافيشل — نوف الشمري', svc: 'تنظيف البشرة العميق (هيدرافيشل)', cust: 'نوف الشمري' },
+    { title: 'ليزر إزالة الشعر — ريم المطيري', svc: 'ليزر إزالة الشعر — كامل الجسم', cust: 'ريم المطيري' },
+    { title: 'كشف أسنان — عبدالله القحطاني', svc: 'كشف وتشخيص الأسنان', cust: 'عبدالله القحطاني' },
+    { title: 'بوتكس — خالد الحربي', svc: 'بوتكس الوجه', cust: 'خالد الحربي' },
   ];
   let bn = 1;
   for (const b of bookDefs) {
+    const { startAt, endAt } = bookingSlot(bn - 1);
     await db.booking.create({
       data: {
         companyId,
@@ -421,8 +456,8 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
         serviceId: svc[b.svc],
         customerId: cust[b.cust],
         staffMemberId: staff[(bn - 1) % staff.length],
-        startAt: ahead(b.inH),
-        endAt: ahead(b.inH + 1),
+        startAt,
+        endAt,
         status: 'CONFIRMED',
       },
     });

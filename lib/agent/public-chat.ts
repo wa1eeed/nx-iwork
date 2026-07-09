@@ -62,13 +62,17 @@ export async function runPublicAgentChat(
   const { companyId, agentId, visitorId, message, meta } = input;
 
   // Pre-flight: run the independent reads concurrently instead of a serial chain
-  // of DB round-trips (each is real latency on a remote Postgres).
-  const [agent, providerResult, budget, agentBudget, conversation] = await Promise.all([
+  // of DB round-trips (each is real latency on a remote Postgres). Memory recall
+  // (a network embedding round-trip when the agent has memories) rides along here
+  // too so it never adds serial latency before the model starts — this is a big
+  // part of the "slow to reply on first contact" the owner reported.
+  const [agent, providerResult, budget, agentBudget, conversation, memoryBlock] = await Promise.all([
     loadAgentWithContext(agentId, companyId),
     getProviderForCompany(companyId),
     checkTokenBudget(companyId),
     checkAgentBudget(agentId),
     getOrCreateConversation(input),
+    recallMemoryBlock(agentId, companyId, message),
   ]);
 
   if (!agent) return { ok: false, reason: 'unavailable' };
@@ -95,7 +99,6 @@ export async function runPublicAgentChat(
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
   });
-  const memoryBlock = await recallMemoryBlock(agentId, companyId, message);
   if (memoryBlock) system += `\n\n${memoryBlock}`;
 
   // The public-facing agent should always be able to check availability + book
