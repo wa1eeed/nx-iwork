@@ -270,7 +270,15 @@ model Department {
   description String? @db.Text
   color       String  @default("#06b6d4")
 
-  agents Agent[]
+  // Customer-facing: a department doubles as a landing "clinic" / service
+  // category. When landingVisible it renders as a section on the public site,
+  // with its services (Service.departmentId) shown as cards under it.
+  landingVisible Boolean @default(true)
+  tagline        String? // short line shown under the department on the landing
+  landingOrder   Int     @default(0)
+
+  agents   Agent[]
+  services Service[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1026,6 +1034,13 @@ model Service {
   durationMin Int? // slot length in minutes; null = not bookable by slot
   bufferMin   Int  @default(0) // prep/cleanup gap after each slot
   maxCapacity Int  @default(1) // concurrent bookings per slot
+  // When a slot is full, customers may join a waitlist instead of being blocked.
+  allowWaitlist Boolean @default(false)
+
+  // Customer-facing grouping: which department/"clinic" section this service
+  // lives under on the landing page. Null = ungrouped (a general service).
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id], onDelete: SetNull)
 
   availability ServiceAvailability[]
   bookings     Booking[]
@@ -1035,6 +1050,7 @@ model Service {
   updatedAt DateTime @updatedAt
 
   @@index([companyId])
+  @@index([departmentId])
 }
 
 // Weekly availability window for a bookable service (deterministic slot source).

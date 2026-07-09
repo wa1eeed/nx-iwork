@@ -20,7 +20,9 @@ export default async function DepartmentsPage() {
           icon: true,
           color: true,
           description: true,
-          _count: { select: { agents: true } },
+          landingVisible: true,
+          tagline: true,
+          _count: { select: { agents: true, services: true } },
         },
       })
     : [];
@@ -40,6 +42,9 @@ export default async function DepartmentsPage() {
           icon: d.icon,
           color: d.color,
           description: d.description,
+          landingVisible: d.landingVisible,
+          tagline: d.tagline,
+          serviceCount: d._count.services,
           agentCount: d._count.agents,
         }))}
       />

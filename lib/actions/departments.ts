@@ -31,6 +31,8 @@ export async function createDepartment(raw: DepartmentInput): Promise<Department
         icon: parsed.data.icon,
         color: parsed.data.color,
         description: parsed.data.description || null,
+        landingVisible: parsed.data.landingVisible,
+        tagline: parsed.data.tagline || null,
       },
       select: { id: true },
     });
@@ -61,6 +63,8 @@ export async function updateDepartment(
         icon: parsed.data.icon,
         color: parsed.data.color,
         description: parsed.data.description || null,
+        landingVisible: parsed.data.landingVisible,
+        tagline: parsed.data.tagline || null,
       },
     });
     if (res.count === 0) return { ok: false, error: 'not_found' };

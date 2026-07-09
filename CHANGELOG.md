@@ -37,6 +37,12 @@ Broaden the platform to cover the whole business, not just the AI workforce.
 ### Migration
 `20260709120000_coupons_inventory_staff` — additive: 3 tables + nullable Order/Booking columns.
 
+### Wired (loop closed)
+- Staff attribution selectors on `/orders` + the bookings calendar
+  (`setOrderStaff` / `setBookingStaff`) → feed `/commissions`.
+- The agent `create_order` tool redeems an optional `couponCode` (validate scope/
+  window/min-subtotal/remaining → apply discount → increment `usedCount`).
+
 ---
 
 ## 2026-07-09 — Design-handoff redesign complete + business-first nav + Sales + demo/tests

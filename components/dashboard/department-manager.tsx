@@ -34,6 +34,9 @@ export interface DepartmentRow {
   icon: string;
   color: string;
   description: string | null;
+  landingVisible: boolean;
+  tagline: string | null;
+  serviceCount: number;
   agentCount: number;
 }
 
@@ -71,6 +74,8 @@ interface FormState {
   icon: IconKey;
   color: string;
   description: string;
+  landingVisible: boolean;
+  tagline: string;
 }
 
 const EMPTY: FormState = {
@@ -79,6 +84,8 @@ const EMPTY: FormState = {
   icon: 'briefcase',
   color: COLORS[0],
   description: '',
+  landingVisible: true,
+  tagline: '',
 };
 
 export function DepartmentManager({ departments }: { departments: DepartmentRow[] }) {
@@ -114,6 +121,8 @@ export function DepartmentManager({ departments }: { departments: DepartmentRow[
       icon: (d.icon as IconKey) in ICONS ? (d.icon as IconKey) : 'briefcase',
       color: d.color,
       description: d.description ?? '',
+      landingVisible: d.landingVisible,
+      tagline: d.tagline ?? '',
     });
     setEditingId(d.id);
     setAdding(false);
@@ -132,6 +141,8 @@ export function DepartmentManager({ departments }: { departments: DepartmentRow[
       icon: form.icon,
       color: form.color,
       description: form.description.trim() || null,
+      landingVisible: form.landingVisible,
+      tagline: form.tagline.trim() || null,
     };
     startSave(async () => {
       const res = editingId
@@ -185,10 +196,18 @@ export function DepartmentManager({ departments }: { departments: DepartmentRow[
                   <DeptIcon icon={d.icon} className="h-5 w-5" />
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="font-medium">{d.name}</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium">{d.name}</p>
+                    {d.landingVisible && (
+                      <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-medium text-emerald-600 dark:text-emerald-400">
+                        On website
+                      </span>
+                    )}
+                  </div>
                   <p className="text-xs text-muted-foreground">
-                    {d.agentCount} agent{d.agentCount === 1 ? '' : 's'}
-                    {d.description ? ` · ${d.description}` : ''}
+                    {d.serviceCount} service{d.serviceCount === 1 ? '' : 's'} · {d.agentCount} agent
+                    {d.agentCount === 1 ? '' : 's'}
+                    {d.tagline ? ` · ${d.tagline}` : ''}
                   </p>
                 </div>
                 <Button variant="ghost" size="icon" onClick={() => openEdit(d)}>
@@ -286,6 +305,27 @@ export function DepartmentManager({ departments }: { departments: DepartmentRow[
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* Landing page — a department doubles as a clinic/category section. */}
+              <div className="space-y-2 rounded-lg border bg-muted/30 p-3">
+                <label className="flex items-center justify-between gap-2 text-sm font-medium">
+                  Show as a section on your website
+                  <input
+                    type="checkbox"
+                    checked={form.landingVisible}
+                    onChange={(e) => setForm({ ...form, landingVisible: e.target.checked })}
+                    className="size-4 rounded border"
+                  />
+                </label>
+                <Input
+                  value={form.tagline}
+                  onChange={(e) => setForm({ ...form, tagline: e.target.value })}
+                  placeholder="Tagline — e.g. Modern dental care for the whole family"
+                />
+                <p className="text-[11px] text-muted-foreground">
+                  Its services appear as cards under this section on your public site.
+                </p>
               </div>
 
               {/* Optional details. */}
