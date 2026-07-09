@@ -15,13 +15,31 @@
 // SDK note: Gemini runs through the official @google-cloud/vertexai provider
 // (managed Vertex + ADC), not @google/genai — the production-correct path here.
 
-import type { AutonomyLevel, ClaudeModel, Prisma, TriggerEvent } from '@prisma/client';
+import type { AgentSurface, AutonomyLevel, ClaudeModel, Prisma, TriggerEvent } from '@prisma/client';
 import { db } from '@/lib/db';
 import { nextRef } from '@/lib/refs';
 import { checkRoleConflict } from '@/lib/agent/conflict-check';
 import { cognitiveOnboard } from '@/lib/agent/cognitive-onboarding';
 import { getTemplate, type IfThenScenario } from '@/lib/agent/templates';
+import { getArchetype } from '@/lib/agent/archetypes';
 import { agentTokenCap } from '@/lib/plans';
+
+// Map a legacy template key to a role-model archetype, so template hires get the
+// right customer/internal scope + capability bundle. Unknown → front_desk.
+const TEMPLATE_ARCHETYPE: Record<string, string> = {
+  sales: 'sales',
+  support: 'care',
+  marketing: 'marketing',
+  finance: 'finance',
+  operations: 'operations',
+  appointments: 'front_desk',
+  reception: 'front_desk',
+  booking: 'front_desk',
+};
+
+function archetypeForTemplate(templateType: string): string {
+  return TEMPLATE_ARCHETYPE[templateType] ?? 'front_desk';
+}
 
 export interface DeployScenario {
   event: TriggerEvent;
@@ -48,6 +66,8 @@ export interface DeployPayload {
   systemPrompt?: string | null;
   scenarios?: DeployScenario[];
   permissions?: string[]; // explicit allow-list of tool ids (custom path)
+  archetype?: string; // role-model archetype key (custom path); seeds surface
+  personaConfig?: Prisma.InputJsonValue; // structured persona (custom path)
 }
 
 export interface ConflictVerdict {
@@ -145,6 +165,11 @@ export class HRAgentService {
         .map((s) => ({ event: SCENARIO_EVENT_MAP[s.event], action: s.action }))
         .filter((s): s is DeployScenario => Boolean(s.event));
 
+      // Derive the role-model archetype (→ hard customer/internal scope +
+      // structured persona) from the legacy template key.
+      const archetypeKey = archetypeForTemplate(payload.templateType);
+      const arch = getArchetype(archetypeKey);
+
       return {
         conflictRole: tpl.roleNameEn,
         scenarios,
@@ -160,6 +185,9 @@ export class HRAgentService {
           role: tpl.roleName,
           roleEn: tpl.roleNameEn,
           persona,
+          archetype: archetypeKey,
+          surface: (arch?.surface ?? 'CUSTOMER_FACING') as AgentSurface,
+          personaConfig: (arch?.persona ?? undefined) as Prisma.InputJsonValue | undefined,
           kpis: tpl.defaultKpis as Prisma.InputJsonValue,
           permissions: ((tpl.defaultPermissions as unknown as string[]) ?? []),
           model: tpl.model,
@@ -174,6 +202,10 @@ export class HRAgentService {
     if (!payload.name?.trim() || !payload.role?.trim() || !payload.persona?.trim()) {
       throw new HRValidationError('invalid_payload');
     }
+    // Archetype seeds the hard scope + a structured persona default; an explicit
+    // personaConfig from the creation UI wins when provided.
+    const customArchetype = payload.archetype ?? 'front_desk';
+    const customArch = getArchetype(customArchetype);
     return {
       conflictRole: payload.roleEn || payload.role,
       scenarios: payload.scenarios ?? [],
@@ -188,6 +220,9 @@ export class HRAgentService {
         role: payload.role.trim(),
         roleEn: payload.roleEn || null,
         persona: payload.persona.trim(),
+        archetype: customArchetype,
+        surface: (customArch?.surface ?? 'CUSTOMER_FACING') as AgentSurface,
+        personaConfig: (payload.personaConfig ?? customArch?.persona ?? undefined) as Prisma.InputJsonValue | undefined,
         jobDescription: payload.jobDescription?.trim() || null,
         autonomy: payload.autonomy ?? 'ASK',
         model: payload.model ?? 'HAIKU',

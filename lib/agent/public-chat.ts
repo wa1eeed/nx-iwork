@@ -76,6 +76,10 @@ export async function runPublicAgentChat(
   ]);
 
   if (!agent) return { ok: false, reason: 'unavailable' };
+  // Hard scope: only customer-facing archetypes (front desk / sales / care) may
+  // serve the public widget. An internal archetype (marketing/finance/ops) must
+  // never answer a customer, even if misconfigured as the widget agent.
+  if (agent.surface === 'INTERNAL') return { ok: false, reason: 'unavailable' };
   if (!providerResult.ok) return { ok: false, reason: 'unavailable' };
   if (!budget.ok) return { ok: false, reason: budget.reason };
   if (!agentBudget.ok) return { ok: false, reason: 'billing_limit' };

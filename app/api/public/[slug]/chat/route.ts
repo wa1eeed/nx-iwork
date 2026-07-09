@@ -61,11 +61,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     return NextResponse.json({ ok: false, reason: 'unavailable' }, { status: 404 });
   }
 
-  // Designated agent, or fall back to the first active agent.
+  // Designated agent, or fall back to the first active CUSTOMER-FACING agent —
+  // an internal archetype must never end up answering the public widget.
   let agentId = company.websiteConfig.chatAgentId;
   if (!agentId) {
     const fallback = await db.agent.findFirst({
-      where: { companyId: company.id, status: { not: 'ARCHIVED' } },
+      where: { companyId: company.id, status: { not: 'ARCHIVED' }, surface: 'CUSTOMER_FACING' },
       orderBy: { createdAt: 'asc' },
       select: { id: true },
     });

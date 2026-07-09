@@ -4,11 +4,12 @@
 // so it works identically across providers.
 
 import type { Agent, Company, CompanyDNA, BusinessSettings } from '@prisma/client';
+import { parsePersonaConfig, compilePersona } from './persona';
 
 export interface AgentPromptContext {
   agent: Pick<
     Agent,
-    'name' | 'nameEn' | 'role' | 'roleEn' | 'persona' | 'jobDescription' | 'autonomy' | 'systemPrompt'
+    'name' | 'nameEn' | 'role' | 'roleEn' | 'persona' | 'personaConfig' | 'jobDescription' | 'autonomy' | 'systemPrompt'
   >;
   company: Pick<Company, 'name' | 'nameEn' | 'brandVoice' | 'industry'>;
   dna?: Pick<
@@ -42,7 +43,10 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
       (company.industry ? ` مجال الشركة: ${company.industry}.` : '')
   );
 
-  sections.push(`شخصيتك وأسلوبك:\n${agent.persona}`);
+  // Persona: prefer the STRUCTURED config (deterministic, precise) and fall back
+  // to the legacy free-text field for agents created before the role model.
+  const personaCfg = parsePersonaConfig(agent.personaConfig);
+  sections.push(personaCfg ? compilePersona(personaCfg) : `شخصيتك وأسلوبك:\n${agent.persona}`);
 
   // Current date/time + a precomputed calendar anchor. LLMs are unreliable at
   // weekday arithmetic ("day after tomorrow = ?"), so we do the math server-side

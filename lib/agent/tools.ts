@@ -7,7 +7,7 @@
 // model as the tool result.
 
 import { z } from 'zod';
-import { Prisma, type BookingStatus } from '@prisma/client';
+import { Prisma, type BookingStatus, type AgentOutputType, type AgentOutputStatus } from '@prisma/client';
 import { db } from '@/lib/db';
 import type { AiTool } from '@/lib/ai';
 import { nextRef } from '@/lib/refs';
@@ -324,6 +324,30 @@ export const AGENT_TOOLS: AiTool[] = [
       required: ['decision'],
     },
   },
+  {
+    name: 'create_output',
+    description:
+      'سلّم مخرجاً جاهزاً لصاحب العمل (تقرير، خطة، محتوى تسويقي، تحليل، أو مسودة رسالة) ليظهر في «مساحة عمل الوكلاء». استخدمها عندما تُنتج عملاً ملموساً بدل الاكتفاء بالرد في المحادثة — خصوصاً للأدوار الخلفية (تسويق/مالية/عمليات). اكتب المحتوى كاملاً وجاهزاً في body بصيغة Markdown.',
+    parameters: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['MESSAGE', 'REPORT', 'PLAN', 'CONTENT', 'ANALYSIS', 'ACTION_LOG'],
+          description: 'نوع المخرج',
+        },
+        title: { type: 'string', description: 'عنوان موجز واضح للمخرج' },
+        body: { type: 'string', description: 'المحتوى الكامل الجاهز (Markdown)' },
+        status: {
+          type: 'string',
+          enum: ['DRAFT', 'READY'],
+          description: 'DRAFT إن كان مسودة أولية، وإلا READY للمراجعة. الافتراضي READY.',
+        },
+        customerName: { type: 'string', description: 'اسم العميل المرتبط بالمخرج إن وُجد (اختياري)' },
+      },
+      required: ['type', 'title', 'body'],
+    },
+  },
 ];
 
 // ---- Executors -------------------------------------------------------------
@@ -419,6 +443,14 @@ const createOrderArgs = z.object({
   type: z.enum(['SERVICE', 'PRODUCT']).optional(),
   notes: z.string().trim().max(2000).optional(),
   couponCode: z.string().trim().max(40).optional(),
+});
+
+const createOutputArgs = z.object({
+  type: z.enum(['MESSAGE', 'REPORT', 'PLAN', 'CONTENT', 'ANALYSIS', 'ACTION_LOG']),
+  title: z.string().trim().min(1).max(300),
+  body: z.string().trim().min(1).max(20_000),
+  status: z.enum(['DRAFT', 'READY']).optional(),
+  customerName: z.string().trim().max(200).optional(),
 });
 
 const createTaskArgs = z.object({
@@ -1116,6 +1148,48 @@ export async function executeTool(
         return ok({
           approvalId: approval.id,
           message: 'تم رفع القرار لصاحب العمل للموافقة. لن أنفّذه حتى يوافق.',
+        });
+      }
+
+      case 'create_output': {
+        const args = createOutputArgs.parse(rawArgs);
+        // Optionally link the deliverable to a known customer (best-effort).
+        let customerId: string | undefined;
+        if (args.customerName) {
+          const c = await db.customer.findFirst({
+            where: {
+              companyId: ctx.companyId,
+              name: { equals: args.customerName, mode: Prisma.QueryMode.insensitive },
+            },
+            select: { id: true },
+          });
+          customerId = c?.id;
+        }
+        const output = await db.agentOutput.create({
+          data: {
+            companyId: ctx.companyId,
+            agentId: ctx.agentId,
+            type: args.type as AgentOutputType,
+            status: (args.status ?? 'READY') as AgentOutputStatus,
+            title: args.title,
+            body: args.body,
+            customerId,
+          },
+          select: { id: true, title: true, type: true, status: true },
+        });
+        // Surface it on the timeline so the owner sees the delivery happen.
+        await db.timelineEvent.create({
+          data: {
+            companyId: ctx.companyId,
+            agentId: ctx.agentId,
+            type: 'OUTPUT_DELIVERED',
+            title: 'تسليم مخرج',
+            description: args.title,
+          },
+        });
+        return ok({
+          output,
+          message: 'تم تسليم المخرج إلى مساحة عمل الوكلاء لعرضه على صاحب العمل.',
         });
       }
 
