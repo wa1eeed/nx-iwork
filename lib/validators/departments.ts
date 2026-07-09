@@ -8,6 +8,10 @@ export const departmentSchema = z.object({
   icon: z.string().trim().min(1).max(40).default('briefcase'),
   color: z.string().regex(HEX_COLOR).default('#06b6d4'),
   description: z.string().trim().max(500).optional().nullable(),
+  // Customer-facing: show this department as a "clinic"/category section on the
+  // public landing page, with an optional tagline.
+  landingVisible: z.boolean().optional().default(true),
+  tagline: z.string().trim().max(160).optional().nullable(),
 });
 
 export type DepartmentInput = z.infer<typeof departmentSchema>;
