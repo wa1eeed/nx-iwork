@@ -456,7 +456,8 @@
       "sales": "Sales",
       "knowledge": "Knowledge & automation",
       "billing": "Billing"
-    }
+    },
+    "workspace": "Workspace"
   },
   "wallet": {
     "title": "Wallet",
@@ -1022,7 +1023,8 @@
       "scenarios": "Scenarios",
       "kpis": "KPIs",
       "memory": "Memory",
-      "settings": "Settings"
+      "settings": "Settings",
+      "outputs": "Outputs"
     },
     "capabilities": "Capabilities",
     "capabilitiesNote": "These change with the modules enabled for your company.",
@@ -1623,5 +1625,43 @@
     "scheduled": "Scheduled",
     "ran": "ran {count}×",
     "inactive": " · inactive"
+  },
+  "outputs": {
+    "title": "Agent Workspace",
+    "subtitle": "Everything your AI team delivered — review, approve, and publish.",
+    "statTotal": "Total deliverables",
+    "statWeek": "This week",
+    "statPending": "Awaiting review",
+    "empty": "No deliverables yet. Background agents (marketing, finance, operations) will deliver reports, plans, and content here.",
+    "emptyFiltered": "No deliverables match these filters.",
+    "allTypes": "All types",
+    "allAgents": "All agents",
+    "allStatus": "All statuses",
+    "by": "by {agent}",
+    "view": "View",
+    "hide": "Hide",
+    "approve": "Approve",
+    "publish": "Publish",
+    "archive": "Archive",
+    "markReady": "Mark ready",
+    "restore": "Restore",
+    "updated": "Updated",
+    "failed": "Couldn’t update. Try again.",
+    "linkedTo": "Re: {customer}",
+    "type": {
+      "MESSAGE": "Message",
+      "REPORT": "Report",
+      "PLAN": "Plan",
+      "CONTENT": "Content",
+      "ANALYSIS": "Analysis",
+      "ACTION_LOG": "Action log"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "READY": "Ready",
+      "APPROVED": "Approved",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    }
   }
 }

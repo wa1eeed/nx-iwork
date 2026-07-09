@@ -83,6 +83,7 @@ export const NAV_SECTIONS: NavSection[] = [
     sectionKey: 'workforce',
     items: [
       { href: '/agents', icon: Bot, labelKey: 'agents' },
+      { href: '/outputs', icon: Sparkles, labelKey: 'workspace' },
       { href: '/departments', icon: Building2, labelKey: 'departments' },
       { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
     ],
