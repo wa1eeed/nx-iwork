@@ -962,6 +962,20 @@ The customer-facing + storage arc:
   injected into the system prompt. The **per-department permission matrix** is a UI
   grouping over the existing `Agent.permissions` hard gate (no schema change). Later
   phases (Skills, orchestration) are not in the schema yet. See `docs/AGENT_SYSTEM.md`.
+- **Guardrails (2026-07-09):** `Company.{automationEnabled, requireApprovalForSensitive,
+  requireMessageReview, spendApprovalCapEnabled, spendApprovalCapSar}` — owner governance
+  injected into `buildSystemPrompt` and gating the scheduler. `Agent.autonomy`
+  (`AutonomyLevel`: SUGGEST/ASK/AUTOPILOT). See `docs/AGENT_SYSTEM.md → Guardrails & Autonomy`.
+- **Business modules (2026-07-09, migration `20260709120000_coupons_inventory_staff`):**
+  - `Coupon` — discount codes (`CouponType` PERCENT/FIXED, `CouponScope`
+    ALL/PRODUCTS/SERVICES/BOOKINGS, min-subtotal, max-redemptions, window). `Order`
+    gains `couponId` + `discount`. Validated by `checkCoupon()` (`lib/actions/coupons.ts`).
+  - `InventoryItem` — consumables/raw materials (`quantityOnHand`, `reorderLevel`,
+    `unit`, `unitCost`, supplier). Low-stock when `quantityOnHand <= reorderLevel`.
+  - `StaffMember` — human service staff + commission rule (`CommissionType`
+    PERCENT_SALES/FIXED_PER_ORDER/TARGET_BONUS, `commissionRate`, `monthlyTarget`).
+    `Order`/`Booking` gain `staffMemberId`; `/commissions` computes earnings from
+    attributed COMPLETED orders/bookings (no ledger table — derived on read).
 - **Env/observability** are code-only (no schema): `APP_ENV` three-environment
   config (`lib/env.ts`), Sentry, and `GET /api/health`.
 - **Bookings engine (deterministic).** `ServiceAvailability` (weekly windows per

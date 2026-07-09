@@ -128,6 +128,22 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
 31. **Demo seed + tests.** `scripts/seed-demo.ts` (`npm run seed:demo`) rebuilds a
     self-contained **"Zahra Home"** tenant (idempotent). Vitest suites for the
     guardrails/autonomy prompt logic + dept-accent hues (9 tests passing).
+32. **"Run automation now."** Owner-triggered `runAutomationNow` (button on the
+    Guardrails tab) fires the tenant's due schedules + pending autonomous tasks
+    immediately (bounded to 5, respects `automationEnabled`) — `runDueSchedules`/
+    `runDueTasks` gained an optional `companyId`. The fastest way to *see* agents act
+    without waiting for the minute cron.
+33. **Business modules (whole-business coverage).**
+    - **360° counters** on `/overview` (`business-counters.tsx`) — customers, bookings,
+      revenue, orders, workforce, inventory, each with a status breakdown.
+    - **Discount coupons** — `Coupon` model + `/coupons` CRUD + `checkCoupon()` validator;
+      `Order.couponId`/`discount`.
+    - **Consumables inventory** — `InventoryItem` model + `/inventory` (CRUD + stock adjust
+      + low-stock).
+    - **Staff commissions** — `StaffMember` model + `/staff` CRUD; `Order`/`Booking`
+      `staffMemberId`; `/commissions` computes attributed revenue + earned commission.
+    - Nav: Workforce +Staff +Commissions · Sales +Coupons · Products & Services +Inventory.
+    - Migration `20260709120000_coupons_inventory_staff` (additive).
 
 ---
 

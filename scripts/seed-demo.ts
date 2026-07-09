@@ -66,6 +66,9 @@ async function main() {
   await db.task.deleteMany({ where: { companyId } });
   await db.booking.deleteMany({ where: { companyId } });
   await db.order.deleteMany({ where: { companyId } }); // cascades OrderItems
+  await db.coupon.deleteMany({ where: { companyId } });
+  await db.inventoryItem.deleteMany({ where: { companyId } });
+  await db.staffMember.deleteMany({ where: { companyId } }); // after orders/bookings (SetNull)
   await db.invoice.deleteMany({ where: { companyId } });
   await db.customer.deleteMany({ where: { companyId } });
   await db.product.deleteMany({ where: { companyId } });
@@ -213,6 +216,52 @@ async function main() {
     agent[a.key] = row.id;
   }
 
+  // ── Staff (human service providers) + commission rules ─────────────────────
+  const staffDefs = [
+    { ref: 'STF-001', name: 'Dr. Sara', role: 'Dentist', type: 'PERCENT_SALES' as const, rate: 10, target: 30000 },
+    { ref: 'STF-002', name: 'Huda A.', role: 'Stylist', type: 'PERCENT_SALES' as const, rate: 8, target: 20000 },
+    { ref: 'STF-003', name: 'Yousef M.', role: 'Technician', type: 'FIXED_PER_ORDER' as const, rate: 25, target: null },
+    { ref: 'STF-004', name: 'Maha K.', role: 'Consultant', type: 'TARGET_BONUS' as const, rate: 1500, target: 25000 },
+  ];
+  const staff: string[] = [];
+  for (const s of staffDefs) {
+    const row = await db.staffMember.create({
+      data: {
+        companyId,
+        ref: s.ref,
+        name: s.name,
+        role: s.role,
+        commissionType: s.type,
+        commissionRate: s.rate,
+        monthlyTarget: s.target,
+        isActive: true,
+      },
+      select: { id: true },
+    });
+    staff.push(row.id);
+  }
+
+  // ── Discount coupons ────────────────────────────────────────────────────────
+  await db.coupon.createMany({
+    data: [
+      { companyId, code: 'EID20', type: 'PERCENT', value: 20, scope: 'ALL', minSubtotal: 300, maxRedemptions: 200, usedCount: 37 },
+      { companyId, code: 'WELCOME10', type: 'PERCENT', value: 10, scope: 'PRODUCTS', usedCount: 12 },
+      { companyId, code: 'STYLE50', type: 'FIXED', value: 50, scope: 'SERVICES', minSubtotal: 200, usedCount: 5 },
+      { companyId, code: 'SUMMER15', type: 'PERCENT', value: 15, scope: 'BOOKINGS', usedCount: 0, isActive: false },
+    ],
+  });
+
+  // ── Consumables / raw-materials inventory (some low on stock) ───────────────
+  await db.inventoryItem.createMany({
+    data: [
+      { companyId, ref: 'INV-001', name: 'Cotton gift boxes', sku: 'BOX-M', unit: 'box', quantityOnHand: 120, reorderLevel: 40, unitCost: 3.5, supplier: 'Gulf Packaging' },
+      { companyId, ref: 'INV-002', name: 'Ribbon rolls', sku: 'RIB-01', unit: 'roll', quantityOnHand: 18, reorderLevel: 25, unitCost: 6, supplier: 'Gulf Packaging' },
+      { companyId, ref: 'INV-003', name: 'Candle wax (soy)', sku: 'WAX-SOY', unit: 'kg', quantityOnHand: 8, reorderLevel: 15, unitCost: 22 },
+      { companyId, ref: 'INV-004', name: 'Fragrance oil — Oud', sku: 'OIL-OUD', unit: 'ml', quantityOnHand: 900, reorderLevel: 200, unitCost: 0.4 },
+      { companyId, ref: 'INV-005', name: 'Kraft wrapping paper', sku: 'PPR-KRF', unit: 'roll', quantityOnHand: 60, reorderLevel: 20, unitCost: 9 },
+    ],
+  });
+
   // ── Customers ──────────────────────────────────────────────────────────────
   const custDefs = [
     { name: 'Al Rashed Group', email: 'buyer@alrashed.sa', phone: '+966500000001', status: 'NEGOTIATING' as const, agentKey: 'faisal' },
@@ -335,6 +384,7 @@ async function main() {
         status: o.status,
         paymentStatus: o.status === 'COMPLETED' ? 'PAID' : 'PENDING',
         agentId: agent.faisal,
+        staffMemberId: staff[(on - 1) % staff.length], // attribute for commissions
         createdAt: day(o.days),
         items: { create: items },
       },
@@ -380,6 +430,7 @@ async function main() {
         title: b.title,
         serviceId: svc[b.svc],
         customerId: cust[b.cust],
+        staffMemberId: staff[(bn - 1) % staff.length],
         startAt: ahead(b.inH),
         endAt: ahead(b.inH + 1),
         status: 'CONFIRMED',
@@ -484,7 +535,7 @@ async function main() {
   console.log(`✓ Demo tenant ready.`);
   console.log(`  Company: Zahra Home  (slug: ${SLUG})`);
   console.log(`  Login:   ${OWNER_EMAIL}  /  ${OWNER_PASSWORD}`);
-  console.log(`  Seeded:  6 departments · 6 agents · ${custDefs.length} customers · ${prodDefs.length} products · ${svcDefs.length} services · ${orderDefs.length} orders · ${invDefs.length} invoices · ${bookDefs.length} bookings · ${taskDefs.length} tasks · ${apprDefs.length} approvals`);
+  console.log(`  Seeded:  6 departments · 6 agents · ${staffDefs.length} staff · ${custDefs.length} customers · ${prodDefs.length} products · ${svcDefs.length} services · 5 inventory · ${orderDefs.length} orders · 4 coupons · ${invDefs.length} invoices · ${bookDefs.length} bookings · ${taskDefs.length} tasks · ${apprDefs.length} approvals`);
 }
 
 main()

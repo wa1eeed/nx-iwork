@@ -13,6 +13,32 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-07-09 — Business modules: 360° counters, coupons, inventory, staff commissions
+
+Broaden the platform to cover the whole business, not just the AI workforce.
+
+### Added
+- **360° Command Center counters** (`business-counters.tsx`) — a whole-business
+  snapshot band on `/overview`: customers, upcoming bookings, month revenue, orders,
+  workforce-online, and inventory, each with a status breakdown; a self-contained
+  async server component (its own tenant-scoped aggregates).
+- **Discount coupons** — `Coupon` model + `/coupons` CRUD + `checkCoupon()` validator
+  (percent/fixed; scope products/services/bookings/all; min-subtotal; max-redemptions;
+  active window). `Order` gains `couponId` + `discount`.
+- **Consumables / raw-materials inventory** — `InventoryItem` model + `/inventory`
+  (CRUD, quick stock +/- adjust, low-stock highlight) for businesses like clinics/salons.
+- **Staff + commissions** — `StaffMember` model (`/staff` CRUD) with a commission rule
+  (`PERCENT_SALES` / `FIXED_PER_ORDER` / `TARGET_BONUS`). `Order`/`Booking` gain
+  `staffMemberId`; `/commissions` computes each staff's attributed revenue + earned
+  commission + target progress for the month — deterministically, no ledger to drift.
+- **Nav:** Workforce → +Staff +Commissions · Sales → +Coupons · Products & Services → +Inventory.
+- **Demo seed** extended with 4 staff (attributed orders/bookings), 4 coupons, 5 inventory items.
+
+### Migration
+`20260709120000_coupons_inventory_staff` — additive: 3 tables + nullable Order/Booking columns.
+
+---
+
 ## 2026-07-09 — Design-handoff redesign complete + business-first nav + Sales + demo/tests
 
 Finishes the `design_handoff_ai_company` rebuild and makes the autonomous-workforce
