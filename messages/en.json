@@ -188,155 +188,160 @@
     },
     "dashboard": "Go to dashboard",
     "hero": {
-      "badge": "Launch a company of AI employees",
-      "headline": "Build a company that",
-      "headlineAccent": "runs itself",
-      "lede": "Hire a full team of AI employees — sales, support, marketing, operations — give them a persona, goals, and playbooks, and let them run your business around the clock, in Arabic and English.",
+      "badge": "The all-in-one platform for service businesses",
+      "headline": "Run and grow your business,",
+      "headlineAccent": "all in one place",
+      "lede": "Online bookings, your own website, team & commissions, sales & invoices, and a smart AI assistant that answers customers and books for them — for clinics, salons, studios, and every service business.",
       "ctaPrimary": "Start free",
       "ctaSecondary": "See how it works",
-      "trust": "No credit card required · Free starter credits · Live in minutes"
+      "trust": "No credit card required · Free to start · Live in minutes"
     },
     "stats": {
-      "roles": {
-        "value": "9+",
-        "label": "Ready-made roles"
+      "sectors": {
+        "value": "Any",
+        "label": "Service sector"
       },
-      "uptime": {
-        "value": "24/7",
-        "label": "Always working"
+      "allInOne": {
+        "value": "All-in-one",
+        "label": "Bookings → sales → team"
       },
       "langs": {
         "value": "AR · EN",
         "label": "Bilingual & RTL-ready"
       },
-      "employees": {
-        "value": "∞",
-        "label": "AI employees"
+      "ai": {
+        "value": "24/7",
+        "label": "AI assistant"
       }
     },
-    "workforce": {
-      "badge": "A complete AI workforce",
-      "title": "Launch a whole company, not just a chatbot",
-      "desc": "NX iWork isn't one assistant — it's an entire org of AI employees with roles, managers, and KPIs. Hire from 9 proven templates or build custom roles, organize them into departments, and watch your company chart come to life.",
-      "points": {
-        "p1": "9+ ready-made roles, or fully custom employees",
-        "p2": "Departments, managers, and a live org chart",
-        "p3": "An HR Agent vets every hire and onboards it on your business"
-      }
-    },
-    "website": {
-      "badge": "Built-in storefront",
-      "title": "Your own website — with an AI agent built in",
-      "desc": "Every account gets a public landing page and a smart chat widget on your own custom domain. Visitors browse your products and services, ask questions, and place orders — and your AI agent captures every lead into the CRM and follows up automatically.",
-      "points": {
-        "p1": "Public page + chat widget on your custom domain",
-        "p2": "Visitors order directly — straight into your CRM",
-        "p3": "Bilingual (Arabic / English), themable to your brand"
-      }
-    },
-    "departments": {
-      "title": "An AI agent for every department",
-      "subtitle": "Staff your whole company — each role comes with its own personality, KPIs, tools, and automatic playbooks.",
+    "sectors": {
+      "title": "Built for every service business",
+      "subtitle": "If your customers book time or buy services, iWork runs it — whatever your field.",
       "items": {
+        "clinics": "Clinics & medical",
+        "salons": "Salons & barbers",
+        "spa": "Spa & beauty",
+        "studio": "Studios & photography",
+        "fitness": "Fitness & training",
+        "tutoring": "Tutoring & lessons",
+        "repair": "Repair & maintenance",
+        "consulting": "Consulting & services"
+      }
+    },
+    "modules": {
+      "badge": "One system, six connected modules",
+      "title": "Everything your business needs, in one place",
+      "subtitle": "Replace the patchwork of tools you use today with one connected platform — plus a smart AI assistant.",
+      "items": {
+        "bookings": {
+          "name": "Online bookings",
+          "desc": "A real-time calendar with availability, capacity, waitlists, and no-show handling."
+        },
+        "website": {
+          "name": "Your own website",
+          "desc": "A branded booking site + chat widget on your domain — services, team, and content pages."
+        },
+        "team": {
+          "name": "Team & commissions",
+          "desc": "Your staff, their schedules, and commissions calculated automatically from real sales."
+        },
         "sales": {
-          "name": "Sales",
-          "desc": "Converts leads, recommends products, and closes orders."
+          "name": "Sales & invoices",
+          "desc": "Orders, revenue, invoices, and a wallet — the full financial picture of your business."
         },
-        "support": {
-          "name": "Support",
-          "desc": "Answers instantly and escalates angry cases to you."
+        "crm": {
+          "name": "CRM & customers",
+          "desc": "Every lead, customer, and opportunity — captured from your site and followed up."
         },
-        "marketing": {
-          "name": "Marketing",
-          "desc": "Drafts content and campaigns from past performance."
-        },
-        "operations": {
-          "name": "Operations",
-          "desc": "Tracks fulfillment and keeps every order on time."
-        },
-        "finance": {
-          "name": "Finance",
-          "desc": "Issues invoices and keeps the ledger reconciled."
-        },
-        "appointments": {
-          "name": "Appointments",
-          "desc": "Books and confirms meetings, cuts no-shows."
+        "ai": {
+          "name": "Smart AI assistant",
+          "desc": "Answers customers in their dialect, checks availability, and books appointments for you."
         }
       }
     },
+    "website": {
+      "badge": "Your own booking website",
+      "title": "A professional website — with online booking built in",
+      "desc": "Every account gets a branded landing page and a smart chat assistant on your own domain. Customers browse your services, book appointments, and get answers — all captured into your CRM automatically.",
+      "points": {
+        "p1": "Services, team, and content pages on your custom domain",
+        "p2": "Customers book directly — straight into your calendar & CRM",
+        "p3": "Bilingual (Arabic / English), themed to your brand"
+      }
+    },
     "features": {
-      "title": "Everything your AI workforce needs",
-      "subtitle": "A complete platform to hire, configure, and run AI employees that actually operate your business.",
+      "title": "The details that grow your business",
+      "subtitle": "Beyond the basics — the tools that keep your calendar full and your customers coming back.",
       "items": {
-        "templates": {
-          "title": "AI employees in minutes",
-          "desc": "Hire from 9 ready-made roles — Sales, Support, Marketing, Finance and more — or build a custom one from scratch."
+        "waitlist": {
+          "title": "Waitlists & no-shows",
+          "desc": "Full slots take a waitlist; a cancellation or no-show auto-promotes the next in line."
         },
-        "scenarios": {
-          "title": "Autonomous scenarios",
-          "desc": "If-this-then-that triggers wake the right agent on every new lead, order, or complaint — no babysitting."
+        "coupons": {
+          "title": "Discounts & coupons",
+          "desc": "Run percentage or fixed offers on services, products, or bookings — redeemed at checkout."
         },
-        "memory": {
-          "title": "Real business memory",
-          "desc": "Agents learn your products, FAQ, and policies with vector memory, so they answer accurately — no hallucinations."
+        "inventory": {
+          "title": "Inventory & consumables",
+          "desc": "Track the materials your services use, with low-stock alerts before you run out."
         },
-        "crm": {
-          "title": "CRM, orders & bookings",
-          "desc": "Leads, customers, orders, and appointments — captured, handled, and followed up automatically."
+        "commissions": {
+          "title": "Automatic commissions",
+          "desc": "Every completed order or booking feeds each staff member’s commission — no spreadsheets."
         },
-        "channels": {
-          "title": "Talks to your customers",
-          "desc": "A public landing page + chat widget in Arabic & English, on your own custom domain."
+        "ai": {
+          "title": "An assistant that books",
+          "desc": "The AI answers in the customer’s dialect, verifies them, and only offers real open times."
         },
-        "control": {
-          "title": "You stay in control",
-          "desc": "Org chart, KPIs, per-agent token caps, and instant Telegram escalation for the hard cases."
+        "unified": {
+          "title": "One holistic dashboard",
+          "desc": "Bookings, sales, team, and customers in a single view — bilingual and RTL-ready."
         }
       }
     },
     "how": {
-      "title": "From idea to AI employee in three steps",
-      "subtitle": "The HR Agent vets, onboards, and deploys every hire for you.",
+      "title": "Live in three steps",
+      "subtitle": "Set up your services once — the platform runs the rest.",
       "steps": {
         "s1": {
-          "title": "Pick a role",
-          "desc": "Choose a proven template or describe a custom role — HR checks it for conflicts first."
+          "title": "Add your services & team",
+          "desc": "List what you offer, set availability and prices, and add the people who deliver it."
         },
         "s2": {
-          "title": "Set persona & scenarios",
-          "desc": "Give it a personality, goals, KPIs, and automatic playbooks for your business events."
+          "title": "Publish your website",
+          "desc": "Your branded booking site + chat assistant go live on your own domain, in Arabic & English."
         },
         "s3": {
-          "title": "It runs 24/7",
-          "desc": "Your AI employee is onboarded on your business and starts working — reporting back to you."
+          "title": "Take bookings & grow",
+          "desc": "Customers book online 24/7, the AI handles chat, and every sale flows into your dashboard."
         }
       }
     },
     "pricing": {
       "title": "Simple pricing that scales with you",
-      "subtitle": "Start free on managed AI credits. Upgrade when you grow — no card needed to begin.",
+      "subtitle": "Start free. Upgrade when you grow — no card needed to begin.",
       "cta": "Get started",
-      "note": "Prices in SAR. Billing arrives soon — every plan starts on free managed credits today."
+      "note": "Prices in SAR. Every plan starts on free managed AI credits today."
     },
     "faq": {
       "title": "Frequently asked questions",
       "subtitle": "Everything you need to know before you start.",
       "items": {
         "q1": {
-          "q": "Do I need to write code or prompts?",
-          "a": "No. Pick a ready-made role or describe what you need in plain words — the HR Agent configures the persona, tools, and playbooks for you."
+          "q": "What kind of business is this for?",
+          "a": "Any service or appointment business — clinics, salons, spas, studios, fitness, tutoring, repair, consulting, and more. If customers book time or buy services from you, it fits."
         },
         "q2": {
-          "q": "Does it work in Arabic?",
-          "a": "Yes. The whole platform and your public page work in Arabic and English, fully RTL-ready. Your agents reply in your customer's language."
+          "q": "Do I need a website already?",
+          "a": "No. Every account gets a professional booking website + chat assistant on your own domain, ready to publish in minutes."
         },
         "q3": {
-          "q": "Will the AI make things up?",
-          "a": "Agents are onboarded on your business — FAQ, products, and policies — using vector memory, so they answer from your real data, not guesses."
+          "q": "Does it work in Arabic?",
+          "a": "Yes — the whole platform and your public site work in Arabic and English, fully RTL-ready. The AI assistant even matches your customer’s dialect."
         },
         "q4": {
-          "q": "How do my customers reach the agents?",
-          "a": "Each account gets a public website and chat widget on your own domain. Visitors browse, ask, and order — and everything lands in your CRM automatically."
+          "q": "Do I have to write code or prompts?",
+          "a": "No. Add your services and team in plain words; the platform configures itself around your business."
         },
         "q5": {
           "q": "How much does it cost to start?",
@@ -345,27 +350,27 @@
       }
     },
     "cta": {
-      "title": "Build your AI workforce today",
-      "subtitle": "Hire your first AI employee in minutes — free to start, live in minutes.",
+      "title": "Run your whole business in one place",
+      "subtitle": "Set up your services, publish your booking site, and go live — free to start.",
       "button": "Start free"
     },
     "footer": {
-      "tagline": "Self-running companies, powered by AI.",
+      "tagline": "The all-in-one platform for service businesses.",
       "product": "Product",
       "rights": "All rights reserved."
     },
     "mock": {
-      "appTitle": "NX iWork",
-      "orgTitle": "Your company",
-      "ceo": "Founder",
-      "hr": "HR Agent",
-      "hired": "Suha was hired 🎉",
-      "order": "New order · ORD-1042",
-      "escalated": "Complaint escalated to you",
-      "widgetTitle": "Acme Store",
+      "appTitle": "iWork",
+      "orgTitle": "Today",
+      "ceo": "Overview",
+      "hr": "Bookings",
+      "hired": "New booking · 5:30 PM",
+      "order": "Payment received · 250 SAR",
+      "escalated": "★★★★★ new review",
+      "widgetTitle": "Glow Studio",
       "widgetGreeting": "Hi! How can I help you today?",
-      "widgetUser": "Do you have the blue model in stock?",
-      "widgetAgent": "Yes — 12 in stock. Want me to place the order?",
+      "widgetUser": "Do you have an opening this evening?",
+      "widgetAgent": "Yes — 5:30 or 7:00 PM today. Shall I book you?",
       "online": "Online"
     }
   },

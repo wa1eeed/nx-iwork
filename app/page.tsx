@@ -4,15 +4,14 @@ import { getTranslations } from 'next-intl/server';
 import {
   Sparkles,
   Bot,
-  Zap,
-  Brain,
-  ShoppingBag,
-  MessageSquare,
-  Gauge,
-  Headphones,
-  Megaphone,
-  Package,
-  Wallet,
+  Globe,
+  Users,
+  Contact,
+  CircleDollarSign,
+  Clock,
+  TicketPercent,
+  Package2,
+  HandCoins,
   CalendarCheck,
   ArrowRight,
   Check,
@@ -40,9 +39,11 @@ export async function generateMetadata(): Promise<Metadata> {
     title,
     description,
     keywords: [
-      'AI employees', 'AI agents', 'autonomous agents', 'AI workforce', 'SaaS',
-      'CRM', 'customer support automation', 'sales automation', 'Saudi Arabia',
-      'موظفو ذكاء اصطناعي', 'وكلاء ذكاء اصطناعي', 'أتمتة', 'منصة سعودية',
+      'booking software', 'appointment scheduling', 'salon software', 'clinic booking',
+      'service business platform', 'online booking website', 'CRM', 'invoicing',
+      'staff commissions', 'AI assistant', 'Saudi Arabia', 'SaaS',
+      'حجز مواعيد', 'نظام حجوزات', 'برنامج صالون', 'حجز عيادة', 'موقع حجوزات',
+      'إدارة الأعمال الخدمية', 'مساعد ذكاء اصطناعي', 'منصة سعودية',
     ],
     metadataBase: new URL(SITE_URL),
     alternates: { canonical: '/' },
@@ -54,25 +55,26 @@ export async function generateMetadata(): Promise<Metadata> {
 const STEP_TINTS = ['bg-amber-500/10 text-amber-600 dark:text-amber-400', 'bg-violet-500/10 text-violet-600 dark:text-violet-400', 'bg-sky-500/10 text-sky-600 dark:text-sky-400'];
 const STEPS = ['s1', 's2', 's3'] as const;
 
-const DEPTS: { key: string; icon: LucideIcon; tint: string }[] = [
-  { key: 'sales', icon: ShoppingBag, tint: 'bg-violet-500/10 text-violet-600 dark:text-violet-400' },
-  { key: 'support', icon: Headphones, tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' },
-  { key: 'marketing', icon: Megaphone, tint: 'bg-rose-500/10 text-rose-600 dark:text-rose-400' },
-  { key: 'operations', icon: Package, tint: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
-  { key: 'finance', icon: Wallet, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
-  { key: 'appointments', icon: CalendarCheck, tint: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400' },
+const MODULES: { key: string; icon: LucideIcon; tint: string }[] = [
+  { key: 'bookings', icon: CalendarCheck, tint: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400' },
+  { key: 'website', icon: Globe, tint: 'bg-violet-500/10 text-violet-600 dark:text-violet-400' },
+  { key: 'team', icon: Users, tint: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+  { key: 'sales', icon: CircleDollarSign, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  { key: 'crm', icon: Contact, tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' },
+  { key: 'ai', icon: Bot, tint: 'bg-rose-500/10 text-rose-600 dark:text-rose-400' },
 ];
 
 const FEATURES: { key: string; icon: LucideIcon }[] = [
-  { key: 'templates', icon: Bot },
-  { key: 'scenarios', icon: Zap },
-  { key: 'memory', icon: Brain },
-  { key: 'crm', icon: ShoppingBag },
-  { key: 'channels', icon: MessageSquare },
-  { key: 'control', icon: Gauge },
+  { key: 'waitlist', icon: Clock },
+  { key: 'coupons', icon: TicketPercent },
+  { key: 'inventory', icon: Package2 },
+  { key: 'commissions', icon: HandCoins },
+  { key: 'ai', icon: Sparkles },
+  { key: 'unified', icon: LayoutDashboard },
 ];
 
-const STAT_KEYS = ['roles', 'uptime', 'langs', 'employees'] as const;
+const STAT_KEYS = ['sectors', 'allInOne', 'langs', 'ai'] as const;
+const SECTOR_KEYS = ['clinics', 'salons', 'spa', 'studio', 'fitness', 'tutoring', 'repair', 'consulting'] as const;
 const FAQ_KEYS = ['q1', 'q2', 'q3', 'q4', 'q5'] as const;
 
 export default async function LandingPage() {
@@ -201,6 +203,25 @@ export default async function LandingPage() {
           </div>
         </section>
 
+        {/* Sectors — the platform fits any service business */}
+        <section className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
+          <div className="mx-auto mb-6 max-w-2xl text-center">
+            <h2 className="text-2xl font-bold tracking-tight">{t('sectors.title')}</h2>
+            <p className="mt-2 text-sm text-muted-foreground">{t('sectors.subtitle')}</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-center gap-2.5">
+            {SECTOR_KEYS.map((k) => (
+              <span
+                key={k}
+                className="inline-flex items-center gap-1.5 rounded-full border bg-card/60 px-4 py-2 text-sm font-medium backdrop-blur"
+              >
+                <span className="size-1.5 rounded-full bg-gradient-brand" />
+                {t(`sectors.items.${k}`)}
+              </span>
+            ))}
+          </div>
+        </section>
+
         {/* How it works */}
         <section id="how" className="mx-auto max-w-5xl scroll-mt-20 px-4 py-16 sm:px-6">
           <SectionHead title={t('how.title')} subtitle={t('how.subtitle')} />
@@ -217,25 +238,25 @@ export default async function LandingPage() {
           </div>
         </section>
 
-        {/* Workforce + departments */}
+        {/* Modules — the six connected areas of the platform */}
         <section id="departments" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
           <div className="mx-auto mb-10 max-w-2xl text-center">
             <span className="inline-flex items-center gap-2 rounded-full border bg-gradient-brand-soft px-3 py-1 text-xs font-medium">
-              {t('workforce.badge')}
+              {t('modules.badge')}
             </span>
-            <h2 className="mt-3 text-3xl font-bold tracking-tight">{t('workforce.title')}</h2>
-            <p className="mt-2 text-muted-foreground">{t('workforce.desc')}</p>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight">{t('modules.title')}</h2>
+            <p className="mt-2 text-muted-foreground">{t('modules.subtitle')}</p>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {DEPTS.map(({ key, icon: Icon, tint }) => (
+            {MODULES.map(({ key, icon: Icon, tint }) => (
               <HoverLift key={key}>
                 <Card className="h-full hover:border-primary/40 hover:shadow-elevated">
                   <CardContent className="space-y-3 p-6">
                     <span className={`flex size-11 items-center justify-center rounded-xl ${tint}`}>
                       <Icon className="size-5" />
                     </span>
-                    <h3 className="font-semibold">{t(`departments.items.${key}.name`)}</h3>
-                    <p className="text-sm text-muted-foreground">{t(`departments.items.${key}.desc`)}</p>
+                    <h3 className="font-semibold">{t(`modules.items.${key}.name`)}</h3>
+                    <p className="text-sm text-muted-foreground">{t(`modules.items.${key}.desc`)}</p>
                   </CardContent>
                 </Card>
               </HoverLift>
