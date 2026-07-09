@@ -5,8 +5,30 @@ import type { CompanyStatus, PlanTier, Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { requireSuperAdmin } from '@/lib/admin';
 import { agentTokenCap } from '@/lib/plans';
+import { seedRefine } from '@/lib/seed/refine';
 
 export type AdminResult = { ok: true } | { ok: false; error: 'forbidden' | 'invalid' | 'generic' };
+
+export type SeedRefineResult =
+  | { ok: true; slug: string; services: number; clinics: number }
+  | { ok: false; error: 'forbidden' | 'generic' };
+
+// Build (or rebuild) the Refine Medical Complex client demo tenant. Runs the same
+// idempotent seed as `npm run seed:refine`, but from a super-admin session so it
+// works inside the production image (no container terminal / secret needed).
+export async function seedRefineDemo(): Promise<SeedRefineResult> {
+  const admin = await requireSuperAdmin();
+  if (!admin.ok) return { ok: false, error: 'forbidden' };
+  try {
+    const r = await seedRefine();
+    await audit(admin.userId, 'admin.seed.refine', null, { services: r.services, clinics: r.clinics });
+    revalidatePath('/admin');
+    return { ok: true, slug: r.slug, services: r.services, clinics: r.clinics };
+  } catch (err) {
+    console.error('seedRefineDemo failed', err);
+    return { ok: false, error: 'generic' };
+  }
+}
 
 const VALID_TIERS: PlanTier[] = ['FREE', 'STARTER', 'GROWTH', 'SCALE', 'ENTERPRISE'];
 const VALID_STATUS: CompanyStatus[] = ['ACTIVE', 'SUSPENDED', 'TRIAL', 'EXPIRED'];
