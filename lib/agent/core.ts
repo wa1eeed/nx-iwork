@@ -34,7 +34,7 @@ export function loadAgentWithContext(agentId: string, companyId: string) {
           companyDNA: {
             select: { aboutUs: true, policies: true, tone: true, targetAudience: true },
           },
-          settings: { select: { primaryLanguage: true } },
+          settings: { select: { primaryLanguage: true, timezone: true } },
         },
       },
     },

@@ -83,6 +83,15 @@ export async function runPublicAgentChat(input: PublicChatInput): Promise<Public
   const memoryBlock = await recallMemoryBlock(agentId, companyId, message);
   if (memoryBlock) system += `\n\n${memoryBlock}`;
 
+  // The public-facing agent should always be able to check availability + book
+  // when the business is booking-enabled — it's the core customer expectation.
+  // Empty permissions already mean "all module tools", so only augment a scoped
+  // agent (non-empty list) to avoid accidentally narrowing it.
+  let perms = agent.permissions;
+  if (perms.length > 0 && agent.company.hasBookings) {
+    perms = Array.from(new Set([...perms, 'check_availability', 'create_booking', 'find_customer']));
+  }
+
   let reply: string;
   let tokensUsed: number;
   try {
@@ -93,7 +102,7 @@ export async function runPublicAgentChat(input: PublicChatInput): Promise<Public
       tier: agent.model,
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
-      tools: getToolsForAgent(agent.company, agent.permissions),
+      tools: getToolsForAgent(agent.company, perms),
       ctx: { companyId, agentId },
     }));
   } catch (err) {

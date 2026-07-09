@@ -15,7 +15,7 @@ export interface AgentPromptContext {
     CompanyDNA,
     'aboutUs' | 'policies' | 'tone' | 'targetAudience'
   > | null;
-  settings?: Pick<BusinessSettings, 'primaryLanguage'> | null;
+  settings?: Pick<BusinessSettings, 'primaryLanguage' | 'timezone'> | null;
   // Company guardrails the owner set (Guardrails screen). Optional so callers
   // that don't need them fall back to autonomy-only behavior.
   guardrails?: Pick<
@@ -43,6 +43,18 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
   );
 
   sections.push(`شخصيتك وأسلوبك:\n${agent.persona}`);
+
+  // Current date/time in the business timezone — so the agent computes "today /
+  // tomorrow / next week" correctly instead of guessing (a common failure).
+  const tz = settings?.timezone || 'Asia/Riyadh';
+  const nowStr = new Intl.DateTimeFormat(lang === 'en' ? 'en-GB' : 'ar-SA', {
+    timeZone: tz,
+    dateStyle: 'full',
+    timeStyle: 'short',
+  }).format(new Date());
+  sections.push(
+    `التاريخ والوقت الآن: ${nowStr} (المنطقة الزمنية ${tz}). اعتمد عليه كمرجع لأي حساب زمني (اليوم/غداً/الأسبوع القادم/تاريخ محدد) ولا تخمّن التواريخ أبداً.`
+  );
 
   // Job Description "constitution" — the agent's mandate: what it's responsible
   // for and its boundaries. Governs its decisions (distinct from personality),
@@ -123,7 +135,7 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
         '- لمعرفة الأسعار أو الخدمات أو المنتجات، استخدم أداة search_catalog ولا تخمّن.',
         '- للأسئلة عن السياسات/المواعيد/الشحن/الاسترجاع، استخدم أداة search_faq.',
         '- إذا أبدى العميل اهتماماً أو ترك بياناته، سجّله في الـ CRM عبر create_lead (بعد find_customer).',
-        '- لحجز موعد أو إنشاء مهمة، استخدم create_task.',
+        '- لحجز موعد: استخدم check_availability لعرض الأوقات المتاحة فعلاً في اليوم المطلوب، ثم create_booking لتثبيت الحجز بوقت دقيق (صيغة ISO). لا تخترع أوقاتاً ولا تستخدم create_task للحجوزات.',
         '- إذا طلب منك صاحب العمل تنفيذ شيء، سجّله **فوراً** بـ create_task وأكّد له أنك سجّلته وستنفّذه — لا تتجاهل أي طلب حتى لو كنت مشغولاً بغيره (النظام ينفّذ المهام المسجّلة تلقائياً).',
         '- إذا عرفت معلومة تستحق التذكّر (تفضيل عميل، قرار، حقيقة متكررة)، احفظها بـ save_memory.',
         '- إذا لم تعرف الإجابة بدقة، قل ذلك بصدق واعرض تحويل العميل لزميل بشري.',
