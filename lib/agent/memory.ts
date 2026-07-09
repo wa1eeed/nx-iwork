@@ -88,6 +88,10 @@ export async function recallMemoryBlock(
   companyId: string,
   query: string
 ): Promise<string> {
+  // Cheap gate: most agents have zero saved memories, so recall would return
+  // nothing anyway — skip the (network) embedding round-trip entirely for them.
+  const count = await db.agentMemory.count({ where: { agentId, companyId } });
+  if (count === 0) return '';
   const memories = await recallMemories(agentId, companyId, query, 5);
   if (memories.length === 0) return '';
   const lines = memories.map((m) => `- ${m.summary}`).join('\n');

@@ -52,21 +52,68 @@ export function ChatWidget({
     setMessages((m) => [...m, { id: `u${Date.now()}`, role: 'user', content: text }]);
     setInput('');
     setSending(true);
+
+    const agentMsgId = `a${Date.now()}`;
+    let acc = '';
+    let started = false;
+    const upsert = (content: string) =>
+      setMessages((m) =>
+        started
+          ? m.map((msg) => (msg.id === agentMsgId ? { ...msg, content } : msg))
+          : [...m, { id: agentMsgId, role: 'agent' as const, content }]
+      );
+
     try {
       const res = await fetch(`/api/public/${slug}/chat`, {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({ message: text, visitorId }),
       });
-      const data = await res.json();
-      const reply = data.ok
-        ? data.reply
-        : data.reason === 'rate_limited'
-          ? 'لحظة من فضلك، أرسلت رسائل كثيرة بسرعة.'
-          : 'تعذّر الرد الآن. حاول بعد قليل.';
-      setMessages((m) => [...m, { id: `a${Date.now()}`, role: 'agent', content: reply }]);
+
+      // Non-stream error responses (rate limit, unavailable) come back as JSON.
+      if (!res.ok || !res.body || !res.headers.get('content-type')?.includes('text/event-stream')) {
+        let reason = '';
+        try {
+          reason = (await res.json())?.reason ?? '';
+        } catch {
+          /* ignore */
+        }
+        upsert(reason === 'rate_limited' ? 'لحظة من فضلك، أرسلت رسائل كثيرة بسرعة.' : 'تعذّر الرد الآن. حاول بعد قليل.');
+        return;
+      }
+
+      const reader = res.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+      for (;;) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        buffer += decoder.decode(value, { stream: true });
+        const parts = buffer.split('\n\n');
+        buffer = parts.pop() ?? '';
+        for (const part of parts) {
+          const line = part.trim();
+          if (!line.startsWith('data:')) continue;
+          let evt: { type?: string; text?: string; reply?: string; reason?: string };
+          try {
+            evt = JSON.parse(line.slice(5).trim());
+          } catch {
+            continue;
+          }
+          if (evt.type === 'delta' && evt.text) {
+            acc += evt.text;
+            upsert(acc);
+            started = true;
+          } else if (evt.type === 'done') {
+            if (!started) upsert(evt.reply || 'تم.');
+          } else if (evt.type === 'error') {
+            if (!started) upsert(evt.reason === 'billing_limit' ? 'الخدمة غير متاحة مؤقتاً.' : 'تعذّر الرد الآن. حاول بعد قليل.');
+          }
+        }
+      }
+      if (!started) upsert('تعذّر الرد الآن. حاول بعد قليل.');
     } catch {
-      setMessages((m) => [...m, { id: `a${Date.now()}`, role: 'agent', content: 'فشل الاتصال.' }]);
+      if (!started) upsert('فشل الاتصال.');
     } finally {
       setSending(false);
     }

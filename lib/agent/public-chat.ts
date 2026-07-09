@@ -9,7 +9,7 @@ import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
-import { loadAgentWithContext, runToolLoop } from './core';
+import { loadAgentWithContext, runToolLoop, runToolLoopStream } from './core';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
 
@@ -27,39 +27,54 @@ export interface PublicChatInput {
   meta?: { pageUrl?: string; referrer?: string; userAgent?: string; ip?: string };
 }
 
-export async function runPublicAgentChat(input: PublicChatInput): Promise<PublicChatResult> {
+export interface PublicChatOptions {
+  /** When provided, the reply text is streamed token-by-token as it generates. */
+  onDelta?: (delta: string) => void;
+}
+
+// One ongoing conversation per visitor per company (find-or-create).
+async function getOrCreateConversation(input: PublicChatInput): Promise<{ id: string }> {
+  const { companyId, agentId, visitorId, meta } = input;
+  const existing = await db.publicConversation.findFirst({
+    where: { companyId, visitorId, ended: false },
+    orderBy: { lastMessageAt: 'desc' },
+    select: { id: true },
+  });
+  if (existing) return existing;
+  return db.publicConversation.create({
+    data: {
+      companyId,
+      agentId,
+      visitorId,
+      pageUrl: meta?.pageUrl,
+      referrer: meta?.referrer,
+      userAgent: meta?.userAgent,
+      ipAddress: meta?.ip,
+    },
+    select: { id: true },
+  });
+}
+
+export async function runPublicAgentChat(
+  input: PublicChatInput,
+  opts: PublicChatOptions = {}
+): Promise<PublicChatResult> {
   const { companyId, agentId, visitorId, message, meta } = input;
 
-  const agent = await loadAgentWithContext(agentId, companyId);
+  // Pre-flight: run the independent reads concurrently instead of a serial chain
+  // of DB round-trips (each is real latency on a remote Postgres).
+  const [agent, providerResult, budget, agentBudget, conversation] = await Promise.all([
+    loadAgentWithContext(agentId, companyId),
+    getProviderForCompany(companyId),
+    checkTokenBudget(companyId),
+    checkAgentBudget(agentId),
+    getOrCreateConversation(input),
+  ]);
+
   if (!agent) return { ok: false, reason: 'unavailable' };
-
-  const providerResult = await getProviderForCompany(companyId);
   if (!providerResult.ok) return { ok: false, reason: 'unavailable' };
-
-  const budget = await checkTokenBudget(companyId);
   if (!budget.ok) return { ok: false, reason: budget.reason };
-  const agentBudget = await checkAgentBudget(agentId);
   if (!agentBudget.ok) return { ok: false, reason: 'billing_limit' };
-
-  // One ongoing conversation per visitor per company.
-  const conversation =
-    (await db.publicConversation.findFirst({
-      where: { companyId, visitorId, ended: false },
-      orderBy: { lastMessageAt: 'desc' },
-      select: { id: true },
-    })) ??
-    (await db.publicConversation.create({
-      data: {
-        companyId,
-        agentId,
-        visitorId,
-        pageUrl: meta?.pageUrl,
-        referrer: meta?.referrer,
-        userAgent: meta?.userAgent,
-        ipAddress: meta?.ip,
-      },
-      select: { id: true },
-    }));
 
   // Working memory from this conversation's history.
   const history = await db.publicMessage.findMany({
@@ -101,19 +116,23 @@ export async function runPublicAgentChat(input: PublicChatInput): Promise<Public
     );
   }
 
+  const loopArgs = {
+    provider: providerResult.provider,
+    system,
+    messages,
+    tier: agent.model,
+    temperature: agent.temperature,
+    maxTokens: agent.maxTokens,
+    tools: getToolsForAgent(agent.company, perms),
+    ctx: { companyId, agentId },
+  };
+
   let reply: string;
   let tokensUsed: number;
   try {
-    ({ reply, tokensUsed } = await runToolLoop({
-      provider: providerResult.provider,
-      system,
-      messages,
-      tier: agent.model,
-      temperature: agent.temperature,
-      maxTokens: agent.maxTokens,
-      tools: getToolsForAgent(agent.company, perms),
-      ctx: { companyId, agentId },
-    }));
+    ({ reply, tokensUsed } = opts.onDelta
+      ? await runToolLoopStream(loopArgs, opts.onDelta)
+      : await runToolLoop(loopArgs));
   } catch (err) {
     console.error('Public chat provider error', { companyId, agentId, err });
     return { ok: false, reason: 'provider_error' };
@@ -130,6 +149,11 @@ export async function runPublicAgentChat(input: PublicChatInput): Promise<Public
   const remaining = await chargeTokens(companyId, tokensUsed);
   await chargeAgentTokens(agentId, tokensUsed);
   console.log(`[token-guard] public-chat | tenant=${companyId} | used=${tokensUsed} | remaining=${remaining ?? 'BYOK'}`);
+
+  // `meta` is captured on conversation creation; referenced here to keep the
+  // param used even when the conversation already existed.
+  void meta;
+  void visitorId;
 
   return { ok: true, reply };
 }

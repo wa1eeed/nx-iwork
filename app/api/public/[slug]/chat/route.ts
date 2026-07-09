@@ -23,6 +23,8 @@ function rateLimited(key: string): boolean {
 }
 
 // Public visitor → company's widget agent. No auth; scoped by the company slug.
+// The reply is STREAMED token-by-token over SSE (like the dashboard chat), so the
+// visitor sees text appear immediately instead of waiting for the whole reply.
 export async function POST(req: Request, { params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
 
@@ -73,29 +75,51 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     return NextResponse.json({ ok: false, reason: 'unavailable' }, { status: 404 });
   }
 
-  const result = await runPublicAgentChat({
-    companyId: company.id,
-    agentId,
-    visitorId,
-    message,
-    meta: {
-      pageUrl: req.headers.get('referer') ?? undefined,
-      userAgent: req.headers.get('user-agent') ?? undefined,
-      ip,
+  const companyId = company.id;
+  const resolvedAgentId = agentId;
+  const meta = {
+    pageUrl: req.headers.get('referer') ?? undefined,
+    userAgent: req.headers.get('user-agent') ?? undefined,
+    ip,
+  };
+
+  // Stream the reply token-by-token over SSE (mirrors the dashboard chat route).
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    async start(controller) {
+      const send = (obj: unknown) =>
+        controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      try {
+        const result = await runPublicAgentChat(
+          { companyId, agentId: resolvedAgentId, visitorId, message, meta },
+          { onDelta: (delta) => send({ type: 'delta', text: delta }) }
+        );
+        if (result.ok) {
+          send({ type: 'done', reply: result.reply });
+          // Sentiment-based escalation, off the reply path (best-effort).
+          void handleComplaint(companyId, message).catch((err) =>
+            console.error('complaint escalation failed', err)
+          );
+        } else {
+          send({ type: 'error', reason: result.reason });
+        }
+      } catch (err) {
+        console.error('public chat stream error', err);
+        send({ type: 'error', reason: 'provider_error' });
+      } finally {
+        controller.close();
+      }
     },
   });
 
-  if (result.ok) {
-    // Sentiment-based escalation: if the customer message is an angry complaint,
-    // fire COMPLAINT_RECEIVED (waking any configured agent) and ping the owner's
-    // Telegram. Best-effort and non-fatal to the chat response.
-    void handleComplaint(company.id, message).catch((err) =>
-      console.error('complaint escalation failed', err)
-    );
-    return NextResponse.json({ ok: true, reply: result.reply });
-  }
-  const status = result.reason === 'billing_limit' ? 402 : result.reason === 'provider_error' ? 502 : 404;
-  return NextResponse.json({ ok: false, reason: result.reason }, { status });
+  return new Response(stream, {
+    headers: {
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      Connection: 'keep-alive',
+      'X-Accel-Buffering': 'no',
+    },
+  });
 }
 
 async function handleComplaint(companyId: string, message: string): Promise<void> {
