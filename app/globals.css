@@ -200,33 +200,36 @@
    ========================================================================= */
 @layer base {
   .theme-command {
-    --background: 40 33% 90%; /* canvas #efe9dd */
-    --foreground: 38 18% 11%; /* ink #211d17 */
-    --card: 43 60% 99%; /* #fffdf9 */
-    --card-foreground: 38 18% 11%;
-    --popover: 43 60% 99%;
-    --popover-foreground: 38 18% 11%;
-    --primary: 38 18% 11%; /* ink — dark primary buttons */
-    --primary-foreground: 43 60% 99%;
-    --secondary: 40 35% 94%; /* surface #f6f2ea */
-    --secondary-foreground: 38 17% 21%;
-    --muted: 40 30% 92%;
-    --muted-foreground: 35 10% 50%; /* #8a8073 */
-    --accent: 40 33% 92%;
-    --accent-foreground: 38 18% 11%;
-    --destructive: 14 52% 49%; /* alert #c2593a */
-    --destructive-foreground: 43 60% 99%;
-    --success: 150 42% 42%;
-    --warning: 40 60% 52%;
-    --border: 40 28% 87%; /* #e8e1d3 */
-    --input: 40 26% 85%;
-    --ring: 38 16% 30%;
+    /* Clean, high-contrast light palette (IBP-style): near-white canvas, crisp
+       dark-slate text, white cards, and a professional teal accent. Replaces the
+       muddy warm beige whose muted text read as low-contrast. */
+    --background: 210 30% 98%; /* soft near-white canvas #f7f9fb */
+    --foreground: 222 34% 12%; /* dark slate ink — strong contrast #131a26 */
+    --card: 0 0% 100%; /* white cards */
+    --card-foreground: 222 34% 12%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 222 34% 12%;
+    --primary: 200 52% 20%; /* deep teal-slate — primary buttons */
+    --primary-foreground: 0 0% 100%;
+    --secondary: 210 24% 96%;
+    --secondary-foreground: 222 28% 20%;
+    --muted: 210 22% 95%;
+    --muted-foreground: 218 14% 40%; /* readable secondary text #5a6472 */
+    --accent: 190 55% 94%; /* light teal tint */
+    --accent-foreground: 200 52% 22%;
+    --destructive: 0 72% 48%;
+    --destructive-foreground: 0 0% 100%;
+    --success: 160 62% 36%;
+    --warning: 38 92% 46%;
+    --border: 214 22% 90%; /* crisp light borders */
+    --input: 214 22% 88%;
+    --ring: 190 60% 34%;
     --radius: 0.875rem; /* 14px cards */
-    /* Neutralize the Aurora brand gradient → warm ink within this theme. */
-    --brand-from: 38 18% 14%;
-    --brand-to: 38 22% 26%;
-    --glass: 43 60% 99%;
-    --glass-border: 40 28% 87%;
+    /* Brand gradient → teal within this theme. */
+    --brand-from: 200 52% 20%;
+    --brand-to: 185 62% 34%;
+    --glass: 0 0% 100%;
+    --glass-border: 214 22% 90%;
     background-image: none;
   }
 }
