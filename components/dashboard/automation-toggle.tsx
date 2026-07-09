@@ -1,12 +1,14 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { updateGuardrails } from '@/lib/actions/guardrails';
 
 // Top-bar automation switch. Flipping it off pauses the scheduler + event
 // triggers for the whole tenant (the cron loop skips paused companies) — the
 // same flag the Guardrails "Scheduler & triggers" master toggle controls.
 export function AutomationToggle({ initialOn }: { initialOn: boolean }) {
+  const t = useTranslations('agentControls.automation');
   const [on, setOn] = useState(initialOn);
   const [pending, start] = useTransition();
 
@@ -26,7 +28,7 @@ export function AutomationToggle({ initialOn }: { initialOn: boolean }) {
       aria-checked={on}
       disabled={pending}
       onClick={toggle}
-      title="الأتمتة — تشغيل/إيقاف المجدول والمشغلات"
+      title={t('title')}
       className="hidden items-center gap-2 rounded-full border bg-card/60 px-3 py-1.5 text-sm transition hover:bg-card disabled:opacity-70 lg:flex"
     >
       <span className="relative flex size-2">

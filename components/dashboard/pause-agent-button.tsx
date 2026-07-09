@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Pause, Play, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { setAgentPaused } from '@/lib/actions/agents';
@@ -9,6 +10,7 @@ import { setAgentPaused } from '@/lib/actions/agents';
 // Primary header action on the agent workspace (design View 2). Pausing flips
 // the agent to PAUSED — the scheduler then skips it until resumed.
 export function PauseAgentButton({ id, paused }: { id: string; paused: boolean }) {
+  const t = useTranslations('agentControls.pause');
   const router = useRouter();
   const [pending, start] = useTransition();
 
@@ -16,10 +18,10 @@ export function PauseAgentButton({ id, paused }: { id: string; paused: boolean }
     start(async () => {
       const res = await setAgentPaused(id, !paused);
       if (res.ok) {
-        toast.success(!paused ? 'Agent paused' : 'Agent resumed');
+        toast.success(!paused ? t('paused') : t('resumed'));
         router.refresh();
       } else {
-        toast.error('Could not update the agent.');
+        toast.error(t('error'));
       }
     });
   }
@@ -38,7 +40,7 @@ export function PauseAgentButton({ id, paused }: { id: string; paused: boolean }
       ) : (
         <Pause className="size-4" />
       )}
-      {paused ? 'Resume' : 'Pause agent'}
+      {paused ? t('resume') : t('pause')}
     </button>
   );
 }

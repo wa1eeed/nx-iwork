@@ -3,6 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { ShoppingBag, Trash2, Loader2, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -44,6 +45,7 @@ function fmt(iso: string): string {
 }
 
 export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: StaffOption[] }) {
+  const t = useTranslations('agentControls.order');
   const router = useRouter();
   const [filter, setFilter] = useState('ALL');
   const [pending, start] = useTransition();
@@ -52,9 +54,9 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
     start(async () => {
       const res = await setOrderStaff(id, staffMemberId || null);
       if (res.ok) {
-        feedback('info', 'Order attribution updated.');
+        feedback('info', t('attributionUpdated'));
         router.refresh();
-      } else feedback('error', 'Could not update attribution.');
+      } else feedback('error', t('attributionError'));
     });
   }
 
@@ -133,7 +135,7 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
                       aria-label="Staff"
                       title="Attribute to staff (commissions)"
                     >
-                      <option value="">Unassigned</option>
+                      <option value="">{t('unassigned')}</option>
                       {staff.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.name}

@@ -47,6 +47,7 @@ export function BookingsCalendar({
   staff?: { id: string; name: string }[];
 }) {
   const t = useTranslations('pages.bookings');
+  const tc = useTranslations('agentControls');
   const locale = useLocale();
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
   const [month, setMonth] = useState<Date>(() => startOfMonth(new Date()));
@@ -230,7 +231,7 @@ export function BookingsCalendar({
                           aria-label="Staff"
                           title="Attribute to staff (commissions)"
                         >
-                          <option value="">— staff —</option>
+                          <option value="">{tc('calendar.staffPlaceholder')}</option>
                           {staff.map((s) => (
                             <option key={s.id} value={s.id}>
                               {s.name}

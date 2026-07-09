@@ -1496,5 +1496,33 @@
     "supplier": "Supplier (optional)",
     "cancel": "Cancel",
     "saveChanges": "Save changes"
+  },
+  "agentControls": {
+    "pause": {
+      "paused": "Agent paused",
+      "resumed": "Agent resumed",
+      "error": "Could not update the agent.",
+      "resume": "Resume",
+      "pause": "Pause agent"
+    },
+    "archive": {
+      "confirm": "Archive this agent? You can restore it later.",
+      "archived": "Agent archived.",
+      "error": "Could not archive the agent.",
+      "archive": "Archive"
+    },
+    "automation": {
+      "on": "Automation on",
+      "paused": "Automation paused",
+      "title": "Automation — toggle the scheduler & triggers"
+    },
+    "order": {
+      "attributionUpdated": "Order attribution updated.",
+      "attributionError": "Could not update attribution.",
+      "unassigned": "Unassigned"
+    },
+    "calendar": {
+      "staffPlaceholder": "— staff —"
+    }
   }
 }

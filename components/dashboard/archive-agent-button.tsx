@@ -2,6 +2,7 @@
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Archive, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -9,19 +10,20 @@ import { archiveAgent } from '@/lib/actions/agents';
 
 // Archive (soft-delete) keeps the agent's chat history and task records intact.
 export function ArchiveAgentButton({ id }: { id: string }) {
+  const t = useTranslations('agentControls.archive');
   const router = useRouter();
   const [pending, start] = useTransition();
 
   function onArchive() {
-    if (!window.confirm('Archive this agent? You can restore it later.')) return;
+    if (!window.confirm(t('confirm'))) return;
     start(async () => {
       const res = await archiveAgent(id);
       if (res.ok) {
-        toast.success('Agent archived.');
+        toast.success(t('archived'));
         router.push('/agents');
         router.refresh();
       } else {
-        toast.error('Could not archive the agent.');
+        toast.error(t('error'));
       }
     });
   }
@@ -35,7 +37,7 @@ export function ArchiveAgentButton({ id }: { id: string }) {
       className="text-destructive hover:text-destructive"
     >
       {pending ? <Loader2 className="me-1 h-4 w-4 animate-spin" /> : <Archive className="me-1 h-4 w-4" />}
-      Archive
+      {t('archive')}
     </Button>
   );
 }
