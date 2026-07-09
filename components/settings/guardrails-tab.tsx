@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
+import { toast } from 'sonner';
 import {
   Zap,
   Wallet as WalletIcon,
@@ -11,8 +12,10 @@ import {
   Gauge,
   Clock,
   ArrowRight,
+  Play,
+  Loader2,
 } from 'lucide-react';
-import { updateGuardrails, type GuardrailsPatch } from '@/lib/actions/guardrails';
+import { updateGuardrails, runAutomationNow, type GuardrailsPatch } from '@/lib/actions/guardrails';
 
 const PLAN_LABEL: Record<string, string> = {
   FREE: 'Free',
@@ -115,6 +118,7 @@ export function GuardrailsTab({
   const [state, setState] = useState<GuardrailsInitial>(initial);
   const [capInput, setCapInput] = useState(String(initial.spendApprovalCapSar));
   const [, startTransition] = useTransition();
+  const [running, startRun] = useTransition();
 
   function patch(p: GuardrailsPatch) {
     const before = state;
@@ -130,6 +134,21 @@ export function GuardrailsTab({
     const val = Number.isFinite(n) ? Math.min(1_000_000, Math.max(0, n)) : 0;
     setCapInput(String(val));
     if (val !== state.spendApprovalCapSar) patch({ spendApprovalCapSar: val });
+  }
+
+  function runNow() {
+    startRun(async () => {
+      const res = await runAutomationNow();
+      if (res.ok) {
+        toast.success(
+          res.due === 0 ? 'No due work right now.' : `Ran ${res.ran} of ${res.due} due item(s).`
+        );
+      } else {
+        toast.error(
+          res.error === 'automation_paused' ? 'Automation is paused.' : 'Could not run automation.'
+        );
+      }
+    });
   }
 
   const planLabel = PLAN_LABEL[plan] ?? plan;
@@ -271,6 +290,21 @@ export function GuardrailsTab({
           dark
         />
       </div>
+
+      {/* Run automation now — fire the tenant's due schedules + pending autonomous
+          tasks immediately instead of waiting for the minute cron. */}
+      <button
+        type="button"
+        onClick={runNow}
+        disabled={running || !state.automationEnabled}
+        className="flex w-full items-center justify-center gap-2 rounded-2xl border py-3 text-sm font-medium transition hover:bg-accent disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {running ? <Loader2 className="size-4 animate-spin" /> : <Play className="size-4" />}
+        {running ? 'Running…' : 'Run automation now'}
+      </button>
+      <p className="-mt-2 text-center text-xs text-muted-foreground">
+        Runs due schedules + pending autonomous tasks for your workforce right now.
+      </p>
     </div>
   );
 }

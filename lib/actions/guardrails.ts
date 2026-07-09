@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
+import { runDueSchedules, runDueTasks } from '@/lib/agent/scheduler';
 
 type Result = { ok: true } | { ok: false; error: string };
 
@@ -46,4 +47,33 @@ export async function updateGuardrails(patch: GuardrailsPatch): Promise<Result> 
   revalidatePath('/settings');
   revalidatePath('/overview');
   return { ok: true };
+}
+
+// Owner-triggered "run automation now" — runs this tenant's due schedules +
+// pending autonomous tasks immediately, instead of waiting for the minute cron.
+// Lets the owner *see* the workforce act on demand (great for demos / testing).
+// Respects the master switch and is bounded so one click can't run away.
+export async function runAutomationNow(): Promise<
+  { ok: true; ran: number; due: number } | { ok: false; error: string }
+> {
+  const session = await auth();
+  const userId = session?.user?.id;
+  const companyId = userId ? await getUserCompany(userId) : null;
+  if (!companyId) return { ok: false, error: 'unauthenticated' };
+
+  const company = await db.company.findUnique({
+    where: { id: companyId },
+    select: { automationEnabled: true },
+  });
+  if (!company?.automationEnabled) return { ok: false, error: 'automation_paused' };
+
+  const now = new Date();
+  const [sched, tasks] = await Promise.all([
+    runDueSchedules(now, companyId),
+    runDueTasks(now, 5, companyId), // bounded per click
+  ]);
+
+  revalidatePath('/overview');
+  revalidatePath('/settings');
+  return { ok: true, ran: sched.ran + tasks.ran, due: sched.due + tasks.due };
 }

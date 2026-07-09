@@ -19,16 +19,21 @@ export interface SchedulerRunSummary {
   failed: number;
 }
 
-export async function runDueSchedules(now: Date = new Date()): Promise<SchedulerRunSummary> {
+export async function runDueSchedules(
+  now: Date = new Date(),
+  companyId?: string
+): Promise<SchedulerRunSummary> {
   const due = await db.agentSchedule.findMany({
     // Guardrails: skip tenants whose owner paused automation — every agent in
     // that company is effectively off until they flip it back on. Also skip
     // individually paused agents (the "Pause agent" workspace action).
+    // `companyId` scopes to one tenant (owner-triggered "run automation now").
     where: {
       isActive: true,
       nextRunAt: { lte: now },
       company: { automationEnabled: true },
       agent: { status: { not: 'PAUSED' } },
+      ...(companyId ? { companyId } : {}),
     },
     select: {
       id: true,
@@ -90,7 +95,11 @@ export async function runDueSchedules(now: Date = new Date()): Promise<Scheduler
 // ignored, even while the agent is busy with something else. Owner tasks created
 // from the /tasks form (TASK_ASSIGNMENT) stay manual ("run" button). Tasks with
 // a future dueAt wait until then.
-export async function runDueTasks(now: Date = new Date(), limit = 50): Promise<SchedulerRunSummary> {
+export async function runDueTasks(
+  now: Date = new Date(),
+  limit = 50,
+  companyId?: string
+): Promise<SchedulerRunSummary> {
   const pending = await db.task.findMany({
     where: {
       status: 'PENDING',
@@ -99,8 +108,10 @@ export async function runDueTasks(now: Date = new Date(), limit = 50): Promise<S
       OR: [{ dueAt: null }, { dueAt: { lte: now } }],
       // Guardrails: paused tenants don't run — their pending tasks wait until
       // the owner re-enables automation. Paused agents are skipped too.
+      // `companyId` scopes to one tenant (owner-triggered "run automation now").
       company: { automationEnabled: true },
       agent: { status: { not: 'PAUSED' } },
+      ...(companyId ? { companyId } : {}),
     },
     select: { id: true, companyId: true },
     orderBy: { createdAt: 'asc' },
