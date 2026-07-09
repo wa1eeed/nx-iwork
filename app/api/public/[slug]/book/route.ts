@@ -67,8 +67,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   if (!svc) return NextResponse.json({ ok: false, reason: 'item' }, { status: 404 });
 
   // Fast pre-check for a friendly message (createBooking re-checks atomically).
+  // A full-but-waitlistable slot is allowed through — the engine creates a
+  // WAITLIST booking that doesn't hold capacity.
   const pre = await checkSlotAvailable(company.id, serviceId, startAtISO);
-  if (!pre.ok) return NextResponse.json({ ok: false, reason: pre.reason ?? 'unavailable' }, { status: 409 });
+  if (!pre.ok && !pre.waitlist) {
+    return NextResponse.json({ ok: false, reason: pre.reason ?? 'unavailable' }, { status: 409 });
+  }
 
   // Find-or-create the CRM customer (by phone within the company).
   let customerId: string | undefined;
@@ -112,17 +116,29 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     throw err;
   }
 
+  const waitlisted = booking.status === 'WAITLIST';
+
   // Confirmation to the customer — from the TENANT's brand, localized. Fire-and-forget.
   if (customerEmail) {
     const ar = (company.settings?.primaryLanguage ?? 'ar') === 'ar';
     const when = new Intl.DateTimeFormat(ar ? 'ar' : 'en', { dateStyle: 'full', timeStyle: 'short' }).format(booking.startAt);
     void sendTenantEmail(company.id, {
       to: customerEmail,
-      subject: ar ? `تأكيد حجزك ${booking.ref ?? ''}`.trim() : `Booking confirmation ${booking.ref ?? ''}`.trim(),
+      subject: waitlisted
+        ? ar
+          ? `أنت على قائمة الانتظار ${booking.ref ?? ''}`.trim()
+          : `You’re on the waitlist ${booking.ref ?? ''}`.trim()
+        : ar
+          ? `تأكيد حجزك ${booking.ref ?? ''}`.trim()
+          : `Booking confirmation ${booking.ref ?? ''}`.trim(),
       heading: ar ? `شكراً ${customerName} 🗓️` : `Thank you, ${customerName} 🗓️`,
-      intro: ar
-        ? 'تم استلام حجزك.\nسيتم تأكيده قريباً وستصلك أي تحديثات.'
-        : 'We’ve received your booking.\nIt will be confirmed shortly and we’ll keep you posted.',
+      intro: waitlisted
+        ? ar
+          ? 'هذا الموعد ممتلئ، وأضفناك إلى قائمة الانتظار.\nسنتواصل معك فور توفّر مكان.'
+          : 'This slot is full, so we added you to the waitlist.\nWe’ll reach out the moment a place opens up.'
+        : ar
+          ? 'تم استلام حجزك.\nسيتم تأكيده قريباً وستصلك أي تحديثات.'
+          : 'We’ve received your booking.\nIt will be confirmed shortly and we’ll keep you posted.',
       rows: [
         { label: ar ? 'الخدمة' : 'Service', value: svc.title },
         { label: ar ? 'الموعد' : 'When', value: when },
@@ -134,6 +150,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   return NextResponse.json({
     ok: true,
+    waitlist: waitlisted,
     ref: booking.ref,
     startAt: booking.startAt.toISOString(),
     title: svc.title,

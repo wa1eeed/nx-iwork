@@ -24,12 +24,14 @@ const DOT: Record<BookingStatus, string> = {
   CONFIRMED: 'bg-sky-500',
   COMPLETED: 'bg-emerald-500',
   CANCELLED: 'bg-rose-500',
+  WAITLIST: 'bg-orange-400',
 };
 const CHIP: Record<BookingStatus, string> = {
   PENDING: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
   CONFIRMED: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
   COMPLETED: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
   CANCELLED: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 line-through',
+  WAITLIST: 'bg-orange-500/10 text-orange-600 dark:text-orange-400',
 };
 
 const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
@@ -111,6 +113,14 @@ export function BookingsCalendar({
       return (
         <>
           <IconBtn label={t('markDone')} onClick={() => act(b.id, 'COMPLETED')} disabled={pending}><CheckCheck className="h-4 w-4" /></IconBtn>
+          <IconBtn label={t('cancel')} onClick={() => act(b.id, 'CANCELLED')} disabled={pending}><X className="h-4 w-4" /></IconBtn>
+        </>
+      );
+    if (b.status === 'WAITLIST')
+      return (
+        <>
+          {/* Promote off the waitlist when a spot opens. */}
+          <IconBtn label={t('confirm')} onClick={() => act(b.id, 'CONFIRMED')} disabled={pending}><Check className="h-4 w-4" /></IconBtn>
           <IconBtn label={t('cancel')} onClick={() => act(b.id, 'CANCELLED')} disabled={pending}><X className="h-4 w-4" /></IconBtn>
         </>
       );

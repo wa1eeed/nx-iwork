@@ -27,8 +27,15 @@ export async function GET(req: Request, { params }: { params: Promise<{ slug: st
   const slots = await generateDaySlots(company.id, serviceId, date);
   return NextResponse.json({
     ok: true,
+    // Open slots + full slots the customer may still waitlist for (service opt-in).
     slots: slots
-      .filter((s) => s.available)
-      .map((s) => ({ startAt: s.startAt, label: s.label, remaining: s.remaining })),
+      .filter((s) => s.available || s.waitlist)
+      .map((s) => ({
+        startAt: s.startAt,
+        label: s.label,
+        remaining: s.remaining,
+        available: s.available,
+        waitlist: s.waitlist,
+      })),
   });
 }

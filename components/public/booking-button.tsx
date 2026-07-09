@@ -1,12 +1,14 @@
 'use client';
 
 import { useState } from 'react';
-import { Loader2, Check, X, Calendar } from 'lucide-react';
+import { Loader2, Check, X, Calendar, Clock } from 'lucide-react';
 
 interface Slot {
   startAt: string;
   label: string;
   remaining: number;
+  available: boolean;
+  waitlist: boolean;
 }
 
 function localToday(): string {
@@ -30,6 +32,9 @@ export function BookingButton({ slug, serviceId, color }: { slug: string; servic
   const [state, setState] = useState<'idle' | 'sending' | 'done'>('idle');
   const [ref, setRef] = useState<string | null>(null);
   const [error, setError] = useState('');
+  const [waitlisted, setWaitlisted] = useState(false);
+
+  const selectedIsWaitlist = slots.find((s) => s.startAt === slot)?.waitlist ?? false;
 
   async function loadSlots(d: string) {
     setLoadingSlots(true);
@@ -78,6 +83,7 @@ export function BookingButton({ slug, serviceId, color }: { slug: string; servic
       const data = await res.json();
       if (data.ok) {
         setRef(data.ref ?? null);
+        setWaitlisted(!!data.waitlist);
         setState('done');
       } else {
         setState('idle');
@@ -105,7 +111,13 @@ export function BookingButton({ slug, serviceId, color }: { slug: string; servic
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => setOpen(false)}>
           <div className="w-full max-w-sm rounded-2xl bg-background p-5 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="font-semibold">{state === 'done' ? 'تم تأكيد حجزك ✅' : 'حجز موعد'}</h3>
+              <h3 className="font-semibold">
+                {state === 'done'
+                  ? waitlisted
+                    ? 'أنت على قائمة الانتظار ⏳'
+                    : 'تم تأكيد حجزك ✅'
+                  : 'حجز موعد'}
+              </h3>
               <button onClick={() => setOpen(false)} className="text-muted-foreground hover:text-foreground">
                 <X className="h-5 w-5" />
               </button>
@@ -113,8 +125,16 @@ export function BookingButton({ slug, serviceId, color }: { slug: string; servic
 
             {state === 'done' ? (
               <div className="space-y-3 text-center">
-                <Check className="mx-auto h-12 w-12 text-emerald-500" />
-                <p className="text-sm text-muted-foreground">سنؤكّد موعدك ونتواصل معك قريباً.</p>
+                {waitlisted ? (
+                  <Clock className="mx-auto h-12 w-12 text-amber-500" />
+                ) : (
+                  <Check className="mx-auto h-12 w-12 text-emerald-500" />
+                )}
+                <p className="text-sm text-muted-foreground">
+                  {waitlisted
+                    ? 'هذا الموعد ممتلئ وأضفناك لقائمة الانتظار — سنتواصل فور توفّر مكان.'
+                    : 'سنؤكّد موعدك ونتواصل معك قريباً.'}
+                </p>
                 {ref && <p className="font-mono text-xs text-muted-foreground" dir="ltr">{ref}</p>}
                 <button onClick={() => setOpen(false)} className="w-full rounded-lg py-2 text-sm font-medium text-white" style={{ backgroundColor: accent }}>
                   تمام
@@ -134,19 +154,39 @@ export function BookingButton({ slug, serviceId, color }: { slug: string; servic
                   ) : slots.length === 0 ? (
                     <p className="py-3 text-center text-xs text-muted-foreground">لا مواعيد متاحة في هذا اليوم.</p>
                   ) : (
-                    <div className="grid max-h-32 grid-cols-3 gap-2 overflow-y-auto">
-                      {slots.map((s) => (
-                        <button
-                          key={s.startAt}
-                          onClick={() => setSlot(s.startAt)}
-                          dir="ltr"
-                          className="rounded-lg border py-1.5 text-xs transition-colors"
-                          style={slot === s.startAt ? { backgroundColor: accent, color: '#fff', borderColor: accent } : undefined}
-                        >
-                          {s.label}
-                        </button>
-                      ))}
-                    </div>
+                    <>
+                      <div className="grid max-h-32 grid-cols-3 gap-2 overflow-y-auto">
+                        {slots.map((s) => {
+                          const sel = slot === s.startAt;
+                          return (
+                            <button
+                              key={s.startAt}
+                              onClick={() => setSlot(s.startAt)}
+                              dir="ltr"
+                              title={s.waitlist ? 'قائمة انتظار' : undefined}
+                              className={`rounded-lg border py-1.5 text-xs transition-colors ${
+                                s.waitlist && !sel ? 'border-amber-400/60 text-amber-600' : ''
+                              }`}
+                              style={
+                                sel
+                                  ? {
+                                      backgroundColor: s.waitlist ? '#f59e0b' : accent,
+                                      color: '#fff',
+                                      borderColor: s.waitlist ? '#f59e0b' : accent,
+                                    }
+                                  : undefined
+                              }
+                            >
+                              {s.label}
+                              {s.waitlist ? ' •' : ''}
+                            </button>
+                          );
+                        })}
+                      </div>
+                      {slots.some((s) => s.waitlist) && (
+                        <p className="mt-1.5 text-[11px] text-amber-600">• الأوقات الممتلئة متاحة كقائمة انتظار.</p>
+                      )}
+                    </>
                   )}
                 </div>
 
@@ -168,7 +208,7 @@ export function BookingButton({ slug, serviceId, color }: { slug: string; servic
                   style={{ backgroundColor: accent }}
                 >
                   {state === 'sending' && <Loader2 className="h-4 w-4 animate-spin" />}
-                  تأكيد الحجز
+                  {selectedIsWaitlist ? 'الانضمام لقائمة الانتظار' : 'تأكيد الحجز'}
                 </button>
               </div>
             )}

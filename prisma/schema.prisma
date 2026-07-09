@@ -882,6 +882,7 @@ enum BookingStatus {
   CONFIRMED
   CANCELLED
   COMPLETED
+  WAITLIST // slot was full; customer joined the waitlist (doesn't hold capacity)
 }
 
 // A customer booking a time slot. Enabled per company via Company.hasBookings.

@@ -1,4 +1,5 @@
 import { notFound } from 'next/navigation';
+import Link from 'next/link';
 import Image from 'next/image';
 import { Phone, Mail, MessageCircle, Clock, CalendarCheck } from 'lucide-react';
 import { db } from '@/lib/db';
@@ -109,14 +110,18 @@ export default async function PublicBusinessPage({
     .filter((c) => c.items.length > 0);
   const ServiceCard = ({ s }: { s: Svc }) => (
     <div className="group flex flex-col overflow-hidden rounded-2xl border bg-card transition hover:shadow-md">
-      {s.image && (
-        <div className="relative aspect-[16/10] bg-muted">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={s.image} alt={s.title} className="h-full w-full object-cover" />
-        </div>
-      )}
+      <Link href={`/${slug}/service/${s.id}`} className="block">
+        {s.image && (
+          <div className="relative aspect-[16/10] bg-muted">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={s.image} alt={s.title} className="h-full w-full object-cover" />
+          </div>
+        )}
+      </Link>
       <div className="flex flex-1 flex-col p-4">
-        <h3 className="font-semibold">{s.title}</h3>
+        <Link href={`/${slug}/service/${s.id}`} className="font-semibold hover:underline">
+          {s.title}
+        </Link>
         {s.description && (
           <p className="mt-1 line-clamp-3 flex-1 text-sm text-muted-foreground">{s.description}</p>
         )}
@@ -130,12 +135,18 @@ export default async function PublicBusinessPage({
             </span>
           )}
         </div>
-        <div className="mt-3">
+        <div className="mt-3 space-y-2">
           {s.durationMin != null && s.availability.length > 0 ? (
             <BookingButton slug={slug} serviceId={s.id} color={accent} />
           ) : (
             <OrderButton slug={slug} serviceId={s.id} label="اطلب الخدمة" color={accent} />
           )}
+          <Link
+            href={`/${slug}/service/${s.id}`}
+            className="block text-center text-xs text-muted-foreground hover:text-foreground"
+          >
+            عرض التفاصيل
+          </Link>
         </div>
       </div>
     </div>

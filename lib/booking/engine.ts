@@ -26,6 +26,8 @@ export interface Slot {
   label: string;
   remaining: number;
   available: boolean;
+  /** Full slot the customer may still join a waitlist for (service opt-in). */
+  waitlist: boolean;
 }
 
 const ACTIVE_STATUSES: BookingStatus[] = ['PENDING', 'CONFIRMED'];
@@ -74,6 +76,7 @@ type BookableService = {
   durationMin: number;
   bufferMin: number;
   maxCapacity: number;
+  allowWaitlist: boolean;
   availability: { dayOfWeek: number; startTime: string; endTime: string }[];
 };
 
@@ -86,6 +89,7 @@ export async function getBookableService(
     where: { id: serviceId, companyId, isActive: true },
     select: {
       id: true, title: true, durationMin: true, bufferMin: true, maxCapacity: true,
+      allowWaitlist: true,
       availability: { select: { dayOfWeek: true, startTime: true, endTime: true } },
     },
   });
@@ -149,12 +153,14 @@ export async function generateDaySlots(
     .sort((a, b) => a.start.getTime() - b.start.getTime())
     .map(({ start, end }) => {
       const remaining = svc.maxCapacity - (takenByStart.get(start.getTime()) ?? 0);
+      const available = remaining > 0;
       return {
         startAt: start.toISOString(),
         endAt: end.toISOString(),
         label: hhmm(start, tz),
         remaining,
-        available: remaining > 0,
+        available,
+        waitlist: !available && svc.allowWaitlist,
       };
     });
 }
@@ -165,7 +171,7 @@ export async function checkSlotAvailable(
   serviceId: string,
   startAtISO: string,
   now: Date = new Date(),
-): Promise<{ ok: boolean; endAt?: string; reason?: BookingError['code'] }> {
+): Promise<{ ok: boolean; endAt?: string; reason?: BookingError['code']; waitlist?: boolean }> {
   const start = new Date(startAtISO);
   if (Number.isNaN(start.getTime())) return { ok: false, reason: 'invalid_slot' };
   if (start.getTime() <= now.getTime()) return { ok: false, reason: 'past' };
@@ -178,7 +184,11 @@ export async function checkSlotAvailable(
     (s) => s.startAt === start.toISOString(),
   );
   if (!slot) return { ok: false, reason: 'invalid_slot' };
-  if (!slot.available) return { ok: false, reason: 'slot_full' };
+  if (!slot.available) {
+    // Full — but the customer may still join the waitlist if the service allows.
+    if (slot.waitlist) return { ok: false, reason: 'slot_full', waitlist: true, endAt: slot.endAt };
+    return { ok: false, reason: 'slot_full' };
+  }
   return { ok: true, endAt: slot.endAt };
 }
 
@@ -202,7 +212,11 @@ export interface CreateBookingInput {
 export async function createBooking(input: CreateBookingInput) {
   const { companyId, serviceId, customerId, title, startAt, notes, status } = input;
 
-  const write = async (tx: Prisma.TransactionClient, endAt: Date | null) =>
+  const write = async (
+    tx: Prisma.TransactionClient,
+    endAt: Date | null,
+    statusOverride?: BookingStatus,
+  ) =>
     tx.booking.create({
       data: {
         companyId,
@@ -213,7 +227,7 @@ export async function createBooking(input: CreateBookingInput) {
         startAt,
         endAt: endAt ?? undefined,
         notes: notes ?? undefined,
-        status: status ?? 'CONFIRMED',
+        status: statusOverride ?? status ?? 'CONFIRMED',
         ...(input.source ? { customFields: { source: input.source } } : {}),
       },
       select: { id: true, ref: true, title: true, startAt: true, endAt: true, status: true },
@@ -231,7 +245,12 @@ export async function createBooking(input: CreateBookingInput) {
     const taken = await tx.booking.count({
       where: { companyId, serviceId, status: { in: ACTIVE_STATUSES }, startAt },
     });
-    if (taken >= svc.maxCapacity) throw new BookingError('slot_full');
+    if (taken >= svc.maxCapacity) {
+      // Full → join the waitlist when the service opts in; WAITLIST doesn't hold
+      // capacity, so it never blocks a real booking that frees up.
+      if (svc.allowWaitlist) return write(tx, endAt, 'WAITLIST');
+      throw new BookingError('slot_full');
+    }
     return write(tx, endAt);
   });
 }
