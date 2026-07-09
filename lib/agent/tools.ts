@@ -201,9 +201,10 @@ export const AGENT_TOOLS: AiTool[] = [
       properties: {
         customerName: { type: 'string' },
         customerId: { type: 'string', description: 'اربطه بعميل CRM إن وُجد' },
-        total: { type: 'number', description: 'الإجمالي' },
+        total: { type: 'number', description: 'الإجمالي قبل الخصم' },
         type: { type: 'string', enum: ['SERVICE', 'PRODUCT'] },
         notes: { type: 'string' },
+        couponCode: { type: 'string', description: 'كود خصم اختياري يقدّمه العميل — يُطبَّق إن كان صالحاً' },
       },
       required: ['customerName', 'total'],
     },
@@ -333,6 +334,7 @@ const createOrderArgs = z.object({
   total: z.coerce.number().nonnegative().max(99_999_999),
   type: z.enum(['SERVICE', 'PRODUCT']).optional(),
   notes: z.string().trim().max(2000).optional(),
+  couponCode: z.string().trim().max(40).optional(),
 });
 
 const createTaskArgs = z.object({
@@ -631,6 +633,36 @@ export async function executeTool(
           });
           if (!exists) return fail('العميل المرتبط غير موجود.');
         }
+        // Optional coupon redemption — validated against scope, window, min
+        // subtotal, and remaining redemptions before it discounts the total.
+        let couponId: string | undefined;
+        let discount = 0;
+        if (args.couponCode) {
+          const coupon = await db.coupon.findFirst({
+            where: { companyId: ctx.companyId, code: args.couponCode.toUpperCase() },
+          });
+          const nowD = new Date();
+          const orderScope = (args.type ?? 'SERVICE') === 'PRODUCT' ? 'PRODUCTS' : 'SERVICES';
+          const valid =
+            coupon &&
+            coupon.isActive &&
+            (!coupon.startsAt || coupon.startsAt <= nowD) &&
+            (!coupon.expiresAt || coupon.expiresAt >= nowD) &&
+            (coupon.maxRedemptions == null || coupon.usedCount < coupon.maxRedemptions) &&
+            (coupon.scope === 'ALL' || coupon.scope === orderScope) &&
+            (!coupon.minSubtotal || args.total >= Number(coupon.minSubtotal));
+          if (valid && coupon) {
+            discount =
+              coupon.type === 'PERCENT'
+                ? Math.round(((args.total * Number(coupon.value)) / 100) * 100) / 100
+                : Math.min(args.total, Number(coupon.value));
+            couponId = coupon.id;
+          } else {
+            return fail('الكوبون غير صالح أو منتهٍ أو لا ينطبق على هذا الطلب.');
+          }
+        }
+        const finalTotal = Math.max(0, args.total - discount);
+
         const order = await db.order.create({
           data: {
             companyId: ctx.companyId,
@@ -639,12 +671,18 @@ export async function executeTool(
             customerId: args.customerId,
             customerName: args.customerName,
             customerNotes: args.notes,
-            total: args.total,
             subtotal: args.total,
+            discount,
+            total: finalTotal,
+            couponId,
             agentId: ctx.agentId,
           },
           select: { id: true, orderNumber: true },
         });
+        // Count the redemption once the order is actually placed.
+        if (couponId) {
+          await db.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } });
+        }
         // A placed order is a realized deal → advance the opportunity to WON.
         if (args.customerId) {
           await db.customer.update({ where: { id: args.customerId }, data: { status: 'WON' } });

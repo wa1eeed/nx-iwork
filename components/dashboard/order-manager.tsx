@@ -10,7 +10,7 @@ import { StaggerList, MotionItem } from '@/components/ui/motion';
 import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { feedback } from '@/lib/ui/feedback';
-import { setOrderStatus, deleteOrder } from '@/lib/actions/orders';
+import { setOrderStatus, deleteOrder, setOrderStaff } from '@/lib/actions/orders';
 
 export interface OrderRow {
   id: string;
@@ -20,7 +20,13 @@ export interface OrderRow {
   total: string;
   type: string;
   status: string;
+  staffMemberId: string | null;
   createdAt: string;
+}
+
+export interface StaffOption {
+  id: string;
+  name: string;
 }
 
 const STATUS: Record<string, { label: string; cls: string }> = {
@@ -37,10 +43,20 @@ function fmt(iso: string): string {
   return formatDateTime(iso, 'ar', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
-export function OrderManager({ orders }: { orders: OrderRow[] }) {
+export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: StaffOption[] }) {
   const router = useRouter();
   const [filter, setFilter] = useState('ALL');
   const [pending, start] = useTransition();
+
+  function changeStaff(id: string, staffMemberId: string) {
+    start(async () => {
+      const res = await setOrderStaff(id, staffMemberId || null);
+      if (res.ok) {
+        feedback('info', 'Order attribution updated.');
+        router.refresh();
+      } else feedback('error', 'Could not update attribution.');
+    });
+  }
 
   const shown = filter === 'ALL' ? orders : orders.filter((o) => o.status === filter);
 
@@ -108,6 +124,23 @@ export function OrderManager({ orders }: { orders: OrderRow[] }) {
                   <span className={cn('rounded-full px-2 py-0.5 text-xs', STATUS[o.status]?.cls)}>
                     {STATUS[o.status]?.label ?? o.status}
                   </span>
+                  {staff.length > 0 && (
+                    <select
+                      className={selectCls}
+                      value={o.staffMemberId ?? ''}
+                      onChange={(e) => changeStaff(o.id, e.target.value)}
+                      disabled={pending}
+                      aria-label="Staff"
+                      title="Attribute to staff (commissions)"
+                    >
+                      <option value="">Unassigned</option>
+                      {staff.map((s) => (
+                        <option key={s.id} value={s.id}>
+                          {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <select className={selectCls} value={o.status} onChange={(e) => change(o.id, e.target.value)} disabled={pending} aria-label="الحالة">
                     {ORDER.map((s) => (
                       <option key={s} value={s}>{STATUS[s].label}</option>

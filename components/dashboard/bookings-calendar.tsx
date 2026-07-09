@@ -6,7 +6,7 @@ import { ChevronLeft, ChevronRight, CalendarDays, List, Check, X, CheckCheck } f
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { setBookingStatus } from '@/lib/actions/bookings';
+import { setBookingStatus, setBookingStaff } from '@/lib/actions/bookings';
 import type { BookingStatus } from '@prisma/client';
 
 export interface CalBooking {
@@ -16,6 +16,7 @@ export interface CalBooking {
   startAt: string; // ISO
   status: BookingStatus;
   customerName: string | null;
+  staffMemberId: string | null;
 }
 
 const DOT: Record<BookingStatus, string> = {
@@ -35,7 +36,13 @@ const dayKey = (d: Date) => `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
 const startOfMonth = (d: Date) => new Date(d.getFullYear(), d.getMonth(), 1);
 const addMonths = (d: Date, n: number) => new Date(d.getFullYear(), d.getMonth() + n, 1);
 
-export function BookingsCalendar({ bookings }: { bookings: CalBooking[] }) {
+export function BookingsCalendar({
+  bookings,
+  staff = [],
+}: {
+  bookings: CalBooking[];
+  staff?: { id: string; name: string }[];
+}) {
   const t = useTranslations('pages.bookings');
   const locale = useLocale();
   const [view, setView] = useState<'calendar' | 'list'>('calendar');
@@ -83,6 +90,12 @@ export function BookingsCalendar({ bookings }: { bookings: CalBooking[] }) {
   const act = (id: string, status: BookingStatus) =>
     startTransition(async () => {
       const res = await setBookingStatus(id, status);
+      if (!res.ok) toast.error(t('actionFailed'));
+    });
+
+  const changeStaff = (id: string, staffMemberId: string) =>
+    startTransition(async () => {
+      const res = await setBookingStaff(id, staffMemberId || null);
       if (!res.ok) toast.error(t('actionFailed'));
     });
 
@@ -188,7 +201,26 @@ export function BookingsCalendar({ bookings }: { bookings: CalBooking[] }) {
                       <span className="min-w-0 flex-1 truncate text-xs">{b.customerName || b.title}</span>
                     </div>
                     {(b.customerName && b.title) && <p className="mt-0.5 ps-4 text-[11px] text-muted-foreground truncate">{b.title}</p>}
-                    <div className="mt-1.5 flex items-center gap-1 ps-4">{actionsFor(b)}</div>
+                    <div className="mt-1.5 flex flex-wrap items-center gap-1 ps-4">
+                      {actionsFor(b)}
+                      {staff.length > 0 && (
+                        <select
+                          className="h-7 rounded-md border bg-background px-1.5 text-[11px]"
+                          value={b.staffMemberId ?? ''}
+                          onChange={(e) => changeStaff(b.id, e.target.value)}
+                          disabled={pending}
+                          aria-label="Staff"
+                          title="Attribute to staff (commissions)"
+                        >
+                          <option value="">— staff —</option>
+                          {staff.map((s) => (
+                            <option key={s.id} value={s.id}>
+                              {s.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
                   </div>
                 ))}
               </div>

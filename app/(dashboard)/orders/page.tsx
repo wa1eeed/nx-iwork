@@ -9,23 +9,31 @@ export default async function OrdersPage() {
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
-  const orders = companyId
-    ? await db.order.findMany({
-        where: { companyId },
-        orderBy: { createdAt: 'desc' },
-        take: 300,
-        select: {
-          id: true,
-          orderNumber: true,
-          customerName: true,
-          customerId: true,
-          total: true,
-          type: true,
-          status: true,
-          createdAt: true,
-        },
-      })
-    : [];
+  const [orders, staff] = companyId
+    ? await Promise.all([
+        db.order.findMany({
+          where: { companyId },
+          orderBy: { createdAt: 'desc' },
+          take: 300,
+          select: {
+            id: true,
+            orderNumber: true,
+            customerName: true,
+            customerId: true,
+            total: true,
+            type: true,
+            status: true,
+            staffMemberId: true,
+            createdAt: true,
+          },
+        }),
+        db.staffMember.findMany({
+          where: { companyId, isActive: true },
+          orderBy: { name: 'asc' },
+          select: { id: true, name: true },
+        }),
+      ])
+    : [[], []];
 
   return (
     <div className="space-y-6">
@@ -35,6 +43,7 @@ export default async function OrdersPage() {
       </div>
 
       <OrderManager
+        staff={staff}
         orders={orders.map((o) => ({
           id: o.id,
           orderNumber: o.orderNumber,
@@ -43,6 +52,7 @@ export default async function OrdersPage() {
           total: o.total.toString(),
           type: o.type,
           status: o.status,
+          staffMemberId: o.staffMemberId,
           createdAt: o.createdAt.toISOString(),
         }))}
       />

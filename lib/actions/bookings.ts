@@ -52,6 +52,25 @@ export async function setBookingStatus(id: string, status: BookingStatus): Promi
   return { ok: true };
 }
 
+// Attribute (or clear) the staff member who delivers a booking — feeds the
+// commissions report. Tenant-scoped for both the booking and the staff member.
+export async function setBookingStaff(id: string, staffMemberId: string | null): Promise<Result> {
+  const companyId = await authedCompany();
+  if (!companyId) return { ok: false, error: 'unauthenticated' };
+  if (staffMemberId) {
+    const staff = await db.staffMember.findFirst({
+      where: { id: staffMemberId, companyId },
+      select: { id: true },
+    });
+    if (!staff) return { ok: false, error: 'not_found' };
+  }
+  const res = await db.booking.updateMany({ where: { id, companyId }, data: { staffMemberId } });
+  if (res.count === 0) return { ok: false, error: 'not_found' };
+  revalidatePath('/bookings');
+  revalidatePath('/commissions');
+  return { ok: true };
+}
+
 // Save a service's booking config + weekly availability (replace-all). Making a
 // service bookable = set durationMin AND add >=1 window. Tenant-scoped: the
 // service is verified to belong to the company before any write.

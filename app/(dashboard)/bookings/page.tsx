@@ -36,19 +36,27 @@ export default async function BookingsPage() {
     );
   }
 
-  const rows = await db.booking.findMany({
-    where: { companyId },
-    orderBy: { startAt: 'asc' },
-    take: 500,
-    select: {
-      id: true,
-      ref: true,
-      title: true,
-      startAt: true,
-      status: true,
-      customer: { select: { name: true } },
-    },
-  });
+  const [rows, staff] = await Promise.all([
+    db.booking.findMany({
+      where: { companyId },
+      orderBy: { startAt: 'asc' },
+      take: 500,
+      select: {
+        id: true,
+        ref: true,
+        title: true,
+        startAt: true,
+        status: true,
+        staffMemberId: true,
+        customer: { select: { name: true } },
+      },
+    }),
+    db.staffMember.findMany({
+      where: { companyId, isActive: true },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true },
+    }),
+  ]);
   const bookings: CalBooking[] = rows.map((b) => ({
     id: b.id,
     ref: b.ref,
@@ -56,6 +64,7 @@ export default async function BookingsPage() {
     startAt: b.startAt.toISOString(),
     status: b.status,
     customerName: b.customer?.name ?? null,
+    staffMemberId: b.staffMemberId,
   }));
 
   return (
@@ -70,7 +79,7 @@ export default async function BookingsPage() {
           {t('manageAvailability')}
         </Link>
       </div>
-      <BookingsCalendar bookings={bookings} />
+      <BookingsCalendar bookings={bookings} staff={staff} />
     </div>
   );
 }

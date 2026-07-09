@@ -14,6 +14,25 @@ async function companyId(): Promise<string | null> {
   return getUserCompany(session.user.id);
 }
 
+// Attribute (or clear) the staff member who delivered/sold an order — feeds the
+// commissions report. Validates the staff belongs to the same tenant.
+export async function setOrderStaff(id: string, staffMemberId: string | null): Promise<OrderResult> {
+  const cid = await companyId();
+  if (!cid) return { ok: false, error: 'no_company' };
+  if (staffMemberId) {
+    const staff = await db.staffMember.findFirst({
+      where: { id: staffMemberId, companyId: cid },
+      select: { id: true },
+    });
+    if (!staff) return { ok: false, error: 'not_found' };
+  }
+  const res = await db.order.updateMany({ where: { id, companyId: cid }, data: { staffMemberId } });
+  if (res.count === 0) return { ok: false, error: 'not_found' };
+  revalidatePath('/orders');
+  revalidatePath('/commissions');
+  return { ok: true };
+}
+
 export async function setOrderStatus(id: string, status: OrderStatus): Promise<OrderResult> {
   const cid = await companyId();
   if (!cid) return { ok: false, error: 'no_company' };
