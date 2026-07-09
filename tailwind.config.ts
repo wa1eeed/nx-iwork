@@ -15,6 +15,17 @@ const config: Config = {
       screens: { '2xl': '1400px' },
     },
     extend: {
+      // Platform-wide type scale — a moderate bump to the reading sizes (the
+      // dashboard leans on text-sm/text-xs) for better legibility per modern
+      // dashboard standards. Only the body/reading steps are enlarged; display
+      // sizes (2xl+) keep Tailwind defaults so headings don't balloon.
+      fontSize: {
+        xs: ['0.8125rem', { lineHeight: '1.15rem' }], // 13px
+        sm: ['0.9375rem', { lineHeight: '1.4rem' }], // 15px
+        base: ['1.0625rem', { lineHeight: '1.65rem' }], // 17px
+        lg: ['1.1875rem', { lineHeight: '1.8rem' }], // 19px
+        xl: ['1.3125rem', { lineHeight: '1.85rem' }], // 21px
+      },
       colors: {
         border: 'hsl(var(--border))',
         input: 'hsl(var(--input))',
