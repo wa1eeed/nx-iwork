@@ -1524,5 +1524,38 @@
     "calendar": {
       "staffPlaceholder": "— staff —"
     }
+  },
+  "salesPage": {
+    "title": "Sales & financials",
+    "subtitle": "Revenue, orders, and invoices across your business.",
+    "kpiRevenue": "Revenue (completed)",
+    "kpiMonth": "This month",
+    "kpiOrders": "Orders",
+    "kpiAvg": "Avg. order",
+    "recentSales": "Recent sales",
+    "allOrders": "All orders",
+    "noSales": "No sales yet.",
+    "invoices": "Invoices",
+    "noInvoices": "No invoices yet.",
+    "ordersByStatus": "Orders by status",
+    "wallet": "Wallet",
+    "planLabel": "{plan} plan",
+    "topUp": "Top up",
+    "plan": "Plan",
+    "currency": "SAR",
+    "status": {
+      "NEW": "New",
+      "CONFIRMED": "Confirmed",
+      "IN_PROGRESS": "In progress",
+      "COMPLETED": "Completed",
+      "CANCELLED": "Cancelled"
+    },
+    "invoiceStatus": {
+      "DRAFT": "Draft",
+      "OPEN": "Open",
+      "PAID": "Paid",
+      "FAILED": "Failed",
+      "REFUNDED": "Refunded"
+    }
   }
 }

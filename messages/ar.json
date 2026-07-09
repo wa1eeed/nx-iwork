@@ -1524,5 +1524,38 @@
     "calendar": {
       "staffPlaceholder": "— الطاقم —"
     }
+  },
+  "salesPage": {
+    "title": "المبيعات والماليات",
+    "subtitle": "الإيرادات والطلبات والفواتير عبر نشاطك.",
+    "kpiRevenue": "الإيراد (المكتمل)",
+    "kpiMonth": "هذا الشهر",
+    "kpiOrders": "الطلبات",
+    "kpiAvg": "متوسط الطلب",
+    "recentSales": "أحدث المبيعات",
+    "allOrders": "كل الطلبات",
+    "noSales": "لا مبيعات بعد.",
+    "invoices": "الفواتير",
+    "noInvoices": "لا فواتير بعد.",
+    "ordersByStatus": "الطلبات حسب الحالة",
+    "wallet": "المحفظة",
+    "planLabel": "باقة {plan}",
+    "topUp": "شحن",
+    "plan": "الباقة",
+    "currency": "ر.س",
+    "status": {
+      "NEW": "جديد",
+      "CONFIRMED": "مؤكّد",
+      "IN_PROGRESS": "قيد التنفيذ",
+      "COMPLETED": "مكتمل",
+      "CANCELLED": "ملغى"
+    },
+    "invoiceStatus": {
+      "DRAFT": "مسودّة",
+      "OPEN": "مفتوحة",
+      "PAID": "مدفوعة",
+      "FAILED": "فشلت",
+      "REFUNDED": "مُستردّة"
+    }
   }
 }

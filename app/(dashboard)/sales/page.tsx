@@ -9,24 +9,20 @@ import {
   ArrowRight,
   FileText,
 } from 'lucide-react';
+import { getLocale, getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { formatDate } from '@/lib/format';
 import type { OrderStatus } from '@prisma/client';
 
-// SAR, Latin digits, no fractional noise — a financial dashboard reads cleaner
-// in whole riyals.
-function sar(n: number) {
-  return `${Math.round(n).toLocaleString('en')} SAR`;
-}
-
-const ORDER_STATUS: Record<string, { label: string; dot: string }> = {
-  NEW: { label: 'New', dot: 'bg-sky-500' },
-  CONFIRMED: { label: 'Confirmed', dot: 'bg-indigo-500' },
-  IN_PROGRESS: { label: 'In progress', dot: 'bg-amber-500' },
-  COMPLETED: { label: 'Completed', dot: 'bg-emerald-500' },
-  CANCELLED: { label: 'Cancelled', dot: 'bg-muted-foreground/40' },
+// Accent dot per order status (labels come from i18n).
+const ORDER_DOT: Record<string, string> = {
+  NEW: 'bg-sky-500',
+  CONFIRMED: 'bg-indigo-500',
+  IN_PROGRESS: 'bg-amber-500',
+  COMPLETED: 'bg-emerald-500',
+  CANCELLED: 'bg-muted-foreground/40',
 };
 
 const INVOICE_BADGE: Record<string, string> = {
@@ -42,6 +38,9 @@ const STATUS_ORDER: OrderStatus[] = ['NEW', 'CONFIRMED', 'IN_PROGRESS', 'COMPLET
 // The commercial cockpit: realized revenue, order pipeline, and invoices — all
 // tenant-scoped and derived from real Orders + Invoices.
 export default async function SalesPage() {
+  const t = await getTranslations('salesPage');
+  const locale = await getLocale();
+  const sar = (n: number) => `${Math.round(n).toLocaleString('en')} ${t('currency')}`;
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
@@ -96,18 +95,18 @@ export default async function SalesPage() {
   const maxStatusTotal = Math.max(1, ...byStatus.map((s) => Number(s._sum.total ?? 0)));
 
   const KPIS = [
-    { label: 'Revenue (completed)', value: sar(revenue), icon: CircleDollarSign, accent: 'text-emerald-500' },
-    { label: 'This month', value: sar(monthRevenue), icon: TrendingUp, accent: 'text-sky-500' },
-    { label: 'Orders', value: orderCount.toLocaleString('en'), icon: ShoppingBag, accent: 'text-amber-500' },
-    { label: 'Avg. order', value: sar(avgOrder), icon: Receipt, accent: 'text-indigo-500' },
+    { label: t('kpiRevenue'), value: sar(revenue), icon: CircleDollarSign, accent: 'text-emerald-500' },
+    { label: t('kpiMonth'), value: sar(monthRevenue), icon: TrendingUp, accent: 'text-sky-500' },
+    { label: t('kpiOrders'), value: orderCount.toLocaleString(locale), icon: ShoppingBag, accent: 'text-amber-500' },
+    { label: t('kpiAvg'), value: sar(avgOrder), icon: Receipt, accent: 'text-indigo-500' },
   ];
 
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Sales &amp; financials</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Revenue, orders, and invoices across your business.
+          {t('subtitle')}
         </p>
       </div>
 
@@ -129,33 +128,30 @@ export default async function SalesPage() {
           {/* Recent sales. */}
           <div className="rounded-2xl border bg-card">
             <div className="flex items-center justify-between border-b p-4">
-              <p className="font-semibold">Recent sales</p>
+              <p className="font-semibold">{t('recentSales')}</p>
               <Link
                 href="/orders"
                 className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground"
               >
-                All orders <ArrowRight className="size-3 rtl:rotate-180" />
+                {t('allOrders')} <ArrowRight className="size-3 rtl:rotate-180" />
               </Link>
             </div>
             {recentOrders.length === 0 ? (
-              <p className="p-8 text-center text-sm text-muted-foreground">No sales yet.</p>
+              <p className="p-8 text-center text-sm text-muted-foreground">{t('noSales')}</p>
             ) : (
               <div className="divide-y">
-                {recentOrders.map((o) => {
-                  const st = ORDER_STATUS[o.status] ?? ORDER_STATUS.NEW;
-                  return (
+                {recentOrders.map((o) => (
                     <div key={o.id} className="flex items-center gap-3 p-3.5">
-                      <span className={`size-2 shrink-0 rounded-full ${st.dot}`} />
+                      <span className={`size-2 shrink-0 rounded-full ${ORDER_DOT[o.status] ?? ORDER_DOT.NEW}`} />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-sm font-medium">{o.customerName}</p>
-                        <p className="text-xs text-muted-foreground tabular-nums" dir="ltr">
-                          {o.orderNumber} · {st.label}
+                        <p className="text-xs text-muted-foreground tabular-nums">
+                          <span dir="ltr">{o.orderNumber}</span> · {t(`status.${o.status}`)}
                         </p>
                       </div>
                       <p className="shrink-0 text-sm font-semibold tabular-nums">{sar(Number(o.total))}</p>
                     </div>
-                  );
-                })}
+                ))}
               </div>
             )}
           </div>
@@ -163,10 +159,10 @@ export default async function SalesPage() {
           {/* Invoices. */}
           <div className="rounded-2xl border bg-card">
             <div className="border-b p-4">
-              <p className="font-semibold">Invoices</p>
+              <p className="font-semibold">{t('invoices')}</p>
             </div>
             {invoices.length === 0 ? (
-              <p className="p-8 text-center text-sm text-muted-foreground">No invoices yet.</p>
+              <p className="p-8 text-center text-sm text-muted-foreground">{t('noInvoices')}</p>
             ) : (
               <div className="divide-y">
                 {invoices.map((inv) => (
@@ -181,7 +177,7 @@ export default async function SalesPage() {
                     <span
                       className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${INVOICE_BADGE[inv.status] ?? ''}`}
                     >
-                      {inv.status}
+                      {t(`invoiceStatus.${inv.status}`)}
                     </span>
                     <p className="shrink-0 text-sm font-semibold tabular-nums">{sar(Number(inv.total))}</p>
                     {inv.pdfUrl && (
@@ -204,17 +200,17 @@ export default async function SalesPage() {
         {/* Right rail: pipeline by status + wallet. */}
         <aside className="space-y-6">
           <div className="rounded-2xl border bg-card p-4">
-            <p className="mb-3 font-semibold">Orders by status</p>
+            <p className="mb-3 font-semibold">{t('ordersByStatus')}</p>
             <div className="space-y-2.5">
               {STATUS_ORDER.map((s) => {
                 const data = statusMap.get(s) ?? { count: 0, total: 0 };
-                const st = ORDER_STATUS[s];
+                const dot = ORDER_DOT[s];
                 return (
                   <div key={s}>
                     <div className="mb-1 flex items-center justify-between text-xs">
                       <span className="flex items-center gap-1.5">
-                        <span className={`size-2 rounded-full ${st.dot}`} />
-                        {st.label}
+                        <span className={`size-2 rounded-full ${dot}`} />
+                        {t(`status.${s}`)}
                       </span>
                       <span className="tabular-nums text-muted-foreground">
                         {data.count} · {sar(data.total)}
@@ -222,7 +218,7 @@ export default async function SalesPage() {
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                       <div
-                        className={`h-full rounded-full ${st.dot}`}
+                        className={`h-full rounded-full ${dot}`}
                         style={{ width: `${Math.round((data.total / maxStatusTotal) * 100)}%` }}
                       />
                     </div>
@@ -235,22 +231,22 @@ export default async function SalesPage() {
           <div className="rounded-2xl border bg-card p-4">
             <div className="flex items-center gap-2">
               <WalletIcon className="size-4 text-emerald-500" />
-              <p className="font-semibold">Wallet</p>
+              <p className="font-semibold">{t('wallet')}</p>
             </div>
             <p className="mt-2 text-xl font-bold tabular-nums">{sar(walletBalance)}</p>
-            <p className="text-xs text-muted-foreground">{company?.plan ?? 'STARTER'} plan</p>
+            <p className="text-xs text-muted-foreground">{t('planLabel', { plan: company?.plan ?? 'STARTER' })}</p>
             <div className="mt-3 flex gap-2">
               <Link
                 href="/wallet"
                 className="flex-1 rounded-lg border py-1.5 text-center text-xs font-medium transition hover:bg-accent"
               >
-                Top up
+                {t('topUp')}
               </Link>
               <Link
                 href="/subscription"
                 className="flex-1 rounded-lg border py-1.5 text-center text-xs font-medium transition hover:bg-accent"
               >
-                Plan
+                {t('plan')}
               </Link>
             </div>
           </div>
