@@ -80,7 +80,19 @@ export function ServiceCatalogManager({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [showForm, saving]);
 
-  const deptName = (id: string | null) => departments.find((d) => d.id === id)?.name ?? null;
+  // Group services under their clinic/department (with an "Other" bucket last).
+  const groups = [
+    ...departments.map((d) => ({
+      key: d.id,
+      name: d.name,
+      items: services.filter((s) => s.departmentId === d.id),
+    })),
+    {
+      key: '__none',
+      name: 'Other',
+      items: services.filter((s) => !s.departmentId || !departments.some((d) => d.id === s.departmentId)),
+    },
+  ].filter((g) => g.items.length > 0);
 
   function openAdd() {
     setForm(EMPTY);
@@ -155,56 +167,61 @@ export function ServiceCatalogManager({
         New service
       </Button>
 
-      <div className="grid gap-3">
-        {services.length === 0 ? (
-          <div className="rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
-            No services yet — add the services customers can book (e.g. Teeth whitening,
-            Consultation), and group them under a clinic/section.
-          </div>
-        ) : (
-          services.map((s) => (
-            <div key={s.id} className="flex items-center gap-4 rounded-2xl border bg-card p-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
-                <Sparkles className="h-5 w-5" />
+      {services.length === 0 ? (
+        <div className="rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
+          No services yet — add the services customers can book (e.g. Teeth whitening,
+          Consultation), and group them under a clinic/section.
+        </div>
+      ) : (
+        <div className="space-y-6">
+          {groups.map((g) => (
+            <div key={g.key}>
+              <div className="mb-2 flex items-center gap-2 px-1">
+                <h3 className="text-sm font-semibold">{g.name}</h3>
+                <span className="text-xs text-muted-foreground">({g.items.length})</span>
               </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <p className="font-medium">{s.title}</p>
-                  {deptName(s.departmentId) && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-                      {deptName(s.departmentId)}
-                    </span>
-                  )}
-                  {s.durationMin != null && (
-                    <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
-                      <Clock className="size-3" />
-                      {s.durationMin}m
-                    </span>
-                  )}
-                  {!s.isActive && (
-                    <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                      Hidden
-                    </span>
-                  )}
-                </div>
-                <p className="mt-0.5 truncate text-xs text-muted-foreground">{s.description}</p>
+              <div className="grid gap-3">
+                {g.items.map((s) => (
+                  <div key={s.id} className="flex items-center gap-4 rounded-2xl border bg-card p-4">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                      <Sparkles className="h-5 w-5" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium">{s.title}</p>
+                        {s.durationMin != null && (
+                          <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
+                            <Clock className="size-3" />
+                            {s.durationMin}m
+                          </span>
+                        )}
+                        {!s.isActive && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
+                            Hidden
+                          </span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 truncate text-xs text-muted-foreground">{s.subtitle || s.description}</p>
+                    </div>
+                    <p className="shrink-0 text-sm font-semibold tabular-nums">{priceText(s)}</p>
+                    <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
+                      <Pencil className="h-4 w-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => remove(s)}
+                      className="text-destructive hover:text-destructive"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
               </div>
-              <p className="shrink-0 text-sm font-semibold tabular-nums">{priceText(s)}</p>
-              <Button variant="ghost" size="icon" onClick={() => openEdit(s)}>
-                <Pencil className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => remove(s)}
-                className="text-destructive hover:text-destructive"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
             </div>
-          ))
-        )}
-      </div>
+          ))}
+        </div>
+      )}
 
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
