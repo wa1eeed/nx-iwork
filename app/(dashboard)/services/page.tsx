@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { Store, ArrowRight } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -14,6 +15,7 @@ import {
 // clinics/departments and shown on the public landing page. (Platform add-ons
 // live at /marketplace.)
 export default async function ServicesPage() {
+  const t = await getTranslations('pageHeaders');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
@@ -62,9 +64,9 @@ export default async function ServicesPage() {
     <div className="space-y-6">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">Services</h1>
+          <h1 className="text-xl font-semibold tracking-tight">{t('services.title')}</h1>
           <p className="text-sm text-muted-foreground">
-            The services customers can book — grouped under clinics/sections and shown on your website.
+            {t('services.subtitle')}
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -72,13 +74,13 @@ export default async function ServicesPage() {
             href="/bookings/availability"
             className="inline-flex items-center gap-1 rounded-lg border px-3 py-1.5 text-sm font-medium transition hover:bg-accent"
           >
-            Availability <ArrowRight className="size-3.5 rtl:rotate-180" />
+            {t('services.availability')} <ArrowRight className="size-3.5 rtl:rotate-180" />
           </Link>
           <Link
             href="/marketplace"
             className="inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-accent"
           >
-            <Store className="size-4" /> Add-ons
+            <Store className="size-4" /> {t('services.addons')}
           </Link>
         </div>
       </div>

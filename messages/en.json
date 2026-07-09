@@ -1,6 +1,10 @@
 {
   "biz": {
-    "crmTabs": { "pipeline": "Pipeline", "customers": "Customers", "tasks": "Tasks" },
+    "crmTabs": {
+      "pipeline": "Pipeline",
+      "customers": "Customers",
+      "tasks": "Tasks"
+    },
     "crmHub": {
       "subtitle": "Pipeline, customers, and tasks — follow every opportunity in one place.",
       "openOpportunities": "Open opportunities",
@@ -193,10 +197,22 @@
       "trust": "No credit card required · Free starter credits · Live in minutes"
     },
     "stats": {
-      "roles": { "value": "9+", "label": "Ready-made roles" },
-      "uptime": { "value": "24/7", "label": "Always working" },
-      "langs": { "value": "AR · EN", "label": "Bilingual & RTL-ready" },
-      "employees": { "value": "∞", "label": "AI employees" }
+      "roles": {
+        "value": "9+",
+        "label": "Ready-made roles"
+      },
+      "uptime": {
+        "value": "24/7",
+        "label": "Always working"
+      },
+      "langs": {
+        "value": "AR · EN",
+        "label": "Bilingual & RTL-ready"
+      },
+      "employees": {
+        "value": "∞",
+        "label": "AI employees"
+      }
     },
     "workforce": {
       "badge": "A complete AI workforce",
@@ -222,12 +238,30 @@
       "title": "An AI agent for every department",
       "subtitle": "Staff your whole company — each role comes with its own personality, KPIs, tools, and automatic playbooks.",
       "items": {
-        "sales": { "name": "Sales", "desc": "Converts leads, recommends products, and closes orders." },
-        "support": { "name": "Support", "desc": "Answers instantly and escalates angry cases to you." },
-        "marketing": { "name": "Marketing", "desc": "Drafts content and campaigns from past performance." },
-        "operations": { "name": "Operations", "desc": "Tracks fulfillment and keeps every order on time." },
-        "finance": { "name": "Finance", "desc": "Issues invoices and keeps the ledger reconciled." },
-        "appointments": { "name": "Appointments", "desc": "Books and confirms meetings, cuts no-shows." }
+        "sales": {
+          "name": "Sales",
+          "desc": "Converts leads, recommends products, and closes orders."
+        },
+        "support": {
+          "name": "Support",
+          "desc": "Answers instantly and escalates angry cases to you."
+        },
+        "marketing": {
+          "name": "Marketing",
+          "desc": "Drafts content and campaigns from past performance."
+        },
+        "operations": {
+          "name": "Operations",
+          "desc": "Tracks fulfillment and keeps every order on time."
+        },
+        "finance": {
+          "name": "Finance",
+          "desc": "Issues invoices and keeps the ledger reconciled."
+        },
+        "appointments": {
+          "name": "Appointments",
+          "desc": "Books and confirms meetings, cuts no-shows."
+        }
       }
     },
     "features": {
@@ -264,9 +298,18 @@
       "title": "From idea to AI employee in three steps",
       "subtitle": "The HR Agent vets, onboards, and deploys every hire for you.",
       "steps": {
-        "s1": { "title": "Pick a role", "desc": "Choose a proven template or describe a custom role — HR checks it for conflicts first." },
-        "s2": { "title": "Set persona & scenarios", "desc": "Give it a personality, goals, KPIs, and automatic playbooks for your business events." },
-        "s3": { "title": "It runs 24/7", "desc": "Your AI employee is onboarded on your business and starts working — reporting back to you." }
+        "s1": {
+          "title": "Pick a role",
+          "desc": "Choose a proven template or describe a custom role — HR checks it for conflicts first."
+        },
+        "s2": {
+          "title": "Set persona & scenarios",
+          "desc": "Give it a personality, goals, KPIs, and automatic playbooks for your business events."
+        },
+        "s3": {
+          "title": "It runs 24/7",
+          "desc": "Your AI employee is onboarded on your business and starts working — reporting back to you."
+        }
       }
     },
     "pricing": {
@@ -279,11 +322,26 @@
       "title": "Frequently asked questions",
       "subtitle": "Everything you need to know before you start.",
       "items": {
-        "q1": { "q": "Do I need to write code or prompts?", "a": "No. Pick a ready-made role or describe what you need in plain words — the HR Agent configures the persona, tools, and playbooks for you." },
-        "q2": { "q": "Does it work in Arabic?", "a": "Yes. The whole platform and your public page work in Arabic and English, fully RTL-ready. Your agents reply in your customer's language." },
-        "q3": { "q": "Will the AI make things up?", "a": "Agents are onboarded on your business — FAQ, products, and policies — using vector memory, so they answer from your real data, not guesses." },
-        "q4": { "q": "How do my customers reach the agents?", "a": "Each account gets a public website and chat widget on your own domain. Visitors browse, ask, and order — and everything lands in your CRM automatically." },
-        "q5": { "q": "How much does it cost to start?", "a": "Free. Every account starts on managed AI credits with no credit card. Upgrade only when you grow." }
+        "q1": {
+          "q": "Do I need to write code or prompts?",
+          "a": "No. Pick a ready-made role or describe what you need in plain words — the HR Agent configures the persona, tools, and playbooks for you."
+        },
+        "q2": {
+          "q": "Does it work in Arabic?",
+          "a": "Yes. The whole platform and your public page work in Arabic and English, fully RTL-ready. Your agents reply in your customer's language."
+        },
+        "q3": {
+          "q": "Will the AI make things up?",
+          "a": "Agents are onboarded on your business — FAQ, products, and policies — using vector memory, so they answer from your real data, not guesses."
+        },
+        "q4": {
+          "q": "How do my customers reach the agents?",
+          "a": "Each account gets a public website and chat widget on your own domain. Visitors browse, ask, and order — and everything lands in your CRM automatically."
+        },
+        "q5": {
+          "q": "How much does it cost to start?",
+          "a": "Free. Every account starts on managed AI credits with no credit card. Upgrade only when you grow."
+        }
       }
     },
     "cta": {
@@ -510,7 +568,7 @@
     "approvalsSubtitle": "Sensitive decisions your agents paused for. Approving wakes them to continue.",
     "nothingNeeds": "Nothing needs you right now.",
     "liveActivity": "Live activity",
-    "noActivity": "No activity yet.",
+    "noActivity": "No activity yet. Create an agent and assign a task to get started.",
     "approve": "Approve",
     "sendBack": "Send back",
     "approved": "Approved — the agent will continue.",
@@ -540,7 +598,6 @@
       "bookings": "Bookings"
     },
     "recentActivity": "Recent activity",
-    "noActivity": "No activity yet. Create an agent and assign a task to get started.",
     "createFirstAgent": "Create your first agent",
     "checklist": {
       "title": "Finish setting up",
@@ -590,9 +647,18 @@
       "selected": "Selected",
       "select": "Select",
       "tiers": {
-        "STARTER": { "name": "Starter", "tagline": "Try the platform" },
-        "GROWTH": { "name": "Growth", "tagline": "For growing businesses" },
-        "SCALE": { "name": "Scale", "tagline": "For high volume" }
+        "STARTER": {
+          "name": "Starter",
+          "tagline": "Try the platform"
+        },
+        "GROWTH": {
+          "name": "Growth",
+          "tagline": "For growing businesses"
+        },
+        "SCALE": {
+          "name": "Scale",
+          "tagline": "For high volume"
+        }
       },
       "features": {
         "agents2": "Up to 2 AI employees",
@@ -851,7 +917,15 @@
       "saving": "Saving...",
       "saved": "Saved",
       "saveError": "Couldn't save. Try again.",
-      "days": ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+      "days": [
+        "Sun",
+        "Mon",
+        "Tue",
+        "Wed",
+        "Thu",
+        "Fri",
+        "Sat"
+      ]
     },
     "departments": {
       "title": "Departments",
@@ -1049,7 +1123,13 @@
     "title": "Platform admin",
     "subtitle": "Manage every company, plan, and credit across NX iWork.",
     "panel": "Admin panel",
-    "nav": { "overview": "Overview", "companies": "Companies", "services": "Marketplace", "plans": "Plans & storage", "settings": "Platform" },
+    "nav": {
+      "overview": "Overview",
+      "companies": "Companies",
+      "services": "Marketplace",
+      "plans": "Plans & storage",
+      "settings": "Platform"
+    },
     "plans": {
       "title": "Plans & storage",
       "subtitle": "Per-plan storage ceilings and ecosystem usage.",
@@ -1237,5 +1317,62 @@
     "noMatch": "No customers match your search.",
     "ordersLabel": "orders",
     "spent": "Total spent"
+  },
+  "svcMgr": {
+    "newService": "New service",
+    "editService": "Edit service",
+    "addService": "Add service",
+    "emptyState": "No services yet — add the services customers can book (e.g. Teeth whitening, Consultation), and group them under a clinic/section.",
+    "otherGroup": "Other",
+    "hidden": "Hidden",
+    "durationMinutes": "{min}m",
+    "nameRequired": "Service name is required.",
+    "toastUpdated": "Service updated.",
+    "toastAdded": "Service added.",
+    "toastSaveError": "Could not save the service.",
+    "confirmDelete": "Delete “{title}”?",
+    "toastDeleted": "Service deleted.",
+    "toastDeleteError": "Could not delete.",
+    "name": "Name",
+    "namePlaceholder": "e.g. Teeth whitening",
+    "subtitle": "Subtitle",
+    "subtitlePlaceholder": "Short tagline under the title (optional)",
+    "description": "Description",
+    "descriptionPlaceholder": "What the customer gets — shown on the service detail page.",
+    "clinic": "Clinic / section",
+    "noneOption": "— none —",
+    "price": "Price (SAR)",
+    "pricePlaceholder": "Optional",
+    "duration": "Duration (min)",
+    "durationPlaceholder": "Bookable if set",
+    "priceLabel": "Price label (optional)",
+    "priceLabelPlaceholder": "e.g. From 200 SAR",
+    "imageUrl": "Image URL (optional)",
+    "allowWaitlist": "Allow waitlist when full",
+    "showOnWebsite": "Show on website",
+    "cancel": "Cancel",
+    "saveChanges": "Save changes"
+  },
+  "pageHeaders": {
+    "staff": {
+      "title": "Staff",
+      "subtitle": "The people who deliver your services, and how they earn commission.",
+      "viewCommissions": "View commissions"
+    },
+    "coupons": {
+      "title": "Discount coupons",
+      "subtitle": "Offer a percentage or fixed discount on products, services, or bookings."
+    },
+    "inventory": {
+      "title": "Inventory",
+      "subtitle": "Consumables and raw materials your business uses.",
+      "lowStock": "{count, plural, one {# item low on stock} other {# items low on stock}}"
+    },
+    "services": {
+      "title": "Services",
+      "subtitle": "The services customers can book — grouped under clinics/sections and shown on your website.",
+      "availability": "Availability",
+      "addons": "Add-ons"
+    }
   }
 }

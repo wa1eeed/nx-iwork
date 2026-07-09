@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Pencil, Trash2, Loader2, X, Sparkles, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -65,6 +66,7 @@ export function ServiceCatalogManager({
   services: CatalogServiceRow[];
   departments: DeptOption[];
 }) {
+  const t = useTranslations('svcMgr');
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -89,7 +91,7 @@ export function ServiceCatalogManager({
     })),
     {
       key: '__none',
-      name: 'Other',
+      name: t('otherGroup'),
       items: services.filter((s) => !s.departmentId || !departments.some((d) => d.id === s.departmentId)),
     },
   ].filter((g) => g.items.length > 0);
@@ -122,7 +124,7 @@ export function ServiceCatalogManager({
   }
 
   function save() {
-    if (!form.title.trim()) return toast.error('Service name is required.');
+    if (!form.title.trim()) return toast.error(t('nameRequired'));
     const payload: ServiceInput = {
       title: form.title,
       subtitle: form.subtitle || null,
@@ -139,21 +141,21 @@ export function ServiceCatalogManager({
     startSave(async () => {
       const res = editingId ? await updateService(editingId, payload) : await createService(payload);
       if (res.ok) {
-        toast.success(editingId ? 'Service updated.' : 'Service added.');
+        toast.success(editingId ? t('toastUpdated') : t('toastAdded'));
         cancel();
         router.refresh();
-      } else toast.error('Could not save the service.');
+      } else toast.error(t('toastSaveError'));
     });
   }
 
   function remove(s: CatalogServiceRow) {
-    if (!window.confirm(`Delete “${s.title}”?`)) return;
+    if (!window.confirm(t('confirmDelete', { title: s.title }))) return;
     startSave(async () => {
       const res = await deleteService(s.id);
       if (res.ok) {
-        toast.success('Service deleted.');
+        toast.success(t('toastDeleted'));
         router.refresh();
-      } else toast.error('Could not delete.');
+      } else toast.error(t('toastDeleteError'));
     });
   }
 
@@ -164,13 +166,12 @@ export function ServiceCatalogManager({
     <div className="space-y-4">
       <Button onClick={openAdd}>
         <Plus className="me-1 h-4 w-4" />
-        New service
+        {t('newService')}
       </Button>
 
       {services.length === 0 ? (
         <div className="rounded-2xl border border-dashed p-12 text-center text-sm text-muted-foreground">
-          No services yet — add the services customers can book (e.g. Teeth whitening,
-          Consultation), and group them under a clinic/section.
+          {t('emptyState')}
         </div>
       ) : (
         <div className="space-y-6">
@@ -192,12 +193,12 @@ export function ServiceCatalogManager({
                         {s.durationMin != null && (
                           <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground">
                             <Clock className="size-3" />
-                            {s.durationMin}m
+                            {t('durationMinutes', { min: s.durationMin })}
                           </span>
                         )}
                         {!s.isActive && (
                           <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] text-muted-foreground">
-                            Hidden
+                            {t('hidden')}
                           </span>
                         )}
                       </div>
@@ -228,42 +229,42 @@ export function ServiceCatalogManager({
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && cancel()} />
           <div className="relative z-10 max-h-[90vh] w-full max-w-[500px] overflow-y-auto rounded-2xl border bg-card p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
-              <h2 className="text-lg font-semibold">{editingId ? 'Edit service' : 'New service'}</h2>
-              <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label="Close">
+              <h2 className="text-lg font-semibold">{editingId ? t('editService') : t('newService')}</h2>
+              <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label={t('cancel')}>
                 <X className="size-4" />
               </button>
             </div>
 
             <div className="space-y-4">
               <div className="space-y-1.5">
-                <Label>Name</Label>
-                <Input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Teeth whitening" />
+                <Label>{t('name')}</Label>
+                <Input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder={t('namePlaceholder')} />
               </div>
 
               <div className="space-y-1.5">
-                <Label>Subtitle</Label>
-                <Input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} placeholder="Short tagline under the title (optional)" />
+                <Label>{t('subtitle')}</Label>
+                <Input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} placeholder={t('subtitlePlaceholder')} />
               </div>
 
               <div className="space-y-1.5">
-                <Label>Description</Label>
+                <Label>{t('description')}</Label>
                 <Textarea
                   rows={3}
                   value={form.description}
                   onChange={(e) => setForm({ ...form, description: e.target.value })}
-                  placeholder="What the customer gets — shown on the service detail page."
+                  placeholder={t('descriptionPlaceholder')}
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Clinic / section</Label>
+                  <Label>{t('clinic')}</Label>
                   <select
                     value={form.departmentId}
                     onChange={(e) => setForm({ ...form, departmentId: e.target.value })}
                     className="h-10 w-full rounded-md border bg-background px-3 text-sm"
                   >
-                    <option value="">— none —</option>
+                    <option value="">{t('noneOption')}</option>
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>
                         {d.name}
@@ -272,46 +273,46 @@ export function ServiceCatalogManager({
                   </select>
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Price (SAR)</Label>
-                  <Input inputMode="numeric" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder="Optional" />
+                  <Label>{t('price')}</Label>
+                  <Input inputMode="numeric" value={form.price} onChange={(e) => setForm({ ...form, price: e.target.value })} placeholder={t('pricePlaceholder')} />
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>Duration (min)</Label>
-                  <Input inputMode="numeric" value={form.durationMin} onChange={(e) => setForm({ ...form, durationMin: e.target.value })} placeholder="Bookable if set" />
+                  <Label>{t('duration')}</Label>
+                  <Input inputMode="numeric" value={form.durationMin} onChange={(e) => setForm({ ...form, durationMin: e.target.value })} placeholder={t('durationPlaceholder')} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>Price label (optional)</Label>
-                  <Input value={form.priceLabel} onChange={(e) => setForm({ ...form, priceLabel: e.target.value })} placeholder="e.g. From 200 SAR" />
+                  <Label>{t('priceLabel')}</Label>
+                  <Input value={form.priceLabel} onChange={(e) => setForm({ ...form, priceLabel: e.target.value })} placeholder={t('priceLabelPlaceholder')} />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label>Image URL (optional)</Label>
+                <Label>{t('imageUrl')}</Label>
                 <Input dir="ltr" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://…" />
               </div>
 
               <div className="flex flex-wrap gap-4">
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={form.allowWaitlist} onChange={(e) => setForm({ ...form, allowWaitlist: e.target.checked })} className="size-4 rounded border" />
-                  Allow waitlist when full
+                  {t('allowWaitlist')}
                 </label>
                 <label className="flex items-center gap-2 text-sm">
                   <input type="checkbox" checked={form.isActive} onChange={(e) => setForm({ ...form, isActive: e.target.checked })} className="size-4 rounded border" />
-                  Show on website
+                  {t('showOnWebsite')}
                 </label>
               </div>
             </div>
 
             <div className="mt-5 flex justify-end gap-2">
               <Button variant="ghost" onClick={cancel} disabled={saving}>
-                Cancel
+                {t('cancel')}
               </Button>
               <Button onClick={save} disabled={saving || !form.title.trim()}>
                 {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
-                {editingId ? 'Save changes' : 'Add service'}
+                {editingId ? t('saveChanges') : t('addService')}
               </Button>
             </div>
           </div>

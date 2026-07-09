@@ -1,10 +1,12 @@
 import { redirect } from 'next/navigation';
+import { getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { CouponManager, type CouponRow } from '@/components/dashboard/coupon-manager';
 
 export default async function CouponsPage() {
+  const t = await getTranslations('pageHeaders');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
@@ -31,9 +33,9 @@ export default async function CouponsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-xl font-semibold tracking-tight">Discount coupons</h1>
+        <h1 className="text-xl font-semibold tracking-tight">{t('coupons.title')}</h1>
         <p className="text-sm text-muted-foreground">
-          Offer a percentage or fixed discount on products, services, or bookings.
+          {t('coupons.subtitle')}
         </p>
       </div>
       <CouponManager coupons={rows} />
