@@ -14,6 +14,7 @@ async function companyId(): Promise<string | null> {
 
 export interface ServiceInput {
   title: string;
+  subtitle?: string | null;
   description: string;
   price?: number | null;
   priceLabel?: string | null;
@@ -29,6 +30,7 @@ export interface ServiceInput {
 function clean(input: ServiceInput) {
   return {
     title: input.title.trim(),
+    subtitle: input.subtitle?.trim() || null,
     description: (input.description ?? '').trim() || input.title.trim(),
     price: input.price != null && Number.isFinite(input.price) ? Math.max(0, input.price) : null,
     priceLabel: input.priceLabel?.trim() || null,

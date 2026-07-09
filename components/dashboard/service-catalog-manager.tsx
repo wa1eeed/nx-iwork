@@ -14,6 +14,7 @@ import { createService, updateService, deleteService, type ServiceInput } from '
 export interface CatalogServiceRow {
   id: string;
   title: string;
+  subtitle: string | null;
   description: string;
   price: number | null;
   priceLabel: string | null;
@@ -31,6 +32,7 @@ export interface DeptOption {
 
 interface FormState {
   title: string;
+  subtitle: string;
   description: string;
   departmentId: string;
   price: string;
@@ -44,6 +46,7 @@ interface FormState {
 
 const EMPTY: FormState = {
   title: '',
+  subtitle: '',
   description: '',
   departmentId: '',
   price: '',
@@ -87,6 +90,7 @@ export function ServiceCatalogManager({
   function openEdit(s: CatalogServiceRow) {
     setForm({
       title: s.title,
+      subtitle: s.subtitle ?? '',
       description: s.description,
       departmentId: s.departmentId ?? '',
       price: s.price != null ? String(s.price) : '',
@@ -109,6 +113,7 @@ export function ServiceCatalogManager({
     if (!form.title.trim()) return toast.error('Service name is required.');
     const payload: ServiceInput = {
       title: form.title,
+      subtitle: form.subtitle || null,
       description: form.description,
       departmentId: form.departmentId || null,
       price: form.price ? Number(form.price) : null,
@@ -216,6 +221,11 @@ export function ServiceCatalogManager({
               <div className="space-y-1.5">
                 <Label>Name</Label>
                 <Input autoFocus value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} placeholder="e.g. Teeth whitening" />
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Subtitle</Label>
+                <Input value={form.subtitle} onChange={(e) => setForm({ ...form, subtitle: e.target.value })} placeholder="Short tagline under the title (optional)" />
               </div>
 
               <div className="space-y-1.5">

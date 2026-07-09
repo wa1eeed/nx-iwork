@@ -16,6 +16,8 @@ async function companyId(): Promise<string | null> {
 export interface StaffInput {
   name: string;
   role?: string | null;
+  bio?: string | null;
+  image?: string | null;
   phone?: string | null;
   email?: string | null;
   commissionType: CommissionType;
@@ -28,6 +30,8 @@ function clean(input: StaffInput) {
   return {
     name: input.name.trim(),
     role: input.role?.trim() || null,
+    bio: input.bio?.trim() || null,
+    image: input.image?.trim() || null,
     phone: input.phone?.trim() || null,
     email: input.email?.trim() || null,
     commissionType: input.commissionType,

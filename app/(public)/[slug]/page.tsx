@@ -1,7 +1,7 @@
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, Mail, MessageCircle, Clock, CalendarCheck } from 'lucide-react';
+import { Phone, Mail, MessageCircle, Clock, CalendarCheck, CheckCircle2 } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ChatWidget } from '@/components/public/chat-widget';
 import { OrderButton } from '@/components/public/order-button';
@@ -75,7 +75,7 @@ export default async function PublicBusinessPage({
       where: { companyId: company.id, isActive: true },
       orderBy: { createdAt: 'asc' },
       take: 8,
-      select: { id: true, name: true, role: true },
+      select: { id: true, name: true, role: true, image: true, bio: true },
     }),
     (async () => {
       const id = wc?.chatAgentId;
@@ -187,16 +187,29 @@ export default async function PublicBusinessPage({
       {/* Hero */}
       <section className="relative overflow-hidden border-b">
         <div
-          className="absolute inset-0 -z-10 opacity-[0.12]"
-          style={{ background: `radial-gradient(60% 80% at 70% 0%, ${accent}, transparent)` }}
+          className="absolute inset-0 -z-10 opacity-[0.14]"
+          style={{ background: `radial-gradient(55% 75% at 70% 0%, ${accent}, transparent)` }}
         />
-        <div className="mx-auto max-w-6xl px-5 py-20 text-center">
-          <h1 className="text-4xl font-extrabold tracking-tight sm:text-5xl">{heroTitle}</h1>
+        <div
+          className="absolute inset-0 -z-10 opacity-[0.04]"
+          style={{
+            backgroundImage:
+              'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
+            backgroundSize: '44px 44px',
+          }}
+        />
+        <div className="mx-auto max-w-6xl px-5 py-24 text-center">
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full border bg-background/60 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur"
+          >
+            <CalendarCheck className="size-3.5" style={{ color: accent }} /> احجز موعدك أونلاين خلال دقيقة
+          </span>
+          <h1 className="mt-5 text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">{heroTitle}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">{heroSubtitle}</p>
-          <div className="mt-7 flex items-center justify-center gap-3">
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a
               href="#services"
-              className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow"
+              className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-90"
               style={{ backgroundColor: accent }}
             >
               <CalendarCheck className="size-4" /> احجز موعدك الآن
@@ -204,11 +217,16 @@ export default async function PublicBusinessPage({
             {(wc?.phone || wc?.whatsapp) && (
               <a
                 href={wc?.whatsapp ? `https://wa.me/${wc.whatsapp.replace(/\D/g, '')}` : `tel:${wc?.phone}`}
-                className="inline-flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold transition hover:bg-accent"
+                className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-6 py-3 text-sm font-semibold backdrop-blur transition hover:bg-accent"
               >
                 <MessageCircle className="size-4" /> تواصل معنا
               </a>
             )}
+          </div>
+          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
+            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-3.5" style={{ color: accent }} /> تأكيد فوري للحجز</span>
+            <span className="inline-flex items-center gap-1.5"><Clock className="size-3.5" style={{ color: accent }} /> مواعيد مرنة تناسبك</span>
+            <span className="inline-flex items-center gap-1.5"><MessageCircle className="size-3.5" style={{ color: accent }} /> دعم مباشر عبر الشات</span>
           </div>
         </div>
       </section>
@@ -261,16 +279,30 @@ export default async function PublicBusinessPage({
             <h2 className="mb-8 text-center text-2xl font-bold">فريقنا</h2>
             <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
               {staff.map((m) => (
-                <div key={m.id} className="rounded-2xl border bg-card p-5 text-center">
-                  <div
-                    className="mx-auto flex size-16 items-center justify-center rounded-full text-xl font-bold text-white"
-                    style={{ backgroundColor: accent }}
-                  >
-                    {m.name.trim()[0]}
-                  </div>
-                  <p className="mt-3 font-semibold">{m.name}</p>
+                <Link
+                  key={m.id}
+                  href={`/${slug}/team/${m.id}`}
+                  className="group rounded-2xl border bg-card p-5 text-center transition hover:shadow-md"
+                >
+                  {m.image ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={m.image}
+                      alt={m.name}
+                      className="mx-auto size-20 rounded-full border object-cover"
+                    />
+                  ) : (
+                    <div
+                      className="mx-auto flex size-20 items-center justify-center rounded-full text-2xl font-bold text-white"
+                      style={{ backgroundColor: accent }}
+                    >
+                      {m.name.trim()[0]}
+                    </div>
+                  )}
+                  <p className="mt-3 font-semibold group-hover:underline">{m.name}</p>
                   {m.role && <p className="text-xs text-muted-foreground">{m.role}</p>}
-                </div>
+                  {m.bio && <p className="mt-1.5 line-clamp-2 text-xs text-muted-foreground">{m.bio}</p>}
+                </Link>
               ))}
             </div>
           </div>

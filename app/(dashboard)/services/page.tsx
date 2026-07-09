@@ -25,6 +25,7 @@ export default async function ServicesPage() {
       select: {
         id: true,
         title: true,
+        subtitle: true,
         description: true,
         price: true,
         priceLabel: true,
@@ -45,6 +46,7 @@ export default async function ServicesPage() {
   const rows: CatalogServiceRow[] = services.map((s) => ({
     id: s.id,
     title: s.title,
+    subtitle: s.subtitle,
     description: s.description,
     price: s.price != null ? Number(s.price) : null,
     priceLabel: s.priceLabel,

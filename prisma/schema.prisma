@@ -1009,6 +1009,7 @@ model Service {
   ref           String? // SRV-001 (per-company)
   title         String
   titleEn       String?
+  subtitle      String? // short tagline under the title on the detail page
   description   String  @db.Text
   descriptionEn String? @db.Text
 
@@ -1888,6 +1889,8 @@ model StaffMember {
   ref   String? // STF-001 (per-company)
   name  String
   role  String? // e.g. Dentist, Stylist, Technician
+  bio   String? @db.Text // short intro shown on the public team page
+  image String? // photo URL for the landing card + detail page
   phone String?
   email String?
 

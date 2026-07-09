@@ -16,6 +16,8 @@ export interface StaffRow {
   id: string;
   name: string;
   role: string | null;
+  bio: string | null;
+  image: string | null;
   phone: string | null;
   email: string | null;
   commissionType: CommissionType;
@@ -49,6 +51,8 @@ export function commissionSummary(row: {
 interface FormState {
   name: string;
   role: string;
+  bio: string;
+  image: string;
   phone: string;
   email: string;
   commissionType: CommissionType;
@@ -60,6 +64,8 @@ interface FormState {
 const EMPTY: FormState = {
   name: '',
   role: '',
+  bio: '',
+  image: '',
   phone: '',
   email: '',
   commissionType: 'PERCENT_SALES',
@@ -93,6 +99,8 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
     setForm({
       name: s.name,
       role: s.role ?? '',
+      bio: s.bio ?? '',
+      image: s.image ?? '',
       phone: s.phone ?? '',
       email: s.email ?? '',
       commissionType: s.commissionType,
@@ -113,6 +121,8 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
     const payload: StaffInput = {
       name: form.name,
       role: form.role || null,
+      bio: form.bio || null,
+      image: form.image || null,
       phone: form.phone || null,
       email: form.email || null,
       commissionType: form.commissionType,
@@ -216,6 +226,21 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
                   <Label>Email</Label>
                   <Input dir="ltr" value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} placeholder="—" />
                 </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label>Photo URL</Label>
+                <Input dir="ltr" value={form.image} onChange={(e) => setForm({ ...form, image: e.target.value })} placeholder="https://…" />
+              </div>
+              <div className="space-y-1.5">
+                <Label>Bio</Label>
+                <textarea
+                  rows={3}
+                  value={form.bio}
+                  onChange={(e) => setForm({ ...form, bio: e.target.value })}
+                  placeholder="A short intro shown on the public team page."
+                  className="w-full rounded-lg border bg-background px-3 py-2 text-sm leading-relaxed focus:outline-none focus:ring-2 focus:ring-ring"
+                />
               </div>
 
               <div className="space-y-1.5">

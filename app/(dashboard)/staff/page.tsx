@@ -20,6 +20,8 @@ export default async function StaffPage() {
     id: s.id,
     name: s.name,
     role: s.role,
+    bio: s.bio,
+    image: s.image,
     phone: s.phone,
     email: s.email,
     commissionType: s.commissionType,
