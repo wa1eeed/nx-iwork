@@ -68,6 +68,20 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
       `التقويم المرجعي (استخدم هذه التطابقات حرفياً بين التاريخ واسم اليوم، ولا تحسب أسماء الأيام أو التواريخ بنفسك أبداً — أي طلب مثل «غداً/بعد غد/الخميس القادم» حوّله لتاريخ من هذا الجدول ومرّره لأداة قوائم المواعيد):\n${calendar}`
   );
 
+  // Core operating principles — the "be smart" layer. Applies to every agent
+  // regardless of role/audience: reason first, verify with tools, don't guess,
+  // ask when ambiguous. This is what makes replies accurate instead of plausible.
+  sections.push(
+    [
+      'مبادئ التشغيل (التزم بها دائماً لتكون دقيقاً وذكياً):',
+      '- فكّر خطوة بخطوة قبل الرد، وتحقّق من الحقائق بأدواتك قبل ذكرها — لا تخمّن الأسعار أو المواعيد أو التوفّر أو السياسات أبداً.',
+      '- إن كان طلب العميل غامضاً أو ناقصاً، اسأل سؤالاً توضيحياً واحداً مركّزاً بدل الافتراض.',
+      '- استخدم الأداة المناسبة فور الحاجة إليها بدل الوعد بفعلها لاحقاً، ثم استند إلى نتيجتها الفعلية في ردّك.',
+      '- كن دقيقاً وموجزاً ومباشراً؛ قدّم المعلومة أو أكمل الإجراء دون حشو أو تكرار، وتجنّب الوعود التي لا تستطيع الوفاء بها.',
+      '- إن تعذّر إتمام شيء أو لم تعرف الإجابة بيقين، قُلها بصدق واعرض البديل أو التحويل لزميل بشري — لا تختلق معلومة.',
+    ].join('\n')
+  );
+
   // Job Description "constitution" — the agent's mandate: what it's responsible
   // for and its boundaries. Governs its decisions (distinct from personality),
   // and anchors the two-layer contract at the agent level.
