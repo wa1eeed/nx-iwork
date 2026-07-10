@@ -112,16 +112,24 @@ export async function runPublicAgentChat(
   let perms = agent.permissions;
   if (perms.length > 0 && agent.company.hasBookings) {
     perms = Array.from(
-      new Set([
-        ...perms,
-        'check_availability',
-        'list_open_slots',
-        'create_booking',
-        'find_customer',
-        'create_lead',
-      ])
+      new Set([...perms, 'check_availability', 'list_open_slots', 'create_booking', 'create_lead'])
     );
   }
+
+  // Hard default-DENY on the customer surface: no matter how the agent is
+  // configured, a website visitor may ONLY search the catalog/FAQ, check
+  // availability, book, and leave their details. This stops a visitor from
+  // prompt-injecting into PII reads (find_customer / list_bookings enumerate the
+  // CRM), modifying other people's bookings, or triggering internal tools.
+  const PUBLIC_ALLOWLIST = new Set([
+    'search_catalog',
+    'search_faq',
+    'check_availability',
+    'list_open_slots',
+    'create_booking',
+    'create_lead',
+  ]);
+  const tools = getToolsForAgent(agent.company, perms).filter((t) => PUBLIC_ALLOWLIST.has(t.name));
 
   const loopArgs = {
     provider: providerResult.provider,
@@ -130,7 +138,7 @@ export async function runPublicAgentChat(
     tier: agent.model,
     temperature: agent.temperature,
     maxTokens: agent.maxTokens,
-    tools: getToolsForAgent(agent.company, perms),
+    tools,
     ctx: { companyId, agentId },
   };
 

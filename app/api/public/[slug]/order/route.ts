@@ -87,6 +87,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
   // Optional coupon redemption — scope/window/min-subtotal/remaining validated.
   // An invalid code is reported so the customer can fix it rather than overpay.
   let couponId: string | undefined;
+  let couponMax: number | null = null;
   let discount = 0;
   if (couponCode) {
     const coupon = await db.coupon.findFirst({ where: { companyId: company.id, code: couponCode } });
@@ -106,11 +107,26 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
           ? Math.round(((price * Number(coupon.value)) / 100) * 100) / 100
           : Math.min(price, Number(coupon.value));
       couponId = coupon.id;
+      couponMax = coupon.maxRedemptions;
     } else {
       return NextResponse.json({ ok: false, reason: 'coupon_invalid' }, { status: 409 });
     }
   }
   const finalTotal = Math.max(0, price - discount);
+
+  // Reserve the redemption atomically (conditional increment) before the order,
+  // so concurrent public orders can't push usedCount past maxRedemptions.
+  if (couponId && couponMax != null) {
+    const claim = await db.coupon.updateMany({
+      where: { id: couponId, usedCount: { lt: couponMax } },
+      data: { usedCount: { increment: 1 } },
+    });
+    if (claim.count === 0) {
+      return NextResponse.json({ ok: false, reason: 'coupon_invalid' }, { status: 409 });
+    }
+  } else if (couponId) {
+    await db.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } });
+  }
 
   // Find-or-create the CRM customer (by phone within the company).
   let customerId: string | undefined;
