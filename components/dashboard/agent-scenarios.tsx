@@ -12,6 +12,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { feedback } from '@/lib/ui/feedback';
 import { createTrigger, toggleTrigger, deleteTrigger } from '@/lib/actions/knowledge';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface ScenarioRow {
   id: string;
@@ -32,6 +33,8 @@ const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3
 // Per-agent "playbook": configure how THIS agent reacts to business events.
 export function AgentScenarios({ agentId, scenarios }: { agentId: string; scenarios: ScenarioRow[] }) {
   const t = useTranslations('agentScenarios');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [event, setEvent] = useState<ScenarioRow['event']>('LEAD_CREATED');
@@ -68,8 +71,8 @@ export function AgentScenarios({ agentId, scenarios }: { agentId: string; scenar
     });
   }
 
-  function remove(id: string) {
-    if (!window.confirm(t('confirmDelete'))) return;
+  async function remove(id: string) {
+    if (!(await confirm({ title: t('confirmDelete'), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     start(async () => {
       const res = await deleteTrigger(id);
       if (res.ok) {
@@ -139,7 +142,7 @@ export function AgentScenarios({ agentId, scenarios }: { agentId: string; scenar
                   </p>
                 </div>
                 <Switch checked={s.isActive} onCheckedChange={(c) => toggle(s.id, c)} disabled={pending} />
-                <Button variant="ghost" size="icon" onClick={() => remove(s.id)} className="text-destructive hover:text-destructive">
+                <Button variant="ghost" size="icon" onClick={() => remove(s.id)} className="text-destructive hover:text-destructive" aria-label={tc('delete')}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

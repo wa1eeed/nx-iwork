@@ -12,6 +12,7 @@ import { formatDateTime } from '@/lib/format';
 import { cn } from '@/lib/utils';
 import { feedback } from '@/lib/ui/feedback';
 import { setOrderStatus, deleteOrder, setOrderStaff } from '@/lib/actions/orders';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface OrderRow {
   id: string;
@@ -42,6 +43,8 @@ const selectCls = 'h-8 rounded-md border border-input bg-background px-2 text-xs
 
 export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: StaffOption[] }) {
   const t = useTranslations('agentControls.order');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const locale = useLocale();
   const router = useRouter();
   const [filter, setFilter] = useState('ALL');
@@ -73,8 +76,8 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
     });
   }
 
-  function remove(id: string) {
-    if (!window.confirm(t('confirmDelete'))) return;
+  async function remove(id: string) {
+    if (!(await confirm({ title: t('confirmDelete'), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     start(async () => {
       const res = await deleteOrder(id);
       if (res.ok) {

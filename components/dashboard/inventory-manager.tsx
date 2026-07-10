@@ -16,6 +16,7 @@ import {
   adjustStock,
   type InventoryInput,
 } from '@/lib/actions/inventory';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface InventoryRow {
   id: string;
@@ -54,6 +55,8 @@ const EMPTY: FormState = {
 
 export function InventoryManager({ items }: { items: InventoryRow[] }) {
   const t = useTranslations('invMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -118,8 +121,8 @@ export function InventoryManager({ items }: { items: InventoryRow[] }) {
     });
   }
 
-  function remove(it: InventoryRow) {
-    if (!window.confirm(t('confirmDelete', { name: it.name }))) return;
+  async function remove(it: InventoryRow) {
+    if (!(await confirm({ title: t('confirmDelete', { name: it.name }), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteInventoryItem(it.id);
       if (res.ok) {

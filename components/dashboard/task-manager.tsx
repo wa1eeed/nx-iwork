@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils';
 import { Countdown } from '@/components/dashboard/countdown';
 import { feedback } from '@/lib/ui/feedback';
 import { createTask, deleteTask } from '@/lib/actions/tasks';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface TaskRow {
   id: string;
@@ -69,6 +70,8 @@ export function TaskManager({
   agents: { id: string; name: string }[];
 }) {
   const t = useTranslations('taskMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const locale = useLocale();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
@@ -128,8 +131,8 @@ export function TaskManager({
     }
   }
 
-  function remove(id: string) {
-    if (!window.confirm(t('confirmDelete'))) return;
+  async function remove(id: string) {
+    if (!(await confirm({ title: t('confirmDelete'), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteTask(id);
       if (res.ok) {
@@ -174,6 +177,7 @@ export function TaskManager({
               size="icon"
               onClick={() => remove(task.id)}
               className="text-destructive hover:text-destructive"
+              aria-label={tc('delete')}
             >
               <Trash2 className="h-4 w-4" />
             </Button>

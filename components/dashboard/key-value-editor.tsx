@@ -1,5 +1,6 @@
 'use client';
 
+import { useTranslations } from 'next-intl';
 import { Plus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,6 +14,7 @@ export function KeyValueEditor({
   value: Record<string, string>;
   onChange: (v: Record<string, string>) => void;
 }) {
+  const tc = useTranslations('common');
   // Work on entries (ordered) so editing a key doesn't lose focus/position.
   const entries = Object.entries(value);
 
@@ -63,6 +65,7 @@ export function KeyValueEditor({
             size="icon"
             onClick={() => removeRow(i)}
             className="shrink-0 text-destructive hover:text-destructive"
+            aria-label={tc('delete')}
           >
             <Trash2 className="h-4 w-4" />
           </Button>

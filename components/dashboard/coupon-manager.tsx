@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { createCoupon, updateCoupon, deleteCoupon, type CouponInput } from '@/lib/actions/coupons';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type CouponType = 'PERCENT' | 'FIXED';
 type CouponScope = 'ALL' | 'PRODUCTS' | 'SERVICES' | 'BOOKINGS';
@@ -63,6 +64,8 @@ const dateOnly = (iso: string | null) => (iso ? iso.slice(0, 10) : '');
 
 export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
   const t = useTranslations('couponMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -128,8 +131,8 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
     });
   }
 
-  function remove(c: CouponRow) {
-    if (!window.confirm(t('confirmDelete', { code: c.code }))) return;
+  async function remove(c: CouponRow) {
+    if (!(await confirm({ title: t('confirmDelete', { code: c.code }), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteCoupon(c.id);
       if (res.ok) {

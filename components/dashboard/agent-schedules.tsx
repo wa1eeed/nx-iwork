@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { createSchedule, toggleSchedule, deleteSchedule } from '@/lib/actions/schedules';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface ScheduleRow {
   id: string;
@@ -44,6 +45,8 @@ export function AgentSchedules({
   timezone: string;
 }) {
   const t = useTranslations('agentSchedules');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const locale = useLocale();
   const DAYS = t.raw('days') as string[];
   const router = useRouter();
@@ -86,8 +89,8 @@ export function AgentSchedules({
     });
   }
 
-  function remove(id: string) {
-    if (!window.confirm(t('confirmDelete'))) return;
+  async function remove(id: string) {
+    if (!(await confirm({ title: t('confirmDelete'), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     start(async () => {
       const res = await deleteSchedule(id);
       if (res.ok) {
@@ -201,6 +204,7 @@ export function AgentSchedules({
                 size="icon"
                 onClick={() => remove(s.id)}
                 className="text-destructive hover:text-destructive"
+                aria-label={tc('delete')}
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

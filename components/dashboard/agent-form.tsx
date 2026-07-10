@@ -535,7 +535,7 @@ export function AgentForm({
                   <span className="font-medium">{te(s.event)}</span>
                   <span className="block truncate text-xs text-muted-foreground">{s.action}</span>
                 </span>
-                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setScenarios((p) => p.filter((_, j) => j !== i))}>
+                <Button variant="ghost" size="icon" className="text-destructive hover:text-destructive" onClick={() => setScenarios((p) => p.filter((_, j) => j !== i))} aria-label={tc('delete')}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>

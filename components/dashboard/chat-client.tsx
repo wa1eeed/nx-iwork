@@ -269,6 +269,7 @@ export function ChatClient({
             disabled={sending || !input.trim()}
             size="icon"
             className="shrink-0"
+            aria-label={t('inputPlaceholder')}
           >
             <Send className="h-4 w-4" />
           </Button>

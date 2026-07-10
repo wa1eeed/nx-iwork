@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { createService, updateService, deleteService, type ServiceInput } from '@/lib/actions/services';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface CatalogServiceRow {
   id: string;
@@ -70,6 +71,8 @@ export function ServiceCatalogManager({
   departments: DeptOption[];
 }) {
   const t = useTranslations('svcMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -153,8 +156,8 @@ export function ServiceCatalogManager({
     });
   }
 
-  function remove(s: CatalogServiceRow) {
-    if (!window.confirm(t('confirmDelete', { title: s.title }))) return;
+  async function remove(s: CatalogServiceRow) {
+    if (!(await confirm({ title: t('confirmDelete', { title: s.title }), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteService(s.id);
       if (res.ok) {

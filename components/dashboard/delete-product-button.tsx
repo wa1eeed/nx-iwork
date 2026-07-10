@@ -2,19 +2,21 @@
 
 import { useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Trash2, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { deleteProduct } from '@/lib/actions/products';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export function DeleteProductButton({ id }: { id: string }) {
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [pending, start] = useTransition();
 
-  function onDelete() {
-    // Native confirm keeps this dependency-free; a styled dialog can replace it
-    // once a Dialog primitive lands.
-    if (!window.confirm('حذف هذا المنتج نهائياً؟')) return;
+  async function onDelete() {
+    if (!(await confirm({ title: 'حذف هذا المنتج نهائياً؟', destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     start(async () => {
       const res = await deleteProduct(id);
       if (res.ok) {

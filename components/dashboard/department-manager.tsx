@@ -31,6 +31,7 @@ import {
   updateDepartment,
   deleteDepartment,
 } from '@/lib/actions/departments';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface DepartmentRow {
   id: string;
@@ -95,6 +96,8 @@ const EMPTY: FormState = {
 
 export function DepartmentManager({ departments }: { departments: DepartmentRow[] }) {
   const t = useTranslations('biz.units');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -164,9 +167,9 @@ export function DepartmentManager({ departments }: { departments: DepartmentRow[
     });
   }
 
-  function remove(d: DepartmentRow) {
+  async function remove(d: DepartmentRow) {
     if (d.agentCount > 0) return toast.error(t('hasAgents'));
-    if (!window.confirm(t('confirmDelete', { name: d.name }))) return;
+    if (!(await confirm({ title: t('confirmDelete', { name: d.name }), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteDepartment(d.id);
       if (res.ok) {

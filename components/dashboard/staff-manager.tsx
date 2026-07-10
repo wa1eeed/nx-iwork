@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { createStaff, updateStaff, deleteStaff, type StaffInput } from '@/lib/actions/staff';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type CommissionType = 'PERCENT_SALES' | 'FIXED_PER_ORDER' | 'TARGET_BONUS';
 
@@ -81,6 +82,8 @@ const EMPTY: FormState = {
 
 export function StaffManager({ staff }: { staff: StaffRow[] }) {
   const t = useTranslations('staffMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -146,8 +149,8 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
     });
   }
 
-  function remove(s: StaffRow) {
-    if (!window.confirm(t('confirmRemove', { name: s.name }))) return;
+  async function remove(s: StaffRow) {
+    if (!(await confirm({ title: t('confirmRemove', { name: s.name }), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteStaff(s.id);
       if (res.ok) {

@@ -12,6 +12,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { feedback } from '@/lib/ui/feedback';
 import { updateCustomer, deleteCustomer } from '@/lib/actions/customers';
 import { STATUS_ORDER } from '@/components/dashboard/customer-manager';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
 
@@ -27,6 +28,7 @@ export interface CustomerEditValues {
 export function CustomerEditor({ initial }: { initial: CustomerEditValues }) {
   const t = useTranslations('crm');
   const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [v, setV] = useState(initial);
   const [saving, startSave] = useTransition();
@@ -55,8 +57,8 @@ export function CustomerEditor({ initial }: { initial: CustomerEditValues }) {
     });
   }
 
-  function remove() {
-    if (!window.confirm(t('deleteConfirm'))) return;
+  async function remove() {
+    if (!(await confirm({ title: t('deleteConfirm'), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startDelete(async () => {
       const res = await deleteCustomer(v.id);
       if (res.ok) {

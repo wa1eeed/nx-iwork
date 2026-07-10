@@ -8,6 +8,7 @@ import { ThemeToggle } from '@/components/theme-toggle';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { UserMenu } from '@/components/dashboard/user-menu';
 import { PageTransition } from '@/components/ui/motion';
+import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // SUPER_ADMIN only — everyone else is bounced to their dashboard.
@@ -42,7 +43,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
           <UserMenu name={session?.user?.name ?? ''} email={session?.user?.email ?? ''} />
         </header>
         <main className="flex-1 p-4 sm:p-6">
-          <PageTransition>{children}</PageTransition>
+          <ConfirmProvider>
+            <PageTransition>{children}</PageTransition>
+          </ConfirmProvider>
         </main>
       </div>
     </div>

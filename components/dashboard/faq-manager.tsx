@@ -11,6 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { createFaq, updateFaq, deleteFaq } from '@/lib/actions/knowledge';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface FaqRow {
   id: string;
@@ -21,6 +22,8 @@ export interface FaqRow {
 
 export function FaqManager({ items }: { items: FaqRow[] }) {
   const t = useTranslations('faqMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -61,8 +64,8 @@ export function FaqManager({ items }: { items: FaqRow[] }) {
     });
   }
 
-  function remove(id: string) {
-    if (!window.confirm(t('confirmDelete'))) return;
+  async function remove(id: string) {
+    if (!(await confirm({ title: t('confirmDelete'), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     start(async () => {
       const res = await deleteFaq(id);
       if (res.ok) {
@@ -127,7 +130,7 @@ export function FaqManager({ items }: { items: FaqRow[] }) {
             <Button variant="ghost" size="icon" onClick={() => openEdit(f)}>
               <Pencil className="h-4 w-4" />
             </Button>
-            <Button variant="ghost" size="icon" onClick={() => remove(f.id)} className="text-destructive hover:text-destructive">
+            <Button variant="ghost" size="icon" onClick={() => remove(f.id)} className="text-destructive hover:text-destructive" aria-label={tc('delete')}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </CardContent>

@@ -12,6 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { createTrigger, toggleTrigger, deleteTrigger } from '@/lib/actions/knowledge';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface TriggerRow {
   id: string;
@@ -38,6 +39,8 @@ export function TriggerManager({
   agents: { id: string; name: string }[];
 }) {
   const t = useTranslations('triggerMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [event, setEvent] = useState<TriggerRow['event']>('LEAD_CREATED');
@@ -76,8 +79,8 @@ export function TriggerManager({
     });
   }
 
-  function remove(id: string) {
-    if (!window.confirm(t('confirmDelete'))) return;
+  async function remove(id: string) {
+    if (!(await confirm({ title: t('confirmDelete'), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     start(async () => {
       const res = await deleteTrigger(id);
       if (res.ok) {
@@ -156,7 +159,7 @@ export function TriggerManager({
               </p>
             </div>
             <Switch checked={row.isActive} onCheckedChange={(c) => toggle(row.id, c)} disabled={saving} />
-            <Button variant="ghost" size="icon" onClick={() => remove(row.id)} className="text-destructive hover:text-destructive">
+            <Button variant="ghost" size="icon" onClick={() => remove(row.id)} className="text-destructive hover:text-destructive" aria-label={tc('delete')}>
               <Trash2 className="h-4 w-4" />
             </Button>
           </CardContent>
