@@ -113,6 +113,8 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
   await db.agentMemory.deleteMany({ where: { companyId } });
   await db.agentOutput.deleteMany({ where: { companyId } });
   await db.agentSchedule.deleteMany({ where: { companyId } });
+  await db.companyHours.deleteMany({ where: { companyId } });
+  await db.holiday.deleteMany({ where: { companyId } });
   await db.task.deleteMany({ where: { companyId } });
   await db.booking.deleteMany({ where: { companyId } });
   await db.order.deleteMany({ where: { companyId } });
@@ -630,6 +632,14 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
       },
     });
   }
+
+  // ── Company default hours (Sat–Thu, matching the service windows) + a holiday ─
+  await db.companyHours.createMany({
+    data: DAYS.flatMap((d) => WINDOWS.map((w) => ({ companyId, dayOfWeek: d, startTime: w.s, endTime: w.e }))),
+  });
+  await db.holiday.create({
+    data: { companyId, date: `${now.getFullYear()}-09-23`, name: 'اليوم الوطني' },
+  });
 
   console.log(`✓ Refine demo ready — ${svcDefs.length} services across ${clinicDefs.length} clinics.`);
   return { ok: true, slug: SLUG, ownerEmail: OWNER_EMAIL, clinics: clinicDefs.length, services: svcDefs.length };

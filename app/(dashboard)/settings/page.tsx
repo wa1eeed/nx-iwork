@@ -18,6 +18,7 @@ import { EscalationTab } from '@/components/settings/escalation-tab';
 import { EmailTab } from '@/components/settings/email-tab';
 import { CompanyInfoTab } from '@/components/settings/company-info-tab';
 import { ApiSettingsTab } from '@/components/settings/api-settings-tab';
+import { BusinessHoursTab } from '@/components/settings/business-hours-tab';
 import { getAiMode } from '@/lib/ai';
 import { agentTokenCap } from '@/lib/plans';
 import { publicHost } from '@/lib/public-url';
@@ -33,7 +34,7 @@ export default async function SettingsPage() {
   });
   if (!user?.companyId) redirect('/onboarding');
 
-  const [company, settings, apiSettings, websiteConfig, wallet] = await Promise.all([
+  const [company, settings, apiSettings, websiteConfig, wallet, companyHours, holidays] = await Promise.all([
     db.company.findUnique({
       where: { id: user.companyId },
       select: {
@@ -41,6 +42,7 @@ export default async function SettingsPage() {
         nameEn: true,
         slug: true,
         logo: true,
+        hasBookings: true,
         industry: true,
         mainGoal: true,
         vision: true,
@@ -82,6 +84,16 @@ export default async function SettingsPage() {
       where: { companyId: user.companyId },
       select: { balance: true, currency: true },
     }),
+    db.companyHours.findMany({
+      where: { companyId: user.companyId },
+      orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
+      select: { dayOfWeek: true, startTime: true, endTime: true },
+    }),
+    db.holiday.findMany({
+      where: { companyId: user.companyId },
+      orderBy: { date: 'asc' },
+      select: { id: true, date: true, name: true },
+    }),
   ]);
 
   const t = await getTranslations('settings');
@@ -122,6 +134,7 @@ export default async function SettingsPage() {
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="guardrails">{t('tabs.guardrails')}</TabsTrigger>
           <TabsTrigger value="localization">{t('tabs.localization')}</TabsTrigger>
+          {company.hasBookings && <TabsTrigger value="hours">{t('tabs.hours')}</TabsTrigger>}
           <TabsTrigger value="branding">{t('tabs.branding')}</TabsTrigger>
           <TabsTrigger value="storefront">{t('tabs.storefront')}</TabsTrigger>
           <TabsTrigger value="domain">{t('tabs.domain')}</TabsTrigger>
@@ -171,6 +184,12 @@ export default async function SettingsPage() {
             }}
           />
         </TabsContent>
+
+        {company.hasBookings && (
+          <TabsContent value="hours">
+            <BusinessHoursTab initial={{ windows: companyHours, holidays }} />
+          </TabsContent>
+        )}
 
         <TabsContent value="branding">
           <BrandingTab

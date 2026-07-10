@@ -751,7 +751,8 @@
       "escalation": "Alerts",
       "email": "Email",
       "company": "Company info",
-      "api": "API keys"
+      "api": "API keys",
+      "hours": "Hours"
     },
     "saved": "Saved",
     "saveError": "Save failed, please try again",
@@ -1987,5 +1988,34 @@
     "createButton": "Create customer-service agent",
     "created": "First AI agent created: Suha (Customer Service)",
     "createError": "Couldn't create the agent. Try again."
+  },
+  "businessHours": {
+    "title": "Business hours",
+    "subtitle": "Default opening hours for the whole business. Any service without its own schedule uses these. Add closures for holidays.",
+    "weeklyHours": "Weekly hours",
+    "days": [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ],
+    "closed": "Closed",
+    "open": "Open",
+    "addWindow": "Add a window",
+    "from": "From",
+    "to": "To",
+    "save": "Save hours",
+    "saved": "Business hours saved.",
+    "saveError": "Couldn’t save. Check the times and try again.",
+    "badWindow": "End time must be after start time.",
+    "holidays": "Holidays & closures",
+    "holidaysHint": "Days the business is fully closed — no bookings are offered.",
+    "holidayName": "Reason (e.g. National Day)",
+    "addHoliday": "Add closure",
+    "noHolidays": "No closures added.",
+    "inheritNote": "Services that have their own availability keep it; only services without a schedule inherit these hours."
   }
 }

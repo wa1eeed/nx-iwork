@@ -83,7 +83,12 @@ type BookableService = {
   availability: { dayOfWeek: number; startTime: string; endTime: string }[];
 };
 
-/** A service is bookable when it has a duration AND at least one availability window. */
+/**
+ * A service is bookable when it has a duration AND at least one availability
+ * window. Per-service windows take precedence; a service with none inherits the
+ * company's default opening hours (CompanyHours), so hours can be set once for
+ * the whole business instead of per service.
+ */
 export async function getBookableService(
   companyId: string,
   serviceId: string,
@@ -96,8 +101,25 @@ export async function getBookableService(
       availability: { select: { dayOfWeek: true, startTime: true, endTime: true } },
     },
   });
-  if (!svc || !svc.durationMin || svc.availability.length === 0) return null;
-  return { ...svc, durationMin: svc.durationMin };
+  if (!svc || !svc.durationMin) return null;
+  let availability = svc.availability;
+  if (availability.length === 0) {
+    availability = await db.companyHours.findMany({
+      where: { companyId },
+      select: { dayOfWeek: true, startTime: true, endTime: true },
+    });
+  }
+  if (availability.length === 0) return null;
+  return { ...svc, durationMin: svc.durationMin, availability };
+}
+
+/** Is this business-local date (YYYY-MM-DD) a configured closure/holiday? */
+export async function isHoliday(companyId: string, dateISO: string): Promise<boolean> {
+  const h = await db.holiday.findFirst({
+    where: { companyId, date: dateISO },
+    select: { id: true },
+  });
+  return h !== null;
 }
 
 /**
@@ -113,6 +135,8 @@ export async function generateDaySlots(
 ): Promise<Slot[]> {
   const svc = await getBookableService(companyId, serviceId);
   if (!svc) return [];
+  // The business is closed on a holiday → no slots that day.
+  if (await isHoliday(companyId, dateISO)) return [];
 
   const tz = await companyTz(companyId);
   const [y, mo, d] = dateISO.split('-').map(Number);

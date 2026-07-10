@@ -163,6 +163,8 @@ model Company {
   agentMemories       AgentMemory[]
   agentSchedules      AgentSchedule[]
   services            Service[]
+  companyHours        CompanyHours[]
+  holidays            Holiday[]
   products            Product[]
   bookings            Booking[]
   orders              Order[]
@@ -1156,6 +1158,40 @@ model ServiceAvailability {
   @@unique([serviceId, dayOfWeek, startTime])
   @@index([companyId])
   @@index([serviceId])
+}
+
+// Company-wide default opening hours. A bookable service that has NO availability
+// windows of its own inherits these (so a 20-service salon sets hours once, not
+// 20×). Same shape as ServiceAvailability; per-service windows still override.
+model CompanyHours {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Int // 0 = Sunday … 6 = Saturday
+  startTime String // "HH:MM" 24h, local business time
+  endTime   String // "HH:MM" 24h
+
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, dayOfWeek, startTime])
+  @@index([companyId])
+}
+
+// A day the business is closed (holiday / vacation). Blocks all slot generation
+// for that business-local date, regardless of service or company hours.
+model Holiday {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  date String // business-local calendar date "YYYY-MM-DD"
+  name String
+
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, date])
+  @@index([companyId])
 }
 
 model Product {
