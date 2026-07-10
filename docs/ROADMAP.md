@@ -45,6 +45,27 @@ workflow, and let specialized agents compound.
 - **Phase 4 — Ops command center:** a bookings calendar + an agent scheduled-task
   calendar + a task-tracking page.
 
+**Shipped (2026-07):** the 3-layer sector-agnostic role model (archetype →
+structured persona → mandate) + hard customer/internal `surface` scoping · the
+unified **outputs hub** (`/outputs`) + `create_output` · **`delegate_to_agent`**
+and task **`depends_on`** chains (Phase 3 partial). Remaining: `request_from_agent`
+(synchronous ask), composable Skills, the ops command center. See
+[`AGENT_SYSTEM.md`](./AGENT_SYSTEM.md).
+
+### 1b. Service-business capability gaps (from the sector-fit audit)
+Table-stakes a generic appointment SMB expects, ranked. None are blockers to
+launch, but they remove real friction:
+- **Company-level business hours + holiday closures** that services inherit unless
+  overridden (today hours are per-service only — a 20-service salon sets them 20×).
+  **Top priority.**
+- **Reminders/confirmations** — SMS/WhatsApp/email booking confirmation + a 24h
+  reminder (top no-show reducer; the `REMINDER` task kind + agent layer can execute).
+- **Cancellation policy + deposits/prepayment** — optional per-service deposit % +
+  a company cancellation window; gate slot-holding on deposit (payments infra exists).
+- **Reviews/ratings** — post-completion review request + display on the public site.
+- **Later:** multi-location (branch dimension) · recurring/package bookings
+  (class-passes, session packs).
+
 ### 2. Billing completeness
 - **Tap subscription auto-renewal** — recurring charges, webhook idempotency,
   dunning/retry on failure, receipt emails.
