@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { useTranslations } from 'next-intl';
 import { Loader2, Send, KeyRound } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
@@ -23,15 +24,16 @@ interface ChatMessage {
   content: string;
 }
 
-const ERROR_LABELS: Record<string, string> = {
-  no_key: 'لم يتم إضافة مفتاح الذكاء الاصطناعي بعد. أضفه من الإعدادات.',
-  billing_limit: 'انتهى رصيد التوكنز. جدّد باقتك للاستمرار.',
-  vertex_not_configured: 'خدمة الذكاء (Vertex) غير مهيأة. تواصل مع الدعم.',
-  no_settings: 'إعدادات الذكاء الاصطناعي غير مهيأة.',
-  decrypt_failed: 'تعذّر قراءة المفتاح. أعد إدخاله من الإعدادات.',
-  provider_error: 'حدث خطأ من مزوّد الذكاء الاصطناعي. حاول مرة أخرى.',
-  empty_message: 'الرسالة فارغة.',
-  message_too_long: 'الرسالة طويلة جداً.',
+// Maps a server error `reason` to its translation key in the `chatClient` namespace.
+const ERROR_KEYS: Record<string, string> = {
+  no_key: 'errNoKey',
+  billing_limit: 'errBillingLimit',
+  vertex_not_configured: 'errVertexNotConfigured',
+  no_settings: 'errNoSettings',
+  decrypt_failed: 'errDecryptFailed',
+  provider_error: 'errProviderError',
+  empty_message: 'errEmptyMessage',
+  message_too_long: 'errMessageTooLong',
 };
 
 export function ChatClient({
@@ -48,6 +50,9 @@ export function ChatClient({
   // Preselect an agent (e.g. deep-linked from the agent workspace).
   initialAgentId?: string;
 }) {
+  const t = useTranslations('chatClient');
+  const errLabel = (reason?: string) =>
+    reason && ERROR_KEYS[reason] ? t(ERROR_KEYS[reason]) : t('sendError');
   const [activeId, setActiveId] = useState(
     initialAgentId && agents.some((a) => a.id === initialAgentId)
       ? initialAgentId
@@ -102,7 +107,7 @@ export function ChatClient({
       if (!res.body || !res.headers.get('content-type')?.includes('text/event-stream')) {
         const data = await res.json().catch(() => null);
         dropAgent();
-        toast.error(ERROR_LABELS[data?.reason] ?? 'تعذّر إرسال الرسالة.');
+        toast.error(errLabel(data?.reason));
         return;
       }
 
@@ -134,14 +139,14 @@ export function ChatClient({
             setAgent(payload.reply ?? acc);
           } else if (payload.type === 'error') {
             errored = true;
-            toast.error(ERROR_LABELS[payload.reason ?? ''] ?? 'تعذّر إرسال الرسالة.');
+            toast.error(errLabel(payload.reason));
           }
         }
       }
       if (errored && !acc) dropAgent();
     } catch {
       dropAgent();
-      toast.error('فشل الاتصال بالخادم.');
+      toast.error(t('connectError'));
     } finally {
       setSending(false);
     }
@@ -159,7 +164,7 @@ export function ChatClient({
       {/* Agent list */}
       <aside className="hidden w-56 shrink-0 flex-col gap-1 md:flex">
         <p className="px-2 pb-2 text-xs font-medium text-muted-foreground">
-          الموظفون ({agents.length})
+          {t('agents', { count: agents.length })}
         </p>
         {agents.map((a) => (
           <button
@@ -201,11 +206,11 @@ export function ChatClient({
           <div className="flex items-center gap-2 border-b bg-amber-500/10 p-2 text-xs text-amber-600 dark:text-amber-400">
             <KeyRound className="h-4 w-4" />
             <span>
-              أضف مفتاح الذكاء الاصطناعي من{' '}
+              {t('addKeyPrefix')}
               <Link href="/settings" className="underline">
-                الإعدادات
-              </Link>{' '}
-              ليرد الموظف فعلياً.
+                {t('settings')}
+              </Link>
+              {t('addKeySuffix')}
             </span>
           </div>
         )}
@@ -213,7 +218,7 @@ export function ChatClient({
         <div ref={scrollRef} className="flex-1 space-y-4 overflow-y-auto p-4">
           {messages.length === 0 && (
             <p className="pt-10 text-center text-sm text-muted-foreground">
-              ابدأ المحادثة مع {activeAgent.name}…
+              {t('startConversation', { name: activeAgent.name })}
             </p>
           )}
           {messages.map((m) => (
@@ -244,7 +249,7 @@ export function ChatClient({
             <div className="flex justify-start">
               <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-2 text-sm text-muted-foreground">
                 <Loader2 className="h-4 w-4 animate-spin" />
-                يكتب…
+                {t('typing')}
               </div>
             </div>
           )}
@@ -255,7 +260,7 @@ export function ChatClient({
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKeyDown}
-            placeholder="اكتب رسالتك…"
+            placeholder={t('inputPlaceholder')}
             rows={1}
             className="max-h-32 min-h-[2.5rem] resize-none"
           />
@@ -264,6 +269,7 @@ export function ChatClient({
             disabled={sending || !input.trim()}
             size="icon"
             className="shrink-0"
+            aria-label={t('inputPlaceholder')}
           >
             <Send className="h-4 w-4" />
           </Button>

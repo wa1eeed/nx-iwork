@@ -113,6 +113,9 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
   await db.agentMemory.deleteMany({ where: { companyId } });
   await db.agentOutput.deleteMany({ where: { companyId } });
   await db.agentSchedule.deleteMany({ where: { companyId } });
+  await db.companyHours.deleteMany({ where: { companyId } });
+  await db.holiday.deleteMany({ where: { companyId } });
+  await db.review.deleteMany({ where: { companyId } });
   await db.task.deleteMany({ where: { companyId } });
   await db.booking.deleteMany({ where: { companyId } });
   await db.order.deleteMany({ where: { companyId } });
@@ -630,6 +633,25 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
       },
     });
   }
+
+  // ── Company default hours (Sat–Thu, matching the service windows) + a holiday ─
+  await db.companyHours.createMany({
+    data: DAYS.flatMap((d) => WINDOWS.map((w) => ({ companyId, dayOfWeek: d, startTime: w.s, endTime: w.e }))),
+  });
+  await db.holiday.create({
+    data: { companyId, date: `${now.getFullYear()}-09-23`, name: 'اليوم الوطني' },
+  });
+
+  // ── Customer reviews (published ones show on the storefront; one pending) ────
+  await db.review.createMany({
+    data: [
+      { companyId, authorName: 'سارة العتيبي', rating: 5, comment: 'تجربة راقية والنتيجة فاقت توقعاتي، شكراً للطاقم المحترف.', status: 'PUBLISHED' },
+      { companyId, authorName: 'خالد الحربي', rating: 5, comment: 'حجز سهل واستقبال ممتاز، والدكتور شرح لي كل شيء بوضوح.', status: 'PUBLISHED' },
+      { companyId, authorName: 'نوف الشمري', rating: 4, comment: 'خدمة جيدة جداً، فقط الانتظار كان أطول قليلاً.', status: 'PUBLISHED' },
+      { companyId, authorName: 'عبدالله القحطاني', rating: 5, comment: 'أنصح فيهم بشدة، نظافة واحترافية.', status: 'PUBLISHED' },
+      { companyId, authorName: 'ريم المطيري', rating: 5, comment: null, status: 'PENDING' },
+    ],
+  });
 
   console.log(`✓ Refine demo ready — ${svcDefs.length} services across ${clinicDefs.length} clinics.`);
   return { ok: true, slug: SLUG, ownerEmail: OWNER_EMAIL, clinics: clinicDefs.length, services: svcDefs.length };

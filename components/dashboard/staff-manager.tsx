@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { createStaff, updateStaff, deleteStaff, type StaffInput } from '@/lib/actions/staff';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type CommissionType = 'PERCENT_SALES' | 'FIXED_PER_ORDER' | 'TARGET_BONUS';
 
@@ -81,6 +82,8 @@ const EMPTY: FormState = {
 
 export function StaffManager({ staff }: { staff: StaffRow[] }) {
   const t = useTranslations('staffMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -146,8 +149,8 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
     });
   }
 
-  function remove(s: StaffRow) {
-    if (!window.confirm(t('confirmRemove', { name: s.name }))) return;
+  async function remove(s: StaffRow) {
+    if (!(await confirm({ title: t('confirmRemove', { name: s.name }), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteStaff(s.id);
       if (res.ok) {
@@ -216,7 +219,7 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && cancel()} />
-          <div className="relative z-10 w-full max-w-[460px] rounded-2xl border bg-card p-5 shadow-xl">
+          <div className="relative z-10 max-h-[90vh] w-full max-w-[460px] overflow-y-auto rounded-2xl border bg-card p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">{editingId ? t('editStaff') : t('newStaff')}</h2>
               <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label={t('cancel')}>

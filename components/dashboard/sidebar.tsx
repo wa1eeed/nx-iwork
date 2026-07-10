@@ -23,6 +23,7 @@ import {
   Gem,
   Settings,
   Sparkles,
+  Star,
   Store,
   TicketPercent,
   Users,
@@ -76,6 +77,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: '/services', icon: Store, labelKey: 'services', module: 'hasServices' },
       { href: '/products', icon: Package, labelKey: 'products', module: 'hasEcommerce' },
       { href: '/inventory', icon: Package2, labelKey: 'inventory' },
+      { href: '/reviews', icon: Star, labelKey: 'reviews' },
     ],
   },
   {

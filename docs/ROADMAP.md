@@ -45,6 +45,31 @@ workflow, and let specialized agents compound.
 - **Phase 4 — Ops command center:** a bookings calendar + an agent scheduled-task
   calendar + a task-tracking page.
 
+**Shipped (2026-07):** the 3-layer sector-agnostic role model (archetype →
+structured persona → mandate) + hard customer/internal `surface` scoping · the
+unified **outputs hub** (`/outputs`) + `create_output` · **`delegate_to_agent`**
+and task **`depends_on`** chains (Phase 3 partial). Remaining: `request_from_agent`
+(synchronous ask), composable Skills, the ops command center. See
+[`AGENT_SYSTEM.md`](./AGENT_SYSTEM.md).
+
+### 1b. Service-business capability gaps (from the sector-fit audit)
+Most shipped in the 2026-07 hardening pass:
+- ~~Company-level business hours + holiday closures~~ **SHIPPED** — services with
+  no windows inherit them; holidays close the day (Settings → Hours).
+- ~~Reminders/confirmations~~ **SHIPPED** — owner-controllable confirmation +
+  N-hours-before reminder emails (Settings → Reminders), off /api/cron/run.
+- ~~Reviews/ratings~~ **SHIPPED** — public submit + moderation (`/reviews`) +
+  storefront display with average.
+- ~~Cancellation policy~~ **SHIPPED** — owner text shown at booking + in the
+  confirmation email (Settings → Hours).
+- **Deposits/prepayment — DEFERRED:** needs the Tap payment flow exercised live
+  (real money); build once deploy is up so it can be verified end-to-end.
+- **Storefront modal-locale unification — DEFERRED:** chrome now follows the
+  business language; the booking/order/review modals still use next-intl (visitor
+  locale). A `NextIntlClientProvider` override for the `(public)` subtree is the
+  clean fix — SSR-hydration-sensitive, best done live.
+- **Later (LOW):** multi-location (branch dimension) · recurring/package bookings.
+
 ### 2. Billing completeness
 - **Tap subscription auto-renewal** — recurring charges, webhook idempotency,
   dunning/retry on failure, receipt emails.

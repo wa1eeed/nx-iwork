@@ -8,6 +8,7 @@ import { Topbar } from '@/components/dashboard/topbar';
 import { MobileSectionCarousel } from '@/components/dashboard/mobile-section-carousel';
 import { MobileTabBar } from '@/components/dashboard/mobile-tabbar';
 import { PageTransition } from '@/components/ui/motion';
+import { ConfirmProvider } from '@/components/ui/confirm-dialog';
 
 export default async function DashboardLayout({
   children,
@@ -69,7 +70,9 @@ export default async function DashboardLayout({
         {/* Phone-only swipeable section strip; desktop uses the sidebar. */}
         <MobileSectionCarousel modules={modules} />
         <main className="flex-1 p-4 pb-24 sm:p-6 md:pb-6">
-          <PageTransition>{children}</PageTransition>
+          <ConfirmProvider>
+            <PageTransition>{children}</PageTransition>
+          </ConfirmProvider>
         </main>
       </div>
       {/* Phone-only fixed bottom navigation. */}

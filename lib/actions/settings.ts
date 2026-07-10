@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -220,6 +221,24 @@ export async function updateEmailSettings(raw: EmailInput): Promise<Result> {
       marketingEmailsEnabled: parsed.data.marketingEmailsEnabled,
     },
   });
+  revalidatePath('/settings');
+  return { ok: true };
+}
+
+// Booking reminders: owner toggles for the confirmation-on-booking email and the
+// pre-appointment reminder, plus how many hours before the appointment it fires.
+const remindersSchema = z.object({
+  bookingConfirmationEnabled: z.coerce.boolean(),
+  bookingReminderEnabled: z.coerce.boolean(),
+  bookingReminderHoursBefore: z.coerce.number().int().min(1).max(168),
+});
+
+export async function updateReminders(raw: z.infer<typeof remindersSchema>): Promise<Result> {
+  const companyId = await authedCompanyId();
+  if (!companyId) return { ok: false, error: 'unauthenticated' };
+  const parsed = remindersSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: 'validation' };
+  await db.businessSettings.update({ where: { companyId }, data: parsed.data });
   revalidatePath('/settings');
   return { ok: true };
 }

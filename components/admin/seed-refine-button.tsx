@@ -1,19 +1,23 @@
 'use client';
 
 import { useState, useTransition } from 'react';
+import { useTranslations } from 'next-intl';
 import { Sparkles, Loader2, ExternalLink, CheckCircle2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { seedRefineDemo } from '@/lib/actions/admin';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 // One-click builder for the Refine Medical Complex client demo (super-admin only).
 export function SeedRefineButton() {
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const [done, setDone] = useState(false);
   const [pending, start] = useTransition();
 
-  function run() {
-    if (!window.confirm('This will (re)build the “Refine” demo tenant — wiping and rebuilding only its data. Continue?')) return;
+  async function run() {
+    if (!(await confirm({ title: 'This will (re)build the “Refine” demo tenant — wiping and rebuilding only its data. Continue?', confirmLabel: tc('confirm'), cancelLabel: tc('cancel') }))) return;
     start(async () => {
       const r = await seedRefineDemo();
       if (r.ok) {

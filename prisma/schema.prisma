@@ -163,6 +163,9 @@ model Company {
   agentMemories       AgentMemory[]
   agentSchedules      AgentSchedule[]
   services            Service[]
+  companyHours        CompanyHours[]
+  holidays            Holiday[]
+  reviews             Review[]
   products            Product[]
   bookings            Booking[]
   orders              Order[]
@@ -248,6 +251,16 @@ model BusinessSettings {
   emailSenderName        String? // display name, e.g. "Acme Store"
   emailReplyTo           String? // replies go here, e.g. hello@acme.com
   marketingEmailsEnabled Boolean @default(false) // gate for non-transactional mail
+
+  // Booking reminders (owner-controllable, sensible defaults). A confirmation
+  // email is sent when a booking is made; a reminder goes out N hours before it.
+  bookingConfirmationEnabled Boolean @default(true)
+  bookingReminderEnabled     Boolean @default(true)
+  bookingReminderHoursBefore Int     @default(24)
+
+  // Free-text cancellation / booking policy shown to customers at booking time
+  // and in confirmations. Empty = no policy shown.
+  cancellationPolicy String? @db.Text
 
   // Escalation channel: owner's Telegram bot for human-in-the-loop alerts
   // (e.g. an angry-customer complaint that an agent escalates).
@@ -924,6 +937,7 @@ model Customer {
   bookings     Booking[]
   activityLog  CustomerNote[]
   agentOutputs AgentOutput[]
+  reviews      Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -995,6 +1009,10 @@ model Booking {
   // Activity-specific attributes (resource, party_size, service_type, …).
   customFields Json?
 
+  // When the pre-appointment reminder was sent (null = not yet). Drives the
+  // reminder cron's "who still needs reminding" query.
+  reminderSentAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1002,6 +1020,7 @@ model Booking {
   @@index([customerId])
   @@index([serviceId, startAt])
   @@index([staffMemberId])
+  @@index([companyId, status, reminderSentAt]) // the reminder cron scan
 }
 
 // ========================================
@@ -1131,6 +1150,7 @@ model Service {
 
   availability ServiceAvailability[]
   bookings     Booking[]
+  reviews      Review[]
   orders       Order[]
 
   createdAt DateTime @default(now())
@@ -1155,6 +1175,71 @@ model ServiceAvailability {
 
   @@unique([serviceId, dayOfWeek, startTime])
   @@index([companyId])
+  @@index([serviceId])
+}
+
+// Company-wide default opening hours. A bookable service that has NO availability
+// windows of its own inherits these (so a 20-service salon sets hours once, not
+// 20×). Same shape as ServiceAvailability; per-service windows still override.
+model CompanyHours {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  dayOfWeek Int // 0 = Sunday … 6 = Saturday
+  startTime String // "HH:MM" 24h, local business time
+  endTime   String // "HH:MM" 24h
+
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, dayOfWeek, startTime])
+  @@index([companyId])
+}
+
+// A day the business is closed (holiday / vacation). Blocks all slot generation
+// for that business-local date, regardless of service or company hours.
+model Holiday {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  date String // business-local calendar date "YYYY-MM-DD"
+  name String
+
+  createdAt DateTime @default(now())
+
+  @@unique([companyId, date])
+  @@index([companyId])
+}
+
+enum ReviewStatus {
+  PENDING // awaiting owner moderation
+  PUBLISHED // shown on the public storefront
+  HIDDEN // rejected / taken down
+}
+
+// A customer rating + optional comment for the business (or a specific service).
+// Submitted from the public storefront, moderated by the owner, then shown on the
+// site with the average. PENDING by default so nothing publishes unreviewed.
+model Review {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  authorName String
+  rating     Int // 1..5
+  comment    String? @db.Text
+  status     ReviewStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status, createdAt])
   @@index([serviceId])
 }
 

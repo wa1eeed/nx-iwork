@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { createCoupon, updateCoupon, deleteCoupon, type CouponInput } from '@/lib/actions/coupons';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 type CouponType = 'PERCENT' | 'FIXED';
 type CouponScope = 'ALL' | 'PRODUCTS' | 'SERVICES' | 'BOOKINGS';
@@ -63,6 +64,8 @@ const dateOnly = (iso: string | null) => (iso ? iso.slice(0, 10) : '');
 
 export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
   const t = useTranslations('couponMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -128,8 +131,8 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
     });
   }
 
-  function remove(c: CouponRow) {
-    if (!window.confirm(t('confirmDelete', { code: c.code }))) return;
+  async function remove(c: CouponRow) {
+    if (!(await confirm({ title: t('confirmDelete', { code: c.code }), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteCoupon(c.id);
       if (res.ok) {
@@ -208,7 +211,7 @@ export function CouponManager({ coupons }: { coupons: CouponRow[] }) {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && cancel()} />
-          <div className="relative z-10 w-full max-w-[460px] rounded-2xl border bg-card p-5 shadow-xl">
+          <div className="relative z-10 max-h-[90vh] w-full max-w-[460px] overflow-y-auto rounded-2xl border bg-card p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">{editingId ? t('editCoupon') : t('newCoupon')}</h2>
               <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label={t('cancel')}>

@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent } from '@/components/ui/card';
 import { createSitePage, updateSitePage, deleteSitePage } from '@/lib/actions/site-pages';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface SitePageRow {
   id: string;
@@ -45,6 +46,8 @@ const EMPTY: FormState = {
 
 export function SitePagesManager({ pages, siteSlug }: { pages: SitePageRow[]; siteSlug: string | null }) {
   const t = useTranslations('biz.pages');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const locale = useLocale();
   const en = locale === 'en';
   const router = useRouter();
@@ -113,8 +116,8 @@ export function SitePagesManager({ pages, siteSlug }: { pages: SitePageRow[]; si
     });
   }
 
-  function remove(p: SitePageRow) {
-    if (!window.confirm(t('confirmDelete', { name: p.title }))) return;
+  async function remove(p: SitePageRow) {
+    if (!(await confirm({ title: t('confirmDelete', { name: p.title }), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteSitePage(p.id);
       if (res.ok) {

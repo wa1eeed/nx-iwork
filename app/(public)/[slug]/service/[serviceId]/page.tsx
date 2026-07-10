@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 async function load(slug: string, serviceId: string) {
   const company = await db.company.findUnique({
     where: { slug },
-    select: { id: true, name: true, logo: true, status: true, settings: { select: { primaryColor: true } } },
+    select: { id: true, name: true, logo: true, status: true, settings: { select: { primaryColor: true, primaryLanguage: true, cancellationPolicy: true } } },
   });
   if (!company || company.status === 'SUSPENDED') return null;
 
@@ -66,13 +66,14 @@ export default async function ServiceDetailPage({
   const { company, service, sitePages } = data;
 
   const accent = company.settings?.primaryColor || '#0ea5e9';
+  const ar = (company.settings?.primaryLanguage ?? 'ar') === 'ar';
   const bookable = service.durationMin != null && service.availability.length > 0;
 
   const navPages = sitePages.filter((p) => p.showInNav);
   const footerPages = sitePages.filter((p) => p.showInFooter);
   const headerNav: SiteNavLink[] = [
-    { label: 'الرئيسية', href: `/${slug}` },
-    { label: 'خدماتنا', href: `/${slug}#services` },
+    { label: ar ? 'الرئيسية' : 'Home', href: `/${slug}` },
+    { label: ar ? 'خدماتنا' : 'Services', href: `/${slug}#services` },
     ...navPages.map((p) => ({ label: p.title, href: `/${slug}/p/${p.slug}` })),
   ];
   const footerLinks: SiteNavLink[] = footerPages.map((p) => ({
@@ -81,7 +82,7 @@ export default async function ServiceDetailPage({
   }));
 
   return (
-    <div className="min-h-screen bg-background text-foreground" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground" dir={ar ? 'rtl' : 'ltr'}>
       <SiteHeader
         slug={slug}
         companyName={company.name}
@@ -89,7 +90,7 @@ export default async function ServiceDetailPage({
         accent={accent}
         navLinks={headerNav}
         ctaHref={`/${slug}#services`}
-        ctaLabel="كل الخدمات"
+        ctaLabel={ar ? 'كل الخدمات' : 'All services'}
       />
 
       <div className="mx-auto max-w-5xl px-5 py-10">
@@ -111,12 +112,12 @@ export default async function ServiceDetailPage({
               {(service.price != null || service.priceLabel) && (
                 <span className="inline-flex items-center gap-1.5 text-xl font-bold" style={{ color: accent }}>
                   <Tag className="size-4" />
-                  {service.priceLabel || `${service.price} ر.س`}
+                  {service.priceLabel || `${service.price} ${ar ? 'ر.س' : 'SAR'}`}
                 </span>
               )}
               {service.durationMin != null && (
                 <span className="inline-flex items-center gap-1.5 text-sm text-muted-foreground">
-                  <Clock className="size-4" /> {service.durationMin} دقيقة
+                  <Clock className="size-4" /> {service.durationMin} {ar ? 'دقيقة' : 'min'}
                 </span>
               )}
             </div>
@@ -130,7 +131,7 @@ export default async function ServiceDetailPage({
 
             {service.description && (
               <div className="mt-6">
-                <h2 className="mb-2 text-lg font-semibold">تفاصيل الخدمة</h2>
+                <h2 className="mb-2 text-lg font-semibold">{ar ? 'تفاصيل الخدمة' : 'Service details'}</h2>
                 <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">
                   {service.description}
                 </p>
@@ -143,17 +144,26 @@ export default async function ServiceDetailPage({
             <div className="rounded-2xl border bg-card p-5 shadow-sm">
               <div className="mb-3 flex items-center gap-2">
                 <CalendarCheck className="size-5" style={{ color: accent }} />
-                <h2 className="text-lg font-semibold">احجز موعدك</h2>
+                <h2 className="text-lg font-semibold">{ar ? 'احجز موعدك' : 'Book your appointment'}</h2>
               </div>
               <p className="mb-4 text-sm text-muted-foreground">
                 {bookable
-                  ? 'اختر التاريخ والوقت المناسب لك وأكمل الحجز في ثوانٍ.'
-                  : 'اطلب هذه الخدمة وسنتواصل معك لتأكيد الموعد.'}
+                  ? ar
+                    ? 'اختر التاريخ والوقت المناسب لك وأكمل الحجز في ثوانٍ.'
+                    : 'Pick a date and time that works for you and book in seconds.'
+                  : ar
+                    ? 'اطلب هذه الخدمة وسنتواصل معك لتأكيد الموعد.'
+                    : 'Request this service and we’ll reach out to confirm your appointment.'}
               </p>
               {bookable ? (
                 <BookingButton slug={slug} serviceId={service.id} color={accent} />
               ) : (
                 <OrderButton slug={slug} serviceId={service.id} color={accent} />
+              )}
+              {company.settings?.cancellationPolicy && (
+                <p className="mt-3 whitespace-pre-wrap border-t pt-3 text-xs leading-relaxed text-muted-foreground">
+                  {company.settings.cancellationPolicy}
+                </p>
               )}
             </div>
           </div>

@@ -16,6 +16,7 @@ import {
   adjustStock,
   type InventoryInput,
 } from '@/lib/actions/inventory';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 
 export interface InventoryRow {
   id: string;
@@ -54,6 +55,8 @@ const EMPTY: FormState = {
 
 export function InventoryManager({ items }: { items: InventoryRow[] }) {
   const t = useTranslations('invMgr');
+  const tc = useTranslations('common');
+  const confirm = useConfirm();
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -118,8 +121,8 @@ export function InventoryManager({ items }: { items: InventoryRow[] }) {
     });
   }
 
-  function remove(it: InventoryRow) {
-    if (!window.confirm(t('confirmDelete', { name: it.name }))) return;
+  async function remove(it: InventoryRow) {
+    if (!(await confirm({ title: t('confirmDelete', { name: it.name }), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
     startSave(async () => {
       const res = await deleteInventoryItem(it.id);
       if (res.ok) {
@@ -228,7 +231,7 @@ export function InventoryManager({ items }: { items: InventoryRow[] }) {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && cancel()} />
-          <div className="relative z-10 w-full max-w-[460px] rounded-2xl border bg-card p-5 shadow-xl">
+          <div className="relative z-10 max-h-[90vh] w-full max-w-[460px] overflow-y-auto rounded-2xl border bg-card p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">{editingId ? t('editItem') : t('newItem')}</h2>
               <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label={t('cancel')}>

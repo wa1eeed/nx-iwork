@@ -14,6 +14,7 @@ import { nextRef } from '@/lib/refs';
 import { createBooking, BookingError, generateDaySlots, checkSlotAvailable, promoteFromWaitlist } from '@/lib/booking/engine';
 import { saveMemory } from './memory';
 import { dispatchEvent } from './events';
+import { sendBookingConfirmation } from '@/lib/notifications/booking-emails';
 
 export interface ToolContext {
   companyId: string;
@@ -779,6 +780,26 @@ export async function executeTool(
           const waitlisted = booking.status === 'WAITLIST';
           const tz = await companyTimezone(ctx.companyId);
           const when = fmtWhen(booking.startAt, tz);
+          // Fire-and-forget confirmation to the customer if they have an email on
+          // file (owner-gated inside the helper). Never blocks the booking.
+          if (customerId) {
+            void (async () => {
+              const cust = await db.customer.findUnique({
+                where: { id: customerId },
+                select: { name: true, email: true },
+              });
+              if (cust?.email) {
+                await sendBookingConfirmation(ctx.companyId, {
+                  to: cust.email,
+                  customerName: cust.name || args.customerName || '',
+                  serviceTitle: booking.title,
+                  startAt: booking.startAt,
+                  ref: booking.ref,
+                  waitlisted,
+                });
+              }
+            })().catch((e) => console.error('agent booking confirmation email failed', e));
+          }
           return ok({
             booking: {
               id: booking.id,

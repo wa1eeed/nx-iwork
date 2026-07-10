@@ -14,7 +14,7 @@ async function load(slug: string, pageSlug: string) {
       name: true,
       logo: true,
       status: true,
-      settings: { select: { primaryColor: true } },
+      settings: { select: { primaryColor: true, primaryLanguage: true } },
     },
   });
   if (!company || company.status === 'SUSPENDED') return null;
@@ -55,12 +55,13 @@ export default async function SiteContentPage({
   if (!data) notFound();
   const { company, page, sitePages } = data;
   const accent = company.settings?.primaryColor || '#0ea5e9';
+  const ar = (company.settings?.primaryLanguage ?? 'ar') === 'ar';
 
   const navPages = sitePages.filter((p) => p.showInNav);
   const footerPages = sitePages.filter((p) => p.showInFooter);
   const headerNav: SiteNavLink[] = [
-    { label: 'الرئيسية', href: `/${slug}` },
-    { label: 'خدماتنا', href: `/${slug}#services` },
+    { label: ar ? 'الرئيسية' : 'Home', href: `/${slug}` },
+    { label: ar ? 'خدماتنا' : 'Services', href: `/${slug}#services` },
     ...navPages.map((p) => ({ label: p.title, href: `/${slug}/p/${p.slug}` })),
   ];
   const footerLinks: SiteNavLink[] = footerPages.map((p) => ({
@@ -69,7 +70,7 @@ export default async function SiteContentPage({
   }));
 
   return (
-    <div className="min-h-screen bg-background text-foreground" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground" dir={ar ? 'rtl' : 'ltr'}>
       <SiteHeader
         slug={slug}
         companyName={company.name}
@@ -77,12 +78,12 @@ export default async function SiteContentPage({
         accent={accent}
         navLinks={headerNav}
         ctaHref={`/${slug}#services`}
-        ctaLabel="احجز موعد"
+        ctaLabel={ar ? 'احجز موعد' : 'Book now'}
       />
 
       <article className="mx-auto max-w-3xl px-5 py-14">
         <h1 className="mb-8 text-3xl font-extrabold tracking-tight">{page.title}</h1>
-        <div className="space-y-4 text-[15px] leading-relaxed text-foreground/90 [&_a]:text-primary [&_a]:underline [&_h1]:mt-8 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mt-7 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pr-5 [&_p]:leading-relaxed [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pr-5">
+        <div className="space-y-4 text-[15px] leading-relaxed text-foreground/90 [&_a]:text-primary [&_a]:underline [&_h1]:mt-8 [&_h1]:text-2xl [&_h1]:font-bold [&_h2]:mt-7 [&_h2]:text-xl [&_h2]:font-bold [&_h3]:mt-5 [&_h3]:text-lg [&_h3]:font-semibold [&_li]:my-1 [&_ol]:list-decimal [&_ol]:pe-5 [&_p]:leading-relaxed [&_strong]:font-semibold [&_ul]:list-disc [&_ul]:pe-5">
           <ReactMarkdown>{page.content}</ReactMarkdown>
         </div>
       </article>
