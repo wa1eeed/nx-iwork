@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations, useLocale } from 'next-intl';
 import { Plus, Loader2, Trash2, Clock, Power } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -24,20 +25,11 @@ export interface ScheduleRow {
 
 type Freq = 'hourly' | 'daily' | 'weekly';
 
-const DAYS = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
-
 // Turn the friendly picker into a 5-field cron expression.
 function toCron(freq: Freq, hour: number, day: number): string {
   if (freq === 'hourly') return '0 * * * *';
   if (freq === 'daily') return `0 ${hour} * * *`;
   return `0 ${hour} * * ${day}`;
-}
-
-function humanWhen(freq: Freq, hour: number, day: number): string {
-  const hh = `${String(hour).padStart(2, '0')}:00`;
-  if (freq === 'hourly') return 'كل ساعة';
-  if (freq === 'daily') return `كل يوم الساعة ${hh}`;
-  return `كل ${DAYS[day]} الساعة ${hh}`;
 }
 
 const selectCls = 'h-10 rounded-md border border-input bg-background px-3 text-sm';
@@ -51,6 +43,9 @@ export function AgentSchedules({
   schedules: ScheduleRow[];
   timezone: string;
 }) {
+  const t = useTranslations('agentSchedules');
+  const locale = useLocale();
+  const DAYS = t.raw('days') as string[];
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState('');
@@ -61,8 +56,8 @@ export function AgentSchedules({
   const [pending, start] = useTransition();
 
   function submit() {
-    if (!name.trim()) return toast.error('اسم الجدولة مطلوب.');
-    if (!taskTemplate.trim()) return toast.error('اكتب المهمة المطلوب تكرارها.');
+    if (!name.trim()) return toast.error(t('nameRequired'));
+    if (!taskTemplate.trim()) return toast.error(t('taskRequired'));
     start(async () => {
       const res = await createSchedule(agentId, {
         name: name.trim(),
@@ -72,13 +67,13 @@ export function AgentSchedules({
         isActive: true,
       });
       if (res.ok) {
-        toast.success('تمت إضافة الجدولة.');
+        toast.success(t('added'));
         setName('');
         setTaskTemplate('');
         setAdding(false);
         router.refresh();
       } else {
-        toast.error(res.error === 'bad_cron' ? 'توقيت غير صحيح.' : 'تعذّرت الإضافة.');
+        toast.error(res.error === 'bad_cron' ? t('badCron') : t('addError'));
       }
     });
   }
@@ -87,19 +82,19 @@ export function AgentSchedules({
     start(async () => {
       const res = await toggleSchedule(id, isActive);
       if (res.ok) router.refresh();
-      else toast.error('تعذّر التحديث.');
+      else toast.error(t('updateError'));
     });
   }
 
   function remove(id: string) {
-    if (!window.confirm('حذف هذه الجدولة؟')) return;
+    if (!window.confirm(t('confirmDelete'))) return;
     start(async () => {
       const res = await deleteSchedule(id);
       if (res.ok) {
-        toast.success('تم الحذف.');
+        toast.success(t('deleted'));
         router.refresh();
       } else {
-        toast.error('تعذّر الحذف.');
+        toast.error(t('deleteError'));
       }
     });
   }
@@ -109,15 +104,15 @@ export function AgentSchedules({
       <CardContent className="space-y-4 pt-6">
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-medium">الأتمتة والجدولة</p>
+            <p className="font-medium">{t('title')}</p>
             <p className="text-xs text-muted-foreground">
-              خلِّ هذا الموظف ينفّذ مهمة متكررة تلقائياً في وقتها.
+              {t('subtitle')}
             </p>
           </div>
           {!adding && (
             <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
               <Plus className="me-1 h-4 w-4" />
-              جدولة
+              {t('schedule')}
             </Button>
           )}
         </div>
@@ -125,30 +120,30 @@ export function AgentSchedules({
         {adding && (
           <div className="space-y-3 rounded-lg border p-4">
             <div className="space-y-2">
-              <Label>اسم الجدولة</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثل: تقرير المبيعات الأسبوعي" />
+              <Label>{t('nameLabel')}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('namePlaceholder')} />
             </div>
             <div className="space-y-2">
-              <Label>المهمة المطلوب تكرارها</Label>
+              <Label>{t('taskLabel')}</Label>
               <Textarea
                 rows={2}
                 value={taskTemplate}
                 onChange={(e) => setTaskTemplate(e.target.value)}
-                placeholder="اقرأ مبيعات الأسبوع من الـ CRM واكتب تقريراً موجزاً."
+                placeholder={t('taskPlaceholder')}
               />
             </div>
             <div className="flex flex-wrap items-end gap-3">
               <div className="space-y-1">
-                <Label className="text-xs">التكرار</Label>
+                <Label className="text-xs">{t('frequency')}</Label>
                 <select className={selectCls} value={freq} onChange={(e) => setFreq(e.target.value as Freq)}>
-                  <option value="hourly">كل ساعة</option>
-                  <option value="daily">يومياً</option>
-                  <option value="weekly">أسبوعياً</option>
+                  <option value="hourly">{t('freqHourly')}</option>
+                  <option value="daily">{t('freqDaily')}</option>
+                  <option value="weekly">{t('freqWeekly')}</option>
                 </select>
               </div>
               {freq === 'weekly' && (
                 <div className="space-y-1">
-                  <Label className="text-xs">اليوم</Label>
+                  <Label className="text-xs">{t('dayLabel')}</Label>
                   <select className={selectCls} value={day} onChange={(e) => setDay(Number(e.target.value))}>
                     {DAYS.map((d, i) => (
                       <option key={i} value={i}>
@@ -160,7 +155,7 @@ export function AgentSchedules({
               )}
               {freq !== 'hourly' && (
                 <div className="space-y-1">
-                  <Label className="text-xs">الساعة</Label>
+                  <Label className="text-xs">{t('hourLabel')}</Label>
                   <select className={selectCls} value={hour} onChange={(e) => setHour(Number(e.target.value))}>
                     {Array.from({ length: 24 }, (_, h) => (
                       <option key={h} value={h}>
@@ -173,11 +168,11 @@ export function AgentSchedules({
             </div>
             <div className="flex justify-end gap-2">
               <Button variant="ghost" size="sm" onClick={() => setAdding(false)} disabled={pending}>
-                إلغاء
+                {t('cancel')}
               </Button>
               <Button size="sm" onClick={submit} disabled={pending}>
                 {pending && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
-                حفظ
+                {t('save')}
               </Button>
             </div>
           </div>
@@ -185,7 +180,7 @@ export function AgentSchedules({
 
         <div className="space-y-2">
           {schedules.length === 0 && !adding && (
-            <p className="text-sm text-muted-foreground">لا جدولة بعد.</p>
+            <p className="text-sm text-muted-foreground">{t('empty')}</p>
           )}
           {schedules.map((s) => (
             <div key={s.id} className="flex items-center gap-3 rounded-lg border p-3">
@@ -193,11 +188,11 @@ export function AgentSchedules({
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-medium">{s.name}</p>
                 <p className="truncate text-xs text-muted-foreground">
-                  <span dir="ltr">{s.cronExpression}</span> · نُفّذت {s.runCount} مرة
-                  {s.nextRunAt ? ` · التالي ${new Date(s.nextRunAt).toLocaleString('ar')}` : ''}
+                  <span dir="ltr">{s.cronExpression}</span> · {t('runCount', { count: s.runCount })}
+                  {s.nextRunAt ? t('nextRun', { date: new Date(s.nextRunAt).toLocaleString(locale) }) : ''}
                 </p>
               </div>
-              <span title={s.isActive ? 'مفعّلة' : 'متوقفة'}>
+              <span title={s.isActive ? t('active') : t('inactive')}>
                 <Power className={s.isActive ? 'h-4 w-4 text-emerald-500' : 'h-4 w-4 text-muted-foreground'} />
               </span>
               <Switch checked={s.isActive} onCheckedChange={(c) => toggle(s.id, c)} disabled={pending} />

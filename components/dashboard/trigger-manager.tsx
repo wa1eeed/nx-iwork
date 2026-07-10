@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Trash2, Loader2, Zap } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -21,12 +22,12 @@ export interface TriggerRow {
   fireCount: number;
 }
 
-const EVENTS: { value: 'LEAD_CREATED' | 'ORDER_CREATED' | 'ORDER_PAID'; label: string }[] = [
-  { value: 'LEAD_CREATED', label: 'عميل جديد في الـ CRM' },
-  { value: 'ORDER_CREATED', label: 'طلب جديد' },
-  { value: 'ORDER_PAID', label: 'فاتورة مدفوعة' },
+const EVENTS: { value: 'LEAD_CREATED' | 'ORDER_CREATED' | 'ORDER_PAID'; labelKey: string }[] = [
+  { value: 'LEAD_CREATED', labelKey: 'eventLeadCreated' },
+  { value: 'ORDER_CREATED', labelKey: 'eventOrderCreated' },
+  { value: 'ORDER_PAID', labelKey: 'eventOrderPaid' },
 ];
-const EVENT_LABEL = Object.fromEntries(EVENTS.map((e) => [e.value, e.label]));
+const EVENT_KEY = Object.fromEntries(EVENTS.map((e) => [e.value, e.labelKey]));
 const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
 
 export function TriggerManager({
@@ -36,6 +37,7 @@ export function TriggerManager({
   triggers: TriggerRow[];
   agents: { id: string; name: string }[];
 }) {
+  const t = useTranslations('triggerMgr');
   const router = useRouter();
   const [adding, setAdding] = useState(false);
   const [event, setEvent] = useState<TriggerRow['event']>('LEAD_CREATED');
@@ -45,9 +47,9 @@ export function TriggerManager({
   const [saving, start] = useTransition();
 
   function save() {
-    if (!name.trim()) return toast.error('اسم المشغّل مطلوب.');
-    if (!agentId) return toast.error('اختر الموظف.');
-    if (!taskTemplate.trim()) return toast.error('اكتب المهمة المطلوبة.');
+    if (!name.trim()) return toast.error(t('nameRequired'));
+    if (!agentId) return toast.error(t('agentRequired'));
+    if (!taskTemplate.trim()) return toast.error(t('taskRequired'));
     start(async () => {
       const res = await createTrigger({
         event: event as 'LEAD_CREATED' | 'ORDER_CREATED' | 'ORDER_PAID',
@@ -57,12 +59,12 @@ export function TriggerManager({
         isActive: true,
       });
       if (res.ok) {
-        toast.success('تمت إضافة المشغّل.');
+        toast.success(t('added'));
         setName('');
         setTaskTemplate('');
         setAdding(false);
         router.refresh();
-      } else toast.error('تعذّرت الإضافة.');
+      } else toast.error(t('addError'));
     });
   }
 
@@ -70,18 +72,18 @@ export function TriggerManager({
     start(async () => {
       const res = await toggleTrigger(id, isActive);
       if (res.ok) router.refresh();
-      else toast.error('تعذّر التحديث.');
+      else toast.error(t('updateError'));
     });
   }
 
   function remove(id: string) {
-    if (!window.confirm('حذف هذا المشغّل؟')) return;
+    if (!window.confirm(t('confirmDelete'))) return;
     start(async () => {
       const res = await deleteTrigger(id);
       if (res.ok) {
-        toast.success('تم الحذف.');
+        toast.success(t('deleted'));
         router.refresh();
-      } else toast.error('تعذّر الحذف.');
+      } else toast.error(t('deleteError'));
     });
   }
 
@@ -90,11 +92,11 @@ export function TriggerManager({
       {!adding && (
         <Button size="sm" variant="outline" onClick={() => setAdding(true)} disabled={agents.length === 0}>
           <Plus className="me-1 h-4 w-4" />
-          مشغّل جديد
+          {t('newTrigger')}
         </Button>
       )}
       {agents.length === 0 && (
-        <p className="text-sm text-muted-foreground">أنشئ موظفاً أولاً.</p>
+        <p className="text-sm text-muted-foreground">{t('createFirstAgent')}</p>
       )}
 
       {adding && (
@@ -102,15 +104,15 @@ export function TriggerManager({
           <CardContent className="space-y-3 pt-5">
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label>عند الحدث</Label>
+                <Label>{t('onEvent')}</Label>
                 <select className={selectCls} value={event} onChange={(e) => setEvent(e.target.value)}>
-                  {EVENTS.map((e) => (
-                    <option key={e.value} value={e.value}>{e.label}</option>
+                  {EVENTS.map((ev) => (
+                    <option key={ev.value} value={ev.value}>{t(ev.labelKey)}</option>
                   ))}
                 </select>
               </div>
               <div className="space-y-1">
-                <Label>يصحى الموظف</Label>
+                <Label>{t('wakesAgent')}</Label>
                 <select className={selectCls} value={agentId} onChange={(e) => setAgentId(e.target.value)}>
                   {agents.map((a) => (
                     <option key={a.id} value={a.id}>{a.name}</option>
@@ -119,18 +121,18 @@ export function TriggerManager({
               </div>
             </div>
             <div className="space-y-1">
-              <Label>اسم المشغّل</Label>
-              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="مثل: متابعة العميل الجديد" />
+              <Label>{t('nameLabel')}</Label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={t('namePlaceholder')} />
             </div>
             <div className="space-y-1">
-              <Label>المهمة التي ينفّذها</Label>
-              <Textarea rows={2} value={taskTemplate} onChange={(e) => setTaskTemplate(e.target.value)} placeholder="تواصل مع العميل الجديد وجهّز عرضاً مناسباً." />
+              <Label>{t('taskLabel')}</Label>
+              <Textarea rows={2} value={taskTemplate} onChange={(e) => setTaskTemplate(e.target.value)} placeholder={t('taskPlaceholder')} />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={() => setAdding(false)} disabled={saving}>إلغاء</Button>
+              <Button variant="ghost" size="sm" onClick={() => setAdding(false)} disabled={saving}>{t('cancel')}</Button>
               <Button size="sm" onClick={save} disabled={saving}>
                 {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
-                حفظ
+                {t('save')}
               </Button>
             </div>
           </CardContent>
@@ -139,22 +141,22 @@ export function TriggerManager({
 
       {triggers.length === 0 && !adding && (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          لا مشغّلات. اجعل وكيلاً يتحرك تلقائياً عند حدث (مثل: عميل جديد → يصحى وكيل المبيعات).
+          {t('empty')}
         </p>
       )}
 
-      {triggers.map((t) => (
-        <Card key={t.id}>
+      {triggers.map((row) => (
+        <Card key={row.id}>
           <CardContent className="flex items-center gap-3 p-4">
             <Zap className="h-5 w-5 shrink-0 text-amber-500" />
             <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{t.name}</p>
+              <p className="truncate font-medium">{row.name}</p>
               <p className="text-xs text-muted-foreground">
-                {EVENT_LABEL[t.event] ?? t.event} → {t.agentName ?? '—'} · نُفّذ {t.fireCount} مرة
+                {EVENT_KEY[row.event] ? t(EVENT_KEY[row.event]) : row.event} → {row.agentName ?? '—'} · {t('fireCount', { count: row.fireCount })}
               </p>
             </div>
-            <Switch checked={t.isActive} onCheckedChange={(c) => toggle(t.id, c)} disabled={saving} />
-            <Button variant="ghost" size="icon" onClick={() => remove(t.id)} className="text-destructive hover:text-destructive">
+            <Switch checked={row.isActive} onCheckedChange={(c) => toggle(row.id, c)} disabled={saving} />
+            <Button variant="ghost" size="icon" onClick={() => remove(row.id)} className="text-destructive hover:text-destructive">
               <Trash2 className="h-4 w-4" />
             </Button>
           </CardContent>

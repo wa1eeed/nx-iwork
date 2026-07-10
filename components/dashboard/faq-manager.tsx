@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Plus, Pencil, Trash2, Loader2, HelpCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -19,6 +20,7 @@ export interface FaqRow {
 }
 
 export function FaqManager({ items }: { items: FaqRow[] }) {
+  const t = useTranslations('faqMgr');
   const router = useRouter();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -44,29 +46,29 @@ export function FaqManager({ items }: { items: FaqRow[] }) {
   }
 
   function save() {
-    if (!question.trim()) return toast.error('السؤال مطلوب.');
-    if (!answer.trim()) return toast.error('الإجابة مطلوبة.');
+    if (!question.trim()) return toast.error(t('questionRequired'));
+    if (!answer.trim()) return toast.error(t('answerRequired'));
     const payload = { question: question.trim(), answer: answer.trim(), category: category.trim() || null, isActive: true };
     start(async () => {
       const res = editingId ? await updateFaq(editingId, payload) : await createFaq(payload);
       if (res.ok) {
-        toast.success('تم الحفظ.');
+        toast.success(t('saved'));
         reset();
         router.refresh();
       } else {
-        toast.error('تعذّر الحفظ.');
+        toast.error(t('saveError'));
       }
     });
   }
 
   function remove(id: string) {
-    if (!window.confirm('حذف هذا السؤال؟')) return;
+    if (!window.confirm(t('confirmDelete'))) return;
     start(async () => {
       const res = await deleteFaq(id);
       if (res.ok) {
-        toast.success('تم الحذف.');
+        toast.success(t('deleted'));
         router.refresh();
-      } else toast.error('تعذّر الحذف.');
+      } else toast.error(t('deleteError'));
     });
   }
 
@@ -77,7 +79,7 @@ export function FaqManager({ items }: { items: FaqRow[] }) {
       {!showForm && (
         <Button size="sm" variant="outline" onClick={() => setAdding(true)}>
           <Plus className="me-1 h-4 w-4" />
-          سؤال جديد
+          {t('newQuestion')}
         </Button>
       )}
 
@@ -85,22 +87,22 @@ export function FaqManager({ items }: { items: FaqRow[] }) {
         <Card>
           <CardContent className="space-y-3 pt-5">
             <div className="space-y-1">
-              <Label>السؤال</Label>
-              <Input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder="مثل: كم مدة الشحن للرياض؟" />
+              <Label>{t('questionLabel')}</Label>
+              <Input value={question} onChange={(e) => setQuestion(e.target.value)} placeholder={t('questionPlaceholder')} />
             </div>
             <div className="space-y-1">
-              <Label>الإجابة</Label>
-              <Textarea rows={3} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder="من 2 إلى 4 أيام عمل." />
+              <Label>{t('answerLabel')}</Label>
+              <Textarea rows={3} value={answer} onChange={(e) => setAnswer(e.target.value)} placeholder={t('answerPlaceholder')} />
             </div>
             <div className="space-y-1">
-              <Label>التصنيف (اختياري)</Label>
-              <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder="الشحن / الاسترجاع / المواعيد" />
+              <Label>{t('categoryLabel')}</Label>
+              <Input value={category} onChange={(e) => setCategory(e.target.value)} placeholder={t('categoryPlaceholder')} />
             </div>
             <div className="flex justify-end gap-2">
-              <Button variant="ghost" size="sm" onClick={reset} disabled={saving}>إلغاء</Button>
+              <Button variant="ghost" size="sm" onClick={reset} disabled={saving}>{t('cancel')}</Button>
               <Button size="sm" onClick={save} disabled={saving}>
                 {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
-                حفظ
+                {t('save')}
               </Button>
             </div>
           </CardContent>
@@ -109,7 +111,7 @@ export function FaqManager({ items }: { items: FaqRow[] }) {
 
       {items.length === 0 && !showForm && (
         <p className="py-6 text-center text-sm text-muted-foreground">
-          لا أسئلة بعد. أضف أسئلة عملائك المتكررة ليجيب عنها الوكلاء بدقة.
+          {t('empty')}
         </p>
       )}
 

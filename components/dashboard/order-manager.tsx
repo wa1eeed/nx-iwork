@@ -3,7 +3,7 @@
 import { useState, useTransition } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useTranslations } from 'next-intl';
+import { useTranslations, useLocale } from 'next-intl';
 import { ShoppingBag, Trash2, Loader2, ArrowUpRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -30,25 +30,26 @@ export interface StaffOption {
   name: string;
 }
 
-const STATUS: Record<string, { label: string; cls: string }> = {
-  NEW: { label: 'جديد', cls: 'bg-sky-500/15 text-sky-600 dark:text-sky-400' },
-  CONFIRMED: { label: 'مؤكّد', cls: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400' },
-  IN_PROGRESS: { label: 'قيد التنفيذ', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
-  COMPLETED: { label: 'مكتمل', cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
-  CANCELLED: { label: 'ملغى', cls: 'bg-muted text-muted-foreground' },
+const STATUS: Record<string, { labelKey: string; cls: string }> = {
+  NEW: { labelKey: 'statusNew', cls: 'bg-sky-500/15 text-sky-600 dark:text-sky-400' },
+  CONFIRMED: { labelKey: 'statusConfirmed', cls: 'bg-cyan-500/15 text-cyan-600 dark:text-cyan-400' },
+  IN_PROGRESS: { labelKey: 'statusInProgress', cls: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
+  COMPLETED: { labelKey: 'statusCompleted', cls: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400' },
+  CANCELLED: { labelKey: 'statusCancelled', cls: 'bg-muted text-muted-foreground' },
 };
 const ORDER = ['NEW', 'CONFIRMED', 'IN_PROGRESS', 'COMPLETED', 'CANCELLED'] as const;
 const selectCls = 'h-8 rounded-md border border-input bg-background px-2 text-xs';
 
-function fmt(iso: string): string {
-  return formatDateTime(iso, 'ar', { dateStyle: 'medium', timeStyle: 'short' });
-}
-
 export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: StaffOption[] }) {
   const t = useTranslations('agentControls.order');
+  const locale = useLocale();
   const router = useRouter();
   const [filter, setFilter] = useState('ALL');
   const [pending, start] = useTransition();
+
+  function fmt(iso: string): string {
+    return formatDateTime(iso, locale, { dateStyle: 'medium', timeStyle: 'short' });
+  }
 
   function changeStaff(id: string, staffMemberId: string) {
     start(async () => {
@@ -66,20 +67,20 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
     start(async () => {
       const res = await setOrderStatus(id, status as (typeof ORDER)[number]);
       if (res.ok) {
-        feedback(status === 'COMPLETED' ? 'success' : 'info', 'تم تحديث حالة الطلب.');
+        feedback(status === 'COMPLETED' ? 'success' : 'info', t('statusUpdated'));
         router.refresh();
-      } else feedback('error', 'تعذّر التحديث.');
+      } else feedback('error', t('statusError'));
     });
   }
 
   function remove(id: string) {
-    if (!window.confirm('حذف هذا الطلب؟')) return;
+    if (!window.confirm(t('confirmDelete'))) return;
     start(async () => {
       const res = await deleteOrder(id);
       if (res.ok) {
-        feedback('success', 'تم الحذف.');
+        feedback('success', t('deleted'));
         router.refresh();
-      } else feedback('error', 'تعذّر الحذف.');
+      } else feedback('error', t('deleteError'));
     });
   }
 
@@ -87,11 +88,11 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
     <div className="space-y-4">
       <div className="flex flex-wrap gap-2">
         <button onClick={() => setFilter('ALL')} className={cn('rounded-full px-3 py-1 text-xs', filter === 'ALL' ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-          الكل ({orders.length})
+          {t('all', { count: orders.length })}
         </button>
         {ORDER.map((s) => (
           <button key={s} onClick={() => setFilter(s)} className={cn('rounded-full px-3 py-1 text-xs', filter === s ? 'bg-primary text-primary-foreground' : 'bg-muted')}>
-            {STATUS[s].label} ({orders.filter((o) => o.status === s).length})
+            {t('filterCount', { label: t(STATUS[s].labelKey), count: orders.filter((o) => o.status === s).length })}
           </button>
         ))}
       </div>
@@ -100,7 +101,7 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
         <Card>
           <CardContent className="flex flex-col items-center gap-2 py-14 text-center text-sm text-muted-foreground">
             <ShoppingBag className="h-8 w-8" />
-            لا طلبات. الطلبات الواردة من صفحتك العامة تظهر هنا تلقائياً.
+            {t('empty')}
           </CardContent>
         </Card>
       ) : (
@@ -112,7 +113,7 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
                   <div className="min-w-0 flex-1">
                     <p className="font-medium">
                       <Link href={`/orders/${o.id}`} className="hover:underline">#{o.orderNumber}</Link>{' '}
-                      <span className="text-sm font-normal text-muted-foreground">· {o.total} ر.س</span>
+                      <span className="text-sm font-normal text-muted-foreground">· {o.total} {t('currency')}</span>
                     </p>
                     <p className="text-xs text-muted-foreground">
                       {o.customerId ? (
@@ -124,7 +125,7 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
                     </p>
                   </div>
                   <span className={cn('rounded-full px-2 py-0.5 text-xs', STATUS[o.status]?.cls)}>
-                    {STATUS[o.status]?.label ?? o.status}
+                    {STATUS[o.status] ? t(STATUS[o.status].labelKey) : o.status}
                   </span>
                   {staff.length > 0 && (
                     <select
@@ -143,15 +144,15 @@ export function OrderManager({ orders, staff }: { orders: OrderRow[]; staff: Sta
                       ))}
                     </select>
                   )}
-                  <select className={selectCls} value={o.status} onChange={(e) => change(o.id, e.target.value)} disabled={pending} aria-label="الحالة">
+                  <select className={selectCls} value={o.status} onChange={(e) => change(o.id, e.target.value)} disabled={pending} aria-label={t('statusAria')}>
                     {ORDER.map((s) => (
-                      <option key={s} value={s}>{STATUS[s].label}</option>
+                      <option key={s} value={s}>{t(STATUS[s].labelKey)}</option>
                     ))}
                   </select>
                   <Link
                     href={`/orders/${o.id}`}
                     className="rounded-md p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
-                    title="التفاصيل"
+                    title={t('details')}
                   >
                     <ArrowUpRight className="h-4 w-4 rtl:-scale-x-100" />
                   </Link>

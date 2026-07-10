@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import { useTranslations } from 'next-intl';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -50,6 +51,7 @@ const EMPTY: ProductFormValues = {
 };
 
 export function ProductForm({ initial }: { initial?: ProductFormValues }) {
+  const t = useTranslations('productForm');
   const router = useRouter();
   const [v, setV] = useState<ProductFormValues>(initial ?? EMPTY);
   const [saving, startSave] = useTransition();
@@ -60,9 +62,9 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
   }
 
   function submit() {
-    if (!v.title.trim()) return toast.error('اسم المنتج مطلوب.');
+    if (!v.title.trim()) return toast.error(t('nameRequired'));
     if (v.price === '' || Number.isNaN(Number(v.price)))
-      return toast.error('أدخل سعراً صحيحاً.');
+      return toast.error(t('priceRequired'));
 
     const payload: ProductInput = {
       title: v.title.trim(),
@@ -82,11 +84,11 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
         ? await updateProduct(initial!.id!, payload)
         : await createProduct(payload);
       if (res.ok) {
-        toast.success(isEdit ? 'تم حفظ المنتج.' : 'تمت إضافة المنتج.');
+        toast.success(isEdit ? t('savedEdit') : t('savedNew'));
         router.push('/products');
         router.refresh();
       } else {
-        toast.error(res.error === 'validation' ? 'تحقق من الحقول.' : 'تعذّر الحفظ.');
+        toast.error(res.error === 'validation' ? t('validationError') : t('saveError'));
       }
     });
   }
@@ -95,19 +97,19 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
     <div className="mx-auto max-w-2xl space-y-6">
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">المعلومات الأساسية</CardTitle>
+          <CardTitle className="text-lg">{t('basicInfo')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="title">اسم المنتج *</Label>
+            <Label htmlFor="title">{t('nameLabel')}</Label>
             <Input id="title" value={v.title} onChange={(e) => set('title', e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="titleEn">الاسم بالإنجليزية (اختياري)</Label>
+            <Label htmlFor="titleEn">{t('nameEnLabel')}</Label>
             <Input id="titleEn" dir="ltr" value={v.titleEn} onChange={(e) => set('titleEn', e.target.value)} />
           </div>
           <div className="space-y-2">
-            <Label htmlFor="desc">الوصف</Label>
+            <Label htmlFor="desc">{t('descLabel')}</Label>
             <Textarea id="desc" rows={4} value={v.description} onChange={(e) => set('description', e.target.value)} />
           </div>
         </CardContent>
@@ -115,33 +117,33 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">السعر والمخزون</CardTitle>
+          <CardTitle className="text-lg">{t('priceStock')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="price">السعر *</Label>
+              <Label htmlFor="price">{t('priceLabel')}</Label>
               <Input id="price" type="number" inputMode="decimal" dir="ltr" value={v.price} onChange={(e) => set('price', e.target.value)} />
             </div>
             <div className="space-y-2">
-              <Label htmlFor="compare">السعر قبل الخصم (اختياري)</Label>
+              <Label htmlFor="compare">{t('comparePriceLabel')}</Label>
               <Input id="compare" type="number" inputMode="decimal" dir="ltr" value={v.comparePrice} onChange={(e) => set('comparePrice', e.target.value)} />
             </div>
           </div>
           <div className="space-y-2">
-            <Label htmlFor="sku">SKU (اختياري)</Label>
+            <Label htmlFor="sku">{t('skuLabel')}</Label>
             <Input id="sku" dir="ltr" value={v.sku} onChange={(e) => set('sku', e.target.value)} />
           </div>
           <div className="flex items-center justify-between rounded-lg border p-3">
             <div>
-              <p className="text-sm font-medium">مخزون غير محدود</p>
-              <p className="text-xs text-muted-foreground">أطفئه لتحديد كمية</p>
+              <p className="text-sm font-medium">{t('unlimitedStock')}</p>
+              <p className="text-xs text-muted-foreground">{t('unlimitedStockHint')}</p>
             </div>
             <Switch checked={v.unlimitedStock} onCheckedChange={(c) => set('unlimitedStock', c)} />
           </div>
           {!v.unlimitedStock && (
             <div className="space-y-2">
-              <Label htmlFor="stock">الكمية المتوفرة</Label>
+              <Label htmlFor="stock">{t('stockLabel')}</Label>
               <Input id="stock" type="number" dir="ltr" value={v.stock} onChange={(e) => set('stock', e.target.value)} />
             </div>
           )}
@@ -150,7 +152,7 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">الصور</CardTitle>
+          <CardTitle className="text-lg">{t('images')}</CardTitle>
         </CardHeader>
         <CardContent>
           <ImageUpload value={v.images} onChange={(urls) => set('images', urls)} />
@@ -159,7 +161,7 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">حقول مخصصة</CardTitle>
+          <CardTitle className="text-lg">{t('customFields')}</CardTitle>
         </CardHeader>
         <CardContent>
           <KeyValueEditor value={v.customFields} onChange={(cf) => set('customFields', cf)} />
@@ -169,15 +171,15 @@ export function ProductForm({ initial }: { initial?: ProductFormValues }) {
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Switch checked={v.isActive} onCheckedChange={(c) => set('isActive', c)} />
-          <span className="text-sm">{v.isActive ? 'معروض' : 'مخفي'}</span>
+          <span className="text-sm">{v.isActive ? t('shown') : t('hidden')}</span>
         </div>
         <div className="flex gap-2">
           <Button variant="ghost" onClick={() => router.push('/products')} disabled={saving}>
-            إلغاء
+            {t('cancel')}
           </Button>
           <Button onClick={submit} disabled={saving}>
             {saving && <Loader2 className="me-1 h-4 w-4 animate-spin" />}
-            {isEdit ? 'حفظ' : 'إضافة المنتج'}
+            {isEdit ? t('save') : t('addProduct')}
           </Button>
         </div>
       </div>
