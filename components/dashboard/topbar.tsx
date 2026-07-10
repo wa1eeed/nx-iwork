@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { getTranslations } from 'next-intl/server';
 import { Bell, Sparkles, Zap, ExternalLink } from 'lucide-react';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -13,7 +14,7 @@ const PLAN_LABEL: Record<string, string> = {
   ENTERPRISE: 'Enterprise',
 };
 
-export function Topbar({
+export async function Topbar({
   userName,
   userEmail,
   isSuperAdmin,
@@ -32,6 +33,7 @@ export function Topbar({
   automationEnabled?: boolean;
   slug?: string | null;
 }) {
+  const t = await getTranslations('topbar');
   // Latin digits everywhere (English-primary), compact so the pill never grows.
   const tokens = new Intl.NumberFormat('en', {
     notation: 'compact',
@@ -55,12 +57,12 @@ export function Topbar({
         {/* Token bank — the energy the workforce spends; tap through to top up. */}
         <Link
           href="/wallet"
-          title="بنك التوكنز"
+          title={t('tokenBank')}
           className="hidden items-center gap-2 rounded-full border bg-card/60 px-3 py-1.5 text-sm transition hover:bg-card md:flex"
         >
           <Zap className="size-3.5 text-amber-500" />
           <span className="font-semibold tabular-nums">{tokens}</span>
-          <span className="text-muted-foreground">tokens</span>
+          <span className="text-muted-foreground">{t('tokens')}</span>
           <span className="rounded-full bg-muted px-1.5 py-0.5 text-[11px] font-medium text-muted-foreground">
             {planLabel}
           </span>
@@ -72,11 +74,11 @@ export function Topbar({
             href={`/${slug}`}
             target="_blank"
             rel="noreferrer"
-            title="عرض موقعك"
+            title={t('viewSite')}
             className="hidden items-center gap-1.5 rounded-full border bg-card/60 px-3 py-1.5 text-sm text-muted-foreground transition hover:bg-card sm:flex"
           >
             <ExternalLink className="size-3.5" />
-            <span className="hidden lg:inline">View site</span>
+            <span className="hidden lg:inline">{t('viewSite')}</span>
           </Link>
         )}
 
@@ -86,7 +88,7 @@ export function Topbar({
         {/* Needs-you bell — sensitive decisions an agent paused for the owner. */}
         <Link
           href="/approvals"
-          title="قرارات تحتاجك"
+          title={t('approvals')}
           className={`relative flex items-center gap-2 rounded-full border px-3 py-1.5 text-sm transition ${
             needsYou
               ? 'border-amber-500/40 bg-amber-500/10 text-amber-700 hover:bg-amber-500/15 dark:text-amber-300'
@@ -96,7 +98,7 @@ export function Topbar({
           <Bell className="size-4" />
           {needsYou && (
             <>
-              <span className="hidden font-medium sm:inline">{pendingApprovals} need you</span>
+              <span className="hidden font-medium sm:inline">{t('needYou', { count: pendingApprovals })}</span>
               <span className="absolute -end-1 -top-1 flex size-4 items-center justify-center rounded-full bg-amber-500 text-[10px] font-bold text-white sm:hidden">
                 {pendingApprovals}
               </span>

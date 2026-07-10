@@ -1701,5 +1701,61 @@
       "PUBLISHED": "Published",
       "ARCHIVED": "Archived"
     }
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. You can try again, or head back to your dashboard.",
+    "retry": "Try again",
+    "home": "Back to dashboard",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The page you’re looking for doesn’t exist or has moved.",
+    "storefrontNotFound": "This business page doesn’t exist or is no longer available.",
+    "goHome": "Go home"
+  },
+  "topbar": {
+    "tokenBank": "Token bank",
+    "tokens": "tokens",
+    "viewSite": "View site",
+    "approvals": "Decisions that need you",
+    "needYou": "{count} need you"
+  },
+  "publicBooking": {
+    "cta": "Book appointment",
+    "titleBook": "Book appointment",
+    "titleDone": "Booking confirmed ✅",
+    "titleWaitlist": "You’re on the waitlist ⏳",
+    "doneWaitlist": "This time is full — we added you to the waitlist and will reach out as soon as a spot opens.",
+    "doneConfirmed": "We’ll confirm your appointment and contact you shortly.",
+    "close": "Done",
+    "date": "Date",
+    "availableTime": "Available time",
+    "noSlots": "No times available on this day.",
+    "waitlistTag": "Waitlist",
+    "waitlistHint": "• Full times are offered as a waitlist.",
+    "name": "Name *",
+    "phone": "Phone number",
+    "email": "Email (for confirmation)",
+    "notes": "Notes (optional)",
+    "joinWaitlist": "Join the waitlist",
+    "confirm": "Confirm booking",
+    "errSlotFull": "This slot is now full — pick another time.",
+    "errWaitlistFull": "The waitlist for this slot is full — pick another time.",
+    "errGeneric": "Couldn’t complete the booking, please try again."
+  },
+  "publicOrder": {
+    "cta": "Order now",
+    "titleCheckout": "Complete your order",
+    "titleDone": "Order received ✅",
+    "doneMsg": "Our team will contact you shortly.",
+    "close": "Done",
+    "name": "Name *",
+    "phone": "Phone number",
+    "email": "Email (for order confirmation)",
+    "notes": "Notes (optional)",
+    "coupon": "Discount code (optional)",
+    "submit": "Place order",
+    "errCoupon": "The discount code is invalid or doesn’t apply.",
+    "errGeneric": "Couldn’t submit the order, please try again.",
+    "ctaService": "Order this service"
   }
 }

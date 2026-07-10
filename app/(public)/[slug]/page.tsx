@@ -166,7 +166,7 @@ export default async function PublicBusinessPage({
           {s.durationMin != null && s.availability.length > 0 ? (
             <BookingButton slug={slug} serviceId={s.id} color={accent} />
           ) : (
-            <OrderButton slug={slug} serviceId={s.id} label="اطلب الخدمة" color={accent} />
+            <OrderButton slug={slug} serviceId={s.id} color={accent} />
           )}
         </div>
       </div>
@@ -345,7 +345,7 @@ export default async function PublicBusinessPage({
                   <p className="mt-1 text-sm font-bold" style={{ color: accent }}>
                     {p.price.toString()} ر.س
                   </p>
-                  <OrderButton slug={slug} productId={p.id} label="اطلب الآن" color={accent} />
+                  <OrderButton slug={slug} productId={p.id} color={accent} />
                 </div>
               </div>
             ))}
