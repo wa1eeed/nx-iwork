@@ -661,6 +661,7 @@ model AgentSchedule {
 
   @@index([agentId])
   @@index([nextRunAt])
+  @@index([isActive, nextRunAt]) // the every-minute runDueSchedules scan
 }
 
 // ========================================
@@ -764,6 +765,7 @@ model Task {
   @@index([agentId])
   @@index([customerId])
   @@index([status])
+  @@index([status, triggerType]) // the every-minute runDueTasks scan
   @@index([dueAt])
   @@index([startAt])
   @@index([parentTaskId])

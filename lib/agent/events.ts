@@ -22,7 +22,10 @@ export async function dispatchEvent(
   ctx: EventContext = {}
 ): Promise<number> {
   const triggers = await db.eventTrigger.findMany({
-    where: { companyId, event, isActive: true },
+    // Only fire triggers whose target agent is genuinely active — otherwise we'd
+    // queue PENDING tasks for a paused/archived agent that the scheduler would
+    // (correctly) never run, leaving orphans.
+    where: { companyId, event, isActive: true, agent: { status: { in: ['ONLINE', 'WORKING'] } } },
     select: { id: true, agentId: true, name: true, taskTemplate: true },
   });
   if (triggers.length === 0) return 0;

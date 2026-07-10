@@ -11,7 +11,7 @@ import { Prisma, type BookingStatus, type AgentOutputType, type AgentOutputStatu
 import { db } from '@/lib/db';
 import type { AiTool } from '@/lib/ai';
 import { nextRef } from '@/lib/refs';
-import { createBooking, BookingError, generateDaySlots } from '@/lib/booking/engine';
+import { createBooking, BookingError, generateDaySlots, checkSlotAvailable, promoteFromWaitlist } from '@/lib/booking/engine';
 import { saveMemory } from './memory';
 import { dispatchEvent } from './events';
 
@@ -448,7 +448,7 @@ const updateBookingArgs = z.object({
   bookingId: z.string().trim().min(1),
   startAt: z.string().trim().optional(),
   endAt: z.string().trim().optional(),
-  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED']).optional(),
+  status: z.enum(['PENDING', 'CONFIRMED', 'CANCELLED', 'COMPLETED', 'NO_SHOW']).optional(),
 });
 
 const createOrderArgs = z.object({
@@ -1010,9 +1010,37 @@ export async function executeTool(
 
       case 'update_booking': {
         const args = updateBookingArgs.parse(rawArgs);
-        const startAt = parseDate(args.startAt);
-        const endAt = parseDate(args.endAt);
+        let startAt = parseDate(args.startAt);
+        let endAt = parseDate(args.endAt);
         if (startAt === null || endAt === null) return fail('صيغة التاريخ غير صحيحة.');
+
+        // The current booking — needed to re-check capacity on a reschedule and
+        // to free/promote the right slot on a cancellation.
+        const existing = await db.booking.findFirst({
+          where: { id: args.bookingId, companyId: ctx.companyId },
+          select: { serviceId: true, startAt: true, status: true },
+        });
+        if (!existing) return fail('لم يُعثر على الحجز.');
+
+        // Reschedule: when moving a serviced booking to a NEW time, re-validate
+        // slot capacity through the engine so we never overbook a full slot.
+        const movingTo = startAt && startAt.getTime() !== existing.startAt.getTime();
+        if (movingTo && existing.serviceId) {
+          const avail = await checkSlotAvailable(ctx.companyId, existing.serviceId, startAt!.toISOString());
+          if (!avail.ok) {
+            const tz = await companyTimezone(ctx.companyId);
+            const suggestions = await suggestAlternatives(ctx.companyId, existing.serviceId, startAt!, tz);
+            return JSON.stringify({
+              ok: false,
+              reason: avail.reason ?? 'slot_full',
+              error: 'الوقت الجديد غير متاح (ممتلئ أو غير صالح). اعرض على العميل الأوقات البديلة التالية.',
+              suggestions,
+            });
+          }
+          // Keep endAt aligned to the service duration at the new time.
+          if (avail.endAt) endAt = new Date(avail.endAt);
+        }
+
         const result = await db.booking.updateMany({
           where: { id: args.bookingId, companyId: ctx.companyId },
           data: {
@@ -1022,7 +1050,22 @@ export async function executeTool(
           },
         });
         if (result.count === 0) return fail('لم يُعثر على الحجز.');
-        return ok({ message: 'تم تحديث الحجز.' });
+
+        // Cancelling/no-showing an ACTIVE serviced booking frees its slot → give
+        // the oldest waitlisted customer that spot (mirrors the owner action).
+        let promotedRef: string | null = null;
+        const frees = args.status === 'CANCELLED' || args.status === 'NO_SHOW';
+        const wasActive = existing.status === 'PENDING' || existing.status === 'CONFIRMED';
+        if (frees && wasActive && existing.serviceId) {
+          const promoted = await promoteFromWaitlist(ctx.companyId, existing.serviceId, existing.startAt);
+          promotedRef = promoted?.ref ?? null;
+        }
+        return ok({
+          message: promotedRef
+            ? `تم تحديث الحجز، وتمت ترقية عميل من قائمة الانتظار (${promotedRef}) إلى المكان الذي تفرّغ.`
+            : 'تم تحديث الحجز.',
+          promoted: promotedRef,
+        });
       }
 
       case 'create_order': {
@@ -1037,6 +1080,7 @@ export async function executeTool(
         // Optional coupon redemption — validated against scope, window, min
         // subtotal, and remaining redemptions before it discounts the total.
         let couponId: string | undefined;
+        let couponMax: number | null = null;
         let discount = 0;
         if (args.couponCode) {
           const coupon = await db.coupon.findFirst({
@@ -1044,6 +1088,8 @@ export async function executeTool(
           });
           const nowD = new Date();
           const orderScope = (args.type ?? 'SERVICE') === 'PRODUCT' ? 'PRODUCTS' : 'SERVICES';
+          // Everything except the redemption cap is checked here; the cap is
+          // enforced atomically at reservation below so it can't be raced past.
           const valid =
             coupon &&
             coupon.isActive &&
@@ -1058,10 +1104,25 @@ export async function executeTool(
                 ? Math.round(((args.total * Number(coupon.value)) / 100) * 100) / 100
                 : Math.min(args.total, Number(coupon.value));
             couponId = coupon.id;
+            couponMax = coupon.maxRedemptions;
           } else {
             return fail('الكوبون غير صالح أو منتهٍ أو لا ينطبق على هذا الطلب.');
           }
         }
+
+        // Reserve the redemption ATOMICALLY before placing the order: a single
+        // conditional increment (usedCount < max) can't over-redeem under
+        // concurrency, unlike a read-then-write. No cap → plain increment.
+        if (couponId && couponMax != null) {
+          const claim = await db.coupon.updateMany({
+            where: { id: couponId, usedCount: { lt: couponMax } },
+            data: { usedCount: { increment: 1 } },
+          });
+          if (claim.count === 0) return fail('نفدت مرّات استخدام هذا الكوبون.');
+        } else if (couponId) {
+          await db.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } });
+        }
+
         const finalTotal = Math.max(0, args.total - discount);
 
         const order = await db.order.create({
@@ -1080,10 +1141,6 @@ export async function executeTool(
           },
           select: { id: true, orderNumber: true },
         });
-        // Count the redemption once the order is actually placed.
-        if (couponId) {
-          await db.coupon.update({ where: { id: couponId }, data: { usedCount: { increment: 1 } } });
-        }
         // A placed order is a realized deal → advance the opportunity to WON.
         if (args.customerId) {
           await db.customer.update({ where: { id: args.customerId }, data: { status: 'WON' } });

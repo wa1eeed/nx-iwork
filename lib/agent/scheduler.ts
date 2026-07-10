@@ -32,7 +32,9 @@ export async function runDueSchedules(
       isActive: true,
       nextRunAt: { lte: now },
       company: { automationEnabled: true },
-      agent: { status: { not: 'PAUSED' } },
+      // Only genuinely-active agents run — a paused, archived, offline, or
+      // still-onboarding agent must not execute schedules or event/tool tasks.
+      agent: { status: { in: ['ONLINE', 'WORKING'] } },
       ...(companyId ? { companyId } : {}),
     },
     select: {
@@ -110,7 +112,9 @@ export async function runDueTasks(
       // the owner re-enables automation. Paused agents are skipped too.
       // `companyId` scopes to one tenant (owner-triggered "run automation now").
       company: { automationEnabled: true },
-      agent: { status: { not: 'PAUSED' } },
+      // Only genuinely-active agents run — a paused, archived, offline, or
+      // still-onboarding agent must not execute schedules or event/tool tasks.
+      agent: { status: { in: ['ONLINE', 'WORKING'] } },
       ...(companyId ? { companyId } : {}),
     },
     select: { id: true, companyId: true, agentId: true, dependsOn: true },
@@ -122,13 +126,15 @@ export async function runDueTasks(
   // (depends_on) without an N+1 query. A missing dep is treated as satisfied so
   // a deleted prerequisite can never hang its dependents forever.
   const depIds = [...new Set(pending.flatMap((t) => t.dependsOn))];
+  // Keyed by `${companyId}:${taskId}` so a dependency is only ever resolved
+  // within its own tenant — never read another company's task status.
   const depStatus = new Map<string, string>();
   if (depIds.length) {
     const deps = await db.task.findMany({
       where: { id: { in: depIds } },
-      select: { id: true, status: true },
+      select: { id: true, status: true, companyId: true },
     });
-    for (const d of deps) depStatus.set(d.id, d.status);
+    for (const d of deps) depStatus.set(`${d.companyId}:${d.id}`, d.status);
   }
 
   let ran = 0;
@@ -136,7 +142,7 @@ export async function runDueTasks(
   let skipped = 0;
   for (const t of pending) {
     if (t.dependsOn.length) {
-      const statuses = t.dependsOn.map((id) => depStatus.get(id) ?? 'DONE');
+      const statuses = t.dependsOn.map((id) => depStatus.get(`${t.companyId}:${id}`) ?? 'DONE');
       // A dead-end dependency (failed/cancelled) can never be satisfied → block
       // the dependent so it stops waiting, and surface it on the timeline.
       if (statuses.some((s) => s === 'FAILED' || s === 'CANCELLED')) {
@@ -166,6 +172,7 @@ export async function runDueTasks(
     try {
       const result = await runAgentTask(t.id, t.companyId);
       if (result.ok) ran += 1;
+      else if (result.reason === 'already_running') continue; // another runner claimed it
       else failed += 1;
     } catch (err) {
       failed += 1;
