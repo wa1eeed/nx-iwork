@@ -18,6 +18,7 @@ import { getToolsForAgent } from '@/lib/agent/tools';
 import { TOOL_LABELS } from '@/lib/agent/tool-labels';
 import { formatNumber, formatDate } from '@/lib/format';
 import { AgentScenarios } from '@/components/dashboard/agent-scenarios';
+import { parsePersonaConfig } from '@/lib/agent/persona';
 import type { AgentKpi } from '@/lib/agent/templates';
 
 export default async function AgentProfilePage({
@@ -28,12 +29,13 @@ export default async function AgentProfilePage({
   const { id } = await params;
   const t = await getTranslations('agentProfile');
   const ta = await getTranslations('pages.agents');
+  const to = await getTranslations('outputs');
   const locale = await getLocale();
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
   if (!companyId) redirect('/login');
 
-  const [agent, departments, managers, schedules, settings, tasks, company, scenarios, memories, pendingApprovals, taskCount, chatCount, memoryCount] = await Promise.all([
+  const [agent, departments, managers, schedules, settings, tasks, company, scenarios, memories, pendingApprovals, taskCount, chatCount, memoryCount, agentOutputs] = await Promise.all([
     db.agent.findFirst({
       where: { id, companyId },
       include: { department: { select: { name: true, nameEn: true, color: true } } },
@@ -95,6 +97,13 @@ export default async function AgentProfilePage({
     db.task.count({ where: { agentId: id, companyId } }),
     db.chatMessage.count({ where: { agentId: id, companyId } }),
     db.agentMemory.count({ where: { agentId: id, companyId } }),
+    // This agent's deliverables (the per-agent slice of the outputs hub).
+    db.agentOutput.findMany({
+      where: { agentId: id, companyId },
+      orderBy: { createdAt: 'desc' },
+      take: 30,
+      select: { id: true, title: true, type: true, status: true, createdAt: true },
+    }),
   ]);
 
   if (!agent) notFound();
@@ -111,6 +120,7 @@ export default async function AgentProfilePage({
     agent.permissions
   );
 
+  const initialPersona = parsePersonaConfig(agent.personaConfig);
   const initial: AgentFormValues = {
     id: agent.id,
     name: agent.name,
@@ -126,6 +136,14 @@ export default async function AgentProfilePage({
     temperature: agent.temperature,
     systemPrompt: agent.systemPrompt ?? '',
     permissions: agent.permissions,
+    archetype: agent.archetype ?? 'front_desk',
+    personaCfg: {
+      tone: initialPersona?.tone ?? 'warm',
+      verbosity: initialPersona?.verbosity ?? 'balanced',
+      languagePolicy: initialPersona?.languagePolicy ?? 'mirror',
+      dos: (initialPersona?.dos ?? []).join('\n'),
+      donts: (initialPersona?.donts ?? []).join('\n'),
+    },
   };
 
   const en = locale === 'en';
@@ -196,6 +214,7 @@ export default async function AgentProfilePage({
         <Tabs defaultValue="activity">
         <TabsList className="flex-wrap h-auto">
           <TabsTrigger value="activity">{t('tabs.activity')}</TabsTrigger>
+          <TabsTrigger value="outputs">{t('tabs.outputs')}</TabsTrigger>
           <TabsTrigger value="scenarios">{t('tabs.scenarios')}</TabsTrigger>
           <TabsTrigger value="kpis">{t('tabs.kpis')}</TabsTrigger>
           <TabsTrigger value="memory">{t('tabs.memory')}</TabsTrigger>
@@ -235,6 +254,38 @@ export default async function AgentProfilePage({
             </div>
             <ArrowRight className="size-4 shrink-0 text-muted-foreground rtl:rotate-180" />
           </Link>
+        </TabsContent>
+
+        <TabsContent value="outputs" className="space-y-3">
+          {agentOutputs.length === 0 ? (
+            <div className="rounded-2xl border border-dashed p-10 text-center text-sm text-muted-foreground">
+              {to('empty')}
+            </div>
+          ) : (
+            <>
+              {agentOutputs.map((o) => (
+                <Link
+                  key={o.id}
+                  href="/outputs"
+                  className="flex items-center gap-3 rounded-2xl border bg-card p-4 transition hover:bg-accent"
+                >
+                  <span className="flex size-9 shrink-0 items-center justify-center rounded-xl bg-muted text-foreground/70">
+                    <Sparkles className="size-4" />
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold">{o.title}</p>
+                    <p className="mt-0.5 text-xs text-muted-foreground">
+                      {to(`type.${o.type}`)} · {to(`status.${o.status}`)}
+                    </p>
+                  </div>
+                  <ArrowRight className="size-4 shrink-0 text-muted-foreground rtl:rotate-180" />
+                </Link>
+              ))}
+              <Link href="/outputs" className="block text-center text-xs text-muted-foreground hover:text-foreground">
+                {to('title')} →
+              </Link>
+            </>
+          )}
         </TabsContent>
 
         <TabsContent value="scenarios" className="space-y-4">

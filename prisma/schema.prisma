@@ -146,6 +146,7 @@ model Company {
   users               User[]
   departments         Department[]
   agents              Agent[]
+  agentOutputs        AgentOutput[]
   tasks               Task[]
   taskAttempts        TaskAttempt[]
   approvals           Approval[]
@@ -309,6 +310,35 @@ enum AutonomyLevel {
   AUTOPILOT // acts autonomously within policy; approval only for the exceptional
 }
 
+// Whether an agent may talk to end customers. CUSTOMER_FACING archetypes
+// (front desk, sales, care) serve the public website widget AND the dashboard;
+// INTERNAL archetypes (marketing, operations, finance/advisor) never answer a
+// customer — they run in the background and deliver to the outputs hub. This is
+// the hard scope boundary the owner asked for around customer service.
+enum AgentSurface {
+  CUSTOMER_FACING
+  INTERNAL
+}
+
+// A tangible work product an agent hands to the owner, surfaced in the unified
+// agent workspace (distinct from an Approval decision or a scheduled Task).
+enum AgentOutputType {
+  MESSAGE // a drafted customer/stakeholder message
+  REPORT // a periodic summary (sales week, collections, utilization…)
+  PLAN // a proposed plan (campaign, restock, follow-up sequence…)
+  CONTENT // marketing/social content draft
+  ANALYSIS // an analytical read + recommendation
+  ACTION_LOG // a record of an action the agent took autonomously
+}
+
+enum AgentOutputStatus {
+  DRAFT // still being shaped
+  READY // ready for the owner to review
+  APPROVED // owner approved (may still need publishing/execution)
+  PUBLISHED // shipped/executed
+  ARCHIVED // dismissed / no longer relevant
+}
+
 model Agent {
   id        String  @id @default(cuid())
   companyId String
@@ -361,6 +391,20 @@ model Agent {
   // autonomously within policy, approval only for the truly exceptional.
   autonomy AutonomyLevel @default(ASK)
 
+  // Role model (3-layer, sector-agnostic). `archetype` is the capability bundle
+  // key (front_desk | sales | care | marketing | operations | finance) resolved
+  // in lib/agent/archetypes.ts — it seeds permissions/KPIs/outputs/surface but
+  // the owner can still override each. `surface` is the hard customer/internal
+  // scope. `personaConfig` is the STRUCTURED persona (tone/verbosity/language/
+  // dos/donts/signature) compiled deterministically into the prompt — the free
+  // `persona` text above remains as a fallback/human-readable summary.
+  archetype     String?      @default("front_desk")
+  surface       AgentSurface @default(CUSTOMER_FACING)
+  personaConfig Json?
+
+  // Deliverables this agent produced (unified agent workspace).
+  outputs AgentOutput[]
+
   // Capabilities
   skills AgentSkill[]
   tools  AgentTool[]
@@ -405,6 +449,36 @@ model Agent {
   @@index([departmentId])
   @@index([parentId])
   @@index([status])
+}
+
+// A deliverable an agent produced — the tangible work product that lands in the
+// unified agent workspace (hub) and on the agent's profile. Distinct from an
+// Approval (a decision awaiting the owner) and a Task (scheduled work): this is
+// finished output the owner reads/approves/publishes. Background archetypes
+// (marketing/finance/operations/advisor) deliver here instead of chatting.
+model AgentOutput {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  agentId   String
+  agent     Agent   @relation(fields: [agentId], references: [id], onDelete: Cascade)
+
+  type   AgentOutputType
+  status AgentOutputStatus @default(READY)
+  title  String
+  body   String            @db.Text
+  // Optional structured payload (metrics behind a report, channel for content…).
+  metadata Json?
+  // Optional link to the customer this output concerns.
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, createdAt])
+  @@index([agentId, createdAt])
+  @@index([companyId, status])
 }
 
 // Reusable, platform-wide blueprints an owner can spin a ready-made AI employee
@@ -587,6 +661,7 @@ model AgentSchedule {
 
   @@index([agentId])
   @@index([nextRunAt])
+  @@index([isActive, nextRunAt]) // the every-minute runDueSchedules scan
 }
 
 // ========================================
@@ -649,6 +724,11 @@ model Task {
   triggerType   String // USER_MESSAGE, TASK_ASSIGNMENT, SCHEDULE, WEBHOOK, INTER_AGENT
   triggerSource Json?
 
+  // Task sequencing: ids of tasks that must be DONE before this one may run. The
+  // scheduler skips this task while any dependency is unfinished, and BLOCKS it
+  // if a dependency FAILED/CANCELLED. Enables multi-agent chains (A→then→B).
+  dependsOn String[] @default([])
+
   // Calendar window (used by APPOINTMENT; optional for others).
   startAt DateTime?
   endAt   DateTime?
@@ -685,6 +765,7 @@ model Task {
   @@index([agentId])
   @@index([customerId])
   @@index([status])
+  @@index([status, triggerType]) // the every-minute runDueTasks scan
   @@index([dueAt])
   @@index([startAt])
   @@index([parentTaskId])
@@ -838,10 +919,11 @@ model Customer {
   assignedAgentId String?
   assignedAgent   Agent?  @relation("AgentCustomers", fields: [assignedAgentId], references: [id], onDelete: SetNull)
 
-  tasks       Task[]
-  orders      Order[]
-  bookings    Booking[]
-  activityLog CustomerNote[]
+  tasks        Task[]
+  orders       Order[]
+  bookings     Booking[]
+  activityLog  CustomerNote[]
+  agentOutputs AgentOutput[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1348,6 +1430,7 @@ enum TimelineEventType {
   INTEGRATION_TRIGGERED
   AGENT_WOKE
   AGENT_SLEPT
+  OUTPUT_DELIVERED // an agent handed a deliverable to the outputs hub
 }
 
 model TimelineEvent {

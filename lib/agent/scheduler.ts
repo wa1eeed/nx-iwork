@@ -32,7 +32,9 @@ export async function runDueSchedules(
       isActive: true,
       nextRunAt: { lte: now },
       company: { automationEnabled: true },
-      agent: { status: { not: 'PAUSED' } },
+      // Only genuinely-active agents run — a paused, archived, offline, or
+      // still-onboarding agent must not execute schedules or event/tool tasks.
+      agent: { status: { in: ['ONLINE', 'WORKING'] } },
       ...(companyId ? { companyId } : {}),
     },
     select: {
@@ -110,25 +112,72 @@ export async function runDueTasks(
       // the owner re-enables automation. Paused agents are skipped too.
       // `companyId` scopes to one tenant (owner-triggered "run automation now").
       company: { automationEnabled: true },
-      agent: { status: { not: 'PAUSED' } },
+      // Only genuinely-active agents run — a paused, archived, offline, or
+      // still-onboarding agent must not execute schedules or event/tool tasks.
+      agent: { status: { in: ['ONLINE', 'WORKING'] } },
       ...(companyId ? { companyId } : {}),
     },
-    select: { id: true, companyId: true },
+    select: { id: true, companyId: true, agentId: true, dependsOn: true },
     orderBy: { createdAt: 'asc' },
     take: limit,
   });
 
+  // Resolve dependency statuses in one batch so we can gate sequenced tasks
+  // (depends_on) without an N+1 query. A missing dep is treated as satisfied so
+  // a deleted prerequisite can never hang its dependents forever.
+  const depIds = [...new Set(pending.flatMap((t) => t.dependsOn))];
+  // Keyed by `${companyId}:${taskId}` so a dependency is only ever resolved
+  // within its own tenant — never read another company's task status.
+  const depStatus = new Map<string, string>();
+  if (depIds.length) {
+    const deps = await db.task.findMany({
+      where: { id: { in: depIds } },
+      select: { id: true, status: true, companyId: true },
+    });
+    for (const d of deps) depStatus.set(`${d.companyId}:${d.id}`, d.status);
+  }
+
   let ran = 0;
   let failed = 0;
+  let skipped = 0;
   for (const t of pending) {
+    if (t.dependsOn.length) {
+      const statuses = t.dependsOn.map((id) => depStatus.get(`${t.companyId}:${id}`) ?? 'DONE');
+      // A dead-end dependency (failed/cancelled) can never be satisfied → block
+      // the dependent so it stops waiting, and surface it on the timeline.
+      if (statuses.some((s) => s === 'FAILED' || s === 'CANCELLED')) {
+        await db.task.update({
+          where: { id: t.id },
+          data: { status: 'BLOCKED', notes: 'مهمة سابقة تعتمد عليها فشلت أو أُلغيت.' },
+        });
+        if (t.agentId) {
+          await db.timelineEvent.create({
+            data: {
+              companyId: t.companyId,
+              agentId: t.agentId,
+              type: 'TASK_BLOCKED',
+              title: 'مهمة متوقّفة',
+              description: 'تعذّر تنفيذها لأن مهمة سابقة تعتمد عليها لم تكتمل.',
+            },
+          });
+        }
+        continue;
+      }
+      // Not all prerequisites are DONE yet → leave it PENDING for a later tick.
+      if (statuses.some((s) => s !== 'DONE')) {
+        skipped += 1;
+        continue;
+      }
+    }
     try {
       const result = await runAgentTask(t.id, t.companyId);
       if (result.ok) ran += 1;
+      else if (result.reason === 'already_running') continue; // another runner claimed it
       else failed += 1;
     } catch (err) {
       failed += 1;
       console.error('Pending event task errored', { taskId: t.id, err });
     }
   }
-  return { due: pending.length, ran, failed };
+  return { due: pending.length - skipped, ran, failed };
 }

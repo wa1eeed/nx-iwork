@@ -62,16 +62,24 @@ export async function runPublicAgentChat(
   const { companyId, agentId, visitorId, message, meta } = input;
 
   // Pre-flight: run the independent reads concurrently instead of a serial chain
-  // of DB round-trips (each is real latency on a remote Postgres).
-  const [agent, providerResult, budget, agentBudget, conversation] = await Promise.all([
+  // of DB round-trips (each is real latency on a remote Postgres). Memory recall
+  // (a network embedding round-trip when the agent has memories) rides along here
+  // too so it never adds serial latency before the model starts — this is a big
+  // part of the "slow to reply on first contact" the owner reported.
+  const [agent, providerResult, budget, agentBudget, conversation, memoryBlock] = await Promise.all([
     loadAgentWithContext(agentId, companyId),
     getProviderForCompany(companyId),
     checkTokenBudget(companyId),
     checkAgentBudget(agentId),
     getOrCreateConversation(input),
+    recallMemoryBlock(agentId, companyId, message),
   ]);
 
   if (!agent) return { ok: false, reason: 'unavailable' };
+  // Hard scope: only customer-facing archetypes (front desk / sales / care) may
+  // serve the public widget. An internal archetype (marketing/finance/ops) must
+  // never answer a customer, even if misconfigured as the widget agent.
+  if (agent.surface === 'INTERNAL') return { ok: false, reason: 'unavailable' };
   if (!providerResult.ok) return { ok: false, reason: 'unavailable' };
   if (!budget.ok) return { ok: false, reason: budget.reason };
   if (!agentBudget.ok) return { ok: false, reason: 'billing_limit' };
@@ -95,7 +103,6 @@ export async function runPublicAgentChat(
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
   });
-  const memoryBlock = await recallMemoryBlock(agentId, companyId, message);
   if (memoryBlock) system += `\n\n${memoryBlock}`;
 
   // The public-facing agent should always be able to check availability + book
@@ -105,16 +112,24 @@ export async function runPublicAgentChat(
   let perms = agent.permissions;
   if (perms.length > 0 && agent.company.hasBookings) {
     perms = Array.from(
-      new Set([
-        ...perms,
-        'check_availability',
-        'list_open_slots',
-        'create_booking',
-        'find_customer',
-        'create_lead',
-      ])
+      new Set([...perms, 'check_availability', 'list_open_slots', 'create_booking', 'create_lead'])
     );
   }
+
+  // Hard default-DENY on the customer surface: no matter how the agent is
+  // configured, a website visitor may ONLY search the catalog/FAQ, check
+  // availability, book, and leave their details. This stops a visitor from
+  // prompt-injecting into PII reads (find_customer / list_bookings enumerate the
+  // CRM), modifying other people's bookings, or triggering internal tools.
+  const PUBLIC_ALLOWLIST = new Set([
+    'search_catalog',
+    'search_faq',
+    'check_availability',
+    'list_open_slots',
+    'create_booking',
+    'create_lead',
+  ]);
+  const tools = getToolsForAgent(agent.company, perms).filter((t) => PUBLIC_ALLOWLIST.has(t.name));
 
   const loopArgs = {
     provider: providerResult.provider,
@@ -123,7 +138,7 @@ export async function runPublicAgentChat(
     tier: agent.model,
     temperature: agent.temperature,
     maxTokens: agent.maxTokens,
-    tools: getToolsForAgent(agent.company, perms),
+    tools,
     ctx: { companyId, agentId },
   };
 

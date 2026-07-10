@@ -121,7 +121,6 @@
       "duration": "Duration",
       "minutes": "min",
       "service": "Service",
-      "clinic": "Section",
       "staff": "Staff member",
       "unassigned": "Unassigned",
       "status": "Status",
@@ -141,7 +140,8 @@
       "todayQueue": "Appointment queue",
       "commission": "Commission",
       "attributedSales": "Attributed sales (this month)",
-      "empty": "Nothing yet."
+      "empty": "Nothing yet.",
+      "section": "Section"
     }
   },
   "common": {
@@ -456,7 +456,8 @@
       "sales": "Sales",
       "knowledge": "Knowledge & automation",
       "billing": "Billing"
-    }
+    },
+    "workspace": "Workspace"
   },
   "wallet": {
     "title": "Wallet",
@@ -692,6 +693,11 @@
       "consulting": "Consulting",
       "education": "Education & training",
       "healthcare": "Healthcare",
+      "beauty": "Salon & beauty",
+      "spa": "Spa & wellness",
+      "fitness": "Fitness & gym",
+      "studio": "Studio (photo, dance, art)",
+      "automotive": "Auto & repair",
       "realestate": "Real estate",
       "food": "Restaurants & food",
       "marketing": "Marketing & advertising",
@@ -913,7 +919,7 @@
       "back": "Back to bookings",
       "title": "Booking availability",
       "subtitle": "Make a service bookable: set its duration and weekly hours. Customers can only book generated slots.",
-      "noServices": "No services yet. Services are set up during onboarding.",
+      "noServices": "No services yet. Add your services on the Services page first.",
       "bookable": "Bookable",
       "notBookable": "Not bookable",
       "duration": "Duration (min)",
@@ -1022,7 +1028,8 @@
       "scenarios": "Scenarios",
       "kpis": "KPIs",
       "memory": "Memory",
-      "settings": "Settings"
+      "settings": "Settings",
+      "outputs": "Outputs"
     },
     "capabilities": "Capabilities",
     "capabilitiesNote": "These change with the modules enabled for your company.",
@@ -1118,6 +1125,39 @@
       "sonnetHint": "Deeper thinking and tool use",
       "opus": "Advanced",
       "opusHint": "Complex tasks and analysis"
+    },
+    "roleModelSection": "Role & scope",
+    "archetypeLabel": "Role archetype",
+    "archetypeHelp": "Sets the starting capabilities and whether this agent can talk to customers.",
+    "scopeCustomer": "Customer-facing",
+    "scopeInternal": "Internal · background",
+    "toneLabel": "Tone",
+    "verbosityLabel": "Detail level",
+    "languageLabel": "Language",
+    "dosLabel": "Always (one per line)",
+    "dontsLabel": "Never (one per line)",
+    "dosPlaceholder": "Confirm details before booking",
+    "dontsPlaceholder": "Invent prices or times",
+    "tones": {
+      "warm": "Warm",
+      "confident": "Confident",
+      "empathetic": "Empathetic",
+      "creative": "Creative",
+      "organized": "Organized",
+      "precise": "Precise",
+      "formal": "Formal",
+      "playful": "Playful"
+    },
+    "verbosities": {
+      "concise": "Concise",
+      "balanced": "Balanced",
+      "detailed": "Detailed"
+    },
+    "languages": {
+      "mirror": "Match the customer",
+      "business": "Business default",
+      "formal_ar": "Formal Arabic",
+      "en": "English"
     }
   },
   "events": {
@@ -1347,7 +1387,6 @@
     "subtitlePlaceholder": "Short tagline under the title (optional)",
     "description": "Description",
     "descriptionPlaceholder": "What the customer gets — shown on the service detail page.",
-    "clinic": "Section",
     "noneOption": "— none —",
     "price": "Price (SAR)",
     "pricePlaceholder": "Optional",
@@ -1360,7 +1399,8 @@
     "showOnWebsite": "Show on website",
     "cancel": "Cancel",
     "saveChanges": "Save changes",
-    "waitlistCapacity": "Waitlist size (0 = unlimited)"
+    "waitlistCapacity": "Waitlist size (0 = unlimited)",
+    "section": "Section"
   },
   "pageHeaders": {
     "staff": {
@@ -1410,7 +1450,7 @@
     "name": "Name",
     "namePlaceholder": "e.g. Sara Ahmed",
     "role": "Role",
-    "rolePlaceholder": "e.g. Specialist",
+    "rolePlaceholder": "e.g. Stylist, Trainer, Consultant",
     "phone": "Phone",
     "email": "Email",
     "photoUrl": "Photo URL",
@@ -1623,5 +1663,99 @@
     "scheduled": "Scheduled",
     "ran": "ran {count}×",
     "inactive": " · inactive"
+  },
+  "outputs": {
+    "title": "Agent Workspace",
+    "subtitle": "Everything your AI team delivered — review, approve, and publish.",
+    "statTotal": "Total deliverables",
+    "statWeek": "This week",
+    "statPending": "Awaiting review",
+    "empty": "No deliverables yet. Background agents (marketing, finance, operations) will deliver reports, plans, and content here.",
+    "emptyFiltered": "No deliverables match these filters.",
+    "allTypes": "All types",
+    "allAgents": "All agents",
+    "allStatus": "All statuses",
+    "by": "by {agent}",
+    "view": "View",
+    "hide": "Hide",
+    "approve": "Approve",
+    "publish": "Publish",
+    "archive": "Archive",
+    "markReady": "Mark ready",
+    "restore": "Restore",
+    "updated": "Updated",
+    "failed": "Couldn’t update. Try again.",
+    "linkedTo": "Re: {customer}",
+    "type": {
+      "MESSAGE": "Message",
+      "REPORT": "Report",
+      "PLAN": "Plan",
+      "CONTENT": "Content",
+      "ANALYSIS": "Analysis",
+      "ACTION_LOG": "Action log"
+    },
+    "status": {
+      "DRAFT": "Draft",
+      "READY": "Ready",
+      "APPROVED": "Approved",
+      "PUBLISHED": "Published",
+      "ARCHIVED": "Archived"
+    }
+  },
+  "errors": {
+    "title": "Something went wrong",
+    "description": "An unexpected error occurred. You can try again, or head back to your dashboard.",
+    "retry": "Try again",
+    "home": "Back to dashboard",
+    "notFoundTitle": "Page not found",
+    "notFoundDescription": "The page you’re looking for doesn’t exist or has moved.",
+    "storefrontNotFound": "This business page doesn’t exist or is no longer available.",
+    "goHome": "Go home"
+  },
+  "topbar": {
+    "tokenBank": "Token bank",
+    "tokens": "tokens",
+    "viewSite": "View site",
+    "approvals": "Decisions that need you",
+    "needYou": "{count} need you"
+  },
+  "publicBooking": {
+    "cta": "Book appointment",
+    "titleBook": "Book appointment",
+    "titleDone": "Booking confirmed ✅",
+    "titleWaitlist": "You’re on the waitlist ⏳",
+    "doneWaitlist": "This time is full — we added you to the waitlist and will reach out as soon as a spot opens.",
+    "doneConfirmed": "We’ll confirm your appointment and contact you shortly.",
+    "close": "Done",
+    "date": "Date",
+    "availableTime": "Available time",
+    "noSlots": "No times available on this day.",
+    "waitlistTag": "Waitlist",
+    "waitlistHint": "• Full times are offered as a waitlist.",
+    "name": "Name *",
+    "phone": "Phone number",
+    "email": "Email (for confirmation)",
+    "notes": "Notes (optional)",
+    "joinWaitlist": "Join the waitlist",
+    "confirm": "Confirm booking",
+    "errSlotFull": "This slot is now full — pick another time.",
+    "errWaitlistFull": "The waitlist for this slot is full — pick another time.",
+    "errGeneric": "Couldn’t complete the booking, please try again."
+  },
+  "publicOrder": {
+    "cta": "Order now",
+    "titleCheckout": "Complete your order",
+    "titleDone": "Order received ✅",
+    "doneMsg": "Our team will contact you shortly.",
+    "close": "Done",
+    "name": "Name *",
+    "phone": "Phone number",
+    "email": "Email (for order confirmation)",
+    "notes": "Notes (optional)",
+    "coupon": "Discount code (optional)",
+    "submit": "Place order",
+    "errCoupon": "The discount code is invalid or doesn’t apply.",
+    "errGeneric": "Couldn’t submit the order, please try again.",
+    "ctaService": "Order this service"
   }
 }

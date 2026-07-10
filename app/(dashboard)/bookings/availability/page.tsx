@@ -8,8 +8,8 @@ import { getUserCompany } from '@/lib/companies';
 import { AvailabilityEditor, type ServiceAvail } from '@/components/dashboard/availability-editor';
 
 // Per-service booking config + weekly availability — the entry point that makes a
-// catalog service bookable by the deterministic engine (there is no separate
-// catalog-service editor; services are seeded at onboarding).
+// catalog service bookable by the deterministic engine. Services themselves are
+// created/edited on the Services page (ServiceCatalogManager).
 export default async function AvailabilityPage() {
   const t = await getTranslations('pages.availability');
   const session = await auth();

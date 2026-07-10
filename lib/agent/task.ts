@@ -27,6 +27,7 @@ export type RunTaskResult =
         | 'decrypt_failed'
         | 'vertex_not_configured'
         | 'billing_limit'
+        | 'already_running'
         | 'provider_error';
       message?: string;
     };
@@ -67,26 +68,31 @@ export async function runAgentTask(
   const agentBudget = await checkAgentBudget(agent.id);
   if (!agentBudget.ok) return { ok: false, reason: 'billing_limit' };
 
-  // Mark working + open an attempt.
+  // Atomically CLAIM the task before doing any work. Two runners (the standalone
+  // scheduler + the /api/cron/run endpoint, or overlapping ticks) can both reach
+  // here for the same PENDING task; the conditional updateMany lets exactly one
+  // win. A task already WORKING is being run by someone else → bail. Re-runnable
+  // terminal states (PENDING/FAILED/BLOCKED/DONE) are still claimable so "run
+  // now" and retries work; mid-approval/review/cancelled tasks are not force-run.
+  const startedAt = new Date();
+  const claim = await db.task.updateMany({
+    where: { id: taskId, companyId, status: { in: ['PENDING', 'FAILED', 'BLOCKED', 'DONE'] } },
+    data: { status: 'WORKING', startedAt, progress: 10 },
+  });
+  if (claim.count === 0) return { ok: false, reason: 'already_running' };
+
   const attemptNumber =
     (await db.taskAttempt.count({ where: { taskId } })) + 1;
-  const startedAt = new Date();
-  await db.$transaction([
-    db.task.update({
-      where: { id: taskId },
-      data: { status: 'WORKING', startedAt, progress: 10 },
-    }),
-    db.taskAttempt.create({
-      data: {
-        taskId,
-        agentId: agent.id,
-        companyId,
-        attemptNumber,
-        status: 'RUNNING',
-        startedAt,
-      },
-    }),
-  ]);
+  await db.taskAttempt.create({
+    data: {
+      taskId,
+      agentId: agent.id,
+      companyId,
+      attemptNumber,
+      status: 'RUNNING',
+      startedAt,
+    },
+  });
 
   let system = buildSystemPrompt({
     agent,

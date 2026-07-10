@@ -79,14 +79,21 @@ export default async function PublicBusinessPage({
       select: { id: true, name: true, role: true, image: true, bio: true },
     }),
     (async () => {
+      // The widget agent must be customer-facing: use the designated one only if
+      // it still faces customers, otherwise fall back to the first that does.
       const id = wc?.chatAgentId;
-      return id
-        ? db.agent.findFirst({ where: { id, companyId: company.id }, select: { name: true } })
-        : db.agent.findFirst({
-            where: { companyId: company.id, status: { not: 'ARCHIVED' } },
-            orderBy: { createdAt: 'asc' },
-            select: { name: true },
-          });
+      if (id) {
+        const designated = await db.agent.findFirst({
+          where: { id, companyId: company.id, surface: 'CUSTOMER_FACING' },
+          select: { name: true },
+        });
+        if (designated) return designated;
+      }
+      return db.agent.findFirst({
+        where: { companyId: company.id, status: { not: 'ARCHIVED' }, surface: 'CUSTOMER_FACING' },
+        orderBy: { createdAt: 'asc' },
+        select: { name: true },
+      });
     })(),
     db.sitePage.findMany({
       where: { companyId: company.id, isPublished: true },
@@ -159,7 +166,7 @@ export default async function PublicBusinessPage({
           {s.durationMin != null && s.availability.length > 0 ? (
             <BookingButton slug={slug} serviceId={s.id} color={accent} />
           ) : (
-            <OrderButton slug={slug} serviceId={s.id} label="اطلب الخدمة" color={accent} />
+            <OrderButton slug={slug} serviceId={s.id} color={accent} />
           )}
         </div>
       </div>
@@ -338,7 +345,7 @@ export default async function PublicBusinessPage({
                   <p className="mt-1 text-sm font-bold" style={{ color: accent }}>
                     {p.price.toString()} ر.س
                   </p>
-                  <OrderButton slug={slug} productId={p.id} label="اطلب الآن" color={accent} />
+                  <OrderButton slug={slug} productId={p.id} color={accent} />
                 </div>
               </div>
             ))}

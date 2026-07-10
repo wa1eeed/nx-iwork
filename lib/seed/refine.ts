@@ -38,7 +38,41 @@ export interface SeedResult {
 export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'refine1234'): Promise<SeedResult> {
   const now = new Date();
   const day = (d: number) => new Date(now.getTime() - d * 86_400_000);
-  const ahead = (h: number) => new Date(now.getTime() + h * 3_600_000);
+
+  // Clean, slot-aligned upcoming times in the business timezone, so demo
+  // bookings sit exactly on the booking grid (11:00 / 12:30 / …) instead of the
+  // arbitrary minutes that "now + N hours" produced — which is what made the
+  // agent quote odd times like ":28". Riyadh is a fixed +3 offset (no DST).
+  const TZ = 'Asia/Riyadh';
+  const zToUtc = (y: number, mo: number, d: number, hh: number, mm: number): Date => {
+    const guess = Date.UTC(y, mo - 1, d, hh, mm);
+    const parts = new Intl.DateTimeFormat('en-US', {
+      timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit',
+      hour: '2-digit', minute: '2-digit', hour12: false,
+    }).formatToParts(new Date(guess));
+    const val = (t: string) => Number(parts.find((p) => p.type === t)?.value ?? 0);
+    let h = val('hour');
+    if (h === 24) h = 0;
+    const seen = Date.UTC(val('year'), val('month') - 1, val('day'), h, val('minute'));
+    return new Date(guess - (seen - guess));
+  };
+  const riyadhISO = (dt: Date) =>
+    new Intl.DateTimeFormat('en-CA', { timeZone: TZ, year: 'numeric', month: '2-digit', day: '2-digit' }).format(dt);
+  // Next working days (Fri = 5 is closed), as business-local calendar dates.
+  const workingDays: string[] = [];
+  for (let i = 1; workingDays.length < 6 && i < 20; i++) {
+    const dt = new Date(now.getTime() + i * 86_400_000);
+    const iso = riyadhISO(dt);
+    if (new Date(`${iso}T00:00:00Z`).getUTCDay() !== 5) workingDays.push(iso);
+  }
+  // Clean start times inside the availability windows (11–14, 16–22).
+  const cleanSlots: Array<[number, number]> = [[11, 0], [12, 30], [16, 0], [17, 30], [11, 30]];
+  const bookingSlot = (i: number, durationMin = 60): { startAt: Date; endAt: Date } => {
+    const [y, mo, d] = workingDays[i % workingDays.length].split('-').map(Number);
+    const [hh, mm] = cleanSlots[i % cleanSlots.length];
+    const startAt = zToUtc(y, mo, d, hh, mm);
+    return { startAt, endAt: new Date(startAt.getTime() + durationMin * 60_000) };
+  };
 
   console.log('▸ Seeding client demo "مجمع ريفاين الطبي"…');
 
@@ -77,6 +111,7 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
   await db.approval.deleteMany({ where: { companyId } });
   await db.timelineEvent.deleteMany({ where: { companyId } });
   await db.agentMemory.deleteMany({ where: { companyId } });
+  await db.agentOutput.deleteMany({ where: { companyId } });
   await db.agentSchedule.deleteMany({ where: { companyId } });
   await db.task.deleteMany({ where: { companyId } });
   await db.booking.deleteMany({ where: { companyId } });
@@ -210,6 +245,51 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
       periodTokensUsed: 90_000,
       tasksCompleted: 34,
       performanceScore: 94,
+    },
+    select: { id: true },
+  });
+
+  // ── Internal marketing agent (background; delivers to the workspace) ─────────
+  const growth = await db.department.create({
+    data: { companyId, name: 'التسويق والنمو', icon: 'megaphone', color: '#a855f7', landingVisible: false },
+    select: { id: true },
+  });
+  const marketer = await db.agent.create({
+    data: {
+      companyId,
+      departmentId: growth.id,
+      name: 'خبير التسويق',
+      nameEn: 'Growth Marketer',
+      initial: 'خ',
+      ref: 'AGT-002',
+      role: 'التسويق والمحتوى',
+      roleEn: 'Marketing & Content',
+      persona: 'مبدع يربط المحتوى بخدمات المجمع الفعلية، ويسلّم مخرجات جاهزة للمراجعة.',
+      jobDescription:
+        'إنتاج خطط ومحتوى تسويقي وتحليلات للمجمع، وتسليمها كمخرجات في مساحة عمل الوكلاء بدل التنفيذ المباشر. لا ينشر شيئاً دون موافقة صاحب العمل.',
+      isCustom: false,
+      archetype: 'marketing',
+      surface: 'INTERNAL',
+      personaConfig: {
+        tone: 'creative',
+        verbosity: 'detailed',
+        languagePolicy: 'business',
+        dos: ['يقترح زوايا متعددة', 'يربط المحتوى بخدمات المجمع'],
+        donts: ['لا ينشر دون موافقة', 'لا يختلق أرقاماً'],
+        signaturePhrases: [],
+      },
+      model: 'SONNET',
+      autonomy: 'SUGGEST',
+      status: 'ONLINE',
+      permissions: ['search_catalog', 'save_memory', 'create_output', 'create_task'],
+      kpis: [
+        { key: 'content_output', label: 'مخرجات المحتوى', target: 12, unit: '/شهر' },
+        { key: 'engagement_rate', label: 'نسبة التفاعل', target: 5, unit: '%' },
+      ],
+      tokenLimit: 800_000,
+      periodTokensUsed: 40_000,
+      tasksCompleted: 9,
+      performanceScore: 91,
     },
     select: { id: true },
   });
@@ -405,14 +485,15 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
 
   // ── Upcoming bookings (power the Overview + calendar) ───────────────────────
   const bookDefs = [
-    { title: 'تبييض أسنان — سارة العتيبي', svc: 'تبييض الأسنان بالليزر', cust: 'سارة العتيبي', inH: 6 },
-    { title: 'هيدرافيشل — نوف الشمري', svc: 'تنظيف البشرة العميق (هيدرافيشل)', cust: 'نوف الشمري', inH: 22 },
-    { title: 'ليزر إزالة الشعر — ريم المطيري', svc: 'ليزر إزالة الشعر — كامل الجسم', cust: 'ريم المطيري', inH: 27 },
-    { title: 'كشف أسنان — عبدالله القحطاني', svc: 'كشف وتشخيص الأسنان', cust: 'عبدالله القحطاني', inH: 30 },
-    { title: 'بوتكس — خالد الحربي', svc: 'بوتكس الوجه', cust: 'خالد الحربي', inH: 49 },
+    { title: 'تبييض أسنان — سارة العتيبي', svc: 'تبييض الأسنان بالليزر', cust: 'سارة العتيبي' },
+    { title: 'هيدرافيشل — نوف الشمري', svc: 'تنظيف البشرة العميق (هيدرافيشل)', cust: 'نوف الشمري' },
+    { title: 'ليزر إزالة الشعر — ريم المطيري', svc: 'ليزر إزالة الشعر — كامل الجسم', cust: 'ريم المطيري' },
+    { title: 'كشف أسنان — عبدالله القحطاني', svc: 'كشف وتشخيص الأسنان', cust: 'عبدالله القحطاني' },
+    { title: 'بوتكس — خالد الحربي', svc: 'بوتكس الوجه', cust: 'خالد الحربي' },
   ];
   let bn = 1;
   for (const b of bookDefs) {
+    const { startAt, endAt } = bookingSlot(bn - 1);
     await db.booking.create({
       data: {
         companyId,
@@ -421,8 +502,8 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
         serviceId: svc[b.svc],
         customerId: cust[b.cust],
         staffMemberId: staff[(bn - 1) % staff.length],
-        startAt: ahead(b.inH),
-        endAt: ahead(b.inH + 1),
+        startAt,
+        endAt,
         status: 'CONFIRMED',
       },
     });
@@ -494,6 +575,61 @@ export async function seedRefine(ownerPassword = process.env.DEMO_PASSWORD ?? 'r
     update: websiteData,
     create: { companyId, ...websiteData },
   });
+
+  // ── Agent deliverables (populate the unified workspace / outputs hub) ────────
+  const outputDefs: Array<{
+    type: 'MESSAGE' | 'REPORT' | 'PLAN' | 'CONTENT' | 'ANALYSIS' | 'ACTION_LOG';
+    status: 'DRAFT' | 'READY' | 'APPROVED' | 'PUBLISHED';
+    title: string;
+    body: string;
+    cust?: string;
+    daysAgo: number;
+  }> = [
+    {
+      type: 'CONTENT', status: 'READY', daysAgo: 1,
+      title: 'خطة محتوى إنستغرام — أسبوع تبييض الأسنان',
+      body:
+        '## فكرة الحملة\nأسبوع مخصّص لخدمة **تبييض الأسنان بالليزر** لرفع الحجوزات في وقت الذروة المسائي.\n\n### منشورات مقترحة\n1. **قبل/بعد** لحالة حقيقية (بموافقة العميل) + دعوة للحجز.\n2. **سؤال وجواب**: هل التبييض بالليزر آمن؟ (٣ نقاط طمأنة).\n3. **عرض مبكّر**: خصم ١٥٪ للحجوزات قبل الخميس.\n\n> ملاحظة: كل الأرقام أعلاه مقترحة وتحتاج اعتمادك قبل النشر.',
+    },
+    {
+      type: 'REPORT', status: 'APPROVED', daysAgo: 3,
+      title: 'تقرير الأداء الأسبوعي — الحجوزات والإشغال',
+      body:
+        '## الملخّص\n- **٥ مواعيد** قادمة مؤكّدة هذا الأسبوع.\n- أعلى طلب على: **الجلدية** ثم **الأسنان**.\n- الفترة المسائية (٤–١٠م) هي الأكثر ازدحاماً.\n\n## توصية\nفتح فترة إضافية مساء الثلاثاء لتقليل قائمة الانتظار على الهيدرافيشل.',
+    },
+    {
+      type: 'ANALYSIS', status: 'READY', daysAgo: 2,
+      title: 'تحليل: أسباب عدم حضور المواعيد (No-show)',
+      body:
+        '## الملاحظة\nأغلب حالات عدم الحضور في المواعيد المسائية المتأخرة.\n\n## الأسباب المرجّحة\n1. عدم وجود تذكير قبل الموعد بساعتين.\n2. صعوبة إعادة الجدولة السريعة.\n\n## مقترح\nتفعيل تذكير واتساب تلقائي + زر إعادة جدولة بنقرة.',
+    },
+    {
+      type: 'MESSAGE', status: 'DRAFT', daysAgo: 0, cust: 'سارة العتيبي',
+      title: 'مسودة رسالة متابعة — بعد جلسة التبييض',
+      body:
+        'مرحباً سارة 🌸 نتمنى أنّ نتيجة جلسة التبييض نالت رضاكِ. للحفاظ على النتيجة ننصح بتجنّب القهوة والشاي أول ٤٨ ساعة. يسعدنا حجز جلسة المتابعة متى ما رغبتِ 🤍',
+    },
+    {
+      type: 'PLAN', status: 'PUBLISHED', daysAgo: 6,
+      title: 'خطة تحسين تجربة الاستقبال الرقمي',
+      body:
+        '## الهدف\nتقليل زمن الرد الأول على الزوّار إلى أقل من دقيقة.\n\n## الخطوات\n1. ردود جاهزة للأسئلة المتكرّرة.\n2. عرض أقرب ٣ مواعيد متاحة مباشرةً.\n3. تحويل ذكي للطاقم البشري عند الحاجة.',
+    },
+  ];
+  for (const o of outputDefs) {
+    await db.agentOutput.create({
+      data: {
+        companyId,
+        agentId: o.type === 'MESSAGE' ? agent.id : marketer.id,
+        type: o.type,
+        status: o.status,
+        title: o.title,
+        body: o.body,
+        customerId: o.cust ? cust[o.cust] : undefined,
+        createdAt: day(o.daysAgo),
+      },
+    });
+  }
 
   console.log(`✓ Refine demo ready — ${svcDefs.length} services across ${clinicDefs.length} clinics.`);
   return { ok: true, slug: SLUG, ownerEmail: OWNER_EMAIL, clinics: clinicDefs.length, services: svcDefs.length };

@@ -90,6 +90,21 @@ export async function runAgentChat(
   const memoryBlock = await recallMemoryBlock(agentId, companyId, userMessage);
   if (memoryBlock) system += `\n\n${memoryBlock}`;
 
+  // Dashboard chat: the interlocutor is the OWNER/admin, so the agent should be
+  // able to READ the whole operation and run schedule ops to answer business
+  // questions and act on instructions — even if its customer-facing scope is
+  // narrower. These are the internal-only tools we never expose on the public
+  // widget (list_bookings/set_booking_staff carry PII / are owner actions).
+  // Module gates in getToolsForAgent still apply; empty perms already mean "all".
+  let perms = agent.permissions;
+  if (perms.length > 0) {
+    const internal = ['find_customer', 'search_catalog', 'search_faq', 'create_task', 'update_task_status', 'save_memory', 'create_output', 'delegate_to_agent'];
+    if (agent.company.hasBookings) {
+      internal.push('list_bookings', 'list_open_slots', 'check_availability', 'create_booking', 'update_booking', 'set_booking_staff');
+    }
+    perms = Array.from(new Set([...perms, ...internal]));
+  }
+
   let reply: string;
   let tokensUsed: number;
   try {
@@ -100,7 +115,7 @@ export async function runAgentChat(
       tier: agent.model,
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
-      tools: getToolsForAgent(agent.company, agent.permissions),
+      tools: getToolsForAgent(agent.company, perms),
       ctx: { companyId, agentId },
     };
     ({ reply, tokensUsed } = opts?.onDelta

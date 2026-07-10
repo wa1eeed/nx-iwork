@@ -7,6 +7,7 @@ const baseAgent = {
   role: 'Account Manager',
   roleEn: 'Account Manager',
   persona: 'Relationship-first.',
+  personaConfig: null,
   jobDescription: 'Own the sales pipeline.',
   autonomy: 'ASK' as const,
   systemPrompt: null,

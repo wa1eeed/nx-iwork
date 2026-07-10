@@ -153,7 +153,7 @@ export default async function ServiceDetailPage({
               {bookable ? (
                 <BookingButton slug={slug} serviceId={service.id} color={accent} />
               ) : (
-                <OrderButton slug={slug} serviceId={service.id} label="اطلب الخدمة" color={accent} />
+                <OrderButton slug={slug} serviceId={service.id} color={accent} />
               )}
             </div>
           </div>

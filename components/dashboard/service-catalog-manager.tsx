@@ -263,7 +263,7 @@ export function ServiceCatalogManager({
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label>{t('clinic')}</Label>
+                  <Label>{t('section')}</Label>
                   <select
                     value={form.departmentId}
                     onChange={(e) => setForm({ ...form, departmentId: e.target.value })}

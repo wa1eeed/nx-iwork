@@ -9,7 +9,9 @@ import { ensureDefaultAgent } from '@/lib/agent/seed';
 import { checkRoleConflict, type ConflictResult } from '@/lib/agent/conflict-check';
 import { isTriggerEvent } from '@/lib/agent/events-catalog';
 import { hrAgent, HRConflictError, HRValidationError } from '@/lib/agent/hr-agent';
+import { getArchetype } from '@/lib/agent/archetypes';
 import { agentSchema, type AgentInput } from '@/lib/validators/agents';
+import { Prisma } from '@prisma/client';
 
 export type CreateDefaultAgentResult =
   | { ok: true; agentId: string }
@@ -122,6 +124,8 @@ export async function createAgent(
       systemPrompt: d.systemPrompt || null,
       scenarios,
       permissions: d.permissions ?? [],
+      archetype: d.archetype,
+      personaConfig: (d.personaConfig ?? undefined) as Prisma.InputJsonValue | undefined,
       force: opts?.force,
     });
     revalidatePath('/agents');
@@ -168,6 +172,9 @@ export async function updateAgent(id: string, raw: AgentInput): Promise<AgentAct
     return { ok: false, error: 'bad_department' };
   }
 
+  // If the archetype changed, re-derive the hard customer/internal scope from it.
+  const arch = d.archetype ? getArchetype(d.archetype) : null;
+
   try {
     const res = await db.agent.updateMany({
       where: { id, companyId: cid },
@@ -183,6 +190,11 @@ export async function updateAgent(id: string, raw: AgentInput): Promise<AgentAct
         jobDescription: d.jobDescription?.trim() || null,
         autonomy: d.autonomy,
         ...(d.permissions ? { permissions: d.permissions } : {}),
+        ...(d.archetype ? { archetype: d.archetype } : {}),
+        ...(arch ? { surface: arch.surface } : {}),
+        ...(d.personaConfig !== undefined
+          ? { personaConfig: (d.personaConfig ?? Prisma.JsonNull) as Prisma.InputJsonValue }
+          : {}),
         model: d.model,
         temperature: d.temperature,
         maxTokens: d.maxTokens,
