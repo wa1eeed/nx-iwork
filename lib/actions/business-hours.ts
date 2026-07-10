@@ -86,3 +86,15 @@ export async function deleteHoliday(id: string): Promise<Result> {
   revalidatePath('/settings');
   return { ok: true };
 }
+
+// Free-text cancellation/booking policy shown to customers.
+export async function saveCancellationPolicy(text: string): Promise<Result> {
+  const companyId = await authedCompany();
+  if (!companyId) return { ok: false, error: 'unauthorized' };
+  await db.businessSettings.update({
+    where: { companyId },
+    data: { cancellationPolicy: text.trim().slice(0, 2000) || null },
+  });
+  revalidatePath('/settings');
+  return { ok: true };
+}

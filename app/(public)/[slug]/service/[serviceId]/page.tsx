@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 async function load(slug: string, serviceId: string) {
   const company = await db.company.findUnique({
     where: { slug },
-    select: { id: true, name: true, logo: true, status: true, settings: { select: { primaryColor: true, primaryLanguage: true } } },
+    select: { id: true, name: true, logo: true, status: true, settings: { select: { primaryColor: true, primaryLanguage: true, cancellationPolicy: true } } },
   });
   if (!company || company.status === 'SUSPENDED') return null;
 
@@ -159,6 +159,11 @@ export default async function ServiceDetailPage({
                 <BookingButton slug={slug} serviceId={service.id} color={accent} />
               ) : (
                 <OrderButton slug={slug} serviceId={service.id} color={accent} />
+              )}
+              {company.settings?.cancellationPolicy && (
+                <p className="mt-3 whitespace-pre-wrap border-t pt-3 text-xs leading-relaxed text-muted-foreground">
+                  {company.settings.cancellationPolicy}
+                </p>
               )}
             </div>
           </div>

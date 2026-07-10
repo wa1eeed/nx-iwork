@@ -189,7 +189,7 @@ export default async function SettingsPage() {
 
         {company.hasBookings && (
           <TabsContent value="hours">
-            <BusinessHoursTab initial={{ windows: companyHours, holidays }} />
+            <BusinessHoursTab initial={{ windows: companyHours, holidays, cancellationPolicy: settings.cancellationPolicy ?? '' }} />
           </TabsContent>
         )}
 

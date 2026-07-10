@@ -2018,7 +2018,12 @@
     "holidayName": "Reason (e.g. National Day)",
     "addHoliday": "Add closure",
     "noHolidays": "No closures added.",
-    "inheritNote": "Services that have their own availability keep it; only services without a schedule inherit these hours."
+    "inheritNote": "Services that have their own availability keep it; only services without a schedule inherit these hours.",
+    "policyTitle": "Cancellation policy",
+    "policyHint": "Shown to customers when they book and on your service pages.",
+    "policyPlaceholder": "e.g. Please cancel at least 24 hours before your appointment.",
+    "savePolicy": "Save policy",
+    "policySaved": "Policy saved."
   },
   "reminders": {
     "title": "Booking reminders",

@@ -3,13 +3,14 @@
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Plus, Trash2, Loader2, Clock, CalendarOff } from 'lucide-react';
+import { Plus, Trash2, Loader2, Clock, CalendarOff, FileText } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { saveCompanyHours, addHoliday, deleteHoliday } from '@/lib/actions/business-hours';
+import { saveCompanyHours, addHoliday, deleteHoliday, saveCancellationPolicy } from '@/lib/actions/business-hours';
 
 interface Window {
   dayOfWeek: number;
@@ -25,7 +26,7 @@ interface Holiday {
 export function BusinessHoursTab({
   initial,
 }: {
-  initial: { windows: Window[]; holidays: Holiday[] };
+  initial: { windows: Window[]; holidays: Holiday[]; cancellationPolicy: string };
 }) {
   const t = useTranslations('businessHours');
   const tc = useTranslations('common');
@@ -34,10 +35,20 @@ export function BusinessHoursTab({
 
   const [windows, setWindows] = useState<Window[]>(initial.windows);
   const [holidays, setHolidays] = useState<Holiday[]>(initial.holidays);
+  const [policy, setPolicy] = useState(initial.cancellationPolicy);
   const [hDate, setHDate] = useState('');
   const [hName, setHName] = useState('');
   const [saving, startSave] = useTransition();
   const [addingHoliday, startHoliday] = useTransition();
+  const [savingPolicy, startPolicy] = useTransition();
+
+  function savePolicy() {
+    startPolicy(async () => {
+      const res = await saveCancellationPolicy(policy);
+      if (res.ok) toast.success(t('policySaved'));
+      else toast.error(t('saveError'));
+    });
+  }
 
   function addWindow(day: number) {
     setWindows((w) => [...w, { dayOfWeek: day, startTime: '09:00', endTime: '17:00' }]);
@@ -203,6 +214,27 @@ export function BusinessHoursTab({
               ))}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Cancellation policy */}
+      <Card>
+        <CardContent className="space-y-3 p-5">
+          <div className="flex items-center gap-2 text-sm font-semibold">
+            <FileText className="size-4 text-muted-foreground" /> {t('policyTitle')}
+          </div>
+          <p className="text-xs text-muted-foreground">{t('policyHint')}</p>
+          <Textarea
+            value={policy}
+            onChange={(e) => setPolicy(e.target.value)}
+            placeholder={t('policyPlaceholder')}
+            rows={3}
+            dir="auto"
+          />
+          <Button onClick={savePolicy} disabled={savingPolicy}>
+            {savingPolicy && <Loader2 className="me-1 size-4 animate-spin" />}
+            {t('savePolicy')}
+          </Button>
         </CardContent>
       </Card>
     </div>

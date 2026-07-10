@@ -37,11 +37,12 @@ export async function sendBookingConfirmation(companyId: string, d: BookingEmail
   if (!d.to) return;
   const settings = await db.businessSettings.findUnique({
     where: { companyId },
-    select: { bookingConfirmationEnabled: true, primaryLanguage: true, timezone: true },
+    select: { bookingConfirmationEnabled: true, primaryLanguage: true, timezone: true, cancellationPolicy: true },
   });
   if (settings && settings.bookingConfirmationEnabled === false) return; // owner opted out
   const ar = (settings?.primaryLanguage ?? 'ar') === 'ar';
   const when = formatWhen(d.startAt, ar, settings?.timezone || 'Asia/Riyadh');
+  const policy = settings?.cancellationPolicy?.trim();
   await sendTenantEmail(companyId, {
     to: d.to,
     subject: (d.waitlisted
@@ -61,7 +62,11 @@ export async function sendBookingConfirmation(companyId: string, d: BookingEmail
         ? 'تم استلام حجزك.\nسيتم تأكيده قريباً وستصلك أي تحديثات.'
         : 'We’ve received your booking.\nIt will be confirmed shortly and we’ll keep you posted.',
     rows: rows(d, ar, when),
-    footnote: ar ? 'هذه رسالة تأكيد آلية.' : 'This is an automated confirmation.',
+    footnote: policy
+      ? `${ar ? 'سياسة الإلغاء' : 'Cancellation policy'}: ${policy}`
+      : ar
+        ? 'هذه رسالة تأكيد آلية.'
+        : 'This is an automated confirmation.',
   });
 }
 
