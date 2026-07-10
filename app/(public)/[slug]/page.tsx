@@ -27,7 +27,7 @@ export default async function PublicBusinessPage({
       status: true,
       hasEcommerce: true,
       hasServices: true,
-      settings: { select: { primaryColor: true } },
+      settings: { select: { primaryColor: true, primaryLanguage: true } },
       websiteConfig: true,
     },
   });
@@ -35,6 +35,9 @@ export default async function PublicBusinessPage({
 
   const wc = company.websiteConfig;
   const accent = company.settings?.primaryColor || '#0ea5e9';
+  // The storefront renders in the BUSINESS's language, not the visitor's — it's
+  // the shop's own front. Drives direction + chrome copy.
+  const ar = (company.settings?.primaryLanguage ?? 'ar') === 'ar';
 
   const showServices = company.hasServices && wc?.showServices !== false;
 
@@ -114,8 +117,11 @@ export default async function PublicBusinessPage({
     }),
   ]);
 
-  const heroTitle = wc?.heroTitle || company.name;
-  const heroSubtitle = wc?.heroSubtitle || 'احجز خدماتك بسهولة عبر الإنترنت';
+  const heroTitle = (ar ? wc?.heroTitle : wc?.heroTitleEn) || wc?.heroTitle || company.name;
+  const heroSubtitle =
+    (ar ? wc?.heroSubtitle : wc?.heroSubtitleEn) ||
+    wc?.heroSubtitle ||
+    (ar ? 'احجز خدماتك بسهولة عبر الإنترنت' : 'Book our services easily online');
 
   // Group services under their clinic/department; the rest go to a general block.
   type Svc = (typeof services)[number];
@@ -166,11 +172,11 @@ export default async function PublicBusinessPage({
         ) : null}
         <div className="mt-3 flex items-center justify-between gap-2">
           <span className="text-sm font-bold" style={{ color: accent }}>
-            {s.priceLabel || (s.price != null ? `${s.price} ر.س` : '')}
+            {s.priceLabel || (s.price != null ? `${s.price} ${ar ? 'ر.س' : 'SAR'}` : '')}
           </span>
           {s.durationMin != null && (
             <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="size-3.5" /> {s.durationMin} د
+              <Clock className="size-3.5" /> {s.durationMin} {ar ? 'د' : 'min'}
             </span>
           )}
         </div>
@@ -189,9 +195,9 @@ export default async function PublicBusinessPage({
   const navPages = sitePages.filter((p) => p.showInNav);
   const footerPages = sitePages.filter((p) => p.showInFooter);
   const headerNav: SiteNavLink[] = [
-    ...(clinicSections.length > 0 ? [{ label: 'خدماتنا', href: '#services' }] : []),
-    ...(staff.length > 0 ? [{ label: 'فريقنا', href: '#team' }] : []),
-    ...(wc?.phone || wc?.email || wc?.whatsapp ? [{ label: 'تواصل', href: '#contact' }] : []),
+    ...(clinicSections.length > 0 ? [{ label: ar ? 'خدماتنا' : 'Services', href: '#services' }] : []),
+    ...(staff.length > 0 ? [{ label: ar ? 'فريقنا' : 'Our team', href: '#team' }] : []),
+    ...(wc?.phone || wc?.email || wc?.whatsapp ? [{ label: ar ? 'تواصل' : 'Contact', href: '#contact' }] : []),
     ...navPages.map((p) => ({ label: p.title, href: `/${slug}/p/${p.slug}` })),
   ];
   const footerLinks: SiteNavLink[] = footerPages.map((p) => ({
@@ -200,7 +206,7 @@ export default async function PublicBusinessPage({
   }));
 
   return (
-    <div className="min-h-screen bg-background text-foreground" dir="rtl">
+    <div className="min-h-screen bg-background text-foreground" dir={ar ? 'rtl' : 'ltr'}>
       <SiteHeader
         slug={slug}
         companyName={company.name}
@@ -208,7 +214,7 @@ export default async function PublicBusinessPage({
         accent={accent}
         navLinks={headerNav}
         ctaHref="#services"
-        ctaLabel="احجز موعد"
+        ctaLabel={ar ? 'احجز موعد' : 'Book now'}
       />
 
       {/* Hero */}
@@ -229,7 +235,7 @@ export default async function PublicBusinessPage({
           <span
             className="inline-flex items-center gap-1.5 rounded-full border bg-background/60 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur"
           >
-            <CalendarCheck className="size-3.5" style={{ color: accent }} /> احجز موعدك أونلاين خلال دقيقة
+            <CalendarCheck className="size-3.5" style={{ color: accent }} /> {ar ? 'احجز موعدك أونلاين خلال دقيقة' : 'Book online in under a minute'}
           </span>
           <h1 className="mt-5 text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">{heroTitle}</h1>
           <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">{heroSubtitle}</p>
@@ -239,21 +245,21 @@ export default async function PublicBusinessPage({
               className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-90"
               style={{ backgroundColor: accent }}
             >
-              <CalendarCheck className="size-4" /> احجز موعدك الآن
+              <CalendarCheck className="size-4" /> {ar ? 'احجز موعدك الآن' : 'Book now'}
             </a>
             {(wc?.phone || wc?.whatsapp) && (
               <a
                 href={wc?.whatsapp ? `https://wa.me/${wc.whatsapp.replace(/\D/g, '')}` : `tel:${wc?.phone}`}
                 className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-6 py-3 text-sm font-semibold backdrop-blur transition hover:bg-accent"
               >
-                <MessageCircle className="size-4" /> تواصل معنا
+                <MessageCircle className="size-4" /> {ar ? 'تواصل معنا' : 'Contact us'}
               </a>
             )}
           </div>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-3.5" style={{ color: accent }} /> تأكيد فوري للحجز</span>
-            <span className="inline-flex items-center gap-1.5"><Clock className="size-3.5" style={{ color: accent }} /> مواعيد مرنة تناسبك</span>
-            <span className="inline-flex items-center gap-1.5"><MessageCircle className="size-3.5" style={{ color: accent }} /> دعم مباشر عبر الشات</span>
+            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-3.5" style={{ color: accent }} /> {ar ? 'تأكيد فوري للحجز' : 'Instant booking confirmation'}</span>
+            <span className="inline-flex items-center gap-1.5"><Clock className="size-3.5" style={{ color: accent }} /> {ar ? 'مواعيد مرنة تناسبك' : 'Flexible times that suit you'}</span>
+            <span className="inline-flex items-center gap-1.5"><MessageCircle className="size-3.5" style={{ color: accent }} /> {ar ? 'دعم مباشر عبر الشات' : 'Live chat support'}</span>
           </div>
         </div>
       </section>
@@ -290,7 +296,7 @@ export default async function PublicBusinessPage({
 
           {ungrouped.length > 0 && (
             <section>
-              <h2 className="mb-6 text-2xl font-bold">خدماتنا</h2>
+              <h2 className="mb-6 text-2xl font-bold">{ar ? 'خدماتنا' : 'Our services'}</h2>
               <div className="-mx-1 flex snap-x snap-mandatory gap-5 overflow-x-auto px-1 pb-4 [scrollbar-width:thin]">
                 {ungrouped.map((s) => (
                   <div key={s.id} className="w-[270px] shrink-0 snap-start sm:w-[300px]">
@@ -307,7 +313,7 @@ export default async function PublicBusinessPage({
       {staff.length > 0 && (
         <section id="team" className="border-t bg-muted/30 py-14">
           <div className="mx-auto max-w-6xl px-5">
-            <h2 className="mb-8 text-center text-2xl font-bold">فريقنا</h2>
+            <h2 className="mb-8 text-center text-2xl font-bold">{ar ? 'فريقنا' : 'Our team'}</h2>
             <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-4">
               {staff.map((m) => (
                 <Link
@@ -343,7 +349,7 @@ export default async function PublicBusinessPage({
       {/* Products */}
       {products.length > 0 && (
         <section className="mx-auto max-w-6xl px-5 py-14">
-          <h2 className="mb-6 text-2xl font-bold">منتجاتنا</h2>
+          <h2 className="mb-6 text-2xl font-bold">{ar ? 'منتجاتنا' : 'Our products'}</h2>
           <div className="grid grid-cols-2 gap-5 lg:grid-cols-4">
             {products.map((p) => (
               <div key={p.id} className="overflow-hidden rounded-2xl border bg-card">
@@ -355,7 +361,7 @@ export default async function PublicBusinessPage({
                 <div className="p-4">
                   <h3 className="truncate text-sm font-medium">{p.title}</h3>
                   <p className="mt-1 text-sm font-bold" style={{ color: accent }}>
-                    {p.price.toString()} ر.س
+                    {p.price.toString()} {ar ? 'ر.س' : 'SAR'}
                   </p>
                   <OrderButton slug={slug} productId={p.id} color={accent} />
                 </div>
@@ -386,14 +392,14 @@ export default async function PublicBusinessPage({
       {wc?.showContact !== false && (wc?.phone || wc?.email || wc?.whatsapp) && (
         <section id="contact" className="border-t py-14 text-center">
           <div className="mx-auto max-w-3xl px-5">
-            <h2 className="mb-5 text-2xl font-bold">تواصل معنا</h2>
+            <h2 className="mb-5 text-2xl font-bold">{ar ? 'تواصل معنا' : 'Get in touch'}</h2>
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm">
               {wc.whatsapp && (
                 <a
                   href={`https://wa.me/${wc.whatsapp.replace(/\D/g, '')}`}
                   className="inline-flex items-center gap-1.5 rounded-full border px-4 py-2 transition hover:bg-accent"
                 >
-                  <MessageCircle className="h-4 w-4" /> واتساب
+                  <MessageCircle className="h-4 w-4" /> {ar ? 'واتساب' : 'WhatsApp'}
                 </a>
               )}
               {wc.phone && (
@@ -433,7 +439,7 @@ export default async function PublicBusinessPage({
         <ChatWidget
           slug={slug}
           agentName={widgetAgent.name}
-          greeting={wc?.chatGreeting || `مرحباً 👋 كيف أقدر أساعدك في ${company.name}؟`}
+          greeting={wc?.chatGreeting || (ar ? `مرحباً 👋 كيف أقدر أساعدك في ${company.name}؟` : `Hi 👋 How can we help you at ${company.name}?`)}
           primaryColor={wc?.chatPrimaryColor || accent}
         />
       )}
