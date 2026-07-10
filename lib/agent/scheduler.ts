@@ -113,14 +113,56 @@ export async function runDueTasks(
       agent: { status: { not: 'PAUSED' } },
       ...(companyId ? { companyId } : {}),
     },
-    select: { id: true, companyId: true },
+    select: { id: true, companyId: true, agentId: true, dependsOn: true },
     orderBy: { createdAt: 'asc' },
     take: limit,
   });
 
+  // Resolve dependency statuses in one batch so we can gate sequenced tasks
+  // (depends_on) without an N+1 query. A missing dep is treated as satisfied so
+  // a deleted prerequisite can never hang its dependents forever.
+  const depIds = [...new Set(pending.flatMap((t) => t.dependsOn))];
+  const depStatus = new Map<string, string>();
+  if (depIds.length) {
+    const deps = await db.task.findMany({
+      where: { id: { in: depIds } },
+      select: { id: true, status: true },
+    });
+    for (const d of deps) depStatus.set(d.id, d.status);
+  }
+
   let ran = 0;
   let failed = 0;
+  let skipped = 0;
   for (const t of pending) {
+    if (t.dependsOn.length) {
+      const statuses = t.dependsOn.map((id) => depStatus.get(id) ?? 'DONE');
+      // A dead-end dependency (failed/cancelled) can never be satisfied → block
+      // the dependent so it stops waiting, and surface it on the timeline.
+      if (statuses.some((s) => s === 'FAILED' || s === 'CANCELLED')) {
+        await db.task.update({
+          where: { id: t.id },
+          data: { status: 'BLOCKED', notes: 'مهمة سابقة تعتمد عليها فشلت أو أُلغيت.' },
+        });
+        if (t.agentId) {
+          await db.timelineEvent.create({
+            data: {
+              companyId: t.companyId,
+              agentId: t.agentId,
+              type: 'TASK_BLOCKED',
+              title: 'مهمة متوقّفة',
+              description: 'تعذّر تنفيذها لأن مهمة سابقة تعتمد عليها لم تكتمل.',
+            },
+          });
+        }
+        continue;
+      }
+      // Not all prerequisites are DONE yet → leave it PENDING for a later tick.
+      if (statuses.some((s) => s !== 'DONE')) {
+        skipped += 1;
+        continue;
+      }
+    }
     try {
       const result = await runAgentTask(t.id, t.companyId);
       if (result.ok) ran += 1;
@@ -130,5 +172,5 @@ export async function runDueTasks(
       console.error('Pending event task errored', { taskId: t.id, err });
     }
   }
-  return { due: pending.length, ran, failed };
+  return { due: pending.length - skipped, ran, failed };
 }

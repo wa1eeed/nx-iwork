@@ -723,6 +723,11 @@ model Task {
   triggerType   String // USER_MESSAGE, TASK_ASSIGNMENT, SCHEDULE, WEBHOOK, INTER_AGENT
   triggerSource Json?
 
+  // Task sequencing: ids of tasks that must be DONE before this one may run. The
+  // scheduler skips this task while any dependency is unfinished, and BLOCKS it
+  // if a dependency FAILED/CANCELLED. Enables multi-agent chains (A→then→B).
+  dependsOn String[] @default([])
+
   // Calendar window (used by APPOINTMENT; optional for others).
   startAt DateTime?
   endAt   DateTime?

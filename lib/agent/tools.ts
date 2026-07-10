@@ -358,6 +358,7 @@ export const AGENT_TOOLS: AiTool[] = [
         colleague: { type: 'string', description: 'اسم الوكيل الزميل أو دوره (مثل: التسويق، المالية)' },
         task: { type: 'string', description: 'وصف المهمة المطلوبة بوضوح' },
         note: { type: 'string', description: 'سياق إضافي يساعد الزميل (اختياري)' },
+        afterTaskId: { type: 'string', description: 'لتسلسل العمل: نفّذ هذه فقط بعد انتهاء مهمة سابقة (مرّر taskId الذي أعادته أداة تفويض سابقة)' },
       },
       required: ['colleague', 'task'],
     },
@@ -471,6 +472,9 @@ const delegateToAgentArgs = z.object({
   colleague: z.string().trim().min(1).max(120), // target agent's name or role
   task: z.string().trim().min(1).max(2000),
   note: z.string().trim().max(2000).optional(),
+  // Optional: run this only AFTER an earlier task finishes (a taskId from a
+  // previous delegate_to_agent call) — builds a sequenced multi-agent chain.
+  afterTaskId: z.string().trim().optional(),
 });
 
 const createTaskArgs = z.object({
@@ -1234,8 +1238,19 @@ export async function executeTool(
         if (!colleague) {
           return fail('لم أجد زميلاً نشطاً بهذا الاسم أو الدور. تحقّق من الوكلاء المتاحين أو نفّذ المهمة بنفسك.');
         }
+        // Optional dependency: gate this task behind an earlier one (same tenant).
+        let dependsOn: string[] = [];
+        if (args.afterTaskId) {
+          const dep = await db.task.findFirst({
+            where: { id: args.afterTaskId, companyId: ctx.companyId },
+            select: { id: true },
+          });
+          if (!dep) return fail('المهمة السابقة (afterTaskId) غير موجودة. تأكّد من المعرّف الذي أعادته أداة التفويض السابقة.');
+          dependsOn = [dep.id];
+        }
         // Assign it as a PENDING AGENT_TOOL task; the scheduler's task runner
-        // (runDueTasks) picks it up and the colleague executes it autonomously.
+        // (runDueTasks) picks it up and the colleague executes it autonomously —
+        // and, when dependsOn is set, only after that dependency is DONE.
         const task = await db.task.create({
           data: {
             companyId: ctx.companyId,
@@ -1245,6 +1260,7 @@ export async function executeTool(
             description: args.note ? `${args.task}\n\nسياق من الزميل: ${args.note}` : args.task,
             triggerType: 'AGENT_TOOL',
             triggerSource: { delegatedByAgentId: ctx.agentId },
+            dependsOn,
           },
           select: { id: true },
         });
@@ -1260,7 +1276,9 @@ export async function executeTool(
         return ok({
           delegatedTo: colleague.name,
           taskId: task.id,
-          message: `فوّضت المهمة إلى ${colleague.name} (${colleague.role})، وسينفّذها تلقائياً.`,
+          message: dependsOn.length
+            ? `فوّضت المهمة إلى ${colleague.name} (${colleague.role})، وستُنفَّذ تلقائياً بعد انتهاء المهمة السابقة.`
+            : `فوّضت المهمة إلى ${colleague.name} (${colleague.role})، وسينفّذها تلقائياً.`,
         });
       }
 
