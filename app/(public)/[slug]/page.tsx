@@ -4,6 +4,7 @@ import Image from 'next/image';
 import { Phone, Mail, MessageCircle, Clock, CalendarCheck, CheckCircle2, Sparkles } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ChatWidget } from '@/components/public/chat-widget';
+import { ReviewsSection } from '@/components/public/reviews-section';
 import { OrderButton } from '@/components/public/order-button';
 import { BookingButton } from '@/components/public/booking-button';
 import { SiteHeader, SiteFooter, type SiteNavLink } from '@/components/public/site-chrome';
@@ -37,7 +38,7 @@ export default async function PublicBusinessPage({
 
   const showServices = company.hasServices && wc?.showServices !== false;
 
-  const [departments, services, products, staff, widgetAgent, sitePages] = await Promise.all([
+  const [departments, services, products, staff, widgetAgent, sitePages, reviews, reviewAgg] = await Promise.all([
     showServices
       ? db.department.findMany({
           where: { companyId: company.id, landingVisible: true },
@@ -99,6 +100,17 @@ export default async function PublicBusinessPage({
       where: { companyId: company.id, isPublished: true },
       orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
       select: { title: true, slug: true, showInFooter: true, showInNav: true },
+    }),
+    db.review.findMany({
+      where: { companyId: company.id, status: 'PUBLISHED' },
+      orderBy: { createdAt: 'desc' },
+      take: 12,
+      select: { id: true, authorName: true, rating: true, comment: true, createdAt: true },
+    }),
+    db.review.aggregate({
+      where: { companyId: company.id, status: 'PUBLISHED' },
+      _avg: { rating: true },
+      _count: true,
     }),
   ]);
 
@@ -352,6 +364,23 @@ export default async function PublicBusinessPage({
           </div>
         </section>
       )}
+
+      {/* Reviews — always shown so the first customer can leave one. */}
+      <div className="border-t">
+        <ReviewsSection
+          slug={slug}
+          reviews={reviews.map((r) => ({
+            id: r.id,
+            authorName: r.authorName,
+            rating: r.rating,
+            comment: r.comment,
+            createdAt: r.createdAt.toISOString(),
+          }))}
+          average={reviewAgg._avg.rating ?? 0}
+          count={reviewAgg._count}
+          color={accent}
+        />
+      </div>
 
       {/* Contact */}
       {wc?.showContact !== false && (wc?.phone || wc?.email || wc?.whatsapp) && (

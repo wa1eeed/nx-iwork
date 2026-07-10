@@ -457,7 +457,8 @@
       "knowledge": "Knowledge & automation",
       "billing": "Billing"
     },
-    "workspace": "Workspace"
+    "workspace": "Workspace",
+    "reviews": "Reviews"
   },
   "wallet": {
     "title": "Wallet",
@@ -2032,5 +2033,43 @@
     "save": "Save reminders",
     "saved": "Reminder settings saved.",
     "saveError": "Couldn’t save. Try again."
+  },
+  "reviewsPublic": {
+    "sectionTitle": "What customers say",
+    "based": "{count, plural, one {# review} other {# reviews}}",
+    "writeReview": "Write a review",
+    "yourName": "Your name",
+    "yourComment": "Your comment (optional)",
+    "rating": "Your rating",
+    "submit": "Submit review",
+    "submitted": "Thank you! Your review will appear once it’s approved.",
+    "error": "Couldn’t submit — please try again.",
+    "rateLimited": "You’ve already submitted a few reviews.",
+    "close": "Done",
+    "titleModal": "Share your experience"
+  },
+  "reviewsMgr": {
+    "title": "Reviews",
+    "subtitle": "Moderate customer reviews — publish the good ones to your website, hide the rest.",
+    "empty": "No reviews yet. They’ll appear here when customers rate you.",
+    "statTotal": "Total",
+    "statPublished": "Published",
+    "statPending": "Awaiting review",
+    "statAvg": "Average",
+    "filterAll": "All",
+    "filterPending": "Pending",
+    "filterPublished": "Published",
+    "filterHidden": "Hidden",
+    "publish": "Publish",
+    "hide": "Hide",
+    "unpublish": "Unpublish",
+    "delete": "Delete",
+    "confirmDelete": "Delete this review permanently?",
+    "statusPENDING": "Pending",
+    "statusPUBLISHED": "Published",
+    "statusHIDDEN": "Hidden",
+    "forService": "On: {service}",
+    "updated": "Updated",
+    "failed": "Couldn’t update."
   }
 }

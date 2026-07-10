@@ -457,7 +457,8 @@
       "knowledge": "المعرفة والأتمتة",
       "billing": "الفوترة"
     },
-    "workspace": "مساحة العمل"
+    "workspace": "مساحة العمل",
+    "reviews": "التقييمات"
   },
   "wallet": {
     "title": "المحفظة",
@@ -2032,5 +2033,43 @@
     "save": "حفظ التذكيرات",
     "saved": "تم حفظ إعدادات التذكير.",
     "saveError": "تعذّر الحفظ. حاول مجدداً."
+  },
+  "reviewsPublic": {
+    "sectionTitle": "آراء العملاء",
+    "based": "{count, plural, one {تقييم #} other {# تقييمات}}",
+    "writeReview": "اكتب تقييماً",
+    "yourName": "اسمك",
+    "yourComment": "تعليقك (اختياري)",
+    "rating": "تقييمك",
+    "submit": "إرسال التقييم",
+    "submitted": "شكراً! سيظهر تقييمك بعد اعتماده.",
+    "error": "تعذّر الإرسال — حاول مجدداً.",
+    "rateLimited": "أرسلت عدة تقييمات بالفعل.",
+    "close": "تمام",
+    "titleModal": "شاركنا تجربتك"
+  },
+  "reviewsMgr": {
+    "title": "التقييمات",
+    "subtitle": "راجِع تقييمات العملاء — انشُر الجيّد على موقعك، وأخفِ الباقي.",
+    "empty": "لا تقييمات بعد. ستظهر هنا عندما يقيّمك العملاء.",
+    "statTotal": "الإجمالي",
+    "statPublished": "منشور",
+    "statPending": "بانتظار المراجعة",
+    "statAvg": "المعدّل",
+    "filterAll": "الكل",
+    "filterPending": "معلّق",
+    "filterPublished": "منشور",
+    "filterHidden": "مخفي",
+    "publish": "نشر",
+    "hide": "إخفاء",
+    "unpublish": "إلغاء النشر",
+    "delete": "حذف",
+    "confirmDelete": "حذف هذا التقييم نهائياً؟",
+    "statusPENDING": "معلّق",
+    "statusPUBLISHED": "منشور",
+    "statusHIDDEN": "مخفي",
+    "forService": "على: {service}",
+    "updated": "تم التحديث",
+    "failed": "تعذّر التحديث."
   }
 }

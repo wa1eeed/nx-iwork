@@ -165,6 +165,7 @@ model Company {
   services            Service[]
   companyHours        CompanyHours[]
   holidays            Holiday[]
+  reviews             Review[]
   products            Product[]
   bookings            Booking[]
   orders              Order[]
@@ -932,6 +933,7 @@ model Customer {
   bookings     Booking[]
   activityLog  CustomerNote[]
   agentOutputs AgentOutput[]
+  reviews      Review[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -1144,6 +1146,7 @@ model Service {
 
   availability ServiceAvailability[]
   bookings     Booking[]
+  reviews      Review[]
   orders       Order[]
 
   createdAt DateTime @default(now())
@@ -1203,6 +1206,37 @@ model Holiday {
 
   @@unique([companyId, date])
   @@index([companyId])
+}
+
+enum ReviewStatus {
+  PENDING // awaiting owner moderation
+  PUBLISHED // shown on the public storefront
+  HIDDEN // rejected / taken down
+}
+
+// A customer rating + optional comment for the business (or a specific service).
+// Submitted from the public storefront, moderated by the owner, then shown on the
+// site with the average. PENDING by default so nothing publishes unreviewed.
+model Review {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  serviceId String?
+  service   Service? @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  customerId String?
+  customer   Customer? @relation(fields: [customerId], references: [id], onDelete: SetNull)
+
+  authorName String
+  rating     Int // 1..5
+  comment    String? @db.Text
+  status     ReviewStatus @default(PENDING)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId, status, createdAt])
+  @@index([serviceId])
 }
 
 model Product {
