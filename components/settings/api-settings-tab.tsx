@@ -209,7 +209,7 @@ export function ApiSettingsTab({ initial }: { initial: ApiSettingsForClient }) {
                 type="button"
                 onClick={() => setProvider(p.id)}
                 className={
-                  'rounded-lg border p-3 text-right transition ' +
+                  'rounded-lg border p-3 text-start transition ' +
                   (provider === p.id
                     ? 'border-primary bg-primary/5 ring-1 ring-primary'
                     : 'hover:bg-muted')

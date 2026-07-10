@@ -216,7 +216,7 @@ export function StaffManager({ staff }: { staff: StaffRow[] }) {
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && cancel()} />
-          <div className="relative z-10 w-full max-w-[460px] rounded-2xl border bg-card p-5 shadow-xl">
+          <div className="relative z-10 max-h-[90vh] w-full max-w-[460px] overflow-y-auto rounded-2xl border bg-card p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">{editingId ? t('editStaff') : t('newStaff')}</h2>
               <button onClick={cancel} disabled={saving} className="rounded-lg p-1 text-muted-foreground hover:bg-muted" aria-label={t('cancel')}>

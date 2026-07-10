@@ -259,7 +259,7 @@ export function DepartmentManager({ departments }: { departments: DepartmentRow[
       {showForm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4" role="dialog" aria-modal="true">
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={() => !saving && cancel()} />
-          <div className="relative z-10 w-full max-w-[440px] rounded-2xl border bg-card p-5 shadow-xl">
+          <div className="relative z-10 max-h-[90vh] w-full max-w-[440px] overflow-y-auto rounded-2xl border bg-card p-5 shadow-xl">
             <div className="mb-4 flex items-center justify-between">
               <h2 className="text-lg font-semibold">
                 {editingId ? t('editTitle') : t('newTitle')}
