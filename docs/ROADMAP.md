@@ -53,19 +53,22 @@ and task **`depends_on`** chains (Phase 3 partial). Remaining: `request_from_age
 [`AGENT_SYSTEM.md`](./AGENT_SYSTEM.md).
 
 ### 1b. Service-business capability gaps (from the sector-fit audit)
-Table-stakes a generic appointment SMB expects, ranked. None are blockers to
-launch, but they remove real friction:
-- **Company-level business hours + holiday closures** that services inherit unless
-  overridden (today hours are per-service only — a 20-service salon sets them 20×).
-  **Top priority.**
-- ~~**Reminders/confirmations**~~ **SHIPPED** — owner-controllable booking
-  confirmation email + a reminder N hours before (Settings → Reminders, email
-  channel; SMS/WhatsApp channels next). Runs off /api/cron/run.
-- **Cancellation policy + deposits/prepayment** — optional per-service deposit % +
-  a company cancellation window; gate slot-holding on deposit (payments infra exists).
-- **Reviews/ratings** — post-completion review request + display on the public site.
-- **Later:** multi-location (branch dimension) · recurring/package bookings
-  (class-passes, session packs).
+Most shipped in the 2026-07 hardening pass:
+- ~~Company-level business hours + holiday closures~~ **SHIPPED** — services with
+  no windows inherit them; holidays close the day (Settings → Hours).
+- ~~Reminders/confirmations~~ **SHIPPED** — owner-controllable confirmation +
+  N-hours-before reminder emails (Settings → Reminders), off /api/cron/run.
+- ~~Reviews/ratings~~ **SHIPPED** — public submit + moderation (`/reviews`) +
+  storefront display with average.
+- ~~Cancellation policy~~ **SHIPPED** — owner text shown at booking + in the
+  confirmation email (Settings → Hours).
+- **Deposits/prepayment — DEFERRED:** needs the Tap payment flow exercised live
+  (real money); build once deploy is up so it can be verified end-to-end.
+- **Storefront modal-locale unification — DEFERRED:** chrome now follows the
+  business language; the booking/order/review modals still use next-intl (visitor
+  locale). A `NextIntlClientProvider` override for the `(public)` subtree is the
+  clean fix — SSR-hydration-sensitive, best done live.
+- **Later (LOW):** multi-location (branch dimension) · recurring/package bookings.
 
 ### 2. Billing completeness
 - **Tap subscription auto-renewal** — recurring charges, webhook idempotency,
