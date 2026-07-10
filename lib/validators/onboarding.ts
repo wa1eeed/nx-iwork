@@ -8,6 +8,12 @@ export const INDUSTRIES = [
   'consulting',
   'education',
   'healthcare',
+  // Service-appointment sectors the platform is built for (match the landing).
+  'beauty',
+  'spa',
+  'fitness',
+  'studio',
+  'automotive',
   'realestate',
   'food',
   'marketing',

@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { ArrowRight, User, CalendarClock, Stethoscope, UserCog, Phone, Mail, StickyNote } from 'lucide-react';
+import { ArrowRight, User, CalendarClock, Tag, LayoutGrid, UserCog, Phone, Mail, StickyNote } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
@@ -101,13 +101,13 @@ export default async function BookingDetailPage({ params }: { params: Promise<{ 
           </div>
         </div>
 
-        {/* Service + clinic */}
+        {/* Service + section */}
         <div className="rounded-2xl border bg-card">
           <div className="border-b px-4 py-2.5 text-sm font-semibold">{t('service')}</div>
           <div className="divide-y">
-            <Row icon={Stethoscope} label={t('service')}>{b.service?.title || b.title}</Row>
+            <Row icon={Tag} label={t('service')}>{b.service?.title || b.title}</Row>
             {b.service?.department && (
-              <Row icon={Stethoscope} label={t('clinic')}>
+              <Row icon={LayoutGrid} label={t('section')}>
                 <span className="inline-flex items-center gap-1.5">
                   <span className="size-2 rounded-full" style={{ backgroundColor: b.service.department.color }} />
                   {b.service.department.name}

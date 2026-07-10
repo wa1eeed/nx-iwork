@@ -121,7 +121,6 @@
       "duration": "Duration",
       "minutes": "min",
       "service": "Service",
-      "clinic": "Section",
       "staff": "Staff member",
       "unassigned": "Unassigned",
       "status": "Status",
@@ -141,7 +140,8 @@
       "todayQueue": "Appointment queue",
       "commission": "Commission",
       "attributedSales": "Attributed sales (this month)",
-      "empty": "Nothing yet."
+      "empty": "Nothing yet.",
+      "section": "Section"
     }
   },
   "common": {
@@ -693,6 +693,11 @@
       "consulting": "Consulting",
       "education": "Education & training",
       "healthcare": "Healthcare",
+      "beauty": "Salon & beauty",
+      "spa": "Spa & wellness",
+      "fitness": "Fitness & gym",
+      "studio": "Studio (photo, dance, art)",
+      "automotive": "Auto & repair",
       "realestate": "Real estate",
       "food": "Restaurants & food",
       "marketing": "Marketing & advertising",
@@ -914,7 +919,7 @@
       "back": "Back to bookings",
       "title": "Booking availability",
       "subtitle": "Make a service bookable: set its duration and weekly hours. Customers can only book generated slots.",
-      "noServices": "No services yet. Services are set up during onboarding.",
+      "noServices": "No services yet. Add your services on the Services page first.",
       "bookable": "Bookable",
       "notBookable": "Not bookable",
       "duration": "Duration (min)",
@@ -1382,7 +1387,6 @@
     "subtitlePlaceholder": "Short tagline under the title (optional)",
     "description": "Description",
     "descriptionPlaceholder": "What the customer gets — shown on the service detail page.",
-    "clinic": "Section",
     "noneOption": "— none —",
     "price": "Price (SAR)",
     "pricePlaceholder": "Optional",
@@ -1395,7 +1399,8 @@
     "showOnWebsite": "Show on website",
     "cancel": "Cancel",
     "saveChanges": "Save changes",
-    "waitlistCapacity": "Waitlist size (0 = unlimited)"
+    "waitlistCapacity": "Waitlist size (0 = unlimited)",
+    "section": "Section"
   },
   "pageHeaders": {
     "staff": {
@@ -1445,7 +1450,7 @@
     "name": "Name",
     "namePlaceholder": "e.g. Sara Ahmed",
     "role": "Role",
-    "rolePlaceholder": "e.g. Specialist",
+    "rolePlaceholder": "e.g. Stylist, Trainer, Consultant",
     "phone": "Phone",
     "email": "Email",
     "photoUrl": "Photo URL",
