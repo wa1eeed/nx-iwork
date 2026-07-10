@@ -58,8 +58,9 @@ launch, but they remove real friction:
 - **Company-level business hours + holiday closures** that services inherit unless
   overridden (today hours are per-service only — a 20-service salon sets them 20×).
   **Top priority.**
-- **Reminders/confirmations** — SMS/WhatsApp/email booking confirmation + a 24h
-  reminder (top no-show reducer; the `REMINDER` task kind + agent layer can execute).
+- ~~**Reminders/confirmations**~~ **SHIPPED** — owner-controllable booking
+  confirmation email + a reminder N hours before (Settings → Reminders, email
+  channel; SMS/WhatsApp channels next). Runs off /api/cron/run.
 - **Cancellation policy + deposits/prepayment** — optional per-service deposit % +
   a company cancellation window; gate slot-holding on deposit (payments infra exists).
 - **Reviews/ratings** — post-completion review request + display on the public site.

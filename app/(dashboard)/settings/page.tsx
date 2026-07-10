@@ -19,6 +19,7 @@ import { EmailTab } from '@/components/settings/email-tab';
 import { CompanyInfoTab } from '@/components/settings/company-info-tab';
 import { ApiSettingsTab } from '@/components/settings/api-settings-tab';
 import { BusinessHoursTab } from '@/components/settings/business-hours-tab';
+import { RemindersTab } from '@/components/settings/reminders-tab';
 import { getAiMode } from '@/lib/ai';
 import { agentTokenCap } from '@/lib/plans';
 import { publicHost } from '@/lib/public-url';
@@ -135,6 +136,7 @@ export default async function SettingsPage() {
           <TabsTrigger value="guardrails">{t('tabs.guardrails')}</TabsTrigger>
           <TabsTrigger value="localization">{t('tabs.localization')}</TabsTrigger>
           {company.hasBookings && <TabsTrigger value="hours">{t('tabs.hours')}</TabsTrigger>}
+          {company.hasBookings && <TabsTrigger value="reminders">{t('tabs.reminders')}</TabsTrigger>}
           <TabsTrigger value="branding">{t('tabs.branding')}</TabsTrigger>
           <TabsTrigger value="storefront">{t('tabs.storefront')}</TabsTrigger>
           <TabsTrigger value="domain">{t('tabs.domain')}</TabsTrigger>
@@ -188,6 +190,18 @@ export default async function SettingsPage() {
         {company.hasBookings && (
           <TabsContent value="hours">
             <BusinessHoursTab initial={{ windows: companyHours, holidays }} />
+          </TabsContent>
+        )}
+
+        {company.hasBookings && (
+          <TabsContent value="reminders">
+            <RemindersTab
+              initial={{
+                bookingConfirmationEnabled: settings.bookingConfirmationEnabled,
+                bookingReminderEnabled: settings.bookingReminderEnabled,
+                bookingReminderHoursBefore: settings.bookingReminderHoursBefore,
+              }}
+            />
           </TabsContent>
         )}
 

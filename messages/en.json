@@ -752,7 +752,8 @@
       "email": "Email",
       "company": "Company info",
       "api": "API keys",
-      "hours": "Hours"
+      "hours": "Hours",
+      "reminders": "Reminders"
     },
     "saved": "Saved",
     "saveError": "Save failed, please try again",
@@ -2017,5 +2018,19 @@
     "addHoliday": "Add closure",
     "noHolidays": "No closures added.",
     "inheritNote": "Services that have their own availability keep it; only services without a schedule inherit these hours."
+  },
+  "reminders": {
+    "title": "Booking reminders",
+    "subtitle": "Automatic emails to customers — a confirmation when they book, and a reminder before their appointment. Sent from your business brand.",
+    "confirmationLabel": "Send a confirmation when a booking is made",
+    "confirmationHint": "The customer gets an instant email confirming the service, date, and reference.",
+    "reminderLabel": "Send a reminder before the appointment",
+    "reminderHint": "A friendly nudge to reduce no-shows.",
+    "hoursBefore": "Send the reminder this many hours before",
+    "hoursOption": "{count, plural, one {# hour} other {# hours}} before",
+    "channelNote": "Reminders are sent by email today. SMS & WhatsApp channels are coming.",
+    "save": "Save reminders",
+    "saved": "Reminder settings saved.",
+    "saveError": "Couldn’t save. Try again."
   }
 }

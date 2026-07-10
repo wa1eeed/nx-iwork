@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { nextRef } from '@/lib/refs';
 import { createBooking, checkSlotAvailable, BookingError } from '@/lib/booking/engine';
-import { sendTenantEmail } from '@/lib/notifications/tenant-email';
+import { sendBookingConfirmation } from '@/lib/notifications/booking-emails';
 
 export const dynamic = 'force-dynamic';
 
@@ -118,33 +118,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
 
   const waitlisted = booking.status === 'WAITLIST';
 
-  // Confirmation to the customer — from the TENANT's brand, localized. Fire-and-forget.
+  // Confirmation to the customer — tenant-branded, localized, owner-gated.
+  // Fire-and-forget: a mail failure must never fail the booking.
   if (customerEmail) {
-    const ar = (company.settings?.primaryLanguage ?? 'ar') === 'ar';
-    const when = new Intl.DateTimeFormat(ar ? 'ar' : 'en', { dateStyle: 'full', timeStyle: 'short' }).format(booking.startAt);
-    void sendTenantEmail(company.id, {
+    void sendBookingConfirmation(company.id, {
       to: customerEmail,
-      subject: waitlisted
-        ? ar
-          ? `أنت على قائمة الانتظار ${booking.ref ?? ''}`.trim()
-          : `You’re on the waitlist ${booking.ref ?? ''}`.trim()
-        : ar
-          ? `تأكيد حجزك ${booking.ref ?? ''}`.trim()
-          : `Booking confirmation ${booking.ref ?? ''}`.trim(),
-      heading: ar ? `شكراً ${customerName} 🗓️` : `Thank you, ${customerName} 🗓️`,
-      intro: waitlisted
-        ? ar
-          ? 'هذا الموعد ممتلئ، وأضفناك إلى قائمة الانتظار.\nسنتواصل معك فور توفّر مكان.'
-          : 'This slot is full, so we added you to the waitlist.\nWe’ll reach out the moment a place opens up.'
-        : ar
-          ? 'تم استلام حجزك.\nسيتم تأكيده قريباً وستصلك أي تحديثات.'
-          : 'We’ve received your booking.\nIt will be confirmed shortly and we’ll keep you posted.',
-      rows: [
-        { label: ar ? 'الخدمة' : 'Service', value: svc.title },
-        { label: ar ? 'الموعد' : 'When', value: when },
-        ...(booking.ref ? [{ label: ar ? 'رقم الحجز' : 'Reference', value: booking.ref }] : []),
-      ],
-      footnote: ar ? 'هذه رسالة تأكيد آلية.' : 'This is an automated confirmation.',
+      customerName,
+      serviceTitle: svc.title,
+      startAt: booking.startAt,
+      ref: booking.ref,
+      waitlisted,
     }).catch((e) => console.error('[book] confirmation email failed:', e));
   }
 

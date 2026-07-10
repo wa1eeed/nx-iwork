@@ -12,11 +12,81 @@
 import { db } from '@/lib/db';
 import { runAgentTask } from './task';
 import { computeNextRun } from './schedule-time';
+import { sendBookingReminder } from '@/lib/notifications/booking-emails';
 
 export interface SchedulerRunSummary {
   due: number;
   ran: number;
   failed: number;
+}
+
+// Send pre-appointment reminders for bookings entering their reminder window.
+// Runs every tick alongside the agent scheduler (see /api/cron/run). Each tenant
+// sets its own lead time + on/off in Settings → Reminders. reminderSentAt is set
+// only on success, so a transient mail failure simply retries next tick.
+export async function runDueReminders(
+  now: Date = new Date(),
+  limitPerCompany = 100,
+): Promise<{ sent: number; failed: number }> {
+  const configs = await db.businessSettings.findMany({
+    where: { bookingReminderEnabled: true },
+    select: {
+      companyId: true,
+      bookingReminderHoursBefore: true,
+      primaryLanguage: true,
+      timezone: true,
+    },
+  });
+
+  let sent = 0;
+  let failed = 0;
+  for (const cfg of configs) {
+    const horizon = new Date(now.getTime() + cfg.bookingReminderHoursBefore * 3_600_000);
+    const due = await db.booking.findMany({
+      where: {
+        companyId: cfg.companyId,
+        status: { in: ['PENDING', 'CONFIRMED'] },
+        reminderSentAt: null,
+        startAt: { gt: now, lte: horizon },
+        customer: { email: { not: null } },
+      },
+      take: limitPerCompany,
+      orderBy: { startAt: 'asc' },
+      select: {
+        id: true,
+        ref: true,
+        title: true,
+        startAt: true,
+        customer: { select: { name: true, email: true } },
+        service: { select: { title: true } },
+      },
+    });
+
+    const ar = (cfg.primaryLanguage ?? 'ar') === 'ar';
+    const tz = cfg.timezone || 'Asia/Riyadh';
+    for (const b of due) {
+      if (!b.customer?.email) continue;
+      try {
+        await sendBookingReminder(
+          cfg.companyId,
+          {
+            to: b.customer.email,
+            customerName: b.customer.name || '',
+            serviceTitle: b.service?.title || b.title,
+            startAt: b.startAt,
+            ref: b.ref,
+          },
+          { ar, tz },
+        );
+        await db.booking.update({ where: { id: b.id }, data: { reminderSentAt: new Date() } });
+        sent += 1;
+      } catch (err) {
+        failed += 1;
+        console.error('Booking reminder failed', { bookingId: b.id, err });
+      }
+    }
+  }
+  return { sent, failed };
 }
 
 export async function runDueSchedules(

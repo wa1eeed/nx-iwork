@@ -251,6 +251,12 @@ model BusinessSettings {
   emailReplyTo           String? // replies go here, e.g. hello@acme.com
   marketingEmailsEnabled Boolean @default(false) // gate for non-transactional mail
 
+  // Booking reminders (owner-controllable, sensible defaults). A confirmation
+  // email is sent when a booking is made; a reminder goes out N hours before it.
+  bookingConfirmationEnabled Boolean @default(true)
+  bookingReminderEnabled     Boolean @default(true)
+  bookingReminderHoursBefore Int     @default(24)
+
   // Escalation channel: owner's Telegram bot for human-in-the-loop alerts
   // (e.g. an angry-customer complaint that an agent escalates).
   telegramBotToken String?
@@ -997,6 +1003,10 @@ model Booking {
   // Activity-specific attributes (resource, party_size, service_type, …).
   customFields Json?
 
+  // When the pre-appointment reminder was sent (null = not yet). Drives the
+  // reminder cron's "who still needs reminding" query.
+  reminderSentAt DateTime?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
@@ -1004,6 +1014,7 @@ model Booking {
   @@index([customerId])
   @@index([serviceId, startAt])
   @@index([staffMemberId])
+  @@index([companyId, status, reminderSentAt]) // the reminder cron scan
 }
 
 // ========================================
