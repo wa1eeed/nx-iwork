@@ -348,6 +348,20 @@ export const AGENT_TOOLS: AiTool[] = [
       required: ['type', 'title', 'body'],
     },
   },
+  {
+    name: 'delegate_to_agent',
+    description:
+      'فوّض مهمة لزميل وكيل آخر عندما تكون خارج نطاق دورك أو تخصّ تخصّصاً آخر (مثلاً: تحويل طلب محتوى للتسويق، أو متابعة تحصيل للمالية، أو تصعيد شكوى لرعاية العملاء). مرّر اسم الزميل أو دوره (colleague) ووصف المهمة (task). ستُسند إليه وينفّذها تلقائياً. لا تفوّض ما تستطيع إنجازه بنفسك بأدواتك.',
+    parameters: {
+      type: 'object',
+      properties: {
+        colleague: { type: 'string', description: 'اسم الوكيل الزميل أو دوره (مثل: التسويق، المالية)' },
+        task: { type: 'string', description: 'وصف المهمة المطلوبة بوضوح' },
+        note: { type: 'string', description: 'سياق إضافي يساعد الزميل (اختياري)' },
+      },
+      required: ['colleague', 'task'],
+    },
+  },
 ];
 
 // ---- Executors -------------------------------------------------------------
@@ -451,6 +465,12 @@ const createOutputArgs = z.object({
   body: z.string().trim().min(1).max(20_000),
   status: z.enum(['DRAFT', 'READY']).optional(),
   customerName: z.string().trim().max(200).optional(),
+});
+
+const delegateToAgentArgs = z.object({
+  colleague: z.string().trim().min(1).max(120), // target agent's name or role
+  task: z.string().trim().min(1).max(2000),
+  note: z.string().trim().max(2000).optional(),
 });
 
 const createTaskArgs = z.object({
@@ -1190,6 +1210,57 @@ export async function executeTool(
         return ok({
           output,
           message: 'تم تسليم المخرج إلى مساحة عمل الوكلاء لعرضه على صاحب العمل.',
+        });
+      }
+
+      case 'delegate_to_agent': {
+        const args = delegateToAgentArgs.parse(rawArgs);
+        // Find an ACTIVE colleague by name or role — never yourself, never a
+        // paused/archived agent (a paused agent's tasks wouldn't run anyway).
+        const colleague = await db.agent.findFirst({
+          where: {
+            companyId: ctx.companyId,
+            id: { not: ctx.agentId },
+            status: { notIn: ['ARCHIVED', 'PAUSED'] },
+            OR: [
+              { name: { contains: args.colleague, mode: Prisma.QueryMode.insensitive } },
+              { nameEn: { contains: args.colleague, mode: Prisma.QueryMode.insensitive } },
+              { role: { contains: args.colleague, mode: Prisma.QueryMode.insensitive } },
+              { roleEn: { contains: args.colleague, mode: Prisma.QueryMode.insensitive } },
+            ],
+          },
+          select: { id: true, name: true, role: true },
+        });
+        if (!colleague) {
+          return fail('لم أجد زميلاً نشطاً بهذا الاسم أو الدور. تحقّق من الوكلاء المتاحين أو نفّذ المهمة بنفسك.');
+        }
+        // Assign it as a PENDING AGENT_TOOL task; the scheduler's task runner
+        // (runDueTasks) picks it up and the colleague executes it autonomously.
+        const task = await db.task.create({
+          data: {
+            companyId: ctx.companyId,
+            agentId: colleague.id,
+            kind: 'AGENT_TASK',
+            title: args.task.slice(0, 200),
+            description: args.note ? `${args.task}\n\nسياق من الزميل: ${args.note}` : args.task,
+            triggerType: 'AGENT_TOOL',
+            triggerSource: { delegatedByAgentId: ctx.agentId },
+          },
+          select: { id: true },
+        });
+        await db.timelineEvent.create({
+          data: {
+            companyId: ctx.companyId,
+            agentId: ctx.agentId,
+            type: 'AGENT_HANDOFF',
+            title: 'تفويض مهمة لزميل',
+            description: `إلى ${colleague.name}: ${args.task.slice(0, 140)}`,
+          },
+        });
+        return ok({
+          delegatedTo: colleague.name,
+          taskId: task.id,
+          message: `فوّضت المهمة إلى ${colleague.name} (${colleague.role})، وسينفّذها تلقائياً.`,
         });
       }
 

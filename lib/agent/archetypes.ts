@@ -132,7 +132,7 @@ export const ARCHETYPES: Archetype[] = [
       en: 'Plans campaigns and writes content/offers, delivered as reviewable outputs.',
     },
     surface: 'INTERNAL',
-    permissions: ['search_catalog', 'save_memory', 'create_output', 'create_task'],
+    permissions: ['search_catalog', 'save_memory', 'create_output', 'create_task', 'delegate_to_agent'],
     outputTypes: ['CONTENT', 'PLAN', 'REPORT', 'ANALYSIS'],
     autonomy: 'SUGGEST',
     kpis: [
@@ -158,7 +158,7 @@ export const ARCHETYPES: Archetype[] = [
       en: 'Coordinates the schedule, staff, and tasks; tracks completion and bottlenecks.',
     },
     surface: 'INTERNAL',
-    permissions: ['find_customer', 'list_bookings', 'update_booking', 'set_booking_staff', 'create_task', 'update_task_status', 'save_memory', 'create_output'],
+    permissions: ['find_customer', 'list_bookings', 'update_booking', 'set_booking_staff', 'create_task', 'update_task_status', 'save_memory', 'create_output', 'delegate_to_agent'],
     outputTypes: ['PLAN', 'REPORT', 'ACTION_LOG'],
     autonomy: 'ASK',
     kpis: [
@@ -184,7 +184,7 @@ export const ARCHETYPES: Archetype[] = [
       en: 'Tracks invoicing and collections; delivers financial reports, analysis, and advice.',
     },
     surface: 'INTERNAL',
-    permissions: ['find_customer', 'create_order', 'list_bookings', 'save_memory', 'create_output', 'request_approval'],
+    permissions: ['find_customer', 'create_order', 'list_bookings', 'save_memory', 'create_output', 'request_approval', 'delegate_to_agent'],
     outputTypes: ['REPORT', 'ANALYSIS', 'PLAN'],
     autonomy: 'SUGGEST',
     kpis: [

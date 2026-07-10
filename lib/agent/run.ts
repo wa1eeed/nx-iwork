@@ -98,7 +98,7 @@ export async function runAgentChat(
   // Module gates in getToolsForAgent still apply; empty perms already mean "all".
   let perms = agent.permissions;
   if (perms.length > 0) {
-    const internal = ['find_customer', 'search_catalog', 'search_faq', 'create_task', 'update_task_status', 'save_memory'];
+    const internal = ['find_customer', 'search_catalog', 'search_faq', 'create_task', 'update_task_status', 'save_memory', 'create_output', 'delegate_to_agent'];
     if (agent.company.hasBookings) {
       internal.push('list_bookings', 'list_open_slots', 'check_availability', 'create_booking', 'update_booking', 'set_booking_staff');
     }
