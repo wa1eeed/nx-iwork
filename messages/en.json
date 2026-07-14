@@ -458,7 +458,8 @@
       "billing": "Billing"
     },
     "workspace": "Workspace",
-    "reviews": "Reviews"
+    "reviews": "Reviews",
+    "agentWork": "Agent work"
   },
   "wallet": {
     "title": "Wallet",
@@ -984,6 +985,54 @@
     "tasks": {
       "title": "Tasks",
       "subtitle": "Everything your employees are working on: in progress, completed, and scheduled — with dates and run counts."
+    },
+    "agentWork": {
+      "title": "Agent work",
+      "subtitle": "Everything your AI employees are doing — the live task queue and the calendar of scheduled runs.",
+      "tabs": {
+        "queue": "Task queue",
+        "calendar": "Scheduled runs"
+      },
+      "filterAll": "All",
+      "status": {
+        "PENDING": "Queued",
+        "WORKING": "Working",
+        "PENDING_APPROVAL": "Needs approval",
+        "PENDING_REVIEW": "In review",
+        "BLOCKED": "Blocked",
+        "DONE": "Done",
+        "FAILED": "Failed",
+        "CANCELLED": "Cancelled"
+      },
+      "runNow": "Run now",
+      "running": "Running…",
+      "runQueued": "Task started",
+      "runFailed": "Couldn’t start the task",
+      "details": "Details",
+      "noAgent": "Unassigned",
+      "attemptsN": "{count} attempts",
+      "tokens": "tokens",
+      "dependsOn": "Waits for",
+      "emptyQueue": "No agent tasks yet. Assign work to an agent or set up a schedule.",
+      "col": {
+        "due": "Due",
+        "started": "Started",
+        "completed": "Completed"
+      },
+      "calendar": {
+        "today": "Today",
+        "prev": "Previous month",
+        "next": "Next month",
+        "more": "+{count} more",
+        "noEvents": "Nothing scheduled for this day.",
+        "agenda": "This day"
+      },
+      "schedules": {
+        "title": "Recurring schedules",
+        "nextRun": "Next run",
+        "runs": "{count} runs",
+        "none": "No recurring schedules yet."
+      }
     }
   },
   "agentCreate": {
