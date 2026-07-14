@@ -42,8 +42,25 @@ export function loadAgentWithContext(agentId: string, companyId: string) {
       },
       // The concrete model the owner picked (registry). Null → tier fallback.
       aiModel: { select: { modelId: true, provider: true, enabled: true } },
+      // Attached skills: their instructions are injected into the system prompt
+      // and their tools are granted to the agent.
+      skills: { select: { skill: { select: { promptTemplate: true, tools: true } } } },
     },
   });
+}
+
+// The instructions block for an agent's attached skills (empty when none).
+export function skillPromptBlock(skills: { skill: { promptTemplate: string | null } }[]): string {
+  const parts = skills
+    .map((s) => s.skill.promptTemplate?.trim())
+    .filter((p): p is string => Boolean(p));
+  if (parts.length === 0) return '';
+  return `## Your skills\nApply these when relevant:\n${parts.map((p) => `- ${p}`).join('\n')}`;
+}
+
+// The union of tool ids granted by an agent's attached skills.
+export function skillToolIds(skills: { skill: { tools: string[] } }[]): string[] {
+  return Array.from(new Set(skills.flatMap((s) => s.skill.tools ?? [])));
 }
 
 // Resolve the concrete model id to send the provider: the agent's registry model
@@ -68,6 +85,8 @@ export interface ToolLoopArgs {
   /** The tools to offer — already filtered to the company's enabled modules. */
   tools: AiTool[];
   ctx: ToolContext;
+  /** Optional trace hook: called after each tool runs (used by the sandbox). */
+  onToolResult?: (t: { name: string; args: Record<string, unknown>; result: string }) => void;
 }
 
 export interface ToolLoopResult {
@@ -79,7 +98,7 @@ export interface ToolLoopResult {
 // round cap is hit). Throws on provider error; callers map that to their own
 // failure shape.
 export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
-  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx } = args;
+  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx, onToolResult } = args;
   let reply = '';
   let tokensUsed = 0;
 
@@ -107,6 +126,7 @@ export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
     });
     for (const call of completion.toolCalls) {
       const result = await executeTool(call.name, call.args, ctx);
+      onToolResult?.({ name: call.name, args: call.args, result });
       messages.push({ role: 'tool', toolCallId: call.id, name: call.name, content: result });
     }
 

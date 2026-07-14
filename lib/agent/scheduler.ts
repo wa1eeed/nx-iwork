@@ -89,6 +89,44 @@ export async function runDueReminders(
   return { sent, failed };
 }
 
+// Crash recovery. A task is claimed (status WORKING + startedAt) before work
+// begins; if the runner dies mid-run (a deploy/restart), it would hang in WORKING
+// forever since runDueTasks only picks PENDING. This re-queues autonomous tasks
+// stuck past the timeout so they retry — or FAILs them once they've burned the
+// attempt cap, so nothing loops or hangs. Runs every tick from /api/cron/run.
+export async function runReapStuckTasks(
+  now: Date = new Date(),
+  timeoutMs = 15 * 60_000,
+  maxAttempts = 3
+): Promise<{ reaped: number; failed: number }> {
+  const cutoff = new Date(now.getTime() - timeoutMs);
+  const stuck = await db.task.findMany({
+    where: { status: 'WORKING', startedAt: { lt: cutoff } },
+    select: { id: true, triggerType: true, _count: { select: { attempts: true } } },
+    take: 100,
+  });
+
+  let reaped = 0;
+  let failed = 0;
+  for (const t of stuck) {
+    // Only event/tool tasks auto-retry; a crashed scheduled/manual run is failed
+    // (visible, re-runnable by hand) — its next schedule occurrence fires normally.
+    const retryable =
+      (t.triggerType === 'EVENT' || t.triggerType === 'AGENT_TOOL') && t._count.attempts < maxAttempts;
+    if (retryable) {
+      await db.task.update({ where: { id: t.id }, data: { status: 'PENDING', progress: 0 } });
+      reaped += 1;
+    } else {
+      await db.task.update({
+        where: { id: t.id },
+        data: { status: 'FAILED', notes: 'توقّفت أثناء التنفيذ (على الأرجح إعادة تشغيل الخادم).' },
+      });
+      failed += 1;
+    }
+  }
+  return { reaped, failed };
+}
+
 export async function runDueSchedules(
   now: Date = new Date(),
   companyId?: string

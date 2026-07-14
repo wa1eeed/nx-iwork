@@ -9,7 +9,7 @@ import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
-import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId } from './core';
+import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId, skillPromptBlock, skillToolIds } from './core';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
 
@@ -107,16 +107,18 @@ export async function runPublicAgentChat(
     settings: agent.company.settings,
   });
   if (memoryBlock) system += `\n\n${memoryBlock}`;
+  const skillBlock = skillPromptBlock(agent.skills);
+  if (skillBlock) system += `\n\n${skillBlock}`;
 
   // The public-facing agent should always be able to check availability + book
   // when the business is booking-enabled — it's the core customer expectation.
   // Empty permissions already mean "all module tools", so only augment a scoped
   // agent (non-empty list) to avoid accidentally narrowing it.
   let perms = agent.permissions;
-  if (perms.length > 0 && agent.company.hasBookings) {
-    perms = Array.from(
-      new Set([...perms, 'check_availability', 'list_open_slots', 'create_booking', 'create_lead'])
-    );
+  if (perms.length > 0) {
+    const extra = skillToolIds(agent.skills);
+    if (agent.company.hasBookings) extra.push('check_availability', 'list_open_slots', 'create_booking', 'create_lead');
+    perms = Array.from(new Set([...perms, ...extra]));
   }
 
   // Hard default-DENY on the customer surface: no matter how the agent is

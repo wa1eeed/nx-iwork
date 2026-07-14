@@ -184,6 +184,7 @@ model Company {
   objectRecords       ObjectRecord[]
   channels            Channel[]
   mcpServers          McpServer[]
+  skills              Skill[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -591,9 +592,17 @@ model AgentMemory {
 // SKILLS & TOOLS
 // ========================================
 
+// A Skill is a named, reusable capability bundle an owner authors once and
+// attaches to any agent: its `promptTemplate` (instructions / how-to) is injected
+// into the agent's system prompt AND its `tools` are granted — composable like
+// OpenClaw skills, but governed. `companyId` null = a system/global skill (future
+// marketplace); set = this tenant's own skill.
 model Skill {
   id            String @id @default(cuid())
-  key           String @unique
+  companyId     String?
+  company       Company? @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  key           String // slug (not globally unique — scoped per company in app)
   name          String
   nameEn        String
   description   String @db.Text
@@ -604,8 +613,11 @@ model Skill {
   isPremium Boolean @default(false)
   isActive  Boolean @default(true)
 
-  promptTemplate String? @db.Text
+  promptTemplate String? @db.Text // the instructions injected into the system prompt
   category       String?
+
+  // Tool ids this skill grants the agent (built-in ids or mcp__… names).
+  tools String[] @default([])
 
   usersCount Int   @default(0)
   rating     Float @default(0)
@@ -617,6 +629,7 @@ model Skill {
 
   @@index([isActive])
   @@index([category])
+  @@index([companyId])
 }
 
 model AgentSkill {
@@ -1865,6 +1878,11 @@ model PlatformSettings {
 
   // SaaS limits (single_tenant ignores these)
   maxCompaniesAllowed Int? // null = unlimited
+
+  // Automation heartbeat — stamped by the every-minute cron (/api/cron/run) so the
+  // dashboard can PROVE autonomous execution is alive and warn if it stops firing.
+  lastCronRunAt   DateTime?
+  lastCronSummary Json? // { schedules, events, reminders, reaped }
 
   updatedAt DateTime @updatedAt
 }

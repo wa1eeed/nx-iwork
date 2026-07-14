@@ -461,7 +461,9 @@
     "reviews": "Reviews",
     "agentWork": "Agent work",
     "data": "Data",
-    "integrations": "Integrations"
+    "integrations": "Integrations",
+    "skills": "Skills",
+    "studio": "Studio"
   },
   "wallet": {
     "title": "Wallet",
@@ -1083,6 +1085,12 @@
         "nextRun": "Next run",
         "runs": "{count} runs",
         "none": "No recurring schedules yet."
+      },
+      "automation": {
+        "active": "Automation active · {ago} ago",
+        "staleTitle": "Automation may have stopped",
+        "neverTitle": "Automation hasn’t run yet",
+        "fixHint": "Agents run on their own only while the every-minute cron fires. Ensure the Coolify Scheduled Task hits /api/cron/run each minute (see docs)."
       }
     },
     "data": {
@@ -1168,6 +1176,59 @@
         "not_found": "Not found",
         "unauthorized": "Not authorized"
       }
+    },
+    "skills": {
+      "title": "Skills",
+      "subtitle": "Reusable capability bundles — instructions + tools — you author once and attach to any agent.",
+      "back": "Back",
+      "emptyTitle": "No skills yet",
+      "emptyBody": "A skill packages instructions and a set of tools. Attach it to agents so they all work the same way — change it once, every agent updates.",
+      "newSkill": "New skill",
+      "createSkill": "Create skill",
+      "deleteSkill": "Delete skill",
+      "deleteConfirm": "Delete “{name}”? Agents using it lose the skill.",
+      "created": "Skill created",
+      "updated": "Skill updated",
+      "deleted": "Skill deleted",
+      "name": "Name",
+      "namePlaceholder": "e.g. Handle refunds, Book & confirm",
+      "description": "Description",
+      "descriptionPlaceholder": "What this skill is for (optional)",
+      "instructions": "Instructions",
+      "instructionsPlaceholder": "How the agent should perform this skill — added to its system prompt.",
+      "instructionsHelp": "Injected into the system prompt of any agent that has this skill.",
+      "grantsTools": "Grants these tools",
+      "toolsN": "{count} tools",
+      "agentsN": "{count} agents",
+      "err": {
+        "name_required": "Add a name",
+        "not_found": "Not found",
+        "unauthorized": "Not authorized"
+      },
+      "assignAgents": "Assign to agents",
+      "assignHelp": "These agents get this skill’s instructions + tools."
+    },
+    "studio": {
+      "title": "Agent Studio",
+      "subtitle": "Test an agent in a sandbox — see its reply, which model answered, tokens, and the tools it called. Nothing is saved to history.",
+      "noAgents": "Create an agent first, then test it here.",
+      "pickAgent": "Agent",
+      "message": "Test message",
+      "messagePlaceholder": "Ask the agent something a customer or you might…",
+      "hint": "Runs exactly like the real agent (model · prompt · skills · tools), but is not saved.",
+      "run": "Run test",
+      "running": "Running…",
+      "runToSee": "Run a test to see the result.",
+      "surfaceInternal": "Internal",
+      "surfaceCustomer": "Customer-facing",
+      "replyTitle": "Reply",
+      "tokens": "tokens",
+      "toolsAvailable": "{count} tools available",
+      "toolCalls": "Tool calls",
+      "noToolCalls": "No tools were called this turn.",
+      "args": "Arguments",
+      "result": "Result",
+      "failed": "Test failed: {reason}"
     }
   },
   "agentCreate": {
