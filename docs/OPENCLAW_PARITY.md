@@ -44,7 +44,7 @@ So the target is: *OpenClaw's power, minus the assembly required.*
 | Channels — WhatsApp inbound | ✅ (unofficial QR) | ✅ **official Cloud API** `/api/channels/whatsapp` | **shipped, stronger** |
 | MCP client + per-tenant server registry | ✅ (core) | ✅ `/integrations` + `lib/mcp/` | **shipped** |
 | Skills as first-class composable units | ✅ | ✅ `/skills` (instructions + tools) | **shipped** |
-| Agent Studio / test sandbox | DIY | partial (`/chat`) | **gap (nice-to-have)** |
+| Agent Studio / test sandbox | DIY | ✅ `/studio` (reply + trace + model) | **shipped** |
 
 Net: the **governance + organization** half is done and is ahead of OpenClaw.
 The remaining gap is **reach** (channels), **extensibility** (MCP/Skills), and a
@@ -152,10 +152,17 @@ same platform without a code change.
    dashboard, task, and public surfaces. Change a skill once → every agent that has
    it updates. (Repurposed the previously-unused global `Skill` model into a
    per-tenant, tool-bundling one.)
-4. **Agent Studio + test sandbox.** A focused build/test surface (today `/chat` is
-   the owner↔agent console; a dedicated sandbox that shows tool calls + which
-   model/provider answered would complete create → test → deploy → monitor). ← the
-   last nice-to-have.
+4. **Agent Studio + test sandbox.** ✅ **SHIPPED** (2026-07-14). **`/studio`** runs
+   one message through an agent exactly like the real path (same model · prompt ·
+   skills · tools) but **without persisting history**, and returns the internals:
+   the reply, which provider/model answered, tokens, the count of available tools,
+   and the **full tool-call trace** (name · args · result · ok/fail). Completes the
+   create → **test** → deploy → monitor loop. `lib/agent/sandbox.ts` +
+   `runToolLoop`'s new optional `onToolResult` trace hook.
+
+**With Agent Studio, the OpenClaw-parity roadmap in this doc is fully delivered.**
+Remaining work is depth, not parity: a Router agent per inbound channel thread,
+WhatsApp Embedded-Signup go-live (Meta approval), and general autonomy hardening.
 
 ## 7. Design invariants (do not break)
 

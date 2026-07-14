@@ -214,8 +214,11 @@ admin layer. Full strategy + gap analysis in **`docs/OPENCLAW_PARITY.md`**.
    - **Skills — SHIPPED** (`/skills`): a skill = instructions + granted tools,
      authored once + attached to agents; runtime injects the instructions
      (`skillPromptBlock`) + expands the tool allow-list (`skillToolIds`).
-   - **Agent Studio / test sandbox** — the last nice-to-have (today `/chat` is the
-     owner↔agent console). ← next.
+   - **Agent Studio — SHIPPED** (`/studio`): sandbox-run an agent (reply + model +
+     tokens + full tool-call trace), no history saved.
+   **OpenClaw-parity roadmap is now fully delivered.** Remaining is depth: a Router
+   agent per channel thread, WhatsApp Embedded-Signup go-live (Meta approval), and
+   autonomy hardening (scheduler/cron reliability — in progress).
    - **Agent Studio / test sandbox** — build/test surface showing tool calls + which
      model answered (today `/chat` is the owner↔agent console).
    Guiding law: the two-layer contract. See `docs/AGENT_SYSTEM.md`.

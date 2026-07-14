@@ -63,6 +63,12 @@ the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.m
     `NEXT_PUBLIC_WHATSAPP_CONFIG_ID`) + server flow (code→token exchange, subscribe
     app to WABA, register phone) + `completeWhatsAppSignup`. Manual connect stays
     the fallback. Live use needs Meta Tech Provider approval.
+- **Agent Studio** (`/studio`) — a test sandbox: run one message through an agent
+  exactly like the real path (model · prompt · skills · tools) but without saving
+  history; returns the reply, provider/model, tokens, available-tool count, and the
+  full **tool-call trace** (name · args · result · ok/fail). `lib/agent/sandbox.ts`
+  + `POST /api/agents/[id]/sandbox` + `runToolLoop`'s optional `onToolResult` hook.
+  Completes create → test → deploy → monitor.
 - **Skills — reusable capability bundles.** A `Skill` = instructions
   (`promptTemplate`) + granted tools, authored in **`/skills`** and attached to any
   agent (assign from the skill side). Runtime: `loadAgentWithContext` loads an

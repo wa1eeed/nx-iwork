@@ -85,6 +85,8 @@ export interface ToolLoopArgs {
   /** The tools to offer — already filtered to the company's enabled modules. */
   tools: AiTool[];
   ctx: ToolContext;
+  /** Optional trace hook: called after each tool runs (used by the sandbox). */
+  onToolResult?: (t: { name: string; args: Record<string, unknown>; result: string }) => void;
 }
 
 export interface ToolLoopResult {
@@ -96,7 +98,7 @@ export interface ToolLoopResult {
 // round cap is hit). Throws on provider error; callers map that to their own
 // failure shape.
 export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
-  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx } = args;
+  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx, onToolResult } = args;
   let reply = '';
   let tokensUsed = 0;
 
@@ -124,6 +126,7 @@ export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
     });
     for (const call of completion.toolCalls) {
       const result = await executeTool(call.name, call.args, ctx);
+      onToolResult?.({ name: call.name, args: call.args, result });
       messages.push({ role: 'tool', toolCallId: call.id, name: call.name, content: result });
     }
 
