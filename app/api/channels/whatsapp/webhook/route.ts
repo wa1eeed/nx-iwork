@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
 import { runPublicAgentChat } from '@/lib/agent/public-chat';
+import { routeInboundAgent } from '@/lib/agent/router';
 import {
   verifyMetaSignature,
   extractWhatsAppMessage,
@@ -67,9 +68,12 @@ export async function POST(req: Request) {
   }
 
   try {
+    // Route a NEW thread to the best-matched customer-facing agent (existing
+    // threads keep their agent inside runPublicAgentChat).
+    const agentId = await routeInboundAgent(channel.companyId, channel.agentId, msg.text);
     const result = await runPublicAgentChat({
       companyId: channel.companyId,
-      agentId: channel.agentId,
+      agentId,
       // Stable per-customer id → conversation history persists. Public surface's
       // hard default-DENY tool allow-list still applies.
       visitorId: `wa:${msg.from}`,

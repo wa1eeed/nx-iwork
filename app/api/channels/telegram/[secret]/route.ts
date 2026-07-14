@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
 import { runPublicAgentChat } from '@/lib/agent/public-chat';
+import { routeInboundAgent } from '@/lib/agent/router';
 import { telegramSendMessage, type TelegramUpdate } from '@/lib/channels/telegram';
 
 // Telegram calls this on every inbound message. The `secret` path segment
@@ -46,9 +47,12 @@ export async function POST(req: Request, { params }: { params: Promise<{ secret:
   }
 
   try {
+    // Route a NEW thread to the best-matched customer-facing agent (existing
+    // threads keep their agent inside runPublicAgentChat).
+    const agentId = await routeInboundAgent(channel.companyId, channel.agentId, text);
     const result = await runPublicAgentChat({
       companyId: channel.companyId,
-      agentId: channel.agentId,
+      agentId,
       // Stable per-Telegram-chat visitor id → conversation history persists, and
       // the public-chat surface's hard default-DENY tool allow-list still applies.
       visitorId: `tg:${chatId}`,

@@ -46,6 +46,11 @@ the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.m
   attempts, tokens, `depends_on` chain, live progress, Run-now) + a
   **scheduled-runs calendar** (month grid, business-tz, cron expanded via new
   `expandOccurrences()`, selected-day agenda, recurring-schedule list).
+- **Inbound Router.** When a company runs more than one customer-facing agent, a
+  fresh channel thread (Telegram/WhatsApp) is routed to the best-matched agent via
+  deterministic keyword scoring over each agent's role + department + persona
+  (`lib/agent/router.ts`) — free, no AI call in the hot path. Existing threads keep
+  their agent; no signal → the channel default.
 - **Channels — Telegram + WhatsApp inbound.** `Channel` model (encrypted token,
   `secret`, `agentId`) routes inbound customer messages to a customer-facing agent
   via `runPublicAgentChat` (same default-DENY tool allow-list as the widget) and
