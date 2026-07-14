@@ -188,13 +188,14 @@
     },
     "dashboard": "Go to dashboard",
     "hero": {
-      "badge": "The all-in-one platform for service businesses",
-      "headline": "Run and grow your business,",
-      "headlineAccent": "all in one place",
-      "lede": "Online bookings, your own website, team & commissions, sales & invoices, and a smart AI assistant that answers customers and books for them — for clinics, salons, studios, and every service business.",
+      "badge": "AI employees for your business",
+      "headline": "Your business, run by",
+      "headlineAccent": "AI employees",
+      "lede": "Hire AI employees by department — they answer customers on WhatsApp, Telegram and your website, book appointments, follow up, and run the back office. Around the clock, in your language.",
       "ctaPrimary": "Start free",
       "ctaSecondary": "See how it works",
-      "trust": "No credit card required · Free to start · Live in minutes"
+      "trust": "No credit card required · Free to start · Live in minutes",
+      "channels": "Works on WhatsApp · Telegram · your website"
     },
     "stats": {
       "sectors": {
@@ -372,6 +373,37 @@
       "widgetUser": "Do you have an opening this evening?",
       "widgetAgent": "Yes — 5:30 or 7:00 PM today. Shall I book you?",
       "online": "Online"
+    },
+    "capabilities": {
+      "badge": "The platform",
+      "title": "Everything your AI team needs to run the business",
+      "subtitle": "Not a chatbot — a governed workforce with real tools, memory, and autonomy.",
+      "items": {
+        "employees": {
+          "name": "AI employees by department",
+          "desc": "Sales, support, operations — each with a role, memory, and the exact tools you allow."
+        },
+        "omnichannel": {
+          "name": "Omnichannel",
+          "desc": "One agent answers on WhatsApp, Telegram and your website — same brain, same rules."
+        },
+        "connect": {
+          "name": "Connect any tool",
+          "desc": "Plug in third-party services via MCP; your agents use them under your permissions."
+        },
+        "anySector": {
+          "name": "Built for any business",
+          "desc": "Model your own data — patients, vehicles, contracts — with no code, any sector."
+        },
+        "autonomous": {
+          "name": "Works on its own",
+          "desc": "Schedules, follow-ups and tasks run on time — agents come back with results, unprompted."
+        },
+        "models": {
+          "name": "Your choice of AI",
+          "desc": "Switch each agent between Gemini and OpenAI models — no code, from your dashboard."
+        }
+      }
     }
   },
   "auth": {
