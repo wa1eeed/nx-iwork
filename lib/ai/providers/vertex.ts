@@ -97,7 +97,7 @@ export function createVertexProvider(): AiProvider {
   return {
     id: 'vertex',
     async complete(req: AiCompletionRequest): Promise<AiCompletion> {
-      const modelId = resolveModel('vertex', req.tier);
+      const modelId = req.model ?? resolveModel('vertex', req.tier);
 
       const model = getClient().getGenerativeModel({
         model: modelId,
@@ -159,7 +159,7 @@ export function createVertexProvider(): AiProvider {
     },
 
     async *completeStream(req: AiCompletionRequest): AsyncGenerator<string, AiCompletion, void> {
-      const modelId = resolveModel('vertex', req.tier);
+      const modelId = req.model ?? resolveModel('vertex', req.tier);
       const model = getClient().getGenerativeModel({
         model: modelId,
         systemInstruction: req.system,

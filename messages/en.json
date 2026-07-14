@@ -1161,7 +1161,9 @@
       "business": "Business default",
       "formal_ar": "Formal Arabic",
       "en": "English"
-    }
+    },
+    "aiModel": "AI model",
+    "aiModelDefault": "Platform default (by tier)"
   },
   "events": {
     "LEAD_CREATED": "When a new lead/inquiry arrives",
@@ -1179,7 +1181,8 @@
       "companies": "Companies",
       "services": "Marketplace",
       "plans": "Plans & storage",
-      "settings": "Platform"
+      "settings": "Platform",
+      "models": "Models"
     },
     "plans": {
       "title": "Plans & storage",

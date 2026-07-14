@@ -9,7 +9,7 @@ import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
-import { loadAgentWithContext, runToolLoop, runToolLoopStream } from './core';
+import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId } from './core';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
 
@@ -136,6 +136,7 @@ export async function runPublicAgentChat(
     system,
     messages,
     tier: agent.model,
+    model: agentModelId(agent.aiModel, providerResult.provider.id),
     temperature: agent.temperature,
     maxTokens: agent.maxTokens,
     tools,

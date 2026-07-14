@@ -49,7 +49,7 @@ export function createAnthropicProvider(apiKey: string): AiProvider {
   return {
     id: 'anthropic',
     async complete(req: AiCompletionRequest): Promise<AiCompletion> {
-      const model = resolveModel('anthropic', req.tier);
+      const model = req.model ?? resolveModel('anthropic', req.tier);
 
       const body: Record<string, unknown> = {
         model,

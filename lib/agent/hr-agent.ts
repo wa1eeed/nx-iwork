@@ -49,6 +49,7 @@ export interface DeployPayload {
   systemPrompt?: string | null;
   scenarios?: DeployScenario[];
   permissions?: string[]; // explicit allow-list of tool ids (custom path)
+  aiModelId?: string | null; // concrete registry model (null = tier fallback)
   archetype?: string; // role-model archetype key (custom path); seeds surface
   personaConfig?: Prisma.InputJsonValue; // structured persona (custom path)
 }
@@ -212,6 +213,7 @@ export class HRAgentService {
         temperature: payload.temperature ?? 0.6,
         systemPrompt: payload.systemPrompt || null,
         permissions: payload.permissions ?? [],
+        aiModelId: payload.aiModelId ?? null,
         tokenLimit,
         status: 'ONBOARDING',
       },

@@ -50,7 +50,7 @@ export function createGoogleProvider(apiKey: string): AiProvider {
   return {
     id: 'google',
     async complete(req: AiCompletionRequest): Promise<AiCompletion> {
-      const model = resolveModel('google', req.tier);
+      const model = req.model ?? resolveModel('google', req.tier);
       const url = `${BASE}/${model}:generateContent?key=${encodeURIComponent(apiKey)}`;
 
       const body: Record<string, unknown> = {

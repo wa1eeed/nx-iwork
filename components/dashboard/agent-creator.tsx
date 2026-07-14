@@ -64,10 +64,12 @@ export function AgentCreator({
   templates,
   departments,
   managers,
+  models = [],
 }: {
   templates: TemplateCard[];
   departments: Dept[];
   managers: { id: string; name: string }[];
+  models?: { id: string; label: string; provider: string }[];
 }) {
   const t = useTranslations('agentCreate');
   const [configuring, setConfiguring] = useState<TemplateCard | 'custom' | null>(null);
@@ -95,6 +97,7 @@ export function AgentCreator({
           managers={managers}
           initial={initial}
           templates={hints}
+          models={models}
           onUseTemplate={(tt) => {
             const tpl = templates.find((x) => x.templateType === tt);
             if (tpl) setConfiguring(tpl);
@@ -124,6 +127,7 @@ function templateToInitial(tpl: TemplateCard, departments: Dept[]): AgentFormVal
     departmentId: dept?.id ?? '',
     parentId: '',
     model: tpl.model,
+    aiModelId: '',
     autonomy: 'ASK',
     temperature: 0.6,
     systemPrompt: '',

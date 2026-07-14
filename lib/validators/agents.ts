@@ -22,6 +22,8 @@ export const agentSchema = z.object({
   systemPrompt: z.string().trim().max(4000).optional().nullable(),
   // Explicit tool-call allow-list. Empty = all module tools.
   permissions: z.array(z.string().trim().max(60)).max(40).optional(),
+  // Concrete AI model from the registry (null/empty = use the capability tier).
+  aiModelId: z.string().trim().max(60).nullable().optional(),
   // Role-model archetype (capability bundle → hard customer/internal scope).
   archetype: z.string().trim().max(40).optional(),
   // Structured persona (compiled deterministically into the prompt). Partial —

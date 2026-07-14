@@ -120,6 +120,11 @@ export default async function AgentProfilePage({
     agent.permissions
   );
 
+  const aiModels = await db.aiModel.findMany({
+    where: { enabled: true },
+    orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
+    select: { id: true, label: true, provider: true },
+  });
   const initialPersona = parsePersonaConfig(agent.personaConfig);
   const initial: AgentFormValues = {
     id: agent.id,
@@ -136,6 +141,7 @@ export default async function AgentProfilePage({
     temperature: agent.temperature,
     systemPrompt: agent.systemPrompt ?? '',
     permissions: agent.permissions,
+    aiModelId: agent.aiModelId ?? '',
     archetype: agent.archetype ?? 'front_desk',
     personaCfg: {
       tone: initialPersona?.tone ?? 'warm',
@@ -426,7 +432,7 @@ export default async function AgentProfilePage({
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
-          <AgentForm departments={departments} managers={managers} initial={initial} />
+          <AgentForm departments={departments} managers={managers} initial={initial} models={aiModels} />
           <AgentSchedules
             agentId={agent.id}
             timezone={settings?.timezone ?? 'Asia/Riyadh'}

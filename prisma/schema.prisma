@@ -316,6 +316,30 @@ enum ClaudeModel {
   OPUS
 }
 
+// Platform-wide catalogue of concrete AI models the super-admin makes available.
+// Adding a newly-released model (Gemini/OpenAI/Claude) is just a row here — no
+// code change: it appears in the agent model picker automatically. `provider`
+// selects the runtime adapter (vertex | google | anthropic | openai); `tier` is
+// a capability hint used for token accounting + the legacy fallback.
+model AiModel {
+  id        String      @id @default(cuid())
+  provider  String // 'vertex' | 'google' | 'anthropic' | 'openai'
+  modelId   String // concrete id sent to the provider, e.g. 'gemini-2.5-pro', 'gpt-4o'
+  label     String // human name shown in settings, e.g. 'Gemini 2.5 Pro'
+  tier      ClaudeModel @default(SONNET)
+  enabled   Boolean     @default(true)
+  isDefault Boolean     @default(false) // the platform default when an agent picks none
+  sortOrder Int         @default(0)
+
+  agents Agent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([provider, modelId])
+  @@index([enabled])
+}
+
 // How autonomously an agent acts before pausing for the owner (see Agent.autonomy).
 enum AutonomyLevel {
   SUGGEST // only proposes; never acts without approval
@@ -392,7 +416,11 @@ model Agent {
   subordinates Agent[]    @relation("AgentHierarchy")
 
   // AI Configuration
+  // Capability tier — the legacy/fallback selector. `aiModelId` overrides it with
+  // a concrete registry model (provider + model id) when the owner picks one.
   model        ClaudeModel @default(SONNET)
+  aiModelId    String?
+  aiModel      AiModel?    @relation(fields: [aiModelId], references: [id], onDelete: SetNull)
   temperature  Float       @default(0.7)
   maxTokens    Int         @default(4096)
   systemPrompt String?     @db.Text

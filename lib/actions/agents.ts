@@ -124,6 +124,7 @@ export async function createAgent(
       systemPrompt: d.systemPrompt || null,
       scenarios,
       permissions: d.permissions ?? [],
+      aiModelId: d.aiModelId ?? null,
       archetype: d.archetype,
       personaConfig: (d.personaConfig ?? undefined) as Prisma.InputJsonValue | undefined,
       force: opts?.force,
@@ -190,6 +191,7 @@ export async function updateAgent(id: string, raw: AgentInput): Promise<AgentAct
         jobDescription: d.jobDescription?.trim() || null,
         autonomy: d.autonomy,
         ...(d.permissions ? { permissions: d.permissions } : {}),
+        ...(d.aiModelId !== undefined ? { aiModelId: d.aiModelId || null } : {}),
         ...(d.archetype ? { archetype: d.archetype } : {}),
         ...(arch ? { surface: arch.surface } : {}),
         ...(d.personaConfig !== undefined

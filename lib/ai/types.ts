@@ -16,7 +16,7 @@ import type { ClaudeModel } from '@prisma/client';
 //   OPUS   -> most capable      (research, complex multi-step tasks)
 export type ModelTier = ClaudeModel;
 
-export type AiProviderId = 'anthropic' | 'google' | 'vertex';
+export type AiProviderId = 'anthropic' | 'google' | 'vertex' | 'openai';
 
 export type AiRole = 'user' | 'assistant';
 
@@ -50,6 +50,9 @@ export interface AiCompletionRequest {
   /** Conversation so far, oldest first. Must end with a user/tool message. */
   messages: AiMessage[];
   tier: ModelTier;
+  /** Concrete model id (from the AiModel registry). Overrides the tier→id map
+   *  when set; otherwise the provider resolves the tier to its default id. */
+  model?: string;
   temperature?: number;
   maxTokens?: number;
   /** Tools the model may call this turn. */
