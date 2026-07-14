@@ -40,7 +40,8 @@ So the target is: *OpenClaw's power, minus the assembly required.*
 | **Provider-agnostic model switching** | ✅ | ✅ **model registry** (§3) | **shipped** |
 | **Owner-defined dynamic data** | via MCP/DB | ✅ **Business Objects** (§4) | **shipped** |
 | **Scheduled-task calendar + task monitor** | ✗ (raw) | ✅ **Agent Work** (§5) | **shipped, ahead** |
-| Channels (WhatsApp / Telegram inbound) | ✅ | ⏳ | **gap — next** |
+| Channels — Telegram inbound | ✅ | ✅ `/api/channels/telegram` + Settings → Channels | **shipped** |
+| Channels — WhatsApp inbound | ✅ | ⏳ (`ChannelType.WHATSAPP` reserved) | **gap — next** |
 | MCP client + per-tenant server registry | ✅ (core) | ⏳ | **gap** |
 | Skills as first-class composable units | ✅ | partial (tools) | **gap** |
 | Agent Studio / test sandbox | DIY | partial (`/chat`) | **gap (nice-to-have)** |
@@ -107,12 +108,14 @@ same platform without a code change.
 
 ## 6. The gap — ordered next steps
 
-1. **Channels — WhatsApp / Telegram inbound + a Router agent.** The biggest reach
-   gap. A per-tenant channel token (settings) + a webhook route that maps an
-   inbound message → the public-chat agent → a reply back over the channel. Start
-   with **Telegram** (bot token + webhook is the most self-contained); WhatsApp via
-   Cloud API next. A lightweight **Router** decides which agent/department handles
-   an inbound thread.
+1. **Channels — inbound messaging + a Router agent.** ✅ **Telegram SHIPPED**
+   (2026-07-14): owner connects a bot in Settings → Channels; the webhook
+   (`/api/channels/telegram/[secret]`, `secret_token`-verified) maps an inbound
+   message → the chosen customer-facing agent via `runPublicAgentChat` (same hard
+   default-DENY tool allow-list as the widget) → a reply over Telegram. Token
+   encrypted; `visitorId = tg:{chatId}` keeps per-chat history. **Next:** WhatsApp
+   Cloud API (`ChannelType.WHATSAPP` already reserved) + a lightweight **Router**
+   that picks the agent/department per inbound thread (today one agent per channel).
 2. **MCP client + per-tenant server registry.** Let an owner register an MCP server
    (URL + auth) and expose its tools to chosen agents — the same `getToolsForAgent`
    gate, tools sourced from a remote MCP instead of the built-in catalogue. This is

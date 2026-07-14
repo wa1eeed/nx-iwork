@@ -46,11 +46,19 @@ the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.m
   attempts, tokens, `depends_on` chain, live progress, Run-now) + a
   **scheduled-runs calendar** (month grid, business-tz, cron expanded via new
   `expandOccurrences()`, selected-day agenda, recurring-schedule list).
+- **Channels — Telegram inbound.** `Channel` model (encrypted token, `secret`,
+  `agentId`) + webhook `POST /api/channels/telegram/[secret]` (verified via
+  Telegram's `secret_token`) that routes inbound messages to a customer-facing
+  agent through `runPublicAgentChat` (same default-DENY tool allow-list as the
+  widget) and replies over Telegram. Owner connects/disconnects in **Settings →
+  Channels** (validates the token via getMe, registers the webhook). Migration
+  `20260714150000`. WhatsApp is reserved (`ChannelType.WHATSAPP`) for next.
 
 ### Notes
 - All additive + backward compatible (`aiModelId` null → tier; `hasObjects` false
   → no object tools). Migrations `20260710180000_ai_model_registry`,
-  `20260714120000_business_objects`. tsc + build + en/ar parity clean.
+  `20260714120000_business_objects`, `20260714150000_channels`. tsc + build +
+  en/ar parity clean.
 
 ---
 

@@ -182,6 +182,7 @@ model Company {
   sitePages           SitePage[]
   objectTypes         ObjectType[]
   objectRecords       ObjectRecord[]
+  channels            Channel[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -472,6 +473,7 @@ model Agent {
   chatMessages        ChatMessage[]
   publicConversations PublicConversation[]
   timeline            TimelineEvent[]
+  channels            Channel[]
 
   // Statistics
   tasksCompleted  Int @default(0)
@@ -2189,4 +2191,49 @@ model ObjectRecord {
   @@index([companyId])
   @@index([objectTypeId])
   @@index([companyId, objectTypeId])
+}
+
+// ========================================
+// CHANNELS (inbound messaging → agents)
+// ========================================
+// An owner connects a messaging bot (Telegram now, WhatsApp next); inbound
+// customer messages route to a customer-facing agent through the SAME public-chat
+// path as the website widget, and replies go back over the channel. This is the
+// OpenClaw-parity "reach" layer — governed by the same tool/permission gate.
+enum ChannelType {
+  TELEGRAM
+  WHATSAPP // reserved — not yet wired
+}
+
+model Channel {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  type ChannelType
+
+  // The customer-facing agent that answers on this channel (must be a
+  // CUSTOMER_FACING surface). SetNull so deleting the agent disables the channel
+  // rather than dropping the connection config.
+  agentId String?
+  agent   Agent?  @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  // Bot credential, encrypted at rest (same scheme as BYOK keys).
+  token String @db.Text
+
+  // Bot identity from getMe (display only).
+  botUsername String?
+
+  // Unguessable per-channel secret: it's the webhook URL path segment AND the
+  // value we register as Telegram's `secret_token` (echoed in a header on every
+  // update), so only Telegram can reach the webhook.
+  secret String @unique
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, type]) // one channel per type per company (MVP)
+  @@index([companyId])
 }

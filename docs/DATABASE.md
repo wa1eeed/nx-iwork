@@ -1037,4 +1037,13 @@ backward compatible.
   / `update_record` are gated on the company having ≥1 type and are excluded from
   the public widget. See [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) §4.
 
-Migrations: `20260710120000_task_depends_on` … `20260714120000_business_objects`.
+### Channels (inbound messaging → agents)  — migration `20260714150000`
+- **`Channel`** + **`ChannelType`** (`TELEGRAM` | `WHATSAPP`) — an owner connects a
+  bot; inbound customer messages route to a customer-facing agent through the same
+  public-chat path as the website widget, replies go back over the channel.
+  `token` encrypted at rest; `secret` (unique) is the webhook URL segment AND the
+  Telegram `secret_token` header we verify. `@@unique([companyId, type])` (one per
+  type per company). `agentId` SetNull. See [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) §6.
+  Webhook route `POST /api/channels/telegram/[secret]`; settings → **Channels** tab.
+
+Migrations: `20260710120000_task_depends_on` … `20260714150000_channels`.
