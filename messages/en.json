@@ -459,7 +459,8 @@
     },
     "workspace": "Workspace",
     "reviews": "Reviews",
-    "agentWork": "Agent work"
+    "agentWork": "Agent work",
+    "data": "Data"
   },
   "wallet": {
     "title": "Wallet",
@@ -1033,6 +1034,60 @@
         "runs": "{count} runs",
         "none": "No recurring schedules yet."
       }
+    },
+    "data": {
+      "title": "Data",
+      "subtitle": "Model your own data — patients, vehicles, contracts, cases — and your AI agents can read and update it.",
+      "back": "Back",
+      "emptyTitle": "No data types yet",
+      "emptyBody": "Define your own record types with typed fields. Your agents get tools to read and write them — the foundation for any business, any sector.",
+      "newType": "New type",
+      "editType": "Edit type",
+      "createType": "Create type",
+      "deleteType": "Delete type",
+      "deleteTypeConfirm": "Delete “{name}” and all its records? This can’t be undone.",
+      "typeCreated": "Type created",
+      "typeUpdated": "Type updated",
+      "typeDeleted": "Type deleted",
+      "fieldsCount": "{count} fields",
+      "recordsCount": "{count} records",
+      "typeName": "Name",
+      "typeNamePlaceholder": "e.g. Patient, Vehicle, Contract",
+      "typeNameEn": "Name (English)",
+      "icon": "Icon",
+      "typeDescription": "Description",
+      "typeDescriptionPlaceholder": "What does this type represent?",
+      "fields": "Fields",
+      "fieldLabelPlaceholder": "Field label",
+      "addField": "Add field",
+      "required": "Required",
+      "optionsPlaceholder": "Options, comma-separated",
+      "nameRequired": "Add a name",
+      "fieldsRequired": "Add at least one field",
+      "type": {
+        "text": "Text",
+        "textarea": "Long text",
+        "number": "Number",
+        "date": "Date",
+        "boolean": "Yes / No",
+        "select": "Choice",
+        "email": "Email",
+        "phone": "Phone"
+      },
+      "err": {
+        "unauthorized": "Not authorized",
+        "name_required": "Add a name",
+        "fields_required": "Add at least one field",
+        "not_found": "Not found"
+      },
+      "addRecord": "Add record",
+      "editRecord": "Edit record",
+      "recordAdded": "Record added",
+      "recordUpdated": "Record updated",
+      "recordDeleted": "Record deleted",
+      "deleteRecord": "Delete record",
+      "deleteRecordConfirm": "Delete this record? This can’t be undone.",
+      "noRecords": "No records yet."
     }
   },
   "agentCreate": {

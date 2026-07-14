@@ -459,7 +459,8 @@
     },
     "workspace": "مساحة العمل",
     "reviews": "التقييمات",
-    "agentWork": "أعمال الوكلاء"
+    "agentWork": "أعمال الوكلاء",
+    "data": "البيانات"
   },
   "wallet": {
     "title": "المحفظة",
@@ -1033,6 +1034,60 @@
         "runs": "{count} تشغيل",
         "none": "لا توجد جداول متكررة بعد."
       }
+    },
+    "data": {
+      "title": "البيانات",
+      "subtitle": "صمّم بياناتك الخاصة — مرضى، مركبات، عقود، حالات — ويستطيع وكلاؤك الأذكياء قراءتها وتحديثها.",
+      "back": "رجوع",
+      "emptyTitle": "لا توجد أنواع بيانات بعد",
+      "emptyBody": "عرّف أنواع سجلاتك الخاصة بحقول محدّدة النوع. يحصل وكلاؤك على أدوات لقراءتها والكتابة فيها — الأساس لأي عمل وأي قطاع.",
+      "newType": "نوع جديد",
+      "editType": "تعديل النوع",
+      "createType": "إنشاء النوع",
+      "deleteType": "حذف النوع",
+      "deleteTypeConfirm": "حذف «{name}» وكل سجلاته؟ لا يمكن التراجع.",
+      "typeCreated": "تم إنشاء النوع",
+      "typeUpdated": "تم تحديث النوع",
+      "typeDeleted": "تم حذف النوع",
+      "fieldsCount": "{count} حقل",
+      "recordsCount": "{count} سجل",
+      "typeName": "الاسم",
+      "typeNamePlaceholder": "مثل: مريض، مركبة، عقد",
+      "typeNameEn": "الاسم (بالإنجليزية)",
+      "icon": "الأيقونة",
+      "typeDescription": "الوصف",
+      "typeDescriptionPlaceholder": "ماذا يمثّل هذا النوع؟",
+      "fields": "الحقول",
+      "fieldLabelPlaceholder": "اسم الحقل",
+      "addField": "إضافة حقل",
+      "required": "إلزامي",
+      "optionsPlaceholder": "الخيارات، مفصولة بفواصل",
+      "nameRequired": "أضف اسمًا",
+      "fieldsRequired": "أضف حقلًا واحدًا على الأقل",
+      "type": {
+        "text": "نص",
+        "textarea": "نص طويل",
+        "number": "رقم",
+        "date": "تاريخ",
+        "boolean": "نعم / لا",
+        "select": "اختيار",
+        "email": "بريد",
+        "phone": "هاتف"
+      },
+      "err": {
+        "unauthorized": "غير مصرّح",
+        "name_required": "أضف اسمًا",
+        "fields_required": "أضف حقلًا واحدًا على الأقل",
+        "not_found": "غير موجود"
+      },
+      "addRecord": "إضافة سجل",
+      "editRecord": "تعديل السجل",
+      "recordAdded": "تمت الإضافة",
+      "recordUpdated": "تم التحديث",
+      "recordDeleted": "تم الحذف",
+      "deleteRecord": "حذف السجل",
+      "deleteRecordConfirm": "حذف هذا السجل؟ لا يمكن التراجع.",
+      "noRecords": "لا توجد سجلات بعد."
     }
   },
   "agentCreate": {

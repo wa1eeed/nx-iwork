@@ -180,6 +180,8 @@ model Company {
   inventoryItems      InventoryItem[]
   staffMembers        StaffMember[]
   sitePages           SitePage[]
+  objectTypes         ObjectType[]
+  objectRecords       ObjectRecord[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2131,4 +2133,60 @@ model SitePage {
 
   @@unique([companyId, slug])
   @@index([companyId])
+}
+
+// ========================================
+// BUSINESS OBJECTS (owner-defined data)
+// ========================================
+// The sector-generality lever: instead of us hard-coding every entity a business
+// could track, the owner defines their OWN data types — "Patient", "Vehicle",
+// "Contract", "Property", "Case" — each with typed fields. The dashboard renders
+// a table + form for each type, and the AI agents get generic tools to read and
+// write the records. Everything is scoped by companyId; the field schema lives
+// as JSON so no migration is needed when an owner adds a field.
+model ObjectType {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  key         String // machine key, unique per company (e.g. "patient")
+  name        String // display label (owner locale)
+  nameEn      String?
+  icon        String? // lucide icon name
+  description String? @db.Text
+
+  // Field definitions: [{ key, label, type, required, options?[] }].
+  // type ∈ text | textarea | number | date | boolean | select | email | phone
+  fields Json @default("[]")
+
+  records ObjectRecord[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, key])
+  @@index([companyId])
+}
+
+model ObjectRecord {
+  id           String     @id @default(cuid())
+  companyId    String
+  company      Company    @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  objectTypeId String
+  objectType   ObjectType @relation(fields: [objectTypeId], references: [id], onDelete: Cascade)
+
+  // Field values keyed by field key. Untyped by Prisma; validated in app code
+  // against the parent ObjectType's field schema.
+  data Json @default("{}")
+
+  // Denormalized display label (from the first text field) for lists + agent
+  // output, so we don't parse `data` to show a name.
+  title String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([companyId])
+  @@index([objectTypeId])
+  @@index([companyId, objectTypeId])
 }

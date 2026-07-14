@@ -12,6 +12,7 @@ import {
   CheckCircle,
   CircleDollarSign,
   Contact,
+  Database,
   FileText,
   HandCoins,
   ShoppingBag,
@@ -90,6 +91,7 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: '/outputs', icon: Sparkles, labelKey: 'workspace' },
       { href: '/departments', icon: Building2, labelKey: 'departments' },
       { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
+      { href: '/data', icon: Database, labelKey: 'data' },
     ],
   },
   {
