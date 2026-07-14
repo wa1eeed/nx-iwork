@@ -6,7 +6,7 @@
 // later — same engine either way.
 
 import { db } from '@/lib/db';
-import { getProviderForCompany } from '@/lib/ai';
+import { getProviderForModel } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
@@ -59,7 +59,9 @@ export async function runAgentTask(
   const agent = await loadAgentWithContext(task.agentId, companyId);
   if (!agent) return { ok: false, reason: 'no_agent' };
 
-  const providerResult = await getProviderForCompany(companyId);
+  // A registry model pinned to this agent chooses its own vendor; otherwise the
+  // company's default provider (managed Vertex / BYOK) runs the tier.
+  const providerResult = await getProviderForModel(companyId, agent.aiModel);
   if (!providerResult.ok) return { ok: false, reason: providerResult.reason };
 
   // Managed mode: refuse before spending if the token bank is empty.

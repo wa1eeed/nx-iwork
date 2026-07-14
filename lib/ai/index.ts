@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { decrypt } from '@/lib/encryption';
 import { createAnthropicProvider } from './providers/anthropic';
 import { createGoogleProvider } from './providers/google';
+import { createOpenAiProvider } from './providers/openai';
 import { createVertexProvider, isVertexConfigured } from './providers/vertex';
 import type { AiProvider, AiProviderId } from './types';
 
@@ -28,10 +29,67 @@ export type GetProviderResult =
 
 function buildProvider(providerId: string, apiKey: string): AiProvider {
   // CompanyApiSettings.byokProvider is a free-text column; normalise it.
-  const id: AiProviderId = providerId === 'google' ? 'google' : 'anthropic';
-  return id === 'google'
-    ? createGoogleProvider(apiKey)
-    : createAnthropicProvider(apiKey);
+  if (providerId === 'google') return createGoogleProvider(apiKey);
+  if (providerId === 'openai') return createOpenAiProvider(apiKey);
+  return createAnthropicProvider(apiKey);
+}
+
+// Build a provider from the PLATFORM's own credentials for a specific vendor, or
+// null when that vendor isn't configured. This is what lets an owner pin one
+// agent to (say) GPT-4o while the company default stays managed Gemini/Vertex —
+// the registry model carries its provider, and we spin up that vendor's adapter
+// with the platform key. Spend is still gated by the token bank.
+export function platformProvider(providerId: string): AiProvider | null {
+  switch (providerId) {
+    case 'vertex':
+      return isVertexConfigured() ? createVertexProvider() : null;
+    case 'openai': {
+      const key = process.env.OPENAI_API_KEY;
+      return key ? createOpenAiProvider(key) : null;
+    }
+    case 'anthropic': {
+      const key = process.env.ANTHROPIC_API_KEY;
+      return key ? createAnthropicProvider(key) : null;
+    }
+    case 'google': {
+      const key = process.env.GOOGLE_API_KEY ?? process.env.GEMINI_API_KEY;
+      return key ? createGoogleProvider(key) : null;
+    }
+    default:
+      return null;
+  }
+}
+
+// Given the company's DEFAULT provider result and an agent's chosen registry
+// model, return the provider that should actually run: a model pins its own
+// vendor (built from platform creds), otherwise the company default (+ tier).
+// Falls back to the default when the pinned vendor isn't configured — matching
+// agentModelId(), which then returns undefined so the tier map is used. Sync, so
+// callers that fetched the default in a Promise.all can override without a
+// second round-trip.
+export function providerForAgentModel(
+  defaultResult: GetProviderResult,
+  model: { provider: string; enabled: boolean } | null | undefined
+): GetProviderResult {
+  if (model && model.enabled) {
+    // Company default already on the model's vendor (e.g. managed Vertex + a
+    // Gemini model) — keep it; no need to rebuild.
+    if (defaultResult.ok && defaultResult.provider.id === model.provider) return defaultResult;
+    const pinned = platformProvider(model.provider);
+    if (pinned) return { ok: true, provider: pinned };
+    // Vendor not configured → fall through to the default (tier fallback).
+  }
+  return defaultResult;
+}
+
+// Convenience for callers that load the agent before resolving the provider:
+// the company default, overridden by the agent's pinned model vendor.
+export async function getProviderForModel(
+  companyId: string,
+  model: { provider: string; enabled: boolean } | null | undefined
+): Promise<GetProviderResult> {
+  const base = await getProviderForCompany(companyId);
+  return providerForAgentModel(base, model);
 }
 
 export async function getProviderForCompany(
