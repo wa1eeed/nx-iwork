@@ -200,9 +200,11 @@ admin layer. Full strategy + gap analysis in **`docs/OPENCLAW_PARITY.md`**.
    organization half is done and ahead of OpenClaw; Phase 4 ops command center
    (`/agent-work`), the **model registry**, and **Business Objects** all shipped
    (2026-07-14, above). **Remaining gap** (full analysis in `docs/OPENCLAW_PARITY.md`):
-   - **Channels — Telegram SHIPPED** (Settings → Channels + `/api/channels/telegram`).
-     **Next:** WhatsApp Cloud API (`ChannelType.WHATSAPP` reserved) + a Router agent
-     that picks the agent/department per inbound thread (today one agent/channel).
+   - **Channels — Telegram + WhatsApp SHIPPED** (Settings → Channels). WhatsApp uses
+     the **official Cloud API** (stateless → scales on Cloud Run + many tenants;
+     chosen over unofficial QR bridges). **Next:** WhatsApp **Embedded Signup**
+     (one-click self-serve, become a Meta Tech Provider) + a **Router** agent that
+     picks the agent/department per inbound thread (today one agent/channel).
    - **MCP client + per-tenant server registry** — register an MCP server and expose
      its tools to chosen agents through the same `getToolsForAgent` gate.
    - **Skills as first-class** — named/versioned capability bundles.

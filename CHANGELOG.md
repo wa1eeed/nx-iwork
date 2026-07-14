@@ -46,18 +46,25 @@ the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.m
   attempts, tokens, `depends_on` chain, live progress, Run-now) + a
   **scheduled-runs calendar** (month grid, business-tz, cron expanded via new
   `expandOccurrences()`, selected-day agenda, recurring-schedule list).
-- **Channels — Telegram inbound.** `Channel` model (encrypted token, `secret`,
-  `agentId`) + webhook `POST /api/channels/telegram/[secret]` (verified via
-  Telegram's `secret_token`) that routes inbound messages to a customer-facing
-  agent through `runPublicAgentChat` (same default-DENY tool allow-list as the
-  widget) and replies over Telegram. Owner connects/disconnects in **Settings →
-  Channels** (validates the token via getMe, registers the webhook). Migration
-  `20260714150000`. WhatsApp is reserved (`ChannelType.WHATSAPP`) for next.
+- **Channels — Telegram + WhatsApp inbound.** `Channel` model (encrypted token,
+  `secret`, `agentId`) routes inbound customer messages to a customer-facing agent
+  via `runPublicAgentChat` (same default-DENY tool allow-list as the widget) and
+  replies over the channel. Owner connects in **Settings → Channels**.
+  - **Telegram:** per-tenant webhook `POST /api/channels/telegram/[secret]`
+    (`secret_token`-verified). Migration `20260714150000`.
+  - **WhatsApp:** the **official Meta Cloud API** — picked over unofficial QR
+    bridges (Evolution/Baileys) because it's **stateless** (one app webhook + REST),
+    so it scales on Cloud Run + many tenants with no ban risk. App-level webhook
+    `/api/channels/whatsapp/webhook` (GET verify + POST HMAC), routed by
+    `phone_number_id`; `Channel` gains `phoneNumberId`/`wabaId`. Manual connect
+    now (token + phone-number id); Embedded Signup next. Env `WHATSAPP_APP_SECRET`
+    + `WHATSAPP_VERIFY_TOKEN`. Migration `20260714170000`.
 
 ### Notes
 - All additive + backward compatible (`aiModelId` null → tier; `hasObjects` false
-  → no object tools). Migrations `20260710180000_ai_model_registry`,
-  `20260714120000_business_objects`, `20260714150000_channels`. tsc + build +
+  → no object tools; channel fields null for the other type). Migrations
+  `20260710180000_ai_model_registry`, `20260714120000_business_objects`,
+  `20260714150000_channels`, `20260714170000_whatsapp_channel`. tsc + build +
   en/ar parity clean.
 
 ---

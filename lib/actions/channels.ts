@@ -12,6 +12,7 @@ import {
   telegramSetWebhook,
   telegramDeleteWebhook,
 } from '@/lib/channels/telegram';
+import { whatsappVerifyPhone } from '@/lib/channels/whatsapp';
 
 type Result =
   | { ok: true; botUsername?: string | null }
@@ -117,6 +118,89 @@ export async function disconnectTelegram(): Promise<Result> {
     // best-effort — remove the row regardless
   }
   await db.channel.delete({ where: { id: channel.id } });
+  revalidatePath('/settings');
+  return { ok: true };
+}
+
+// ── WhatsApp Cloud API ───────────────────────────────────────────────────────
+// Manual connect: the owner pastes the access token + phone-number id from their
+// Meta app. Stateless — inbound arrives on the shared app webhook, routed by the
+// phone-number id we store here. (Embedded Signup is the next onboarding step.)
+export async function connectWhatsApp(input: {
+  accessToken: string;
+  phoneNumberId: string;
+  agentId: string;
+}): Promise<Result> {
+  const cid = await companyId();
+  if (!cid) return { ok: false, error: 'unauthorized' };
+
+  const accessToken = input.accessToken?.trim();
+  const phoneNumberId = input.phoneNumberId?.trim();
+  if (!accessToken || !phoneNumberId) return { ok: false, error: 'token_required' };
+  if (!input.agentId || !(await assertCustomerAgent(cid, input.agentId))) {
+    return { ok: false, error: 'agent_invalid' };
+  }
+
+  // A phone-number id maps to exactly one channel (globally unique routing key).
+  const owner = await db.channel.findUnique({
+    where: { phoneNumberId },
+    select: { companyId: true },
+  });
+  if (owner && owner.companyId !== cid) return { ok: false, error: 'phone_in_use' };
+
+  const verify = await whatsappVerifyPhone(accessToken, phoneNumberId);
+  if (!verify.ok) return { ok: false, error: 'invalid_token' };
+  const label = verify.verifiedName || verify.displayNumber;
+
+  const existing = await db.channel.findUnique({
+    where: { companyId_type: { companyId: cid, type: 'WHATSAPP' } },
+    select: { secret: true },
+  });
+  const secret = existing?.secret ?? randomBytes(24).toString('hex');
+
+  await db.channel.upsert({
+    where: { companyId_type: { companyId: cid, type: 'WHATSAPP' } },
+    create: {
+      companyId: cid,
+      type: 'WHATSAPP',
+      token: encrypt(accessToken),
+      agentId: input.agentId,
+      phoneNumberId,
+      botUsername: label,
+      secret,
+      isActive: true,
+    },
+    update: {
+      token: encrypt(accessToken),
+      agentId: input.agentId,
+      phoneNumberId,
+      botUsername: label,
+      isActive: true,
+    },
+  });
+
+  revalidatePath('/settings');
+  return { ok: true, botUsername: label };
+}
+
+export async function setWhatsAppAgent(agentId: string): Promise<Result> {
+  const cid = await companyId();
+  if (!cid) return { ok: false, error: 'unauthorized' };
+  if (!(await assertCustomerAgent(cid, agentId))) return { ok: false, error: 'agent_invalid' };
+  const channel = await db.channel.findUnique({
+    where: { companyId_type: { companyId: cid, type: 'WHATSAPP' } },
+    select: { id: true },
+  });
+  if (!channel) return { ok: false, error: 'not_connected' };
+  await db.channel.update({ where: { id: channel.id }, data: { agentId } });
+  revalidatePath('/settings');
+  return { ok: true };
+}
+
+export async function disconnectWhatsApp(): Promise<Result> {
+  const cid = await companyId();
+  if (!cid) return { ok: false, error: 'unauthorized' };
+  await db.channel.deleteMany({ where: { companyId: cid, type: 'WHATSAPP' } });
   revalidatePath('/settings');
   return { ok: true };
 }

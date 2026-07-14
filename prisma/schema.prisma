@@ -2202,7 +2202,7 @@ model ObjectRecord {
 // OpenClaw-parity "reach" layer — governed by the same tool/permission gate.
 enum ChannelType {
   TELEGRAM
-  WHATSAPP // reserved — not yet wired
+  WHATSAPP // WhatsApp Cloud API (official, stateless — scales on Cloud Run)
 }
 
 model Channel {
@@ -2218,15 +2218,22 @@ model Channel {
   agentId String?
   agent   Agent?  @relation(fields: [agentId], references: [id], onDelete: SetNull)
 
-  // Bot credential, encrypted at rest (same scheme as BYOK keys).
+  // Access credential, encrypted at rest (same scheme as BYOK keys). Telegram bot
+  // token, or the WhatsApp Cloud API access token.
   token String @db.Text
 
-  // Bot identity from getMe (display only).
+  // Channel display handle — Telegram @username, or the WhatsApp display number.
   botUsername String?
 
-  // Unguessable per-channel secret: it's the webhook URL path segment AND the
-  // value we register as Telegram's `secret_token` (echoed in a header on every
-  // update), so only Telegram can reach the webhook.
+  // WhatsApp Cloud API only: the Meta phone-number id we send from AND the key we
+  // route inbound webhooks by (Meta uses one app-level webhook for all tenants).
+  // Globally unique — a phone number id belongs to exactly one channel.
+  phoneNumberId String? @unique
+  wabaId        String? // WhatsApp Business Account id (for webhook subscription)
+
+  // Unguessable per-channel secret. Telegram: the webhook URL path segment AND the
+  // registered `secret_token`. WhatsApp: unused (one app webhook, HMAC-verified),
+  // but generated to satisfy the unique+non-null column.
   secret String @unique
 
   isActive Boolean @default(true)

@@ -41,7 +41,7 @@ So the target is: *OpenClaw's power, minus the assembly required.*
 | **Owner-defined dynamic data** | via MCP/DB | ✅ **Business Objects** (§4) | **shipped** |
 | **Scheduled-task calendar + task monitor** | ✗ (raw) | ✅ **Agent Work** (§5) | **shipped, ahead** |
 | Channels — Telegram inbound | ✅ | ✅ `/api/channels/telegram` + Settings → Channels | **shipped** |
-| Channels — WhatsApp inbound | ✅ | ⏳ (`ChannelType.WHATSAPP` reserved) | **gap — next** |
+| Channels — WhatsApp inbound | ✅ (unofficial QR) | ✅ **official Cloud API** `/api/channels/whatsapp` | **shipped, stronger** |
 | MCP client + per-tenant server registry | ✅ (core) | ⏳ | **gap** |
 | Skills as first-class composable units | ✅ | partial (tools) | **gap** |
 | Agent Studio / test sandbox | DIY | partial (`/chat`) | **gap (nice-to-have)** |
@@ -108,14 +108,24 @@ same platform without a code change.
 
 ## 6. The gap — ordered next steps
 
-1. **Channels — inbound messaging + a Router agent.** ✅ **Telegram SHIPPED**
-   (2026-07-14): owner connects a bot in Settings → Channels; the webhook
-   (`/api/channels/telegram/[secret]`, `secret_token`-verified) maps an inbound
-   message → the chosen customer-facing agent via `runPublicAgentChat` (same hard
-   default-DENY tool allow-list as the widget) → a reply over Telegram. Token
-   encrypted; `visitorId = tg:{chatId}` keeps per-chat history. **Next:** WhatsApp
-   Cloud API (`ChannelType.WHATSAPP` already reserved) + a lightweight **Router**
-   that picks the agent/department per inbound thread (today one agent per channel).
+1. **Channels — inbound messaging + a Router agent.** ✅ **Telegram + WhatsApp
+   SHIPPED** (2026-07-14). Both route an inbound message → the chosen
+   customer-facing agent via `runPublicAgentChat` (same hard default-DENY tool
+   allow-list as the widget) → a reply over the channel; tokens encrypted;
+   per-customer `visitorId` (`tg:{chatId}` / `wa:{from}`) keeps history.
+   - **Telegram:** per-tenant webhook `/api/channels/telegram/[secret]`,
+     `secret_token`-verified.
+   - **WhatsApp:** the **official Cloud API** (chosen over unofficial QR bridges
+     like Evolution/Baileys because it's **stateless** — one app-level webhook +
+     REST — so it scales on Cloud Run and across many tenants, with no ban risk).
+     `/api/channels/whatsapp/webhook` (GET verify + POST HMAC `X-Hub-Signature-256`),
+     routed by `phone_number_id`. Owner connects manually today (paste token +
+     phone-number id).
+   **Next:** WhatsApp **Embedded Signup** (one-click self-serve onboarding, become
+   a Meta Tech Provider) + a lightweight **Router** that picks the agent/department
+   per inbound thread (today one agent per channel). An optional Evolution/QR
+   "easy mode" for micro-businesses could sit behind the same `Channel` abstraction
+   later — but it is NOT the backbone (stateful, Cloud-Run-hostile, ban risk).
 2. **MCP client + per-tenant server registry.** Let an owner register an MCP server
    (URL + auth) and expose its tools to chosen agents — the same `getToolsForAgent`
    gate, tools sourced from a remote MCP instead of the built-in catalogue. This is
