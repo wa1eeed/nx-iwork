@@ -16,6 +16,7 @@ import { saveMemory } from './memory';
 import { dispatchEvent } from './events';
 import { sendBookingConfirmation } from '@/lib/notifications/booking-emails';
 import { parseFields, coerceRecord, computeTitle, recordSummary } from '@/lib/objects/fields';
+import { isMcpTool, callMcpTool } from '@/lib/mcp/registry';
 
 export interface ToolContext {
   companyId: string;
@@ -686,6 +687,9 @@ export async function executeTool(
   ctx: ToolContext
 ): Promise<string> {
   try {
+    // Third-party tools from a registered MCP server (mcp__{key}__{tool}) are
+    // dispatched to that server; everything else is a built-in below.
+    if (isMcpTool(name)) return await callMcpTool(ctx.companyId, name, rawArgs);
     switch (name) {
       case 'search_catalog': {
         const args = searchCatalogArgs.parse(rawArgs);

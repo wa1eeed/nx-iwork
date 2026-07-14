@@ -12,6 +12,7 @@ import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop, agentModelId } from './core';
+import { getMcpToolsForCompany } from '@/lib/mcp/registry';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
 
@@ -116,6 +117,8 @@ export async function runAgentTask(
   ];
 
   try {
+    const baseTools = getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, agent.permissions);
+    const wantsMcp = agent.permissions.length === 0 || agent.permissions.includes('use_mcp');
     const { reply, tokensUsed } = await runToolLoop({
       provider: providerResult.provider,
       system,
@@ -124,7 +127,7 @@ export async function runAgentTask(
       model: agentModelId(agent.aiModel, providerResult.provider.id),
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
-      tools: getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, agent.permissions),
+      tools: wantsMcp ? [...baseTools, ...(await getMcpToolsForCompany(companyId))] : baseTools,
       ctx: { companyId, agentId: agent.id },
     });
 

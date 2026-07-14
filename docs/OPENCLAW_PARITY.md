@@ -41,9 +41,9 @@ So the target is: *OpenClaw's power, minus the assembly required.*
 | **Owner-defined dynamic data** | via MCP/DB | ✅ **Business Objects** (§4) | **shipped** |
 | **Scheduled-task calendar + task monitor** | ✗ (raw) | ✅ **Agent Work** (§5) | **shipped, ahead** |
 | Channels — Telegram inbound | ✅ | ✅ `/api/channels/telegram` + Settings → Channels | **shipped** |
-| Channels — WhatsApp inbound | ✅ | ⏳ (`ChannelType.WHATSAPP` reserved) | **gap — next** |
-| MCP client + per-tenant server registry | ✅ (core) | ⏳ | **gap** |
-| Skills as first-class composable units | ✅ | partial (tools) | **gap** |
+| Channels — WhatsApp inbound | ✅ (unofficial QR) | ✅ **official Cloud API** `/api/channels/whatsapp` | **shipped, stronger** |
+| MCP client + per-tenant server registry | ✅ (core) | ✅ `/integrations` + `lib/mcp/` | **shipped** |
+| Skills as first-class composable units | ✅ | partial (tools) | **gap — next** |
 | Agent Studio / test sandbox | DIY | partial (`/chat`) | **gap (nice-to-have)** |
 
 Net: the **governance + organization** half is done and is ahead of OpenClaw.
@@ -108,18 +108,42 @@ same platform without a code change.
 
 ## 6. The gap — ordered next steps
 
-1. **Channels — inbound messaging + a Router agent.** ✅ **Telegram SHIPPED**
-   (2026-07-14): owner connects a bot in Settings → Channels; the webhook
-   (`/api/channels/telegram/[secret]`, `secret_token`-verified) maps an inbound
-   message → the chosen customer-facing agent via `runPublicAgentChat` (same hard
-   default-DENY tool allow-list as the widget) → a reply over Telegram. Token
-   encrypted; `visitorId = tg:{chatId}` keeps per-chat history. **Next:** WhatsApp
-   Cloud API (`ChannelType.WHATSAPP` already reserved) + a lightweight **Router**
-   that picks the agent/department per inbound thread (today one agent per channel).
-2. **MCP client + per-tenant server registry.** Let an owner register an MCP server
-   (URL + auth) and expose its tools to chosen agents — the same `getToolsForAgent`
-   gate, tools sourced from a remote MCP instead of the built-in catalogue. This is
-   the "connect any third-party" story, done with governance.
+1. **Channels — inbound messaging + a Router agent.** ✅ **Telegram + WhatsApp
+   SHIPPED** (2026-07-14). Both route an inbound message → the chosen
+   customer-facing agent via `runPublicAgentChat` (same hard default-DENY tool
+   allow-list as the widget) → a reply over the channel; tokens encrypted;
+   per-customer `visitorId` (`tg:{chatId}` / `wa:{from}`) keeps history.
+   - **Telegram:** per-tenant webhook `/api/channels/telegram/[secret]`,
+     `secret_token`-verified.
+   - **WhatsApp:** the **official Cloud API** (chosen over unofficial QR bridges
+     like Evolution/Baileys because it's **stateless** — one app-level webhook +
+     REST — so it scales on Cloud Run and across many tenants, with no ban risk).
+     `/api/channels/whatsapp/webhook` (GET verify + POST HMAC `X-Hub-Signature-256`),
+     routed by `phone_number_id`. Owner connects manually today (paste token +
+     phone-number id).
+   **WhatsApp Embedded Signup — scaffolding SHIPPED** (env-gated): a "Connect with
+   Facebook" one-click button (`components/settings/whatsapp-embedded-signup.tsx`)
+   + the server flow (`lib/channels/whatsapp-signup.ts`: exchange code → business
+   token, subscribe app to WABA, register phone) + `completeWhatsAppSignup`. Shows
+   only when `NEXT_PUBLIC_FACEBOOK_APP_ID` + `NEXT_PUBLIC_WHATSAPP_CONFIG_ID` are
+   set; manual connect stays the fallback. **Live use is gated on becoming an
+   approved Meta Tech Provider** (business verification + app review) — a one-time
+   owner/ops step, not a code step.
+   **Next:** a lightweight **Router** that picks the agent/department per inbound
+   thread (today one agent per channel). An optional Evolution/QR "easy mode" for
+   micro-businesses could sit behind the same `Channel` abstraction later — but it
+   is NOT the backbone (stateful, Cloud-Run-hostile, ban risk).
+2. **MCP client + per-tenant server registry.** ✅ **SHIPPED** (2026-07-14). An
+   owner registers a remote MCP server in **`/integrations`** (URL + optional
+   Bearer token, encrypted; "Test connection" lists its tools). `lib/mcp/client.ts`
+   is a minimal JSON-RPC-over-Streamable-HTTP client (initialize → tools/list →
+   tools/call, JSON+SSE + session-id aware); `lib/mcp/registry.ts` exposes each
+   server's tools **namespaced `mcp__{key}__{tool}`** (provider-safe) and dispatches
+   calls back. They flow through the **same `getToolsForAgent` gate + `executeTool`
+   entry point** as built-ins, gated by a **`use_mcp`** grant in the permission
+   matrix, merged into the dashboard + task loops (NOT the public widget), and are
+   best-effort (an unreachable server never blocks the agent). "Connect any
+   third-party, with governance" — done.
 3. **Skills as first-class.** Promote reusable capability bundles (prompt +
    allowed tools + example) to a named, versioned unit an owner attaches to an
    agent — composable like OpenClaw skills, but organized.

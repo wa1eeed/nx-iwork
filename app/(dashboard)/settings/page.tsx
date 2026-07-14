@@ -26,6 +26,19 @@ import { agentTokenCap } from '@/lib/plans';
 import { publicHost } from '@/lib/public-url';
 import type { INDUSTRIES } from '@/lib/validators/onboarding';
 
+type ChannelRow = { type: 'TELEGRAM' | 'WHATSAPP'; agentId: string | null; botUsername: string | null; isActive: boolean };
+
+// Shape a channel row into the flat state the ChannelsTab consumes.
+function channelState(channels: ChannelRow[], type: 'TELEGRAM' | 'WHATSAPP') {
+  const c = channels.find((x) => x.type === type);
+  return {
+    connected: !!c,
+    label: c?.botUsername ?? null,
+    agentId: c?.agentId ?? null,
+    isActive: c?.isActive ?? false,
+  };
+}
+
 export default async function SettingsPage() {
   const session = await auth();
   if (!session?.user?.id) redirect('/login');
@@ -36,7 +49,7 @@ export default async function SettingsPage() {
   });
   if (!user?.companyId) redirect('/onboarding');
 
-  const [company, settings, apiSettings, websiteConfig, wallet, companyHours, holidays, telegramChannel, channelAgents] = await Promise.all([
+  const [company, settings, apiSettings, websiteConfig, wallet, companyHours, holidays, channels, channelAgents] = await Promise.all([
     db.company.findUnique({
       where: { id: user.companyId },
       select: {
@@ -96,9 +109,9 @@ export default async function SettingsPage() {
       orderBy: { date: 'asc' },
       select: { id: true, date: true, name: true },
     }),
-    db.channel.findUnique({
-      where: { companyId_type: { companyId: user.companyId, type: 'TELEGRAM' } },
-      select: { agentId: true, botUsername: true, isActive: true },
+    db.channel.findMany({
+      where: { companyId: user.companyId },
+      select: { type: true, agentId: true, botUsername: true, isActive: true },
     }),
     db.agent.findMany({
       where: { companyId: user.companyId, surface: 'CUSTOMER_FACING', status: { not: 'ARCHIVED' } },
@@ -261,12 +274,8 @@ export default async function SettingsPage() {
 
         <TabsContent value="channels">
           <ChannelsTab
-            initial={{
-              connected: !!telegramChannel,
-              botUsername: telegramChannel?.botUsername ?? null,
-              agentId: telegramChannel?.agentId ?? null,
-              isActive: telegramChannel?.isActive ?? false,
-            }}
+            telegram={channelState(channels, 'TELEGRAM')}
+            whatsapp={channelState(channels, 'WHATSAPP')}
             agents={channelAgents}
           />
         </TabsContent>

@@ -200,12 +200,18 @@ admin layer. Full strategy + gap analysis in **`docs/OPENCLAW_PARITY.md`**.
    organization half is done and ahead of OpenClaw; Phase 4 ops command center
    (`/agent-work`), the **model registry**, and **Business Objects** all shipped
    (2026-07-14, above). **Remaining gap** (full analysis in `docs/OPENCLAW_PARITY.md`):
-   - **Channels — Telegram SHIPPED** (Settings → Channels + `/api/channels/telegram`).
-     **Next:** WhatsApp Cloud API (`ChannelType.WHATSAPP` reserved) + a Router agent
-     that picks the agent/department per inbound thread (today one agent/channel).
-   - **MCP client + per-tenant server registry** — register an MCP server and expose
-     its tools to chosen agents through the same `getToolsForAgent` gate.
-   - **Skills as first-class** — named/versioned capability bundles.
+   - **Channels — Telegram + WhatsApp SHIPPED** (Settings → Channels). WhatsApp uses
+     the **official Cloud API** (stateless → scales on Cloud Run + many tenants;
+     chosen over unofficial QR bridges). **Embedded Signup** one-click onboarding
+     is scaffolded (env-gated by `NEXT_PUBLIC_FACEBOOK_APP_ID` +
+     `NEXT_PUBLIC_WHATSAPP_CONFIG_ID`; live use needs Meta Tech Provider approval;
+     manual connect is the fallback). **Next:** a **Router** agent that picks the
+     agent/department per inbound thread (today one agent/channel).
+   - **MCP client + per-tenant server registry — SHIPPED** (`/integrations` +
+     `lib/mcp/`). Register an MCP server; its tools reach agents namespaced
+     `mcp__{key}__{tool}` through the same gate (a `use_mcp` grant), off the public
+     widget. **Next below.**
+   - **Skills as first-class** — named/versioned capability bundles. ← next.
    - **Agent Studio / test sandbox** — build/test surface showing tool calls + which
      model answered (today `/chat` is the owner↔agent console).
    Guiding law: the two-layer contract. See `docs/AGENT_SYSTEM.md`.

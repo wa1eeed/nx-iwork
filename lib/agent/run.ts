@@ -9,6 +9,7 @@ import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId } from './core';
+import { getMcpToolsForCompany } from '@/lib/mcp/registry';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
 
@@ -110,6 +111,10 @@ export async function runAgentChat(
   let reply: string;
   let tokensUsed: number;
   try {
+    const baseTools = getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, perms);
+    // Agents with MCP access (empty allow-list = all tools, or an explicit
+    // `use_mcp` grant) also receive the company's registered third-party MCP tools.
+    const wantsMcp = agent.permissions.length === 0 || agent.permissions.includes('use_mcp');
     const loopArgs = {
       provider: providerResult.provider,
       system,
@@ -118,7 +123,7 @@ export async function runAgentChat(
       model: agentModelId(agent.aiModel, providerResult.provider.id),
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
-      tools: getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, perms),
+      tools: wantsMcp ? [...baseTools, ...(await getMcpToolsForCompany(companyId))] : baseTools,
       ctx: { companyId, agentId },
     };
     ({ reply, tokensUsed } = opts?.onDelta
