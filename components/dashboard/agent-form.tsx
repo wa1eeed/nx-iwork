@@ -122,6 +122,7 @@ export function AgentForm({
     bookings: t('toolGroups.bookings'),
     support: t('toolGroups.support'),
     operations: t('toolGroups.operations'),
+    data: t('toolGroups.data'),
     memory: t('toolGroups.memory'),
   };
   // Always start from DEFAULTS so newer fields (archetype/personaCfg) exist even

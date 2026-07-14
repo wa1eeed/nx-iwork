@@ -35,6 +35,9 @@ export function loadAgentWithContext(agentId: string, companyId: string) {
             select: { aboutUs: true, policies: true, tone: true, targetAudience: true },
           },
           settings: { select: { primaryLanguage: true, timezone: true } },
+          // Drives the Business Objects tool gate: agents only get the generic
+          // record tools when the owner has actually defined a data type.
+          _count: { select: { objectTypes: true } },
         },
       },
       // The concrete model the owner picked (registry). Null → tier fallback.

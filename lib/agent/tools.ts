@@ -15,6 +15,7 @@ import { createBooking, BookingError, generateDaySlots, checkSlotAvailable, prom
 import { saveMemory } from './memory';
 import { dispatchEvent } from './events';
 import { sendBookingConfirmation } from '@/lib/notifications/booking-emails';
+import { parseFields, coerceRecord, computeTitle, recordSummary } from '@/lib/objects/fields';
 
 export interface ToolContext {
   companyId: string;
@@ -26,11 +27,17 @@ export interface CompanyModules {
   hasEcommerce: boolean;
   hasServices: boolean;
   hasBookings: boolean;
+  // True when the company has defined at least one Business Object type, so the
+  // agent is handed the generic read/write-record tools (and not otherwise, to
+  // keep context lean and stop the model inventing types that don't exist).
+  hasObjects: boolean;
 }
 
 // Sales/catalog tools need e-commerce or services; booking tools need bookings.
 const SALES_TOOLS = new Set(['search_catalog', 'create_order']);
 const BOOKING_TOOLS = new Set(['check_availability', 'list_open_slots', 'list_bookings', 'create_booking', 'update_booking', 'set_booking_staff']);
+// Business Objects tools — only when the owner has defined a data type.
+const OBJECT_TOOLS = new Set(['list_object_types', 'query_records', 'create_record', 'update_record']);
 
 // Dynamic tools: only hand the model the tools for the modules this company has
 // enabled (cheaper context + the agent never offers what the business can't do).
@@ -38,6 +45,7 @@ export function getToolsForCompany(m: CompanyModules): AiTool[] {
   return AGENT_TOOLS.filter((t) => {
     if (SALES_TOOLS.has(t.name)) return m.hasEcommerce || m.hasServices;
     if (BOOKING_TOOLS.has(t.name)) return m.hasBookings;
+    if (OBJECT_TOOLS.has(t.name)) return m.hasObjects;
     return true; // core (CRM, FAQ, tasks + status, memory) always available
   });
 }
@@ -364,6 +372,52 @@ export const AGENT_TOOLS: AiTool[] = [
       required: ['colleague', 'task'],
     },
   },
+  {
+    name: 'list_object_types',
+    description:
+      'List the custom data types this business tracks (e.g. Patient, Vehicle, Contract, Case) and the fields of each. Call this FIRST to learn what data exists and each field key before querying or creating records.',
+    parameters: { type: 'object', properties: {}, required: [] },
+  },
+  {
+    name: 'query_records',
+    description:
+      'Search records of a custom data type. Get the type key + fields from list_object_types first. Returns matching records with their id and field values.',
+    parameters: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', description: 'The data type key or name (from list_object_types).' },
+        query: { type: 'string', description: 'Optional text to match against the records.' },
+        limit: { type: 'number', description: 'Max records to return (default 20, max 50).' },
+      },
+      required: ['type'],
+    },
+  },
+  {
+    name: 'create_record',
+    description:
+      'Create a new record of a custom data type. Pass `values` as a JSON object string keyed by field key, e.g. {"name":"Ali","phone":"055..."}. Check list_object_types for the fields and which are required.',
+    parameters: {
+      type: 'object',
+      properties: {
+        type: { type: 'string', description: 'The data type key or name.' },
+        values: { type: 'string', description: 'A JSON object of field values keyed by field key.' },
+      },
+      required: ['type', 'values'],
+    },
+  },
+  {
+    name: 'update_record',
+    description:
+      'Update fields on an existing record (from query_records). Pass `values` as a JSON object string with only the fields to change; others are left as-is.',
+    parameters: {
+      type: 'object',
+      properties: {
+        recordId: { type: 'string', description: 'The record id (from query_records).' },
+        values: { type: 'string', description: 'A JSON object of the field values to change.' },
+      },
+      required: ['recordId', 'values'],
+    },
+  },
 ];
 
 // ---- Executors -------------------------------------------------------------
@@ -493,6 +547,46 @@ const saveMemoryArgs = z.object({
   importance: z.coerce.number().int().min(1).max(10).optional(),
   category: z.enum(['customer', 'product', 'decision', 'learning', 'other']).optional(),
 });
+
+// Business Objects tool args. `values` is advertised to the model as a JSON
+// string (a free-form object schema isn't portable across providers — Gemini
+// function-calling rejects a propertyless OBJECT), but we also accept a real
+// object if a provider passes one through.
+const queryRecordsArgs = z.object({
+  type: z.string().trim().min(1),
+  query: z.string().trim().max(200).optional(),
+  limit: z.number().int().min(1).max(50).optional(),
+});
+const recordValues = z.union([z.string(), z.record(z.unknown())]);
+const createRecordArgs = z.object({ type: z.string().trim().min(1), values: recordValues });
+const updateRecordArgs = z.object({ recordId: z.string().trim().min(1), values: recordValues });
+
+// Coerce the model's `values` (JSON string or object) into a plain object.
+function parseValues(values: string | Record<string, unknown>): Record<string, unknown> | null {
+  if (typeof values !== 'string') return values;
+  try {
+    const v = JSON.parse(values);
+    return v && typeof v === 'object' && !Array.isArray(v) ? (v as Record<string, unknown>) : null;
+  } catch {
+    return null;
+  }
+}
+
+// Resolve a Business Object type by key (exact) or display name (either locale,
+// case-insensitive), scoped to the tenant.
+function resolveObjectType(companyId: string, typeRef: string) {
+  return db.objectType.findFirst({
+    where: {
+      companyId,
+      OR: [
+        { key: typeRef },
+        { name: { equals: typeRef, mode: Prisma.QueryMode.insensitive } },
+        { nameEn: { equals: typeRef, mode: Prisma.QueryMode.insensitive } },
+      ],
+    },
+    select: { id: true, key: true, name: true, fields: true },
+  });
+}
 
 function ok(data: unknown): string {
   return JSON.stringify({ ok: true, data });
@@ -1358,6 +1452,104 @@ export async function executeTool(
             ? `فوّضت المهمة إلى ${colleague.name} (${colleague.role})، وستُنفَّذ تلقائياً بعد انتهاء المهمة السابقة.`
             : `فوّضت المهمة إلى ${colleague.name} (${colleague.role})، وسينفّذها تلقائياً.`,
         });
+      }
+
+      case 'list_object_types': {
+        const types = await db.objectType.findMany({
+          where: { companyId: ctx.companyId },
+          orderBy: { createdAt: 'asc' },
+          select: { key: true, name: true, description: true, fields: true },
+        });
+        return ok({
+          types: types.map((ty) => ({
+            key: ty.key,
+            name: ty.name,
+            description: ty.description ?? undefined,
+            fields: parseFields(ty.fields).map((f) => ({
+              key: f.key,
+              label: f.label,
+              type: f.type,
+              required: Boolean(f.required),
+              ...(f.options?.length ? { options: f.options } : {}),
+            })),
+          })),
+        });
+      }
+
+      case 'query_records': {
+        const args = queryRecordsArgs.parse(rawArgs);
+        const type = await resolveObjectType(ctx.companyId, args.type);
+        if (!type) return fail('لا يوجد نوع بيانات بهذا الاسم. استخدم list_object_types لعرض الأنواع المتاحة.');
+        const fields = parseFields(type.fields);
+        const limit = args.limit ?? 20;
+        // Scan a recent window, then match the query in JS across title + values
+        // (JSON-column text search isn't portable across providers/Postgres here).
+        const rows = await db.objectRecord.findMany({
+          where: { companyId: ctx.companyId, objectTypeId: type.id },
+          orderBy: { createdAt: 'desc' },
+          take: 200,
+          select: { id: true, title: true, data: true },
+        });
+        const q = args.query?.toLowerCase();
+        const matched = (q
+          ? rows.filter(
+              (r) =>
+                (r.title ?? '').toLowerCase().includes(q) ||
+                JSON.stringify(r.data ?? {}).toLowerCase().includes(q)
+            )
+          : rows
+        ).slice(0, limit);
+        return ok({
+          type: type.key,
+          count: matched.length,
+          records: matched.map((r) => ({
+            id: r.id,
+            title: r.title,
+            values: r.data,
+            summary: recordSummary(fields, (r.data ?? {}) as Record<string, unknown>),
+          })),
+        });
+      }
+
+      case 'create_record': {
+        const args = createRecordArgs.parse(rawArgs);
+        const type = await resolveObjectType(ctx.companyId, args.type);
+        if (!type) return fail('لا يوجد نوع بيانات بهذا الاسم. استخدم list_object_types أولاً.');
+        const vals = parseValues(args.values);
+        if (!vals) return fail('يجب أن تكون values كائن JSON من قيم الحقول.');
+        const fields = parseFields(type.fields);
+        const coerced = coerceRecord(fields, vals);
+        if (!coerced.ok) return fail(coerced.error);
+        const rec = await db.objectRecord.create({
+          data: {
+            companyId: ctx.companyId,
+            objectTypeId: type.id,
+            data: coerced.data as Prisma.InputJsonValue,
+            title: computeTitle(fields, coerced.data),
+          },
+          select: { id: true, title: true },
+        });
+        return ok({ recordId: rec.id, title: rec.title, message: `تم إنشاء سجل ${type.name}.` });
+      }
+
+      case 'update_record': {
+        const args = updateRecordArgs.parse(rawArgs);
+        const vals = parseValues(args.values);
+        if (!vals) return fail('يجب أن تكون values كائن JSON من قيم الحقول.');
+        const rec = await db.objectRecord.findFirst({
+          where: { id: args.recordId, companyId: ctx.companyId },
+          select: { id: true, data: true, objectType: { select: { name: true, fields: true } } },
+        });
+        if (!rec) return fail('السجل غير موجود. استخدم query_records للعثور على المعرّف الصحيح.');
+        const fields = parseFields(rec.objectType.fields);
+        const coerced = coerceRecord(fields, vals, true); // partial — only change provided fields
+        if (!coerced.ok) return fail(coerced.error);
+        const merged = { ...((rec.data ?? {}) as Record<string, unknown>), ...coerced.data };
+        await db.objectRecord.update({
+          where: { id: rec.id },
+          data: { data: merged as Prisma.InputJsonValue, title: computeTitle(fields, merged) },
+        });
+        return ok({ recordId: rec.id, message: `تم تحديث سجل ${rec.objectType.name}.` });
       }
 
       default:

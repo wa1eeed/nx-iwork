@@ -1215,7 +1215,8 @@
       "bookings": "Bookings",
       "support": "Support & knowledge",
       "operations": "Operations & tasks",
-      "memory": "Memory"
+      "memory": "Memory",
+      "data": "Data records"
     },
     "scenariosTitle": "Auto scenarios (If-Then)",
     "scenariosHelp": "What this employee does automatically when a business event happens.",

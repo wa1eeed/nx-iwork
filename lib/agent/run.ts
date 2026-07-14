@@ -118,7 +118,7 @@ export async function runAgentChat(
       model: agentModelId(agent.aiModel, providerResult.provider.id),
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
-      tools: getToolsForAgent(agent.company, perms),
+      tools: getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, perms),
       ctx: { companyId, agentId },
     };
     ({ reply, tokensUsed } = opts?.onDelta

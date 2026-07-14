@@ -75,7 +75,12 @@ export default async function AgentProfilePage({
     }),
     db.company.findUnique({
       where: { id: companyId },
-      select: { hasEcommerce: true, hasServices: true, hasBookings: true },
+      select: {
+        hasEcommerce: true,
+        hasServices: true,
+        hasBookings: true,
+        _count: { select: { objectTypes: true } },
+      },
     }),
     db.eventTrigger.findMany({
       where: { agentId: id, companyId },
@@ -116,6 +121,7 @@ export default async function AgentProfilePage({
       hasEcommerce: company?.hasEcommerce ?? true,
       hasServices: company?.hasServices ?? true,
       hasBookings: company?.hasBookings ?? false,
+      hasObjects: (company?._count.objectTypes ?? 0) > 0,
     },
     agent.permissions
   );

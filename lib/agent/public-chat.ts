@@ -132,7 +132,10 @@ export async function runPublicAgentChat(
     'create_booking',
     'create_lead',
   ]);
-  const tools = getToolsForAgent(agent.company, perms).filter((t) => PUBLIC_ALLOWLIST.has(t.name));
+  const tools = getToolsForAgent(
+    { ...agent.company, hasObjects: agent.company._count.objectTypes > 0 },
+    perms
+  ).filter((t) => PUBLIC_ALLOWLIST.has(t.name));
 
   const loopArgs = {
     provider: effective.provider,

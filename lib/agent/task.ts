@@ -124,7 +124,7 @@ export async function runAgentTask(
       model: agentModelId(agent.aiModel, providerResult.provider.id),
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
-      tools: getToolsForAgent(agent.company, agent.permissions),
+      tools: getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, agent.permissions),
       ctx: { companyId, agentId: agent.id },
     });
 

@@ -12,6 +12,7 @@ export type ToolGroup =
   | 'bookings'
   | 'support'
   | 'operations'
+  | 'data'
   | 'memory';
 
 // Render order for the matrix.
@@ -21,6 +22,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
   'bookings',
   'support',
   'operations',
+  'data',
   'memory',
 ];
 
@@ -42,6 +44,10 @@ export const TOOL_CATALOG: { id: string; label: string; group: ToolGroup }[] = [
   { id: 'create_output', label: 'Deliver output', group: 'operations' },
   { id: 'delegate_to_agent', label: 'Delegate to agent', group: 'operations' },
   { id: 'request_approval', label: 'Request approval', group: 'operations' },
+  { id: 'list_object_types', label: 'List data types', group: 'data' },
+  { id: 'query_records', label: 'Query records', group: 'data' },
+  { id: 'create_record', label: 'Create record', group: 'data' },
+  { id: 'update_record', label: 'Update record', group: 'data' },
   { id: 'save_memory', label: 'Save memory', group: 'memory' },
 ];
 
