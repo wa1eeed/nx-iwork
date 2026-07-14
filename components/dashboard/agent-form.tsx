@@ -52,6 +52,7 @@ export interface AgentFormValues {
   departmentId: string;
   parentId: string;
   model: 'HAIKU' | 'SONNET' | 'OPUS';
+  aiModelId: string; // '' = platform default (by tier)
   autonomy: 'SUGGEST' | 'ASK' | 'AUTOPILOT';
   temperature: number;
   systemPrompt: string;
@@ -83,6 +84,7 @@ const DEFAULTS: AgentFormValues = {
   departmentId: '',
   parentId: '',
   model: 'HAIKU',
+  aiModelId: '',
   autonomy: 'ASK',
   temperature: 0.6,
   systemPrompt: '',
@@ -96,12 +98,15 @@ export function AgentForm({
   managers,
   initial,
   templates,
+  models = [],
   onUseTemplate,
 }: {
   departments: { id: string; name: string }[];
   managers: { id: string; name: string }[];
   initial?: AgentFormValues;
   templates?: TemplateHint[];
+  /** Enabled AI models from the registry (for the model picker). */
+  models?: { id: string; label: string; provider: string }[];
   onUseTemplate?: (templateType: string) => void;
 }) {
   const t = useTranslations('agentForm');
@@ -117,6 +122,7 @@ export function AgentForm({
     bookings: t('toolGroups.bookings'),
     support: t('toolGroups.support'),
     operations: t('toolGroups.operations'),
+    data: t('toolGroups.data'),
     memory: t('toolGroups.memory'),
   };
   // Always start from DEFAULTS so newer fields (archetype/personaCfg) exist even
@@ -190,6 +196,7 @@ export function AgentForm({
       departmentId: v.departmentId,
       parentId: v.parentId || null,
       model: v.model,
+      aiModelId: v.aiModelId || null,
       autonomy: v.autonomy,
       temperature: v.temperature,
       maxTokens: 4096,
@@ -413,6 +420,24 @@ export function AgentForm({
           <CardTitle className="text-lg">{t('intelligence')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
+          {/* Concrete model from the registry (super-admin managed). Empty =
+              platform default resolved from the capability tier below. */}
+          {models.length > 0 && (
+            <div className="space-y-2">
+              <Label>{t('aiModel')}</Label>
+              <select
+                className={selectCls}
+                value={v.aiModelId}
+                onChange={(e) => set('aiModelId', e.target.value)}
+              >
+                <option value="">{t('aiModelDefault')}</option>
+                {models.map((m) => (
+                  <option key={m.id} value={m.id}>{m.label} · {m.provider}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div className="space-y-2">
             <Label>{t('modelLevel')}</Label>
             <div className="grid gap-2 sm:grid-cols-3">

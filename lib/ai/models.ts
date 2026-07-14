@@ -30,8 +30,18 @@ const VERTEX_MODELS: TierMap = {
   OPUS: process.env.VERTEX_MODEL_ADVANCED ?? 'gemini-2.5-pro',
 };
 
+// OpenAI ids are only tier *fallbacks* — a concrete model chosen in the
+// /admin/models registry (req.model) overrides these. Mainstream chat models by
+// default; override via env for a newer/cheaper one without a redeploy.
+const OPENAI_MODELS: TierMap = {
+  HAIKU: process.env.OPENAI_MODEL_FAST ?? 'gpt-4o-mini',
+  SONNET: process.env.OPENAI_MODEL_BALANCED ?? 'gpt-4o',
+  OPUS: process.env.OPENAI_MODEL_ADVANCED ?? 'gpt-4o',
+};
+
 export function resolveModel(provider: AiProviderId, tier: ModelTier): string {
   if (provider === 'vertex') return VERTEX_MODELS[tier];
   if (provider === 'google') return GOOGLE_MODELS[tier];
+  if (provider === 'openai') return OPENAI_MODELS[tier];
   return ANTHROPIC_MODELS[tier];
 }

@@ -22,7 +22,7 @@ export default async function NewAgentPage() {
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
-  const [departments, managers, templates] = companyId
+  const [departments, managers, templates, models] = companyId
     ? await Promise.all([
         db.department.findMany({
           where: { companyId },
@@ -35,8 +35,13 @@ export default async function NewAgentPage() {
           select: { id: true, name: true },
         }),
         getActiveTemplates(),
+        db.aiModel.findMany({
+          where: { enabled: true },
+          orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
+          select: { id: true, label: true, provider: true },
+        }),
       ])
-    : [[], [], []];
+    : [[], [], [], []];
 
   const cards: TemplateCard[] = templates.map((tpl) => ({
     templateType: tpl.templateType,
@@ -68,7 +73,7 @@ export default async function NewAgentPage() {
         {t('back')}
       </Link>
       <h1 className="text-xl font-semibold">{t('title')}</h1>
-      <AgentCreator templates={cards} departments={departments} managers={managers} />
+      <AgentCreator templates={cards} departments={departments} managers={managers} models={models as { id: string; label: string; provider: string }[]} />
     </div>
   );
 }

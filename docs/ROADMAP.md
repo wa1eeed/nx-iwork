@@ -14,7 +14,8 @@ An operations-management platform for **any** business, staffed by autonomous AI
 working without owner intervention. The **two-layer contract** is the design law: the
 deterministic system owns transactions; agents do the human/judgment/communication work.
 Positioned to compete with / replace OpenClaw — but more organized (calendars + task
-tracking).
+tracking). The full OpenClaw-parity strategy, capability map, and gap analysis live in
+[`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md).
 
 ## ✅ Foundation shipped (live on bznss.one)
 
@@ -48,9 +49,25 @@ workflow, and let specialized agents compound.
 **Shipped (2026-07):** the 3-layer sector-agnostic role model (archetype →
 structured persona → mandate) + hard customer/internal `surface` scoping · the
 unified **outputs hub** (`/outputs`) + `create_output` · **`delegate_to_agent`**
-and task **`depends_on`** chains (Phase 3 partial). Remaining: `request_from_agent`
-(synchronous ask), composable Skills, the ops command center. See
-[`AGENT_SYSTEM.md`](./AGENT_SYSTEM.md).
+and task **`depends_on`** chains (Phase 3 partial) · **Phase 4 Ops command center
+DONE** — **`/agent-work`** (task-monitoring queue + scheduled-runs calendar) ·
+the **provider-agnostic model registry** (`/admin/models` + per-agent model +
+**OpenAI adapter**) · **Business Objects** (owner-defined data types + agent
+read/write tools). Remaining: `request_from_agent` (synchronous ask), composable
+Skills. See [`AGENT_SYSTEM.md`](./AGENT_SYSTEM.md) + [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md).
+
+### 1a. OpenClaw-parity reach + extensibility (the remaining gap)
+The governance/organization half is done and ahead of OpenClaw; the gap is reach +
+extensibility (full analysis in [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md)):
+- **Channels — WhatsApp / Telegram inbound + a Router agent.** Per-tenant channel
+  token + a webhook that maps an inbound message → the public-chat agent → a reply
+  over the channel. Start with Telegram (most self-contained). **← highest-value next.**
+- **MCP client + per-tenant server registry.** Register an MCP server (URL + auth)
+  and expose its tools to chosen agents through the same `getToolsForAgent` gate.
+- **Skills as first-class** — named, versioned capability bundles (prompt + allowed
+  tools + example) an owner attaches to an agent.
+- **Agent Studio / test sandbox** — a build/test surface showing tool calls + which
+  model answered (today `/chat` is the owner↔agent console).
 
 ### 1b. Service-business capability gaps (from the sector-fit audit)
 Most shipped in the 2026-07 hardening pass:

@@ -6,7 +6,7 @@
 > `docs/ADMIN.md`; infra/CDN/Cloud-Run in `docs/INFRA.md`; file storage in
 > `docs/STORAGE.md`.
 
-**Last updated:** 2026-07-09
+**Last updated:** 2026-07-14
 **Live:** https://bznss.one/ · repo `github.com/wa1eeed/nx-iwork`
 **Deploy:** `git push origin HEAD:main` → Coolify builds & runs
 `prisma migrate deploy && node server.js`. **`main` is the deploy branch**, not
@@ -168,16 +168,47 @@ landing page + agent widget + order flow) — **plus** the 2026-06-20 arc below.
 
 ---
 
+### Then this session (2026-07-14), shipped to `release/full-platform` — OpenClaw parity
+
+Toward the owner's #1 goal: genuinely **replace/rival OpenClaw**, as the governed
+admin layer. Full strategy + gap analysis in **`docs/OPENCLAW_PARITY.md`**.
+
+30. **Provider-agnostic model registry.** `AiModel` table + super-admin
+    **`/admin/models`** (add/enable/default/delete). **A new Gemini/OpenAI model is a
+    data row, not a deploy.** `Agent.aiModelId` + an "AI model" dropdown per agent
+    (null → capability tier). Migration `20260710180000`.
+31. **OpenAI adapter + per-agent provider routing.** `lib/ai/providers/openai.ts`
+    (Chat Completions + streaming + tools). A chosen model **pins its own vendor**
+    (`platformProvider` / `providerForAgentModel` / `getProviderForModel`), so one
+    agent can run GPT-4o while the company default stays managed Gemini. `AiProviderId`
+    gains `openai`. Set `OPENAI_API_KEY` on the platform to enable.
+32. **Business Objects** — owner-defined data types (`ObjectType` + `ObjectRecord`,
+    JSON field schema → no migration to add a field). **`/data`**: schema builder +
+    records table + dynamic form (8 field types). Agent tools `list_object_types` /
+    `query_records` / `create_record` / `update_record` (gated on `hasObjects`,
+    off the public widget). The sector-generality lever. Migration `20260714120000`.
+33. **Agent Work** (`/agent-work`) — a **task-monitoring queue** (status filter,
+    attempts, tokens, `depends_on` chain, Run-now) + a **scheduled-runs calendar**
+    (month grid, business-tz, cron expanded via `expandOccurrences()`). Phase 4 ops
+    command center.
+
+---
+
 ## 🔜 Next up (resume here, in priority order)
 
-1. **🎯 Multi-agent architecture — Phase 2+ (the headline).** Phase 1 foundation
-   **shipped** this session: the Job Description "constitution" (`Agent.jobDescription`,
-   injected into the prompt) + the **per-department permission matrix** (grouped over the
-   existing `getToolsForAgent` hard gate) + the **"justification test"** in the creation
-   UX. **Next:** Phase 2 **Skills** (composable capabilities), Phase 3 **orchestration**
-   (internal event bus + `delegate_to_agent` / `request_from_agent` / `depends_on`),
-   Phase 4 **ops command center**. Guiding law: the two-layer contract (system =
-   deterministic transactions; agents = the human/judgment work). See `docs/AGENT_SYSTEM.md`.
+1. **🎯 OpenClaw-parity reach + extensibility (the headline).** The governance +
+   organization half is done and ahead of OpenClaw; Phase 4 ops command center
+   (`/agent-work`), the **model registry**, and **Business Objects** all shipped
+   (2026-07-14, above). **Remaining gap** (full analysis in `docs/OPENCLAW_PARITY.md`):
+   - **Channels — Telegram SHIPPED** (Settings → Channels + `/api/channels/telegram`).
+     **Next:** WhatsApp Cloud API (`ChannelType.WHATSAPP` reserved) + a Router agent
+     that picks the agent/department per inbound thread (today one agent/channel).
+   - **MCP client + per-tenant server registry** — register an MCP server and expose
+     its tools to chosen agents through the same `getToolsForAgent` gate.
+   - **Skills as first-class** — named/versioned capability bundles.
+   - **Agent Studio / test sandbox** — build/test surface showing tool calls + which
+     model answered (today `/chat` is the owner↔agent console).
+   Guiding law: the two-layer contract. See `docs/AGENT_SYSTEM.md`.
 2. **Tap subscription auto-renewal** — recurring charge + webhook idempotency +
    dunning/retry on failure + receipt email.
 3. **Deep-component i18n (English-primary)** — the remaining translation long-tail

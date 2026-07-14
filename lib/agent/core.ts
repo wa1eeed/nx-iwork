@@ -35,10 +35,25 @@ export function loadAgentWithContext(agentId: string, companyId: string) {
             select: { aboutUs: true, policies: true, tone: true, targetAudience: true },
           },
           settings: { select: { primaryLanguage: true, timezone: true } },
+          // Drives the Business Objects tool gate: agents only get the generic
+          // record tools when the owner has actually defined a data type.
+          _count: { select: { objectTypes: true } },
         },
       },
+      // The concrete model the owner picked (registry). Null → tier fallback.
+      aiModel: { select: { modelId: true, provider: true, enabled: true } },
     },
   });
+}
+
+// Resolve the concrete model id to send the provider: the agent's registry model
+// when it's enabled AND belongs to the active provider, otherwise undefined so
+// the provider maps the capability tier to its own default id (backward compat).
+export function agentModelId(
+  aiModel: { modelId: string; provider: string; enabled: boolean } | null | undefined,
+  activeProvider: string,
+): string | undefined {
+  return aiModel && aiModel.enabled && aiModel.provider === activeProvider ? aiModel.modelId : undefined;
 }
 
 export interface ToolLoopArgs {
@@ -46,6 +61,8 @@ export interface ToolLoopArgs {
   system: string;
   messages: AiMessage[]; // mutated in place with tool turns
   tier: 'HAIKU' | 'SONNET' | 'OPUS';
+  /** Concrete registry model id; falls back to the tier map when undefined. */
+  model?: string;
   temperature: number;
   maxTokens: number;
   /** The tools to offer — already filtered to the company's enabled modules. */
@@ -62,7 +79,7 @@ export interface ToolLoopResult {
 // round cap is hit). Throws on provider error; callers map that to their own
 // failure shape.
 export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
-  const { provider, system, messages, tier, temperature, maxTokens, tools, ctx } = args;
+  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx } = args;
   let reply = '';
   let tokensUsed = 0;
 
@@ -71,6 +88,7 @@ export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
       system,
       messages,
       tier,
+      model,
       temperature,
       maxTokens,
       tools,
@@ -109,7 +127,7 @@ export async function runToolLoopStream(
   args: ToolLoopArgs,
   onDelta: (delta: string) => void
 ): Promise<ToolLoopResult> {
-  const { provider, system, messages, tier, temperature, maxTokens, tools, ctx } = args;
+  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx } = args;
   if (!provider.completeStream) {
     const r = await runToolLoop(args);
     onDelta(r.reply);
@@ -120,7 +138,7 @@ export async function runToolLoopStream(
   let tokensUsed = 0;
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const gen = provider.completeStream({ system, messages, tier, temperature, maxTokens, tools });
+    const gen = provider.completeStream({ system, messages, tier, model, temperature, maxTokens, tools });
     let roundText = '';
     let next = await gen.next();
     while (!next.done) {

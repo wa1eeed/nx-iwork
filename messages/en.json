@@ -458,7 +458,9 @@
       "billing": "Billing"
     },
     "workspace": "Workspace",
-    "reviews": "Reviews"
+    "reviews": "Reviews",
+    "agentWork": "Agent work",
+    "data": "Data"
   },
   "wallet": {
     "title": "Wallet",
@@ -754,7 +756,8 @@
       "company": "Company info",
       "api": "API keys",
       "hours": "Hours",
-      "reminders": "Reminders"
+      "reminders": "Reminders",
+      "channels": "Channels"
     },
     "saved": "Saved",
     "saveError": "Save failed, please try again",
@@ -877,6 +880,36 @@
         "timeout": "Connection timed out",
         "network_error": "Network error"
       }
+    },
+    "channels": {
+      "title": "Telegram",
+      "subtitle": "Let customers chat with your AI agent on Telegram. Messages route to the agent you choose; replies are sent back automatically.",
+      "noAgents": "Create a customer-facing agent first, then connect it to Telegram.",
+      "statusActive": "Connected",
+      "statusInactive": "Needs reconnect",
+      "reconnectHint": "The webhook isn’t set. Re-enter the token to reconnect.",
+      "disconnect": "Disconnect",
+      "disconnectConfirm": "Disconnect Telegram? Customers won’t be able to reach your agent there.",
+      "disconnected": "Telegram disconnected",
+      "connected": "Connected {bot}",
+      "agent": "Answering agent",
+      "agentHelp": "The customer-facing agent that replies on Telegram.",
+      "botToken": "Bot token",
+      "reconnect": "Reconnect",
+      "botTokenHelp": "The token from @BotFather (kept encrypted).",
+      "howTitle": "How to get a bot token",
+      "how1": "Open @BotFather on Telegram and send /newbot.",
+      "how2": "Pick a name + username; BotFather returns a token.",
+      "how3": "Paste the token here, choose the agent, then Connect.",
+      "connect": "Connect",
+      "err": {
+        "token_required": "Paste the bot token",
+        "agent_invalid": "Pick a customer-facing agent",
+        "https_required": "Connect from the live site (HTTPS required)",
+        "invalid_token": "That token was rejected by Telegram",
+        "webhook_failed": "Couldn’t register the webhook — check the token",
+        "not_connected": "Telegram isn’t connected yet"
+      }
     }
   },
   "pages": {
@@ -984,6 +1017,108 @@
     "tasks": {
       "title": "Tasks",
       "subtitle": "Everything your employees are working on: in progress, completed, and scheduled — with dates and run counts."
+    },
+    "agentWork": {
+      "title": "Agent work",
+      "subtitle": "Everything your AI employees are doing — the live task queue and the calendar of scheduled runs.",
+      "tabs": {
+        "queue": "Task queue",
+        "calendar": "Scheduled runs"
+      },
+      "filterAll": "All",
+      "status": {
+        "PENDING": "Queued",
+        "WORKING": "Working",
+        "PENDING_APPROVAL": "Needs approval",
+        "PENDING_REVIEW": "In review",
+        "BLOCKED": "Blocked",
+        "DONE": "Done",
+        "FAILED": "Failed",
+        "CANCELLED": "Cancelled"
+      },
+      "runNow": "Run now",
+      "running": "Running…",
+      "runQueued": "Task started",
+      "runFailed": "Couldn’t start the task",
+      "details": "Details",
+      "noAgent": "Unassigned",
+      "attemptsN": "{count} attempts",
+      "tokens": "tokens",
+      "dependsOn": "Waits for",
+      "emptyQueue": "No agent tasks yet. Assign work to an agent or set up a schedule.",
+      "col": {
+        "due": "Due",
+        "started": "Started",
+        "completed": "Completed"
+      },
+      "calendar": {
+        "today": "Today",
+        "prev": "Previous month",
+        "next": "Next month",
+        "more": "+{count} more",
+        "noEvents": "Nothing scheduled for this day.",
+        "agenda": "This day"
+      },
+      "schedules": {
+        "title": "Recurring schedules",
+        "nextRun": "Next run",
+        "runs": "{count} runs",
+        "none": "No recurring schedules yet."
+      }
+    },
+    "data": {
+      "title": "Data",
+      "subtitle": "Model your own data — patients, vehicles, contracts, cases — and your AI agents can read and update it.",
+      "back": "Back",
+      "emptyTitle": "No data types yet",
+      "emptyBody": "Define your own record types with typed fields. Your agents get tools to read and write them — the foundation for any business, any sector.",
+      "newType": "New type",
+      "editType": "Edit type",
+      "createType": "Create type",
+      "deleteType": "Delete type",
+      "deleteTypeConfirm": "Delete “{name}” and all its records? This can’t be undone.",
+      "typeCreated": "Type created",
+      "typeUpdated": "Type updated",
+      "typeDeleted": "Type deleted",
+      "fieldsCount": "{count} fields",
+      "recordsCount": "{count} records",
+      "typeName": "Name",
+      "typeNamePlaceholder": "e.g. Patient, Vehicle, Contract",
+      "typeNameEn": "Name (English)",
+      "icon": "Icon",
+      "typeDescription": "Description",
+      "typeDescriptionPlaceholder": "What does this type represent?",
+      "fields": "Fields",
+      "fieldLabelPlaceholder": "Field label",
+      "addField": "Add field",
+      "required": "Required",
+      "optionsPlaceholder": "Options, comma-separated",
+      "nameRequired": "Add a name",
+      "fieldsRequired": "Add at least one field",
+      "type": {
+        "text": "Text",
+        "textarea": "Long text",
+        "number": "Number",
+        "date": "Date",
+        "boolean": "Yes / No",
+        "select": "Choice",
+        "email": "Email",
+        "phone": "Phone"
+      },
+      "err": {
+        "unauthorized": "Not authorized",
+        "name_required": "Add a name",
+        "fields_required": "Add at least one field",
+        "not_found": "Not found"
+      },
+      "addRecord": "Add record",
+      "editRecord": "Edit record",
+      "recordAdded": "Record added",
+      "recordUpdated": "Record updated",
+      "recordDeleted": "Record deleted",
+      "deleteRecord": "Delete record",
+      "deleteRecordConfirm": "Delete this record? This can’t be undone.",
+      "noRecords": "No records yet."
     }
   },
   "agentCreate": {
@@ -1111,7 +1246,8 @@
       "bookings": "Bookings",
       "support": "Support & knowledge",
       "operations": "Operations & tasks",
-      "memory": "Memory"
+      "memory": "Memory",
+      "data": "Data records"
     },
     "scenariosTitle": "Auto scenarios (If-Then)",
     "scenariosHelp": "What this employee does automatically when a business event happens.",
@@ -1161,7 +1297,9 @@
       "business": "Business default",
       "formal_ar": "Formal Arabic",
       "en": "English"
-    }
+    },
+    "aiModel": "AI model",
+    "aiModelDefault": "Platform default (by tier)"
   },
   "events": {
     "LEAD_CREATED": "When a new lead/inquiry arrives",
@@ -1179,7 +1317,8 @@
       "companies": "Companies",
       "services": "Marketplace",
       "plans": "Plans & storage",
-      "settings": "Platform"
+      "settings": "Platform",
+      "models": "Models"
     },
     "plans": {
       "title": "Plans & storage",

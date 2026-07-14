@@ -13,6 +13,55 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-07-14 — OpenClaw parity: model registry, OpenAI, Business Objects, Agent Work
+
+A wave toward the owner's #1 goal — genuinely **replace/rival OpenClaw**, but as
+the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.md)).
+
+### Added
+- **Provider-agnostic model registry.** New `AiModel` table + super-admin
+  **`/admin/models`** (add / enable / set-default / delete). **Adding a new
+  Gemini/OpenAI model is a data row, not a deploy.** Seeded with Gemini 2.5
+  Flash/Pro. `Agent.aiModelId` + an "AI model" dropdown in the agent create/edit
+  form let the owner pick a concrete model per agent (null → capability tier).
+- **OpenAI provider adapter** (`lib/ai/providers/openai.ts`) — Chat Completions:
+  `complete` + streaming + tools, platform `OPENAI_API_KEY`. `AiProviderId` gains
+  `openai`; `resolveModel` gains the OpenAI tier map.
+- **Per-agent model → provider routing.** A chosen registry model **pins its own
+  vendor**: `platformProvider()` builds any vendor from platform creds;
+  `providerForAgentModel()` / `getProviderForModel()` override the company default
+  with the model's vendor (falls back to default + tier when unconfigured). So one
+  agent can run **GPT-4o** while the company default stays **managed Gemini**.
+- **Business Objects — owner-defined data.** `ObjectType` + `ObjectRecord` (field
+  schema as JSON → no migration to add a field). **`/data`**: a type gallery + a
+  schema builder (label · type · required · choices · icon); **`/data/[id]`**: a
+  records table + dynamic form. 8 field types. `lib/objects/fields.ts` is the one
+  parser/validator shared by UI, actions, and tools.
+- **Agent tools over Business Objects** — `list_object_types` · `query_records` ·
+  `create_record` · `update_record`, gated on `CompanyModules.hasObjects`,
+  `companyId`-scoped, `values` passed as a provider-portable JSON string, and
+  **excluded from the public widget** (sensitive owner data). New `data` group in
+  the permission matrix.
+- **Agent Work** (`/agent-work`) — a **task queue** (status filter, agent,
+  attempts, tokens, `depends_on` chain, live progress, Run-now) + a
+  **scheduled-runs calendar** (month grid, business-tz, cron expanded via new
+  `expandOccurrences()`, selected-day agenda, recurring-schedule list).
+- **Channels — Telegram inbound.** `Channel` model (encrypted token, `secret`,
+  `agentId`) + webhook `POST /api/channels/telegram/[secret]` (verified via
+  Telegram's `secret_token`) that routes inbound messages to a customer-facing
+  agent through `runPublicAgentChat` (same default-DENY tool allow-list as the
+  widget) and replies over Telegram. Owner connects/disconnects in **Settings →
+  Channels** (validates the token via getMe, registers the webhook). Migration
+  `20260714150000`. WhatsApp is reserved (`ChannelType.WHATSAPP`) for next.
+
+### Notes
+- All additive + backward compatible (`aiModelId` null → tier; `hasObjects` false
+  → no object tools). Migrations `20260710180000_ai_model_registry`,
+  `20260714120000_business_objects`, `20260714150000_channels`. tsc + build +
+  en/ar parity clean.
+
+---
+
 ## 2026-07-09 — Service-business platform: booking-first, module nav, agent fixes
 
 Reframe the platform for service businesses (clinics, salons, any booking-based

@@ -3,12 +3,12 @@
 // thinks" logic lives in lib/agent/core.ts (shared with task execution).
 
 import { db } from '@/lib/db';
-import { getProviderForCompany } from '@/lib/ai';
+import { getProviderForModel } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
-import { loadAgentWithContext, runToolLoop, runToolLoopStream } from './core';
+import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId } from './core';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
 
@@ -49,7 +49,9 @@ export async function runAgentChat(
   const agent = await loadAgentWithContext(agentId, companyId);
   if (!agent) return { ok: false, reason: 'agent_not_found' };
 
-  const providerResult = await getProviderForCompany(companyId);
+  // A registry model pinned to this agent chooses its own vendor; otherwise the
+  // company's default provider (managed Vertex / BYOK) runs the tier.
+  const providerResult = await getProviderForModel(companyId, agent.aiModel);
   if (!providerResult.ok) return { ok: false, reason: providerResult.reason };
 
   // Managed mode: refuse before spending if the token bank is empty.
@@ -113,9 +115,10 @@ export async function runAgentChat(
       system,
       messages,
       tier: agent.model,
+      model: agentModelId(agent.aiModel, providerResult.provider.id),
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
-      tools: getToolsForAgent(agent.company, perms),
+      tools: getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, perms),
       ctx: { companyId, agentId },
     };
     ({ reply, tokensUsed } = opts?.onDelta

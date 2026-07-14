@@ -4,12 +4,12 @@
 // to the agent the owner designated for the widget.
 
 import { db } from '@/lib/db';
-import { getProviderForCompany } from '@/lib/ai';
+import { getProviderForCompany, providerForAgentModel } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
-import { loadAgentWithContext, runToolLoop, runToolLoopStream } from './core';
+import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId } from './core';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
 
@@ -80,7 +80,10 @@ export async function runPublicAgentChat(
   // serve the public widget. An internal archetype (marketing/finance/ops) must
   // never answer a customer, even if misconfigured as the widget agent.
   if (agent.surface === 'INTERNAL') return { ok: false, reason: 'unavailable' };
-  if (!providerResult.ok) return { ok: false, reason: 'unavailable' };
+  // A registry model pinned to this agent chooses its own vendor; otherwise the
+  // company default provider fetched above. Sync override — no extra round-trip.
+  const effective = providerForAgentModel(providerResult, agent.aiModel);
+  if (!effective.ok) return { ok: false, reason: 'unavailable' };
   if (!budget.ok) return { ok: false, reason: budget.reason };
   if (!agentBudget.ok) return { ok: false, reason: 'billing_limit' };
 
@@ -129,13 +132,17 @@ export async function runPublicAgentChat(
     'create_booking',
     'create_lead',
   ]);
-  const tools = getToolsForAgent(agent.company, perms).filter((t) => PUBLIC_ALLOWLIST.has(t.name));
+  const tools = getToolsForAgent(
+    { ...agent.company, hasObjects: agent.company._count.objectTypes > 0 },
+    perms
+  ).filter((t) => PUBLIC_ALLOWLIST.has(t.name));
 
   const loopArgs = {
-    provider: providerResult.provider,
+    provider: effective.provider,
     system,
     messages,
     tier: agent.model,
+    model: agentModelId(agent.aiModel, effective.provider.id),
     temperature: agent.temperature,
     maxTokens: agent.maxTokens,
     tools,

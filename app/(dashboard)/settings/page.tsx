@@ -15,6 +15,7 @@ import { BrandingTab } from '@/components/settings/branding-tab';
 import { StorefrontTab } from '@/components/settings/storefront-tab';
 import { CustomDomainTab } from '@/components/settings/custom-domain-tab';
 import { EscalationTab } from '@/components/settings/escalation-tab';
+import { ChannelsTab } from '@/components/settings/channels-tab';
 import { EmailTab } from '@/components/settings/email-tab';
 import { CompanyInfoTab } from '@/components/settings/company-info-tab';
 import { ApiSettingsTab } from '@/components/settings/api-settings-tab';
@@ -35,7 +36,7 @@ export default async function SettingsPage() {
   });
   if (!user?.companyId) redirect('/onboarding');
 
-  const [company, settings, apiSettings, websiteConfig, wallet, companyHours, holidays] = await Promise.all([
+  const [company, settings, apiSettings, websiteConfig, wallet, companyHours, holidays, telegramChannel, channelAgents] = await Promise.all([
     db.company.findUnique({
       where: { id: user.companyId },
       select: {
@@ -95,6 +96,15 @@ export default async function SettingsPage() {
       orderBy: { date: 'asc' },
       select: { id: true, date: true, name: true },
     }),
+    db.channel.findUnique({
+      where: { companyId_type: { companyId: user.companyId, type: 'TELEGRAM' } },
+      select: { agentId: true, botUsername: true, isActive: true },
+    }),
+    db.agent.findMany({
+      where: { companyId: user.companyId, surface: 'CUSTOMER_FACING', status: { not: 'ARCHIVED' } },
+      orderBy: { name: 'asc' },
+      select: { id: true, name: true },
+    }),
   ]);
 
   const t = await getTranslations('settings');
@@ -141,6 +151,7 @@ export default async function SettingsPage() {
           <TabsTrigger value="storefront">{t('tabs.storefront')}</TabsTrigger>
           <TabsTrigger value="domain">{t('tabs.domain')}</TabsTrigger>
           <TabsTrigger value="escalation">{t('tabs.escalation')}</TabsTrigger>
+          <TabsTrigger value="channels">{t('tabs.channels')}</TabsTrigger>
           <TabsTrigger value="email">{t('tabs.email')}</TabsTrigger>
           <TabsTrigger value="company">{t('tabs.company')}</TabsTrigger>
           {/* Managed mode: the platform supplies the AI centrally — the customer
@@ -245,6 +256,18 @@ export default async function SettingsPage() {
               telegramBotToken: settings.telegramBotToken,
               telegramChatId: settings.telegramChatId,
             }}
+          />
+        </TabsContent>
+
+        <TabsContent value="channels">
+          <ChannelsTab
+            initial={{
+              connected: !!telegramChannel,
+              botUsername: telegramChannel?.botUsername ?? null,
+              agentId: telegramChannel?.agentId ?? null,
+              isActive: telegramChannel?.isActive ?? false,
+            }}
+            agents={channelAgents}
           />
         </TabsContent>
 
