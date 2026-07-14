@@ -56,9 +56,13 @@ the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.m
     bridges (Evolution/Baileys) because it's **stateless** (one app webhook + REST),
     so it scales on Cloud Run + many tenants with no ban risk. App-level webhook
     `/api/channels/whatsapp/webhook` (GET verify + POST HMAC), routed by
-    `phone_number_id`; `Channel` gains `phoneNumberId`/`wabaId`. Manual connect
-    now (token + phone-number id); Embedded Signup next. Env `WHATSAPP_APP_SECRET`
-    + `WHATSAPP_VERIFY_TOKEN`. Migration `20260714170000`.
+    `phone_number_id`; `Channel` gains `phoneNumberId`/`wabaId`. Env
+    `WHATSAPP_APP_SECRET` + `WHATSAPP_VERIFY_TOKEN`. Migration `20260714170000`.
+  - **WhatsApp Embedded Signup** (one-click self-serve) — scaffolding: a "Connect
+    with Facebook" button (FB JS SDK, env-gated by `NEXT_PUBLIC_FACEBOOK_APP_ID` +
+    `NEXT_PUBLIC_WHATSAPP_CONFIG_ID`) + server flow (code→token exchange, subscribe
+    app to WABA, register phone) + `completeWhatsAppSignup`. Manual connect stays
+    the fallback. Live use needs Meta Tech Provider approval.
 
 ### Notes
 - All additive + backward compatible (`aiModelId` null → tier; `hasObjects` false

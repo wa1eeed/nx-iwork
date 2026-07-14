@@ -121,11 +121,18 @@ same platform without a code change.
      `/api/channels/whatsapp/webhook` (GET verify + POST HMAC `X-Hub-Signature-256`),
      routed by `phone_number_id`. Owner connects manually today (paste token +
      phone-number id).
-   **Next:** WhatsApp **Embedded Signup** (one-click self-serve onboarding, become
-   a Meta Tech Provider) + a lightweight **Router** that picks the agent/department
-   per inbound thread (today one agent per channel). An optional Evolution/QR
-   "easy mode" for micro-businesses could sit behind the same `Channel` abstraction
-   later — but it is NOT the backbone (stateful, Cloud-Run-hostile, ban risk).
+   **WhatsApp Embedded Signup — scaffolding SHIPPED** (env-gated): a "Connect with
+   Facebook" one-click button (`components/settings/whatsapp-embedded-signup.tsx`)
+   + the server flow (`lib/channels/whatsapp-signup.ts`: exchange code → business
+   token, subscribe app to WABA, register phone) + `completeWhatsAppSignup`. Shows
+   only when `NEXT_PUBLIC_FACEBOOK_APP_ID` + `NEXT_PUBLIC_WHATSAPP_CONFIG_ID` are
+   set; manual connect stays the fallback. **Live use is gated on becoming an
+   approved Meta Tech Provider** (business verification + app review) — a one-time
+   owner/ops step, not a code step.
+   **Next:** a lightweight **Router** that picks the agent/department per inbound
+   thread (today one agent per channel). An optional Evolution/QR "easy mode" for
+   micro-businesses could sit behind the same `Channel` abstraction later — but it
+   is NOT the backbone (stateful, Cloud-Run-hostile, ban risk).
 2. **MCP client + per-tenant server registry.** Let an owner register an MCP server
    (URL + auth) and expose its tools to chosen agents — the same `getToolsForAgent`
    gate, tools sourced from a remote MCP instead of the built-in catalogue. This is

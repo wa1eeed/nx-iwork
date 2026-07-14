@@ -202,9 +202,11 @@ admin layer. Full strategy + gap analysis in **`docs/OPENCLAW_PARITY.md`**.
    (2026-07-14, above). **Remaining gap** (full analysis in `docs/OPENCLAW_PARITY.md`):
    - **Channels — Telegram + WhatsApp SHIPPED** (Settings → Channels). WhatsApp uses
      the **official Cloud API** (stateless → scales on Cloud Run + many tenants;
-     chosen over unofficial QR bridges). **Next:** WhatsApp **Embedded Signup**
-     (one-click self-serve, become a Meta Tech Provider) + a **Router** agent that
-     picks the agent/department per inbound thread (today one agent/channel).
+     chosen over unofficial QR bridges). **Embedded Signup** one-click onboarding
+     is scaffolded (env-gated by `NEXT_PUBLIC_FACEBOOK_APP_ID` +
+     `NEXT_PUBLIC_WHATSAPP_CONFIG_ID`; live use needs Meta Tech Provider approval;
+     manual connect is the fallback). **Next:** a **Router** agent that picks the
+     agent/department per inbound thread (today one agent/channel).
    - **MCP client + per-tenant server registry** — register an MCP server and expose
      its tools to chosen agents through the same `getToolsForAgent` gate.
    - **Skills as first-class** — named/versioned capability bundles.

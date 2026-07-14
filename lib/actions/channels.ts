@@ -13,6 +13,7 @@ import {
   telegramDeleteWebhook,
 } from '@/lib/channels/telegram';
 import { whatsappVerifyPhone } from '@/lib/channels/whatsapp';
+import { exchangeCodeForToken, subscribeAppToWaba, registerPhone } from '@/lib/channels/whatsapp-signup';
 
 type Result =
   | { ok: true; botUsername?: string | null }
@@ -174,6 +175,65 @@ export async function connectWhatsApp(input: {
       token: encrypt(accessToken),
       agentId: input.agentId,
       phoneNumberId,
+      botUsername: label,
+      isActive: true,
+    },
+  });
+
+  revalidatePath('/settings');
+  return { ok: true, botUsername: label };
+}
+
+// Complete Embedded Signup: exchange the popup's auth code for a business token,
+// wire the WABA to our webhook, register the number, and persist the channel.
+export async function completeWhatsAppSignup(input: {
+  code: string;
+  phoneNumberId: string;
+  wabaId: string;
+  agentId: string;
+}): Promise<Result> {
+  const cid = await companyId();
+  if (!cid) return { ok: false, error: 'unauthorized' };
+
+  const { code, phoneNumberId, wabaId, agentId } = input;
+  if (!code || !phoneNumberId) return { ok: false, error: 'token_required' };
+  if (!agentId || !(await assertCustomerAgent(cid, agentId))) return { ok: false, error: 'agent_invalid' };
+
+  const owner = await db.channel.findUnique({ where: { phoneNumberId }, select: { companyId: true } });
+  if (owner && owner.companyId !== cid) return { ok: false, error: 'phone_in_use' };
+
+  const ex = await exchangeCodeForToken(code);
+  if (!ex.ok) return { ok: false, error: 'invalid_token' };
+
+  if (wabaId) await subscribeAppToWaba(ex.token, wabaId); // best-effort
+  await registerPhone(ex.token, phoneNumberId); // best-effort
+  const verify = await whatsappVerifyPhone(ex.token, phoneNumberId);
+  const label = verify.ok ? verify.verifiedName || verify.displayNumber : null;
+
+  const existing = await db.channel.findUnique({
+    where: { companyId_type: { companyId: cid, type: 'WHATSAPP' } },
+    select: { secret: true },
+  });
+  const secret = existing?.secret ?? randomBytes(24).toString('hex');
+
+  await db.channel.upsert({
+    where: { companyId_type: { companyId: cid, type: 'WHATSAPP' } },
+    create: {
+      companyId: cid,
+      type: 'WHATSAPP',
+      token: encrypt(ex.token),
+      agentId,
+      phoneNumberId,
+      wabaId: wabaId || null,
+      botUsername: label,
+      secret,
+      isActive: true,
+    },
+    update: {
+      token: encrypt(ex.token),
+      agentId,
+      phoneNumberId,
+      wabaId: wabaId || null,
       botUsername: label,
       isActive: true,
     },

@@ -921,7 +921,12 @@
         "how1": "In Meta for Developers, open your app → WhatsApp → API Setup.",
         "how2": "Copy the Phone number ID and a (permanent) access token.",
         "how3": "Paste them here, choose the agent, then Connect.",
-        "advancedNote": "Requires a Meta Business app. One-click self-serve (Embedded Signup) is coming."
+        "advancedNote": "Requires a Meta Business app. One-click self-serve (Embedded Signup) is coming.",
+        "signupCta": "Connect with Facebook (one-click)",
+        "orManual": "or enter credentials manually",
+        "signupDone": "WhatsApp connected",
+        "signupFailed": "Connection failed — try again",
+        "signupCancelled": "Sign-up was cancelled"
       }
     }
   },

@@ -921,7 +921,12 @@
         "how1": "في Meta for Developers، افتح تطبيقك ← WhatsApp ← API Setup.",
         "how2": "انسخ Phone number ID وتوكن وصول (دائم).",
         "how3": "الصقهما هنا، اختر الوكيل، ثم اضغط اتصال.",
-        "advancedNote": "يتطلب تطبيق Meta Business. الربط الذاتي بنقرة (Embedded Signup) قادم."
+        "advancedNote": "يتطلب تطبيق Meta Business. الربط الذاتي بنقرة (Embedded Signup) قادم.",
+        "signupCta": "الربط عبر فيسبوك (بنقرة)",
+        "orManual": "أو أدخل البيانات يدوياً",
+        "signupDone": "تم ربط واتساب",
+        "signupFailed": "فشل الربط — حاول مجدداً",
+        "signupCancelled": "أُلغيت العملية"
       }
     }
   },

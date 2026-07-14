@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { WhatsAppEmbeddedSignup } from '@/components/settings/whatsapp-embedded-signup';
 import {
   connectTelegram,
   setTelegramAgent,
@@ -263,6 +264,9 @@ function WhatsAppCard({ initial, agents }: { initial: ChannelState; agents: Agen
         <CardContent className="space-y-5">
           {initial.connected && <StatusRow label={initial.label} isActive={initial.isActive} onDisconnect={disconnect} disconnecting={disconnecting} />}
           <AgentSelect value={agentId} onChange={changeAgent} disabled={savingAgent} />
+          {/* One-click Embedded Signup (renders only when configured); otherwise
+              the manual fields below are the connection path. */}
+          <WhatsAppEmbeddedSignup agentId={agentId} />
           <div className="grid gap-4 sm:grid-cols-2">
             <div className="space-y-2">
               <Label>{tw('phoneNumberId')}</Label>
