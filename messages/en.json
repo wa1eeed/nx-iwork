@@ -1085,6 +1085,12 @@
         "nextRun": "Next run",
         "runs": "{count} runs",
         "none": "No recurring schedules yet."
+      },
+      "automation": {
+        "active": "Automation active · {ago} ago",
+        "staleTitle": "Automation may have stopped",
+        "neverTitle": "Automation hasn’t run yet",
+        "fixHint": "Agents run on their own only while the every-minute cron fires. Ensure the Coolify Scheduled Task hits /api/cron/run each minute (see docs)."
       }
     },
     "data": {

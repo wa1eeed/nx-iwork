@@ -1879,6 +1879,11 @@ model PlatformSettings {
   // SaaS limits (single_tenant ignores these)
   maxCompaniesAllowed Int? // null = unlimited
 
+  // Automation heartbeat — stamped by the every-minute cron (/api/cron/run) so the
+  // dashboard can PROVE autonomous execution is alive and warn if it stops firing.
+  lastCronRunAt   DateTime?
+  lastCronSummary Json? // { schedules, events, reminders, reaped }
+
   updatedAt DateTime @updatedAt
 }
 

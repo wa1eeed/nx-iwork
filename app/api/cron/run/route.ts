@@ -1,6 +1,8 @@
 import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
-import { runDueSchedules, runDueTasks, runDueReminders } from '@/lib/agent/scheduler';
+import { Prisma } from '@prisma/client';
+import { db } from '@/lib/db';
+import { runDueSchedules, runDueTasks, runDueReminders, runReapStuckTasks } from '@/lib/agent/scheduler';
 
 // Cron trigger for the scheduler, callable from inside the production image
 // (it's part of the Next build, unlike scripts/scheduler.ts which needs tsx +
@@ -38,12 +40,22 @@ async function handle(req: Request) {
   }
 
   try {
-    const [schedules, events, reminders] = await Promise.all([
+    const [schedules, events, reminders, reaped] = await Promise.all([
       runDueSchedules(),
       runDueTasks(),
       runDueReminders(),
+      runReapStuckTasks(),
     ]);
-    return NextResponse.json({ ok: true, schedules, events, reminders });
+    // Heartbeat: stamp that autonomous execution ran, so the dashboard can prove
+    // it's alive and warn the owner if the cron ever stops firing.
+    const summary = { schedules, events, reminders, reaped };
+    const summaryJson = summary as unknown as Prisma.InputJsonValue;
+    await db.platformSettings.upsert({
+      where: { id: 'singleton' },
+      create: { id: 'singleton', lastCronRunAt: new Date(), lastCronSummary: summaryJson },
+      update: { lastCronRunAt: new Date(), lastCronSummary: summaryJson },
+    });
+    return NextResponse.json({ ok: true, ...summary });
   } catch (err) {
     console.error('cron run failed', err);
     return NextResponse.json({ ok: false, reason: 'error' }, { status: 500 });

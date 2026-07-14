@@ -1066,4 +1066,10 @@ backward compatible.
   runtime `skillPromptBlock`/`skillToolIds` inject the instructions + expand the
   tool allow-list. Managed in `/skills`. See [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) §6.
 
-Migrations: `20260710120000_task_depends_on` … `20260714210000_owner_skills`.
+### Automation heartbeat  — migration `20260714230000`
+- **`PlatformSettings.lastCronRunAt` + `lastCronSummary`** — stamped every minute
+  by `/api/cron/run` so the dashboard can prove autonomous execution is alive
+  (Agent Work shows a green pill, or an amber warning if it stops). Paired with
+  `runReapStuckTasks` (re-queues tasks orphaned in `WORKING` by a crash).
+
+Migrations: `20260710120000_task_depends_on` … `20260714230000_automation_heartbeat`.

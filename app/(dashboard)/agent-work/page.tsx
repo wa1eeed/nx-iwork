@@ -3,7 +3,9 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { expandOccurrences } from '@/lib/agent/schedule-time';
+import { getAutomationHealth } from '@/lib/agent/automation-health';
 import { AgentWorkView, type CalendarEvent } from '@/components/dashboard/agent-work-view';
+import { AutomationBanner } from '@/components/dashboard/automation-banner';
 
 // How far ahead the scheduled-runs calendar looks. Cron occurrences + dated
 // tasks are expanded server-side over this window so the client never ships a
@@ -106,6 +108,7 @@ export default async function AgentWorkPage() {
 
   const tz = settings?.timezone ?? 'Asia/Riyadh';
   const weekStart = settings?.weekStart ?? 'sunday';
+  const health = await getAutomationHealth();
 
   // Resolve depends-on ids → titles so the chain reads as names, not cuids.
   const depIds = Array.from(new Set(tasks.flatMap((tk) => tk.dependsOn)));
@@ -157,10 +160,14 @@ export default async function AgentWorkPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-xl font-semibold">{t('title')}</h1>
-        <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
+        </div>
+        {health.status === 'healthy' && <AutomationBanner status={health.status} agoLabel={health.agoLabel} />}
       </div>
+      {health.status !== 'healthy' && <AutomationBanner status={health.status} agoLabel={health.agoLabel} />}
 
       <AgentWorkView
         todayKey={dayKey(now, tz)}

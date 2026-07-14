@@ -89,6 +89,12 @@ Add a Coolify **Scheduled Task**, every minute:
 curl -fsS -X POST -H "x-cron-secret: $CRON_SECRET" https://bznss.one/api/cron/run
 ```
 
+This is **mandatory** — agents only act on their own (scheduled runs, event
+wake-ups, due tasks, reminders) while this fires. Each run stamps a heartbeat, so
+the **Agent Work** page shows a green "Automation active" pill; if it turns amber,
+the cron has stopped — check the Scheduled Task. Every tick also reaps tasks
+orphaned in `WORKING` by a restart, so nothing hangs.
+
 ## 6. Verify
 
 ```bash

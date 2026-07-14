@@ -63,6 +63,15 @@ the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.m
     `NEXT_PUBLIC_WHATSAPP_CONFIG_ID`) + server flow (code→token exchange, subscribe
     app to WABA, register phone) + `completeWhatsAppSignup`. Manual connect stays
     the fallback. Live use needs Meta Tech Provider approval.
+- **Autonomy hardening** — make "agents act on their own without being woken"
+  verifiable + self-healing. A **cron heartbeat** (`PlatformSettings.lastCronRunAt`,
+  migration `20260714230000`) stamped every minute by `/api/cron/run`; **Agent Work**
+  shows a green "Automation active" pill or an amber warning (with the fix) if the
+  loop stops. A **stuck-task reaper** (`runReapStuckTasks`) re-queues autonomous
+  tasks orphaned in `WORKING` by a crash/restart (or FAILs them past the attempt
+  cap) so nothing hangs. (Audit confirmed the rest is already sound: schedules get
+  `nextRunAt` on creation, events wake tasks, `dueAt` is respected, completions
+  write result + timeline.)
 - **Agent Studio** (`/studio`) — a test sandbox: run one message through an agent
   exactly like the real path (model · prompt · skills · tools) but without saving
   history; returns the reply, provider/model, tokens, available-tool count, and the
