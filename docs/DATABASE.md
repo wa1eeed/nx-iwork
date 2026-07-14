@@ -1050,4 +1050,12 @@ backward compatible.
     stateless, so it scales on Cloud Run + many tenants. Migration `20260714170000`.
   - Both connect from Settings → **Channels**. See [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) §6.
 
-Migrations: `20260710120000_task_depends_on` … `20260714170000_whatsapp_channel`.
+### MCP servers (third-party tools for agents)  — migration `20260714190000`
+- **`McpServer`** — per-tenant registry of remote MCP servers: `name` · `key`
+  (unique per company — the `mcp__{key}__{tool}` namespace) · `url` · `authToken`
+  (encrypted, optional) · `isActive`. `lib/mcp/` lists each server's tools and
+  dispatches namespaced calls; they flow through the same `getToolsForAgent` gate
+  (a `use_mcp` grant) + `executeTool` as built-ins. Managed in `/integrations`.
+  See [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) §6.
+
+Migrations: `20260710120000_task_depends_on` … `20260714190000_mcp_servers`.

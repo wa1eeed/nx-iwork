@@ -23,6 +23,7 @@ import {
   Package,
   Package2,
   Gem,
+  Plug,
   Settings,
   Sparkles,
   Star,
@@ -117,6 +118,7 @@ export const NAV_SECTIONS: NavSection[] = [
     sectionKey: 'configure',
     items: [
       { href: '/pages', icon: FileText, labelKey: 'pages' },
+      { href: '/integrations', icon: Plug, labelKey: 'integrations' },
       { href: '/settings', icon: Settings, labelKey: 'settings' },
       { href: '/modules', icon: LayoutGrid, labelKey: 'modules' },
     ],

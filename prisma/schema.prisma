@@ -183,6 +183,7 @@ model Company {
   objectTypes         ObjectType[]
   objectRecords       ObjectRecord[]
   channels            Channel[]
+  mcpServers          McpServer[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -2242,5 +2243,33 @@ model Channel {
   updatedAt DateTime @updatedAt
 
   @@unique([companyId, type]) // one channel per type per company (MVP)
+  @@index([companyId])
+}
+
+// ========================================
+// MCP SERVERS (third-party tools for agents)
+// ========================================
+// An owner registers a remote MCP (Model Context Protocol) server; its tools are
+// exposed to chosen agents through the SAME getToolsForAgent gate, namespaced as
+// `mcp__{key}__{tool}`. This is the OpenClaw-parity "extensibility" layer — any
+// third-party capability, governed by our permission model, not raw access.
+model McpServer {
+  id        String  @id @default(cuid())
+  companyId String
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+
+  name String // display name
+  key  String // slug, unique per company — the namespace in mcp__{key}__{tool}
+  url  String // the MCP server endpoint (Streamable HTTP / JSON-RPC)
+
+  // Optional bearer token for the server, encrypted at rest (BYOK scheme).
+  authToken String? @db.Text
+
+  isActive Boolean @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([companyId, key])
   @@index([companyId])
 }

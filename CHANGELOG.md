@@ -63,6 +63,14 @@ the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.m
     `NEXT_PUBLIC_WHATSAPP_CONFIG_ID`) + server flow (code→token exchange, subscribe
     app to WABA, register phone) + `completeWhatsAppSignup`. Manual connect stays
     the fallback. Live use needs Meta Tech Provider approval.
+- **MCP — connect any third-party tools.** `McpServer` per-tenant registry
+  (`/integrations`: add · test-connection lists tools · toggle · remove; auth
+  token encrypted). `lib/mcp/client.ts` (JSON-RPC over Streamable HTTP: initialize
+  → tools/list → tools/call, JSON+SSE + session aware) + `lib/mcp/registry.ts`
+  (tools namespaced `mcp__{key}__{tool}`, provider-safe; dispatch). Merged into the
+  dashboard + task agent loops through the same `getToolsForAgent` gate +
+  `executeTool`, gated by a new **`use_mcp`** permission (Integrations group); off
+  the public widget; best-effort. Migration `20260714190000`.
 
 ### Notes
 - All additive + backward compatible (`aiModelId` null → tier; `hasObjects` false

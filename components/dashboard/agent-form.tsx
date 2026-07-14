@@ -123,6 +123,7 @@ export function AgentForm({
     support: t('toolGroups.support'),
     operations: t('toolGroups.operations'),
     data: t('toolGroups.data'),
+    integrations: t('toolGroups.integrations'),
     memory: t('toolGroups.memory'),
   };
   // Always start from DEFAULTS so newer fields (archetype/personaCfg) exist even

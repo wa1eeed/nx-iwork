@@ -42,8 +42,8 @@ So the target is: *OpenClaw's power, minus the assembly required.*
 | **Scheduled-task calendar + task monitor** | ✗ (raw) | ✅ **Agent Work** (§5) | **shipped, ahead** |
 | Channels — Telegram inbound | ✅ | ✅ `/api/channels/telegram` + Settings → Channels | **shipped** |
 | Channels — WhatsApp inbound | ✅ (unofficial QR) | ✅ **official Cloud API** `/api/channels/whatsapp` | **shipped, stronger** |
-| MCP client + per-tenant server registry | ✅ (core) | ⏳ | **gap** |
-| Skills as first-class composable units | ✅ | partial (tools) | **gap** |
+| MCP client + per-tenant server registry | ✅ (core) | ✅ `/integrations` + `lib/mcp/` | **shipped** |
+| Skills as first-class composable units | ✅ | partial (tools) | **gap — next** |
 | Agent Studio / test sandbox | DIY | partial (`/chat`) | **gap (nice-to-have)** |
 
 Net: the **governance + organization** half is done and is ahead of OpenClaw.
@@ -133,10 +133,17 @@ same platform without a code change.
    thread (today one agent per channel). An optional Evolution/QR "easy mode" for
    micro-businesses could sit behind the same `Channel` abstraction later — but it
    is NOT the backbone (stateful, Cloud-Run-hostile, ban risk).
-2. **MCP client + per-tenant server registry.** Let an owner register an MCP server
-   (URL + auth) and expose its tools to chosen agents — the same `getToolsForAgent`
-   gate, tools sourced from a remote MCP instead of the built-in catalogue. This is
-   the "connect any third-party" story, done with governance.
+2. **MCP client + per-tenant server registry.** ✅ **SHIPPED** (2026-07-14). An
+   owner registers a remote MCP server in **`/integrations`** (URL + optional
+   Bearer token, encrypted; "Test connection" lists its tools). `lib/mcp/client.ts`
+   is a minimal JSON-RPC-over-Streamable-HTTP client (initialize → tools/list →
+   tools/call, JSON+SSE + session-id aware); `lib/mcp/registry.ts` exposes each
+   server's tools **namespaced `mcp__{key}__{tool}`** (provider-safe) and dispatches
+   calls back. They flow through the **same `getToolsForAgent` gate + `executeTool`
+   entry point** as built-ins, gated by a **`use_mcp`** grant in the permission
+   matrix, merged into the dashboard + task loops (NOT the public widget), and are
+   best-effort (an unreachable server never blocks the agent). "Connect any
+   third-party, with governance" — done.
 3. **Skills as first-class.** Promote reusable capability bundles (prompt +
    allowed tools + example) to a named, versioned unit an owner attaches to an
    agent — composable like OpenClaw skills, but organized.

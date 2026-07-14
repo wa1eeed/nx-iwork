@@ -13,6 +13,7 @@ export type ToolGroup =
   | 'support'
   | 'operations'
   | 'data'
+  | 'integrations'
   | 'memory';
 
 // Render order for the matrix.
@@ -23,6 +24,7 @@ export const TOOL_GROUPS: ToolGroup[] = [
   'support',
   'operations',
   'data',
+  'integrations',
   'memory',
 ];
 
@@ -48,6 +50,9 @@ export const TOOL_CATALOG: { id: string; label: string; group: ToolGroup }[] = [
   { id: 'query_records', label: 'Query records', group: 'data' },
   { id: 'create_record', label: 'Create record', group: 'data' },
   { id: 'update_record', label: 'Update record', group: 'data' },
+  // A capability grant, not a built-in tool: when present, the agent also receives
+  // the company's registered MCP (third-party) tools. See lib/mcp/registry.ts.
+  { id: 'use_mcp', label: 'Use connected tools (MCP)', group: 'integrations' },
   { id: 'save_memory', label: 'Save memory', group: 'memory' },
 ];
 
