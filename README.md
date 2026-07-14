@@ -73,10 +73,11 @@
 app/
 ├── (dashboard)/            ← مركز القيادة (Command Center) — قائمة مجمّعة حسب البزنس
 │   ├── overview · approvals · chat · tasks              ← القيادة
-│   ├── agents · departments                             ← قوة العمل
+│   ├── agents · agent-work · outputs · departments · knowledge · data  ← قوة العمل + البيانات
 │   ├── sales · orders · customers · clients · bookings  ← المبيعات
-│   ├── products · services · knowledge                  ← المنتجات والخدمات
+│   ├── products · services · reviews                    ← المنتجات والخدمات
 │   ├── wallet · subscription · settings (guardrails) · modules
+├── (admin)/admin/          ← لوحة السوبر-أدمن: companies · tokens · plans · models · settings
 ├── (public)/[slug]/        ← الصفحة العامة لكل بزنس + ودجت الوكيل
 ├── (auth)/ · (onboarding)/
 └── api/
@@ -84,8 +85,9 @@ app/
     ├── public/[slug]/chat  ← محادثة الزوار
     ├── cron/run · ai/health (محميان بـ CRON_SECRET)
 lib/
-├── ai/                     ⭐ الطبقة المحايدة (vertex/google/anthropic) + embeddings + gcp-auth (ADC)
+├── ai/                     ⭐ الطبقة المحايدة (vertex/openai/google/anthropic) + سجل النماذج + embeddings + gcp-auth (ADC)
 ├── agent/                  ⭐ القلب: core · run · task · scheduler · events · memory · tools · prompt
+├── objects/fields.ts       ← مخطّط حقول الكائنات التجارية (Business Objects)
 ├── billing/tokens.ts       ← بنك التوكنز (managed)
 ├── storage/ · notifications/ · actions/
 prisma/schema.prisma · scripts/scheduler.ts · docs/

@@ -987,3 +987,54 @@ The customer-facing + storage arc:
   `20260708140000_bookings_engine`.
 
 Migrations: `20260621130000_wallet` … `20260708140000_bookings_engine`.
+
+---
+
+## 🆕 Schema additions (2026-07-10 → 07-14)
+
+Everything added since the bookings engine, newest concern last. All additive +
+backward compatible.
+
+### Agent architecture (role model + outputs)
+- **`Agent.surface`** (`CUSTOMER_FACING` | `INTERNAL`) + **`archetype`** (role-model
+  key) + **`personaConfig`** (JSON structured persona). Hard scope: only
+  customer-facing archetypes may serve the public widget.
+- **`AgentOutput`** — the unified deliverables hub (`/outputs`): `type`, `status`,
+  `title`, `body`, agent + company scoped; written by the `create_output` tool.
+- **`Task.dependsOn String[]`** — task sequencing; the scheduler skips a task while
+  a dependency is unfinished and BLOCKs it if a dependency failed. Composite
+  indexes on `Task` / `AgentSchedule` for the every-minute scans.
+
+### Service-business capabilities
+- **`CompanyHours`** + **`Holiday`** — company-level business hours + closures;
+  services with no windows inherit them (migration `20260710140000`).
+- **`Booking.reminderSentAt`** + **`BusinessSettings.bookingConfirmationEnabled` /
+  `bookingReminderEnabled` / `bookingReminderHoursBefore`** — owner-controllable
+  confirmation + reminder emails, off `/api/cron/run` (migration `20260710150000`).
+- **`Review`** + **`ReviewStatus`** — customer reviews/ratings: public submit +
+  moderation (`/reviews`) + storefront average (migration `20260710160000`).
+- **`BusinessSettings.cancellationPolicy`** — owner text shown at booking + in the
+  confirmation email (migration `20260710170000`).
+
+### AI model registry (provider-agnostic)  — migration `20260710180000`
+- **`AiModel`** — `provider · modelId · label · tier · enabled · isDefault ·
+  sortOrder`, `@@unique([provider, modelId])`. Super-admin managed (`/admin/models`).
+  **Adding a model is a data row.** Seeded with Gemini 2.5 Flash/Pro.
+- **`Agent.aiModelId`** (FK → `AiModel`, `onDelete: SetNull`) — the concrete model an
+  owner pins to an agent; null → the capability tier's default. Overrides the tier
+  only when the model's provider matches the active provider (else tier fallback).
+  See [`AI_VERTEX.md`](./AI_VERTEX.md) §2ب and [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) §3.
+
+### Business Objects (owner-defined data)  — migration `20260714120000`
+- **`ObjectType`** — `key` (unique per company) · `name` / `nameEn` · `icon` ·
+  `description` · **`fields` JSON** (`[{ key, label, type, required, options? }]`,
+  8 types). The field schema is JSON so **adding a field needs no migration**.
+- **`ObjectRecord`** — `objectTypeId` (FK, cascade) · **`data` JSON** (values keyed
+  by field key) · denormalized **`title`** (first text-like field) for lists/agent
+  output. Indexed `[companyId]`, `[objectTypeId]`, `[companyId, objectTypeId]`.
+- Validation/coercion lives in `lib/objects/fields.ts` (shared by UI, actions,
+  agent tools). Agent tools `list_object_types` / `query_records` / `create_record`
+  / `update_record` are gated on the company having ≥1 type and are excluded from
+  the public widget. See [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) §4.
+
+Migrations: `20260710120000_task_depends_on` … `20260714120000_business_objects`.

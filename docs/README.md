@@ -21,7 +21,8 @@ how-to · planning) used by most large platforms.
 | Doc | Scope |
 |---|---|
 | [`PROJECT.md`](./PROJECT.md) | Project constitution — vision, roles, the core architectural decisions. |
-| [`AGENT_SYSTEM.md`](./AGENT_SYSTEM.md) | The agent engine — loop, function-calling tools, 3-layer memory, scheduler, events, conversation modes. |
+| [`AGENT_SYSTEM.md`](./AGENT_SYSTEM.md) | The agent engine — loop, function-calling tools, 3-layer memory, scheduler, events, conversation modes, per-agent model, Business Objects tools. |
+| [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) | The OpenClaw-parity strategy — positioning, the capability map (us vs OpenClaw), model registry, Business Objects, Agent Work, and the ordered gap (channels · MCP · Skills · Studio). |
 
 ## 📖 Reference (the *what*)
 

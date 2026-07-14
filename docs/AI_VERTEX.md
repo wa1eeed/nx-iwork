@@ -44,6 +44,46 @@ scripts/test-vertex.ts← فحص اتصال حيّ (npm run test:vertex)
 
 ---
 
+## 2ب. سجل النماذج (Model Registry) + تبديل المزوّد لكل وكيل
+
+الهدف الذي حدّده المالك: **إضافة أي نموذج ذكاء جديد (Gemini / OpenAI) دون تعديل
+الكود**، وإمكانية **التبديل بين النماذج لكل وكيل** من لوحة السوبر-أدمن أو لوحة
+صاحب العمل. تحقّق ذلك بطبقة سجلّ فوق نظام المستويات (tiers) — متوافقة معه تماماً:
+
+- **جدول `AiModel`** (تُدار من `/admin/models` للسوبر-أدمن): `provider · modelId ·
+  label · tier · enabled · isDefault · sortOrder`. **إضافة نموذج = صف بيانات**،
+  لا نشر. مبذور بـ Gemini 2.5 Flash/Pro.
+- **اختيار لكل وكيل:** `Agent.aiModelId` → قائمة "نموذج الذكاء" في نموذج إنشاء/تعديل
+  الوكيل. `null` → النموذج الافتراضي للفئة (توافق خلفي كامل).
+- **التوجيه وقت التشغيل** (`lib/ai/`): الطلب يحمل `model` (معرّف نموذج محدّد)؛ كل
+  مزوّد يستخدم `req.model ?? resolveModel(tier)`. النموذج المختار **يثبّت مزوّده**:
+  - `platformProvider(providerId)` — يبني أي مزوّد من مفاتيح المنصّة
+    (`OPENAI_API_KEY` / `ANTHROPIC_API_KEY` / `GOOGLE_API_KEY` / Vertex ADC).
+  - `providerForAgentModel(default, model)` — يستبدل مزوّد الشركة الافتراضي بمزوّد
+    النموذج (متزامن؛ لا جولة إضافية — يُستخدم في `public-chat` الموازي).
+  - `getProviderForModel(companyId, model)` — يحمّل الافتراضي ثم يطبّق الاستبدال
+    (يُستخدم في `run` و`task`).
+  - إن لم يكن مزوّد النموذج مُهيّأً → رجوع للافتراضي + الفئة (يطابق `agentModelId`).
+- **النتيجة:** يمكن تشغيل وكيل على **GPT-4o** بينما يبقى افتراضي الشركة **Gemini
+  المُدار (Vertex)**. الإنفاق يظل محكوماً ببنك التوكنز في الحالتين.
+- **المزوّدون:** `vertex` (مُدار، افتراضي) · `openai` (محوّل جديد — Chat Completions:
+  `complete` + streaming + tools) · `anthropic` / `google` (BYOK). `AiProviderId`
+  صار يشمل `openai`، و`resolveModel` يشمل خريطة مستويات OpenAI
+  (`gpt-4o-mini` / `gpt-4o`، قابلة للتهيئة عبر `OPENAI_MODEL_*`).
+
+```
+lib/ai/providers/openai.ts   ← محوّل OpenAI (REST Chat Completions + SSE + tools)
+lib/ai/index.ts              ← platformProvider · providerForAgentModel · getProviderForModel
+lib/actions/admin-models.ts  ← create/toggle/setDefault/delete (requireSuperAdmin)
+app/(admin)/admin/models/    ← صفحة إدارة النماذج
+```
+
+> **إضافة نموذج جديد فعلياً:** افتح `/admin/models` كسوبر-أدمن → أضف صفاً
+> (`provider` + `modelId` كما هو لدى المزوّد + `label`) → فعّله. يظهر فوراً في قائمة
+> "نموذج الذكاء" لكل وكيل. لتشغيل نماذج OpenAI اضبط `OPENAI_API_KEY` على المنصّة.
+
+---
+
 ## 3. إعداد Google Cloud (مرة واحدة)
 
 1. **فعّل Vertex AI API** على المشروع:
