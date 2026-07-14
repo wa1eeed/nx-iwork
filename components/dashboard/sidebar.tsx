@@ -27,6 +27,7 @@ import {
   Settings,
   Sparkles,
   Star,
+  Wand2,
   Store,
   TicketPercent,
   Users,
@@ -89,6 +90,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: '/agents', icon: Bot, labelKey: 'agents' },
       { href: '/agent-work', icon: ListChecks, labelKey: 'agentWork' },
+      { href: '/skills', icon: Wand2, labelKey: 'skills' },
       { href: '/outputs', icon: Sparkles, labelKey: 'workspace' },
       { href: '/departments', icon: Building2, labelKey: 'departments' },
       { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },

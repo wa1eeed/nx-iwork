@@ -461,7 +461,8 @@
     "reviews": "التقييمات",
     "agentWork": "أعمال الوكلاء",
     "data": "البيانات",
-    "integrations": "التكاملات"
+    "integrations": "التكاملات",
+    "skills": "المهارات"
   },
   "wallet": {
     "title": "المحفظة",
@@ -1165,6 +1166,35 @@
       "err": {
         "name_required": "أضف اسمًا",
         "bad_url": "أدخل رابط https صحيح",
+        "not_found": "غير موجود",
+        "unauthorized": "غير مصرّح"
+      }
+    },
+    "skills": {
+      "title": "المهارات",
+      "subtitle": "حزم قدرات قابلة لإعادة الاستخدام — تعليمات + أدوات — تصنعها مرة وتُلحقها بأي وكيل.",
+      "back": "رجوع",
+      "emptyTitle": "لا توجد مهارات بعد",
+      "emptyBody": "المهارة تجمع تعليمات ومجموعة أدوات. ألحقها بالوكلاء ليعملوا بنفس الطريقة — عدّلها مرة، فيتحدّث كل وكيل.",
+      "newSkill": "مهارة جديدة",
+      "createSkill": "إنشاء مهارة",
+      "deleteSkill": "حذف المهارة",
+      "deleteConfirm": "حذف «{name}»؟ الوكلاء المستخدمون لها يفقدونها.",
+      "created": "تم إنشاء المهارة",
+      "updated": "تم تحديث المهارة",
+      "deleted": "تم حذف المهارة",
+      "name": "الاسم",
+      "namePlaceholder": "مثل: معالجة الاسترجاع، الحجز والتأكيد",
+      "description": "الوصف",
+      "descriptionPlaceholder": "ما الغرض من هذه المهارة (اختياري)",
+      "instructions": "التعليمات",
+      "instructionsPlaceholder": "كيف ينفّذ الوكيل هذه المهارة — تُضاف إلى موجّهه.",
+      "instructionsHelp": "تُحقَن في موجّه أي وكيل يملك هذه المهارة.",
+      "grantsTools": "تمنح هذه الأدوات",
+      "toolsN": "{count} أداة",
+      "agentsN": "{count} وكيل",
+      "err": {
+        "name_required": "أضف اسمًا",
         "not_found": "غير موجود",
         "unauthorized": "غير مصرّح"
       }
