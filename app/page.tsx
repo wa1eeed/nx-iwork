@@ -16,6 +16,11 @@ import {
   ArrowRight,
   Check,
   LayoutDashboard,
+  MessageCircle,
+  Plug,
+  Database,
+  Cpu,
+  Zap,
   type LucideIcon,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -71,6 +76,16 @@ const FEATURES: { key: string; icon: LucideIcon }[] = [
   { key: 'commissions', icon: HandCoins },
   { key: 'ai', icon: Sparkles },
   { key: 'unified', icon: LayoutDashboard },
+];
+
+// The OpenClaw-parity capability showcase — the platform's real differentiator.
+const CAPABILITIES: { key: string; icon: LucideIcon; tint: string }[] = [
+  { key: 'employees', icon: Bot, tint: 'bg-rose-500/10 text-rose-600 dark:text-rose-400' },
+  { key: 'omnichannel', icon: MessageCircle, tint: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+  { key: 'connect', icon: Plug, tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' },
+  { key: 'anySector', icon: Database, tint: 'bg-violet-500/10 text-violet-600 dark:text-violet-400' },
+  { key: 'autonomous', icon: Zap, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+  { key: 'models', icon: Cpu, tint: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400' },
 ];
 
 const STAT_KEYS = ['sectors', 'allInOne', 'langs', 'ai'] as const;
@@ -129,7 +144,7 @@ export default async function LandingPage() {
           </Link>
 
           <nav className="hidden items-center gap-6 text-sm text-muted-foreground md:flex">
-            <a href="#departments" className="transition-colors hover:text-foreground">{t('nav.features')}</a>
+            <a href="#capabilities" className="transition-colors hover:text-foreground">{t('nav.features')}</a>
             <a href="#how" className="transition-colors hover:text-foreground">{t('nav.how')}</a>
             <a href="#pricing" className="transition-colors hover:text-foreground">{t('nav.pricing')}</a>
           </nav>
@@ -184,6 +199,10 @@ export default async function LandingPage() {
               )}
             </div>
             {!isLoggedIn && <p className="text-xs text-muted-foreground">{t('hero.trust')}</p>}
+            <div className="inline-flex items-center gap-2 rounded-full border bg-card/60 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
+              <MessageCircle className="size-3.5 text-primary" />
+              {t('hero.channels')}
+            </div>
           </FadeIn>
 
           <FadeIn delay={0.1} className="mt-14">
@@ -199,6 +218,32 @@ export default async function LandingPage() {
                 <p className="text-2xl font-bold text-gradient sm:text-3xl">{t(`stats.${k}.value`)}</p>
                 <p className="mt-1 text-xs text-muted-foreground sm:text-sm">{t(`stats.${k}.label`)}</p>
               </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Capabilities — the AI-workforce showcase (the platform's differentiator) */}
+        <section id="capabilities" className="mx-auto max-w-6xl scroll-mt-20 px-4 py-16 sm:px-6">
+          <div className="mx-auto mb-10 max-w-2xl text-center">
+            <span className="inline-flex items-center gap-2 rounded-full border bg-gradient-brand-soft px-3 py-1 text-xs font-medium">
+              {t('capabilities.badge')}
+            </span>
+            <h2 className="mt-3 text-3xl font-bold tracking-tight">{t('capabilities.title')}</h2>
+            <p className="mt-2 text-muted-foreground">{t('capabilities.subtitle')}</p>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {CAPABILITIES.map(({ key, icon: Icon, tint }) => (
+              <HoverLift key={key}>
+                <Card className="h-full hover:border-primary/40 hover:shadow-elevated">
+                  <CardContent className="space-y-3 p-6">
+                    <span className={`flex size-11 items-center justify-center rounded-xl ${tint}`}>
+                      <Icon className="size-5" />
+                    </span>
+                    <h3 className="font-semibold">{t(`capabilities.items.${key}.name`)}</h3>
+                    <p className="text-sm text-muted-foreground">{t(`capabilities.items.${key}.desc`)}</p>
+                  </CardContent>
+                </Card>
+              </HoverLift>
             ))}
           </div>
         </section>
