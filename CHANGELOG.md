@@ -63,6 +63,13 @@ the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.m
     `NEXT_PUBLIC_WHATSAPP_CONFIG_ID`) + server flow (code→token exchange, subscribe
     app to WABA, register phone) + `completeWhatsAppSignup`. Manual connect stays
     the fallback. Live use needs Meta Tech Provider approval.
+- **Skills — reusable capability bundles.** A `Skill` = instructions
+  (`promptTemplate`) + granted tools, authored in **`/skills`** and attached to any
+  agent (assign from the skill side). Runtime: `loadAgentWithContext` loads an
+  agent's skills; `skillPromptBlock` injects instructions into the system prompt +
+  `skillToolIds` expands a scoped agent's allow-list (dashboard · task · public).
+  Repurposed the unused global `Skill` into a per-tenant, tool-bundling model
+  (`companyId` + `tools[]`). Migration `20260714210000`.
 - **MCP — connect any third-party tools.** `McpServer` per-tenant registry
   (`/integrations`: add · test-connection lists tools · toggle · remove; auth
   token encrypted). `lib/mcp/client.ts` (JSON-RPC over Streamable HTTP: initialize

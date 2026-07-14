@@ -1197,7 +1197,9 @@
         "name_required": "Add a name",
         "not_found": "Not found",
         "unauthorized": "Not authorized"
-      }
+      },
+      "assignAgents": "Assign to agents",
+      "assignHelp": "These agents get this skill’s instructions + tools."
     }
   },
   "agentCreate": {

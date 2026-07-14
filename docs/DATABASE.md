@@ -1058,4 +1058,12 @@ backward compatible.
   (a `use_mcp` grant) + `executeTool` as built-ins. Managed in `/integrations`.
   See [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) §6.
 
-Migrations: `20260710120000_task_depends_on` … `20260714190000_mcp_servers`.
+### Skills (owner-authored capability bundles)  — migration `20260714210000`
+- **`Skill`** (repurposed from the unused global model) gains `companyId` (null =
+  global/system; set = owner skill) + **`tools String[]`** (the tools it grants);
+  global key-uniqueness dropped (scoped per company in app). A skill = instructions
+  (`promptTemplate`) + granted tools; **`AgentSkill`** attaches it to agents. At
+  runtime `skillPromptBlock`/`skillToolIds` inject the instructions + expand the
+  tool allow-list. Managed in `/skills`. See [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) §6.
+
+Migrations: `20260710120000_task_depends_on` … `20260714210000_owner_skills`.

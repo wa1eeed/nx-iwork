@@ -8,7 +8,7 @@ import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
-import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId } from './core';
+import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId, skillPromptBlock, skillToolIds } from './core';
 import { getMcpToolsForCompany } from '@/lib/mcp/registry';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
@@ -93,6 +93,10 @@ export async function runAgentChat(
   const memoryBlock = await recallMemoryBlock(agentId, companyId, userMessage);
   if (memoryBlock) system += `\n\n${memoryBlock}`;
 
+  // Inject the instructions from any skills attached to this agent.
+  const skillBlock = skillPromptBlock(agent.skills);
+  if (skillBlock) system += `\n\n${skillBlock}`;
+
   // Dashboard chat: the interlocutor is the OWNER/admin, so the agent should be
   // able to READ the whole operation and run schedule ops to answer business
   // questions and act on instructions — even if its customer-facing scope is
@@ -105,7 +109,8 @@ export async function runAgentChat(
     if (agent.company.hasBookings) {
       internal.push('list_bookings', 'list_open_slots', 'check_availability', 'create_booking', 'update_booking', 'set_booking_staff');
     }
-    perms = Array.from(new Set([...perms, ...internal]));
+    // Skills also expand a scoped agent's allow-list with the tools they grant.
+    perms = Array.from(new Set([...perms, ...internal, ...skillToolIds(agent.skills)]));
   }
 
   let reply: string;

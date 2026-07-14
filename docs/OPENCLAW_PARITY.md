@@ -43,7 +43,7 @@ So the target is: *OpenClaw's power, minus the assembly required.*
 | Channels — Telegram inbound | ✅ | ✅ `/api/channels/telegram` + Settings → Channels | **shipped** |
 | Channels — WhatsApp inbound | ✅ (unofficial QR) | ✅ **official Cloud API** `/api/channels/whatsapp` | **shipped, stronger** |
 | MCP client + per-tenant server registry | ✅ (core) | ✅ `/integrations` + `lib/mcp/` | **shipped** |
-| Skills as first-class composable units | ✅ | partial (tools) | **gap — next** |
+| Skills as first-class composable units | ✅ | ✅ `/skills` (instructions + tools) | **shipped** |
 | Agent Studio / test sandbox | DIY | partial (`/chat`) | **gap (nice-to-have)** |
 
 Net: the **governance + organization** half is done and is ahead of OpenClaw.
@@ -144,12 +144,18 @@ same platform without a code change.
    matrix, merged into the dashboard + task loops (NOT the public widget), and are
    best-effort (an unreachable server never blocks the agent). "Connect any
    third-party, with governance" — done.
-3. **Skills as first-class.** Promote reusable capability bundles (prompt +
-   allowed tools + example) to a named, versioned unit an owner attaches to an
-   agent — composable like OpenClaw skills, but organized.
+3. **Skills as first-class.** ✅ **SHIPPED** (2026-07-14). A **Skill** = named
+   instructions (`promptTemplate`) + a set of granted tools, authored once in
+   **`/skills`** and attached to any agent. At runtime `loadAgentWithContext` loads
+   an agent's skills; `skillPromptBlock` injects their instructions into the system
+   prompt and `skillToolIds` expands a scoped agent's tool allow-list — across
+   dashboard, task, and public surfaces. Change a skill once → every agent that has
+   it updates. (Repurposed the previously-unused global `Skill` model into a
+   per-tenant, tool-bundling one.)
 4. **Agent Studio + test sandbox.** A focused build/test surface (today `/chat` is
    the owner↔agent console; a dedicated sandbox that shows tool calls + which
-   model/provider answered would complete create → test → deploy → monitor).
+   model/provider answered would complete create → test → deploy → monitor). ← the
+   last nice-to-have.
 
 ## 7. Design invariants (do not break)
 

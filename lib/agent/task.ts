@@ -11,7 +11,7 @@ import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
 import { buildSystemPrompt } from './prompt';
-import { loadAgentWithContext, runToolLoop, agentModelId } from './core';
+import { loadAgentWithContext, runToolLoop, agentModelId, skillPromptBlock, skillToolIds } from './core';
 import { getMcpToolsForCompany } from '@/lib/mcp/registry';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
@@ -111,13 +111,18 @@ export async function runAgentTask(
     `${task.title}\n${task.description}`
   );
   if (memoryBlock) system += `\n\n${memoryBlock}`;
+  const skillBlock = skillPromptBlock(agent.skills);
+  if (skillBlock) system += `\n\n${skillBlock}`;
 
   const messages: AiMessage[] = [
     { role: 'user', content: buildTaskInstruction(task.title, task.description) },
   ];
 
   try {
-    const baseTools = getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, agent.permissions);
+    const taskPerms = agent.permissions.length
+      ? Array.from(new Set([...agent.permissions, ...skillToolIds(agent.skills)]))
+      : agent.permissions;
+    const baseTools = getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, taskPerms);
     const wantsMcp = agent.permissions.length === 0 || agent.permissions.includes('use_mcp');
     const { reply, tokensUsed } = await runToolLoop({
       provider: providerResult.provider,

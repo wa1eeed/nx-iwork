@@ -42,8 +42,25 @@ export function loadAgentWithContext(agentId: string, companyId: string) {
       },
       // The concrete model the owner picked (registry). Null → tier fallback.
       aiModel: { select: { modelId: true, provider: true, enabled: true } },
+      // Attached skills: their instructions are injected into the system prompt
+      // and their tools are granted to the agent.
+      skills: { select: { skill: { select: { promptTemplate: true, tools: true } } } },
     },
   });
+}
+
+// The instructions block for an agent's attached skills (empty when none).
+export function skillPromptBlock(skills: { skill: { promptTemplate: string | null } }[]): string {
+  const parts = skills
+    .map((s) => s.skill.promptTemplate?.trim())
+    .filter((p): p is string => Boolean(p));
+  if (parts.length === 0) return '';
+  return `## Your skills\nApply these when relevant:\n${parts.map((p) => `- ${p}`).join('\n')}`;
+}
+
+// The union of tool ids granted by an agent's attached skills.
+export function skillToolIds(skills: { skill: { tools: string[] } }[]): string[] {
+  return Array.from(new Set(skills.flatMap((s) => s.skill.tools ?? [])));
 }
 
 // Resolve the concrete model id to send the provider: the agent's registry model

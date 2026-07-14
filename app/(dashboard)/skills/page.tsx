@@ -9,21 +9,28 @@ export default async function SkillsPage() {
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
-  const skills = companyId
-    ? await db.skill.findMany({
-        where: { companyId },
-        orderBy: { createdAt: 'asc' },
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          icon: true,
-          promptTemplate: true,
-          tools: true,
-          _count: { select: { agents: true } },
-        },
-      })
-    : [];
+  const [skills, agents] = companyId
+    ? await Promise.all([
+        db.skill.findMany({
+          where: { companyId },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            id: true,
+            name: true,
+            description: true,
+            icon: true,
+            promptTemplate: true,
+            tools: true,
+            agents: { select: { agentId: true } },
+          },
+        }),
+        db.agent.findMany({
+          where: { companyId, status: { not: 'ARCHIVED' } },
+          orderBy: { name: 'asc' },
+          select: { id: true, name: true },
+        }),
+      ])
+    : [[], []];
 
   const rows: SkillRow[] = skills.map((s) => ({
     id: s.id,
@@ -32,7 +39,7 @@ export default async function SkillsPage() {
     icon: s.icon,
     instructions: s.promptTemplate ?? '',
     tools: s.tools,
-    agentCount: s._count.agents,
+    agentIds: s.agents.map((a) => a.agentId),
   }));
 
   return (
@@ -41,7 +48,7 @@ export default async function SkillsPage() {
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
-      <SkillsManager skills={rows} />
+      <SkillsManager skills={rows} agents={agents} />
     </div>
   );
 }

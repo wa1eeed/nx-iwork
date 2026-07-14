@@ -1197,7 +1197,9 @@
         "name_required": "أضف اسمًا",
         "not_found": "غير موجود",
         "unauthorized": "غير مصرّح"
-      }
+      },
+      "assignAgents": "إسناد لوكلاء",
+      "assignHelp": "يحصل هؤلاء الوكلاء على تعليمات المهارة وأدواتها."
     }
   },
   "agentCreate": {

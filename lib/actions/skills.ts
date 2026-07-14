@@ -50,6 +50,18 @@ export interface SkillInput {
   instructions?: string | null;
   icon?: string | null;
   tools: string[];
+  agentIds: string[];
+}
+
+// Reconcile which agents carry this skill (validated against the tenant).
+async function setSkillAgents(cid: string, skillId: string, agentIds: string[]): Promise<void> {
+  const valid = agentIds.length
+    ? (await db.agent.findMany({ where: { id: { in: agentIds }, companyId: cid }, select: { id: true } })).map((a) => a.id)
+    : [];
+  await db.$transaction([
+    db.agentSkill.deleteMany({ where: { skillId } }),
+    ...(valid.length ? [db.agentSkill.createMany({ data: valid.map((agentId) => ({ agentId, skillId })) })] : []),
+  ]);
 }
 
 export async function createSkill(input: SkillInput): Promise<Result> {
@@ -73,6 +85,7 @@ export async function createSkill(input: SkillInput): Promise<Result> {
     },
     select: { id: true },
   });
+  await setSkillAgents(cid, created.id, input.agentIds ?? []);
   revalidatePath('/skills');
   return { ok: true, id: created.id };
 }
@@ -98,6 +111,7 @@ export async function updateSkill(id: string, input: SkillInput): Promise<Result
       tools: cleanTools(input.tools),
     },
   });
+  await setSkillAgents(cid, id, input.agentIds ?? []);
   revalidatePath('/skills');
   return { ok: true, id };
 }

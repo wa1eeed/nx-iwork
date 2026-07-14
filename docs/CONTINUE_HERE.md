@@ -211,7 +211,11 @@ admin layer. Full strategy + gap analysis in **`docs/OPENCLAW_PARITY.md`**.
      `lib/mcp/`). Register an MCP server; its tools reach agents namespaced
      `mcp__{key}__{tool}` through the same gate (a `use_mcp` grant), off the public
      widget. **Next below.**
-   - **Skills as first-class** — named/versioned capability bundles. ← next.
+   - **Skills — SHIPPED** (`/skills`): a skill = instructions + granted tools,
+     authored once + attached to agents; runtime injects the instructions
+     (`skillPromptBlock`) + expands the tool allow-list (`skillToolIds`).
+   - **Agent Studio / test sandbox** — the last nice-to-have (today `/chat` is the
+     owner↔agent console). ← next.
    - **Agent Studio / test sandbox** — build/test surface showing tool calls + which
      model answered (today `/chat` is the owner↔agent console).
    Guiding law: the two-layer contract. See `docs/AGENT_SYSTEM.md`.

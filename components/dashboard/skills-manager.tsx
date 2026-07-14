@@ -22,17 +22,19 @@ export interface SkillRow {
   icon: string;
   instructions: string;
   tools: string[];
-  agentCount: number;
+  agentIds: string[];
 }
+
+type Agent = { id: string; name: string };
 
 const KNOWN_ERR = new Set(['name_required', 'not_found', 'unauthorized']);
 
-export function SkillsManager({ skills }: { skills: SkillRow[] }) {
+export function SkillsManager({ skills, agents }: { skills: SkillRow[]; agents: Agent[] }) {
   const t = useTranslations('pages.skills');
   const [editing, setEditing] = useState<SkillRow | 'new' | null>(null);
 
   if (editing) {
-    return <SkillEditor initial={editing === 'new' ? null : editing} onClose={() => setEditing(null)} />;
+    return <SkillEditor initial={editing === 'new' ? null : editing} agents={agents} onClose={() => setEditing(null)} />;
   }
 
   return (
@@ -62,7 +64,7 @@ export function SkillsManager({ skills }: { skills: SkillRow[] }) {
               {s.description && <p className="line-clamp-1 text-xs text-muted-foreground">{s.description}</p>}
               <p className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1"><Wrench className="size-3" />{t('toolsN', { count: s.tools.length })}</span>
-                <span className="inline-flex items-center gap-1"><Users className="size-3" />{t('agentsN', { count: s.agentCount })}</span>
+                <span className="inline-flex items-center gap-1"><Users className="size-3" />{t('agentsN', { count: s.agentIds.length })}</span>
               </p>
             </div>
             <Pencil className="size-4 shrink-0 text-muted-foreground opacity-0 transition group-hover:opacity-100" />
@@ -81,7 +83,7 @@ export function SkillsManager({ skills }: { skills: SkillRow[] }) {
   );
 }
 
-function SkillEditor({ initial, onClose }: { initial: SkillRow | null; onClose: () => void }) {
+function SkillEditor({ initial, agents, onClose }: { initial: SkillRow | null; agents: Agent[]; onClose: () => void }) {
   const t = useTranslations('pages.skills');
   const tc = useTranslations('common');
   const tg = useTranslations('agentForm');
@@ -95,9 +97,17 @@ function SkillEditor({ initial, onClose }: { initial: SkillRow | null; onClose: 
   const [description, setDescription] = useState(initial?.description ?? '');
   const [instructions, setInstructions] = useState(initial?.instructions ?? '');
   const [tools, setTools] = useState<Set<string>>(new Set(initial?.tools ?? []));
+  const [agentIds, setAgentIds] = useState<Set<string>>(new Set(initial?.agentIds ?? []));
 
   const toggleTool = (id: string) =>
     setTools((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const toggleAgent = (id: string) =>
+    setAgentIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
@@ -110,7 +120,7 @@ function SkillEditor({ initial, onClose }: { initial: SkillRow | null; onClose: 
       return;
     }
     startSave(async () => {
-      const input = { name: name.trim(), description, instructions, tools: Array.from(tools) };
+      const input = { name: name.trim(), description, instructions, tools: Array.from(tools), agentIds: Array.from(agentIds) };
       const res = initial ? await updateSkill(initial.id, input) : await createSkill(input);
       if (res.ok) {
         toast.success(initial ? t('updated') : t('created'));
@@ -191,6 +201,32 @@ function SkillEditor({ initial, onClose }: { initial: SkillRow | null; onClose: 
               })}
             </div>
           </div>
+
+          {/* Assign the skill to agents */}
+          {agents.length > 0 && (
+            <div className="space-y-2">
+              <Label>{t('assignAgents')}</Label>
+              <div className="flex flex-wrap gap-1.5">
+                {agents.map((a) => {
+                  const on = agentIds.has(a.id);
+                  return (
+                    <button
+                      key={a.id}
+                      type="button"
+                      onClick={() => toggleAgent(a.id)}
+                      className={cn(
+                        'rounded-full border px-2.5 py-1 text-xs transition',
+                        on ? 'border-primary/40 bg-primary/10 text-primary' : 'text-muted-foreground hover:bg-accent/50'
+                      )}
+                    >
+                      {a.name}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="text-xs text-muted-foreground">{t('assignHelp')}</p>
+            </div>
+          )}
 
           <div className="flex items-center justify-between border-t pt-4">
             {initial ? (
