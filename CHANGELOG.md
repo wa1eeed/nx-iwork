@@ -90,6 +90,14 @@ the governed admin layer (see [`docs/OPENCLAW_PARITY.md`](docs/OPENCLAW_PARITY.m
   `skillToolIds` expands a scoped agent's allow-list (dashboard · task · public).
   Repurposed the unused global `Skill` into a per-tenant, tool-bundling model
   (`companyId` + `tools[]`). Migration `20260714210000`.
+- **Security: SSRF guard on MCP URLs.** An MCP server URL is owner-supplied and
+  fetched server-side — `lib/net/ssrf.ts` (`assertPublicHttpUrl`) resolves DNS and
+  rejects localhost / private ranges / cloud-metadata (169.254.169.254), enforced
+  both at registration (`addMcpServer`/`testMcpServer`) and on every fetch in the
+  MCP client (defense against DNS rebinding). Post-deploy audit otherwise confirmed
+  the session's new surface is sound: webhooks are auth'd (Telegram `secret_token`,
+  WhatsApp HMAC), tokens encrypted, every new tool/action tenant-scoped, and the
+  Business-Objects/MCP tools stay off the public widget allow-list.
 - **MCP — connect any third-party tools.** `McpServer` per-tenant registry
   (`/integrations`: add · test-connection lists tools · toggle · remove; auth
   token encrypted). `lib/mcp/client.ts` (JSON-RPC over Streamable HTTP: initialize

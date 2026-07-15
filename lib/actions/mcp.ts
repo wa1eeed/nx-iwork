@@ -7,6 +7,7 @@ import { getUserCompany } from '@/lib/companies';
 import { encrypt } from '@/lib/encryption';
 import { mcpKey } from '@/lib/mcp/registry';
 import { mcpListTools } from '@/lib/mcp/client';
+import { isPublicHttpUrl } from '@/lib/net/ssrf';
 
 type Result = { ok: true; id?: string } | { ok: false; error: string };
 
@@ -15,14 +16,6 @@ async function companyId(): Promise<string | null> {
   return session?.user?.id ? getUserCompany(session.user.id) : null;
 }
 
-function validUrl(url: string): boolean {
-  try {
-    const u = new URL(url);
-    return u.protocol === 'https:' || u.protocol === 'http:';
-  } catch {
-    return false;
-  }
-}
 
 async function uniqueKey(cid: string, name: string): Promise<string> {
   const base = mcpKey(name);
@@ -44,7 +37,8 @@ export async function addMcpServer(input: McpServerInput): Promise<Result> {
   const name = input.name?.trim();
   const url = input.url?.trim();
   if (!name) return { ok: false, error: 'name_required' };
-  if (!url || !validUrl(url)) return { ok: false, error: 'bad_url' };
+  // Reject non-public URLs (SSRF): no localhost / private ranges / metadata.
+  if (!url || !(await isPublicHttpUrl(url))) return { ok: false, error: 'bad_url' };
 
   const created = await db.mcpServer.create({
     data: {
@@ -89,7 +83,7 @@ export async function testMcpServer(input: {
   const cid = await companyId();
   if (!cid) return { ok: false, error: 'unauthorized' };
   const url = input.url?.trim();
-  if (!url || !validUrl(url)) return { ok: false, error: 'bad_url' };
+  if (!url || !(await isPublicHttpUrl(url))) return { ok: false, error: 'bad_url' };
   const res = await mcpListTools(url, input.authToken?.trim() || undefined);
   if (!res.ok) return { ok: false, error: res.error };
   return { ok: true, tools: res.tools.map((t) => ({ name: t.name, description: t.description })) };
