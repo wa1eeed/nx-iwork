@@ -47,6 +47,18 @@ export async function POST(
     async start(controller) {
       const send = (obj: unknown) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      // Prime the stream: a ~2KB SSE comment forces a buffering proxy (Cloudflare,
+      // Traefik) to flush immediately, so deltas arrive live instead of in one lump
+      // after the whole reply finishes. Keepalive comments hold the connection open
+      // through slow tool rounds. Both are ignored by the SSE client.
+      controller.enqueue(encoder.encode(`:${' '.repeat(2048)}\n\n`));
+      const keepalive = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(': ka\n\n'));
+        } catch {
+          /* stream already closed */
+        }
+      }, 15_000);
       try {
         const result = await runAgentChat(
           { agentId, companyId, userMessage: message.trim(), userId },
@@ -60,6 +72,7 @@ export async function POST(
       } catch (err) {
         send({ type: 'error', reason: 'provider_error', message: err instanceof Error ? err.message : 'unknown' });
       } finally {
+        clearInterval(keepalive);
         controller.close();
       }
     },
