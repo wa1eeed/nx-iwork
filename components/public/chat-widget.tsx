@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { MessageCircle, X, Send, Loader2 } from 'lucide-react';
+import { MessageCircle, X, Send } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { cn } from '@/lib/utils';
 
@@ -156,9 +156,17 @@ export function ChatWidget({
                 </div>
               </div>
             ))}
-            {sending && (
-              <div className="flex items-center gap-2 text-sm text-neutral-500">
-                <Loader2 className="h-4 w-4 animate-spin" /> يكتب…
+            {/* "Agent is typing" — the three-dot bounce, until the first token
+                streams in (then the reply bubble takes over). */}
+            {sending && messages[messages.length - 1]?.role !== 'agent' && (
+              <div className="flex justify-start">
+                <div className="rounded-2xl bg-neutral-100 px-3 py-2.5 dark:bg-neutral-800">
+                  <span className="flex items-center gap-1" role="status" aria-label="يكتب…">
+                    <span className="size-1.5 animate-bounce rounded-full bg-neutral-400 [animation-delay:-0.3s]" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-neutral-400 [animation-delay:-0.15s]" />
+                    <span className="size-1.5 animate-bounce rounded-full bg-neutral-400" />
+                  </span>
+                </div>
               </div>
             )}
           </div>
