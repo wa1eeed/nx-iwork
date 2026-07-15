@@ -4,6 +4,8 @@
 // tolerant of both JSON and SSE responses, and never throws (returns a result
 // union). We never log the auth token.
 
+import { assertPublicHttpUrl } from '@/lib/net/ssrf';
+
 const PROTOCOL_VERSION = '2024-11-05';
 const CLIENT_INFO = { name: 'bznss-one', version: '1.0.0' };
 const TIMEOUT_MS = 15_000;
@@ -110,6 +112,13 @@ export async function mcpListTools(
   url: string,
   authToken?: string
 ): Promise<{ ok: true; tools: McpToolDef[] } | { ok: false; error: string }> {
+  // SSRF guard: re-checked at every call (defense against DNS rebinding), not just
+  // at registration.
+  try {
+    await assertPublicHttpUrl(url);
+  } catch {
+    return { ok: false, error: 'blocked_url' };
+  }
   const init = await handshake(url, authToken);
   if (!init.ok) return { ok: false, error: init.error };
   const list = await rpc(url, authToken, 'tools/list', {}, 2, init.sessionId);
@@ -138,6 +147,11 @@ export async function mcpCallTool(
   toolName: string,
   args: Record<string, unknown>
 ): Promise<{ ok: true; text: string } | { ok: false; error: string }> {
+  try {
+    await assertPublicHttpUrl(url);
+  } catch {
+    return { ok: false, error: 'blocked_url' };
+  }
   const init = await handshake(url, authToken);
   if (!init.ok) return { ok: false, error: init.error };
   const call = await rpc(url, authToken, 'tools/call', { name: toolName, arguments: args }, 3, init.sessionId);
