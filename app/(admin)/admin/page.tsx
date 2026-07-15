@@ -5,6 +5,7 @@ import { db } from '@/lib/db';
 import { Card, CardContent } from '@/components/ui/card';
 import { HoverLift, AnimatedCounter } from '@/components/ui/motion';
 import { SeedRefineButton } from '@/components/admin/seed-refine-button';
+import { SeedDemoButton } from '@/components/admin/seed-demo-button';
 
 const STATUS_CLS: Record<string, string> = {
   ACTIVE: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
@@ -99,7 +100,10 @@ export default async function AdminOverviewPage() {
         </Card>
       </div>
 
-      <SeedRefineButton />
+      <div className="space-y-4">
+        <SeedRefineButton />
+        <SeedDemoButton />
+      </div>
     </div>
   );
 }
