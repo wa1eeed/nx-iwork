@@ -13,6 +13,22 @@ Versioning: [Semantic Versioning](https://semver.org/)
 
 ---
 
+## 2026-07-14 — Chat latency fix + Studio route hotfix
+
+- **Faster agent replies.** Two causes of the "10s to reply" lag: (1) Gemini 2.5
+  "thinking" (default 1024 tokens) delayed the first token; interactive chat
+  (dashboard + public widget) now passes a per-request `thinkingBudget: 0` for a
+  snappy first token, while autonomous tasks keep reasoning. (2) The dashboard
+  chat ran ~5 pre-flight round-trips serially (provider · token budget · agent
+  budget · history · memory embedding) — now batched into ONE parallel round.
+  `AiCompletionRequest.thinkingBudget` threads through the tool loop; only Vertex
+  reads it (other providers ignore it). Tunable via `VERTEX_THINKING_BUDGET`.
+- **Hotfix:** Agent Studio's sandbox route lived at `/api/agents/[id]/sandbox`
+  while `[agentId]/chat` existed — Next.js forbids mismatched slug names at the
+  same path and throws at server BOOT (not build), which took production down
+  site-wide. Moved to `/api/agents/[agentId]/sandbox`. (Verify route changes by
+  booting the server, not just `next build`.)
+
 ## 2026-07-14 — OpenClaw parity: model registry, OpenAI, Business Objects, Agent Work
 
 A wave toward the owner's #1 goal — genuinely **replace/rival OpenClaw**, but as

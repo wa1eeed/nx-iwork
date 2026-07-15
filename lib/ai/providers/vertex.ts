@@ -83,8 +83,11 @@ function buildGenerationConfig(req: AiCompletionRequest, modelId: string): Gener
     temperature: req.temperature ?? 0.7,
     maxOutputTokens: req.maxTokens ?? 4096,
   };
+  // Per-request override (chat passes 0 for snappy replies) wins over the env
+  // default, which itself defaults to 1024 (reasoning for autonomous tasks).
   const raw = process.env.VERTEX_THINKING_BUDGET;
-  const budget = raw === undefined ? 1024 : Number(raw);
+  const envDefault = raw === undefined ? 1024 : Number(raw);
+  const budget = req.thinkingBudget ?? envDefault;
   if (modelId.includes('2.5') && Number.isFinite(budget) && budget >= 0) {
     // thinkingConfig isn't in the SDK 1.12 types yet, but it's forwarded to the
     // REST body verbatim (validateGenerationConfig only touches topK).

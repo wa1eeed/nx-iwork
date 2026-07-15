@@ -85,6 +85,8 @@ export interface ToolLoopArgs {
   /** The tools to offer — already filtered to the company's enabled modules. */
   tools: AiTool[];
   ctx: ToolContext;
+  /** Gemini 2.5 thinking budget (0 = off, for snappy interactive chat). */
+  thinkingBudget?: number;
   /** Optional trace hook: called after each tool runs (used by the sandbox). */
   onToolResult?: (t: { name: string; args: Record<string, unknown>; result: string }) => void;
 }
@@ -98,7 +100,7 @@ export interface ToolLoopResult {
 // round cap is hit). Throws on provider error; callers map that to their own
 // failure shape.
 export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
-  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx, onToolResult } = args;
+  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx, thinkingBudget, onToolResult } = args;
   let reply = '';
   let tokensUsed = 0;
 
@@ -111,6 +113,7 @@ export async function runToolLoop(args: ToolLoopArgs): Promise<ToolLoopResult> {
       temperature,
       maxTokens,
       tools,
+      thinkingBudget,
     });
     tokensUsed += completion.usage.inputTokens + completion.usage.outputTokens;
 
@@ -147,7 +150,7 @@ export async function runToolLoopStream(
   args: ToolLoopArgs,
   onDelta: (delta: string) => void
 ): Promise<ToolLoopResult> {
-  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx } = args;
+  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx, thinkingBudget } = args;
   if (!provider.completeStream) {
     const r = await runToolLoop(args);
     onDelta(r.reply);
@@ -158,7 +161,7 @@ export async function runToolLoopStream(
   let tokensUsed = 0;
 
   for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
-    const gen = provider.completeStream({ system, messages, tier, model, temperature, maxTokens, tools });
+    const gen = provider.completeStream({ system, messages, tier, model, temperature, maxTokens, tools, thinkingBudget });
     let roundText = '';
     let next = await gen.next();
     while (!next.done) {
