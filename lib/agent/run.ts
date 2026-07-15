@@ -118,18 +118,28 @@ export async function runAgentChat(
 
   let reply: string;
   let tokensUsed: number;
+  // Diagnostics, hoisted so the timing line prints on BOTH success and error.
+  const modelId = agentModelId(agent.aiModel, providerResult.provider.id) ?? agent.model;
+  let firstTokenAt = 0;
+  let toolCount = 0;
+  let toolsOffered = 0;
+  let preflightMs = Date.now() - t0;
+  const logTiming = (status: string) =>
+    console.log(
+      `[chat-timing] agent=${agentId} status=${status} model=${providerResult.provider.id}/${modelId} ` +
+        `preflight=${preflightMs}ms toolsOffered=${toolsOffered} tools=${toolCount} ` +
+        `firstToken=${firstTokenAt ? firstTokenAt - t0 : -1}ms total=${Date.now() - t0}ms`
+    );
   try {
     const baseTools = getToolsForAgent({ ...agent.company, hasObjects: agent.company._count.objectTypes > 0 }, perms);
     // Agents with MCP access (empty allow-list = all tools, or an explicit
     // `use_mcp` grant) also receive the company's registered third-party MCP tools.
     const wantsMcp = agent.permissions.length === 0 || agent.permissions.includes('use_mcp');
-    const tMcp0 = Date.now();
     const tools = wantsMcp ? [...baseTools, ...(await getMcpToolsForCompany(companyId))] : baseTools;
-    const mcpMs = Date.now() - tMcp0;
-    const preflightMs = Date.now() - t0;
+    toolsOffered = tools.length;
+    preflightMs = Date.now() - t0;
+    console.log(`[chat] agent=${agentId} calling ${providerResult.provider.id}/${modelId} (preflight=${preflightMs}ms toolsOffered=${toolsOffered})`);
 
-    let firstTokenAt = 0;
-    let toolCount = 0;
     const loopArgs = {
       provider: providerResult.provider,
       system,
@@ -155,14 +165,9 @@ export async function runAgentChat(
     ({ reply, tokensUsed } = timedDelta
       ? await runToolLoopStream(loopArgs, timedDelta)
       : await runToolLoop(loopArgs));
-
-    // One line so we can SEE where the latency goes on a slow reply.
-    console.log(
-      `[chat-timing] agent=${agentId} model=${providerResult.provider.id}/${loopArgs.model ?? agent.model} ` +
-        `preflight=${preflightMs}ms mcp=${mcpMs}ms toolsOffered=${tools.length} tools=${toolCount} ` +
-        `firstToken=${firstTokenAt ? firstTokenAt - t0 : -1}ms total=${Date.now() - t0}ms`
-    );
+    logTiming('ok');
   } catch (err) {
+    logTiming('error');
     console.error('Agent provider error', { agentId, companyId, err });
     return {
       ok: false,
