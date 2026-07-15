@@ -29,10 +29,12 @@ type RunResult =
 
 const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
 
-export function StudioClient({ agents }: { agents: StudioAgent[] }) {
+export function StudioClient({ agents, initialAgentId }: { agents: StudioAgent[]; initialAgentId?: string }) {
   const t = useTranslations('pages.studio');
   const locale = useLocale();
-  const [agentId, setAgentId] = useState(agents[0]?.id ?? '');
+  const [agentId, setAgentId] = useState(
+    initialAgentId && agents.some((a) => a.id === initialAgentId) ? initialAgentId : agents[0]?.id ?? ''
+  );
   const [message, setMessage] = useState('');
   const [running, setRunning] = useState(false);
   const [result, setResult] = useState<RunResult | null>(null);

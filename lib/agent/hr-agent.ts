@@ -22,6 +22,7 @@ import { checkRoleConflict } from '@/lib/agent/conflict-check';
 import { cognitiveOnboard } from '@/lib/agent/cognitive-onboarding';
 import { getTemplate, type IfThenScenario } from '@/lib/agent/templates';
 import { getArchetype, archetypeForTemplate } from '@/lib/agent/archetypes';
+import { derivePersonaSummary } from '@/lib/agent/persona';
 import { agentTokenCap } from '@/lib/plans';
 
 export interface DeployScenario {
@@ -52,6 +53,11 @@ export interface DeployPayload {
   aiModelId?: string | null; // concrete registry model (null = tier fallback)
   archetype?: string; // role-model archetype key (custom path); seeds surface
   personaConfig?: Prisma.InputJsonValue; // structured persona (custom path)
+  maxTokens?: number; // response length ceiling (derived from verbosity)
+  // Per-agent governance overrides (null = inherit the company guardrail).
+  requireApprovalForSensitive?: boolean | null;
+  requireMessageReview?: boolean | null;
+  spendApprovalCapSar?: number | null;
 }
 
 export interface ConflictVerdict {
@@ -183,7 +189,7 @@ export class HRAgentService {
     }
 
     // Custom path.
-    if (!payload.name?.trim() || !payload.role?.trim() || !payload.persona?.trim()) {
+    if (!payload.name?.trim() || !payload.role?.trim()) {
       throw new HRValidationError('invalid_payload');
     }
     // Archetype seeds the hard scope + a structured persona default; an explicit
@@ -203,7 +209,7 @@ export class HRAgentService {
         initial: initialOf(payload.name),
         role: payload.role.trim(),
         roleEn: payload.roleEn || null,
-        persona: payload.persona.trim(),
+        persona: payload.persona?.trim() || derivePersonaSummary(payload.role.trim(), payload.jobDescription),
         archetype: customArchetype,
         surface: (customArch?.surface ?? 'CUSTOMER_FACING') as AgentSurface,
         personaConfig: (payload.personaConfig ?? customArch?.persona ?? undefined) as Prisma.InputJsonValue | undefined,
@@ -211,9 +217,13 @@ export class HRAgentService {
         autonomy: payload.autonomy ?? 'ASK',
         model: payload.model ?? 'HAIKU',
         temperature: payload.temperature ?? 0.6,
+        maxTokens: payload.maxTokens ?? 4096,
         systemPrompt: payload.systemPrompt || null,
         permissions: payload.permissions ?? [],
         aiModelId: payload.aiModelId ?? null,
+        requireApprovalForSensitive: payload.requireApprovalForSensitive ?? null,
+        requireMessageReview: payload.requireMessageReview ?? null,
+        spendApprovalCapSar: payload.spendApprovalCapSar ?? null,
         tokenLimit,
         status: 'ONBOARDING',
       },

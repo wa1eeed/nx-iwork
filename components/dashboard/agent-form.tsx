@@ -2,9 +2,10 @@
 
 import { useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Loader2, AlertTriangle, Lightbulb, Plus, Trash2, Zap, Wrench } from 'lucide-react';
+import { Loader2, AlertTriangle, Lightbulb, Plus, Trash2, Zap, Wrench, ShieldCheck, FlaskConical, Cpu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -18,6 +19,7 @@ import { TRIGGER_EVENTS } from '@/lib/agent/events-catalog';
 import { TOOL_CATALOG, TOOL_GROUPS, type ToolGroup } from '@/lib/agent/tool-labels';
 import { ARCHETYPES } from '@/lib/agent/archetypes';
 import type { PersonaTone, PersonaVerbosity, LanguagePolicy } from '@/lib/agent/persona';
+import { maxTokensForVerbosity } from '@/lib/agent/persona';
 import type { AgentInput } from '@/lib/validators/agents';
 import type { ConflictResult } from '@/lib/agent/conflict-check';
 
@@ -59,6 +61,10 @@ export interface AgentFormValues {
   permissions: string[];
   archetype: string;
   personaCfg: PersonaForm;
+  // Per-agent governance overrides (null = inherit the company guardrail).
+  requireApprovalForSensitive: boolean | null;
+  requireMessageReview: boolean | null;
+  spendApprovalCapSar: number | null;
 }
 
 const DEFAULT_PERSONA: PersonaForm = {
@@ -74,6 +80,22 @@ function splitLines(s: string): string[] {
   return s.split('\n').map((l) => l.trim()).filter(Boolean);
 }
 
+// Seed tool allow-list for an archetype (its capability bundle).
+function archPerms(key: string): string[] {
+  return ARCHETYPES.find((a) => a.key === key)?.permissions ?? [];
+}
+function sameSet(a: string[], b: string[]): boolean {
+  return a.length === b.length && a.every((x) => b.includes(x));
+}
+
+// "Response style" presets — a governed replacement for the raw temperature
+// slider (precise ↔ creative). The stored value is still Agent.temperature.
+const TEMP_PRESETS = [
+  { key: 'stylePrecise', value: 0.2 },
+  { key: 'styleBalanced', value: 0.6 },
+  { key: 'styleCreative', value: 0.9 },
+] as const;
+
 const DEFAULTS: AgentFormValues = {
   name: '',
   nameEn: '',
@@ -88,9 +110,12 @@ const DEFAULTS: AgentFormValues = {
   autonomy: 'ASK',
   temperature: 0.6,
   systemPrompt: '',
-  permissions: [],
+  permissions: archPerms('front_desk'),
   archetype: 'front_desk',
   personaCfg: DEFAULT_PERSONA,
+  requireApprovalForSensitive: null,
+  requireMessageReview: null,
+  spendApprovalCapSar: null,
 };
 
 export function AgentForm({
@@ -105,8 +130,8 @@ export function AgentForm({
   managers: { id: string; name: string }[];
   initial?: AgentFormValues;
   templates?: TemplateHint[];
-  /** Enabled AI models from the registry (for the model picker). */
-  models?: { id: string; label: string; provider: string }[];
+  /** Enabled AI models from the registry, filtered to the active provider. */
+  models?: { id: string; label: string; provider: string; tier?: string }[];
   onUseTemplate?: (templateType: string) => void;
 }) {
   const t = useTranslations('agentForm');
@@ -171,28 +196,43 @@ export function AgentForm({
     }));
   }
 
-  const MODELS: { value: AgentFormValues['model']; label: string; hint: string }[] = [
-    { value: 'HAIKU', label: t('models.haiku'), hint: t('models.haikuHint') },
-    { value: 'SONNET', label: t('models.sonnet'), hint: t('models.sonnetHint') },
-    { value: 'OPUS', label: t('models.opus'), hint: t('models.opusHint') },
-  ];
-
   function set<K extends keyof AgentFormValues>(k: K, val: AgentFormValues[K]) {
     setV((p) => ({ ...p, [k]: val }));
   }
+
+  // ONE model picker: choosing a registry model pins it (aiModelId) and derives
+  // its capability tier for the fallback path; "Default" clears it to the tier map.
+  function pickModel(id: string) {
+    const tier = models.find((m) => m.id === id)?.tier?.toUpperCase();
+    const valid = tier === 'HAIKU' || tier === 'SONNET' || tier === 'OPUS';
+    setV((p) => ({ ...p, aiModelId: id, model: id && valid ? (tier as AgentFormValues['model']) : 'SONNET' }));
+  }
+
+  // Selecting an archetype re-seeds the tool allow-list from its bundle — unless
+  // the owner already hand-picked a custom set (least-privilege, still editable).
+  function selectArchetype(key: string) {
+    setV((p) => {
+      const reseed = p.permissions.length === 0 || ARCHETYPES.some((a) => sameSet(a.permissions, p.permissions));
+      return { ...p, archetype: key, permissions: reseed ? archPerms(key) : p.permissions };
+    });
+  }
+
+  const activeTemp = TEMP_PRESETS.reduce((a, b) =>
+    Math.abs(b.value - v.temperature) < Math.abs(a.value - v.temperature) ? b : a
+  ).value;
 
   function submit(force = false) {
     if (!v.name.trim()) return toast.error(t('nameRequired'));
     if (!v.role.trim()) return toast.error(t('roleRequired'));
     if (!v.departmentId) return toast.error(t('deptRequired'));
-    if (!v.persona.trim()) return toast.error(t('personaRequired'));
 
     const payload: AgentInput = {
       name: v.name.trim(),
       nameEn: v.nameEn.trim() || null,
       role: v.role.trim(),
       roleEn: v.roleEn.trim() || null,
-      persona: v.persona.trim(),
+      // Free-text persona is retired; server derives it from the mandate/role.
+      persona: v.persona.trim() || null,
       jobDescription: v.jobDescription.trim() || null,
       departmentId: v.departmentId,
       parentId: v.parentId || null,
@@ -200,7 +240,8 @@ export function AgentForm({
       aiModelId: v.aiModelId || null,
       autonomy: v.autonomy,
       temperature: v.temperature,
-      maxTokens: 4096,
+      // Response length is governed by the verbosity knob, not a hidden constant.
+      maxTokens: maxTokensForVerbosity(v.personaCfg.verbosity),
       systemPrompt: v.systemPrompt.trim() || null,
       permissions: v.permissions,
       archetype: v.archetype,
@@ -212,6 +253,9 @@ export function AgentForm({
         donts: splitLines(v.personaCfg.donts),
         signaturePhrases: [],
       },
+      requireApprovalForSensitive: v.requireApprovalForSensitive,
+      requireMessageReview: v.requireMessageReview,
+      spendApprovalCapSar: v.spendApprovalCapSar,
     };
 
     startSave(async () => {
@@ -301,7 +345,7 @@ export function AgentForm({
                   <button
                     key={a.key}
                     type="button"
-                    onClick={() => set('archetype', a.key)}
+                    onClick={() => selectArchetype(a.key)}
                     className={cn(
                       'rounded-xl border p-3 text-start transition',
                       active ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted',
@@ -397,21 +441,12 @@ export function AgentForm({
             </div>
           </div>
           <div className="space-y-2">
-            <Label>{t('persona')} *</Label>
-            <Textarea rows={3} value={v.persona} onChange={(e) => set('persona', e.target.value)} placeholder={t('personaPlaceholder')} dir="auto" />
-            <p className="text-xs text-muted-foreground">{t('personaHelp')}</p>
-          </div>
-          <div className="space-y-2">
             <Label>{t('jobDescription')}</Label>
             <Textarea rows={5} value={v.jobDescription} onChange={(e) => set('jobDescription', e.target.value)} placeholder={t('jobDescriptionPlaceholder')} dir="auto" />
             <p className="text-xs text-muted-foreground">{t('jobDescriptionHelp')}</p>
             <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
               <span className="font-medium text-foreground">{t('justifyTitle')}</span> {t('justifyBody')}
             </div>
-          </div>
-          <div className="space-y-2">
-            <Label>{t('extraInstructions')}</Label>
-            <Textarea rows={3} value={v.systemPrompt} onChange={(e) => set('systemPrompt', e.target.value)} placeholder={t('extraPlaceholder')} dir="auto" />
           </div>
         </CardContent>
       </Card>
@@ -421,42 +456,40 @@ export function AgentForm({
           <CardTitle className="text-lg">{t('intelligence')}</CardTitle>
         </CardHeader>
         <CardContent className="space-y-4">
-          {/* Concrete model from the registry (super-admin managed). Empty =
-              platform default resolved from the capability tier below. */}
-          {models.length > 0 && (
-            <div className="space-y-2">
-              <Label>{t('aiModel')}</Label>
-              <select
-                className={selectCls}
-                value={v.aiModelId}
-                onChange={(e) => set('aiModelId', e.target.value)}
-              >
+          {/* ONE model selector: the registry model (already filtered to the
+              active provider) OR "Default". Replaces the old tier-vs-registry
+              split where "Fast" and "Balanced" resolved to the same model. */}
+          <div className="space-y-2">
+            <Label className="flex items-center gap-1.5"><Cpu className="h-3.5 w-3.5 text-primary" />{t('aiModel')}</Label>
+            {models.length > 0 ? (
+              <select className={selectCls} value={v.aiModelId} onChange={(e) => pickModel(e.target.value)}>
                 <option value="">{t('aiModelDefault')}</option>
                 {models.map((m) => (
-                  <option key={m.id} value={m.id}>{m.label} · {m.provider}</option>
+                  <option key={m.id} value={m.id}>{m.label}</option>
                 ))}
               </select>
-            </div>
-          )}
-
-          <div className="space-y-2">
-            <Label>{t('modelLevel')}</Label>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {MODELS.map((m) => (
-                <button
-                  key={m.value}
-                  type="button"
-                  onClick={() => set('model', m.value)}
-                  className={
-                    'rounded-lg border p-3 text-start ' +
-                    (v.model === m.value ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted')
-                  }
-                >
-                  <span className="block text-sm font-medium">{m.label}</span>
-                  <span className="mt-1 block text-xs text-muted-foreground">{m.hint}</span>
-                </button>
-              ))}
-            </div>
+            ) : (
+              <div className="grid gap-2 sm:grid-cols-2">
+                {([
+                  { val: 'SONNET', l: t('perfStandard'), h: t('perfStandardHint') },
+                  { val: 'OPUS', l: t('perfAdvanced'), h: t('perfAdvancedHint') },
+                ] as const).map((m) => (
+                  <button
+                    key={m.val}
+                    type="button"
+                    onClick={() => set('model', m.val)}
+                    className={
+                      'rounded-lg border p-3 text-start ' +
+                      (v.model === m.val ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted')
+                    }
+                  >
+                    <span className="block text-sm font-medium">{m.l}</span>
+                    <span className="mt-1 block text-xs text-muted-foreground">{m.h}</span>
+                  </button>
+                ))}
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">{t('aiModelHelp')}</p>
           </div>
 
           <div className="space-y-2">
@@ -484,21 +517,89 @@ export function AgentForm({
             <p className="text-xs text-muted-foreground">{t('autonomyHelp')}</p>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2">
-              <Label>{t('creativity', { value: v.temperature })}</Label>
-              <input type="range" min={0} max={1} step={0.1} value={v.temperature} onChange={(e) => set('temperature', Number(e.target.value))} className="w-full" />
-              <p className="text-xs text-muted-foreground">{t('creativityHelp')}</p>
+          <div className="space-y-2">
+            <Label>{t('styleLabel')}</Label>
+            <div className="grid gap-2 sm:grid-cols-3">
+              {TEMP_PRESETS.map((p) => (
+                <button
+                  key={p.key}
+                  type="button"
+                  onClick={() => set('temperature', p.value)}
+                  className={
+                    'rounded-lg border p-3 text-center text-sm font-medium ' +
+                    (activeTemp === p.value ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted')
+                  }
+                >
+                  {t(p.key)}
+                </button>
+              ))}
             </div>
-            <div className="space-y-2">
-              <Label>{t('manager')}</Label>
-              <select className={selectCls} value={v.parentId} onChange={(e) => set('parentId', e.target.value)}>
-                <option value="">{t('none')}</option>
-                {managers.filter((m) => m.id !== initial?.id).map((m) => (
-                  <option key={m.id} value={m.id}>{m.name}</option>
+            <p className="text-xs text-muted-foreground">{t('styleHelp')}</p>
+          </div>
+
+          <div className="space-y-2">
+            <Label>{t('manager')}</Label>
+            <select className={selectCls} value={v.parentId} onChange={(e) => set('parentId', e.target.value)}>
+              <option value="">{t('none')}</option>
+              {managers.filter((m) => m.id !== initial?.id).map((m) => (
+                <option key={m.id} value={m.id}>{m.name}</option>
+              ))}
+            </select>
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg">
+            <ShieldCheck className="h-4 w-4 text-primary" />
+            {t('governanceSection')}
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <p className="text-xs text-muted-foreground">{t('governanceHelp')}</p>
+          {([
+            { field: 'requireApprovalForSensitive' as const, label: t('govApprovalLabel') },
+            { field: 'requireMessageReview' as const, label: t('govReviewLabel') },
+          ]).map((row) => (
+            <div key={row.field} className="space-y-1.5">
+              <Label>{row.label}</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {([
+                  { val: null, l: t('govInherit') },
+                  { val: true, l: t('govOn') },
+                  { val: false, l: t('govOff') },
+                ] as const).map((opt) => (
+                  <button
+                    key={String(opt.val)}
+                    type="button"
+                    onClick={() => setV((p) => ({ ...p, [row.field]: opt.val }))}
+                    className={
+                      'rounded-lg border px-3 py-2 text-sm ' +
+                      (v[row.field] === opt.val ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted')
+                    }
+                  >
+                    {opt.l}
+                  </button>
                 ))}
-              </select>
+              </div>
             </div>
+          ))}
+          <div className="space-y-1.5">
+            <Label>{t('govSpendLabel')}</Label>
+            <Input
+              type="number"
+              min={0}
+              inputMode="numeric"
+              value={v.spendApprovalCapSar ?? ''}
+              onChange={(e) => {
+                const n = Number(e.target.value);
+                set('spendApprovalCapSar', e.target.value === '' || !Number.isFinite(n) ? null : Math.max(0, Math.floor(n)));
+              }}
+              placeholder={t('govSpendPlaceholder')}
+              dir="ltr"
+            />
+            <p className="text-xs text-muted-foreground">{t('govSpendHelp')}</p>
           </div>
         </CardContent>
       </Card>
@@ -602,6 +703,27 @@ export function AgentForm({
                 {t('createAnyway')}
               </Button>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isEdit && initial?.id && (
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <FlaskConical className="h-4 w-4 text-primary" />
+              {t('testTitle')}
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="flex flex-wrap items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">{t('testHelp')}</p>
+            <Link
+              href={`/studio?agent=${initial.id}`}
+              className="inline-flex h-10 shrink-0 items-center gap-1.5 rounded-md border px-4 text-sm font-medium transition hover:bg-muted"
+            >
+              <FlaskConical className="h-4 w-4" />
+              {t('testCta')}
+            </Link>
           </CardContent>
         </Card>
       )}

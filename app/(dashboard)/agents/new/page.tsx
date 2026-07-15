@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { getActiveTemplates } from '@/lib/agent/templates';
 import { AgentCreator, type TemplateCard } from '@/components/dashboard/agent-creator';
+import { getProviderForCompany } from '@/lib/ai';
 
 function len(v: unknown): number {
   return Array.isArray(v) ? v.length : 0;
@@ -22,7 +23,7 @@ export default async function NewAgentPage() {
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
 
-  const [departments, managers, templates, models] = companyId
+  const [departments, managers, templates, allModels, providerResult] = companyId
     ? await Promise.all([
         db.department.findMany({
           where: { companyId },
@@ -38,10 +39,16 @@ export default async function NewAgentPage() {
         db.aiModel.findMany({
           where: { enabled: true },
           orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
-          select: { id: true, label: true, provider: true },
+          select: { id: true, label: true, provider: true, tier: true },
         }),
+        getProviderForCompany(companyId),
       ])
-    : [[], [], [], []];
+    : [[], [], [], [], null];
+
+  // Only models on the active provider actually run — filter so the picker can't
+  // offer a model that would be silently dropped at inference.
+  const activeProvider = providerResult && providerResult.ok ? providerResult.provider.id : null;
+  const models = activeProvider ? allModels.filter((m) => m.provider === activeProvider) : allModels;
 
   const cards: TemplateCard[] = templates.map((tpl) => ({
     templateType: tpl.templateType,
@@ -73,7 +80,7 @@ export default async function NewAgentPage() {
         {t('back')}
       </Link>
       <h1 className="text-xl font-semibold">{t('title')}</h1>
-      <AgentCreator templates={cards} departments={departments} managers={managers} models={models as { id: string; label: string; provider: string }[]} />
+      <AgentCreator templates={cards} departments={departments} managers={managers} models={models} />
     </div>
   );
 }

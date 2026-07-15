@@ -79,6 +79,25 @@ export function parsePersonaConfig(raw: unknown): PersonaConfig | null {
   };
 }
 
+// Verbosity → response token ceiling. Ties the ONE "verbosity" knob to the
+// model's max output length, so a "concise" agent can't ramble and a "detailed"
+// one isn't cut off — replacing the old hardcoded 4096 with a governed value.
+export function maxTokensForVerbosity(v: PersonaVerbosity): number {
+  return v === 'concise' ? 2048 : v === 'detailed' ? 8192 : 4096;
+}
+
+// A short, human-readable one-liner for the profile callout + the NOT-NULL
+// `Agent.persona` column, derived when the owner didn't type a free-text persona
+// (that field is retired from the form — personaConfig drives behavior). Prefers
+// the first line of the mandate, falling back to the role.
+export function derivePersonaSummary(role: string, jobDescription?: string | null): string {
+  const firstLine = (jobDescription ?? '')
+    .split('\n')
+    .map((l) => l.trim())
+    .find(Boolean);
+  return (firstLine || role).slice(0, 180);
+}
+
 // Compile a structured persona into a deterministic Arabic prompt block.
 export function compilePersona(cfg: PersonaConfig): string {
   const lines: string[] = ['شخصيتك وأسلوبك:'];
