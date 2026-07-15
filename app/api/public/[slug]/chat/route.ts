@@ -90,6 +90,16 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     async start(controller) {
       const send = (obj: unknown) =>
         controller.enqueue(encoder.encode(`data: ${JSON.stringify(obj)}\n\n`));
+      // Prime the stream (2KB comment) so a buffering proxy flushes immediately +
+      // keepalive comments hold the connection open. Ignored by the SSE client.
+      controller.enqueue(encoder.encode(`:${' '.repeat(2048)}\n\n`));
+      const keepalive = setInterval(() => {
+        try {
+          controller.enqueue(encoder.encode(': ka\n\n'));
+        } catch {
+          /* stream already closed */
+        }
+      }, 15_000);
       try {
         const result = await runPublicAgentChat(
           { companyId, agentId: resolvedAgentId, visitorId, message, meta },
