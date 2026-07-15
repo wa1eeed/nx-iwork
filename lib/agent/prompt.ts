@@ -198,3 +198,28 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
 
   return sections.join('\n\n');
 }
+
+// Resolve the guardrails that actually apply to an agent: its own per-agent
+// overrides win, falling back to the company-wide defaults. A per-agent spend
+// cap implies the cap is enabled for that agent even if the company's is off.
+export function resolveGuardrails(
+  agent: {
+    requireApprovalForSensitive: boolean | null;
+    requireMessageReview: boolean | null;
+    spendApprovalCapSar: number | null;
+  },
+  company: {
+    requireApprovalForSensitive: boolean;
+    requireMessageReview: boolean;
+    spendApprovalCapEnabled: boolean;
+    spendApprovalCapSar: number;
+  }
+): NonNullable<AgentPromptContext['guardrails']> {
+  const agentCap = agent.spendApprovalCapSar;
+  return {
+    requireApprovalForSensitive: agent.requireApprovalForSensitive ?? company.requireApprovalForSensitive,
+    requireMessageReview: agent.requireMessageReview ?? company.requireMessageReview,
+    spendApprovalCapEnabled: agentCap != null ? true : company.spendApprovalCapEnabled,
+    spendApprovalCapSar: agentCap ?? company.spendApprovalCapSar,
+  };
+}

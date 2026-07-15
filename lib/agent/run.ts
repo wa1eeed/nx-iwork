@@ -7,7 +7,7 @@ import { getProviderForModel } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
-import { buildSystemPrompt } from './prompt';
+import { buildSystemPrompt, resolveGuardrails } from './prompt';
 import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId, skillPromptBlock, skillToolIds } from './core';
 import { getMcpToolsForCompany } from '@/lib/mcp/registry';
 import { recallMemoryBlock } from './memory';
@@ -98,7 +98,7 @@ export async function runAgentChat(
     company: agent.company,
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
-    guardrails: agent.company, // owner governance applies to owner-directed work too
+    guardrails: resolveGuardrails(agent, agent.company), // per-agent overrides fall back to company
     audience: 'internal', // dashboard chat: the owner is talking, not a customer
   });
 

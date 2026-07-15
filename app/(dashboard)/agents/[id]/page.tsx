@@ -7,6 +7,7 @@ import { deptHue } from '@/lib/ui/dept-accent';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
+import { getProviderForCompany } from '@/lib/ai';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { AgentForm, type AgentFormValues } from '@/components/dashboard/agent-form';
@@ -126,11 +127,18 @@ export default async function AgentProfilePage({
     agent.permissions
   );
 
-  const aiModels = await db.aiModel.findMany({
-    where: { enabled: true },
-    orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
-    select: { id: true, label: true, provider: true },
-  });
+  // Model picker: only models on the company's ACTIVE provider actually run
+  // (a cross-provider pick is silently dropped at inference), so filter to it.
+  const [allModels, providerResult] = await Promise.all([
+    db.aiModel.findMany({
+      where: { enabled: true },
+      orderBy: [{ sortOrder: 'asc' }, { label: 'asc' }],
+      select: { id: true, label: true, provider: true, tier: true },
+    }),
+    getProviderForCompany(companyId),
+  ]);
+  const activeProvider = providerResult.ok ? providerResult.provider.id : null;
+  const aiModels = activeProvider ? allModels.filter((m) => m.provider === activeProvider) : allModels;
   const initialPersona = parsePersonaConfig(agent.personaConfig);
   const initial: AgentFormValues = {
     id: agent.id,
@@ -156,6 +164,9 @@ export default async function AgentProfilePage({
       dos: (initialPersona?.dos ?? []).join('\n'),
       donts: (initialPersona?.donts ?? []).join('\n'),
     },
+    requireApprovalForSensitive: agent.requireApprovalForSensitive,
+    requireMessageReview: agent.requireMessageReview,
+    spendApprovalCapSar: agent.spendApprovalCapSar,
   };
 
   const en = locale === 'en';

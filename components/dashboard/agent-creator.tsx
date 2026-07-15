@@ -69,7 +69,7 @@ export function AgentCreator({
   templates: TemplateCard[];
   departments: Dept[];
   managers: { id: string; name: string }[];
-  models?: { id: string; label: string; provider: string }[];
+  models?: { id: string; label: string; provider: string; tier?: string }[];
 }) {
   const t = useTranslations('agentCreate');
   const [configuring, setConfiguring] = useState<TemplateCard | 'custom' | null>(null);
@@ -140,6 +140,9 @@ function templateToInitial(tpl: TemplateCard, departments: Dept[]): AgentFormVal
       dos: (p?.dos ?? []).join('\n'),
       donts: (p?.donts ?? []).join('\n'),
     },
+    requireApprovalForSensitive: null,
+    requireMessageReview: null,
+    spendApprovalCapSar: null,
   };
 }
 

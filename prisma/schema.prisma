@@ -437,6 +437,13 @@ model Agent {
   // autonomously within policy, approval only for the truly exceptional.
   autonomy AutonomyLevel @default(ASK)
 
+  // Per-agent governance overrides. Null = inherit the company-wide guardrail
+  // (Settings → Guardrails), so a high-risk finance agent can be stricter than a
+  // front-desk one without changing the company default. Resolved in prompt.ts.
+  requireApprovalForSensitive Boolean? // null = inherit company
+  requireMessageReview        Boolean? // null = inherit company
+  spendApprovalCapSar         Int? // per-agent SAR cap; null = inherit company
+
   // Role model (3-layer, sector-agnostic). `archetype` is the capability bundle
   // key (front_desk | sales | care | marketing | operations | finance) resolved
   // in lib/agent/archetypes.ts — it seeds permissions/KPIs/outputs/surface but

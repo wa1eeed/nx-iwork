@@ -10,6 +10,7 @@ import { checkRoleConflict, type ConflictResult } from '@/lib/agent/conflict-che
 import { isTriggerEvent } from '@/lib/agent/events-catalog';
 import { hrAgent, HRConflictError, HRValidationError } from '@/lib/agent/hr-agent';
 import { getArchetype } from '@/lib/agent/archetypes';
+import { derivePersonaSummary } from '@/lib/agent/persona';
 import { agentSchema, type AgentInput } from '@/lib/validators/agents';
 import { Prisma } from '@prisma/client';
 
@@ -116,17 +117,21 @@ export async function createAgent(
       nameEn: d.nameEn || null,
       role: d.role,
       roleEn: d.roleEn || null,
-      persona: d.persona,
+      persona: d.persona ?? undefined,
       jobDescription: d.jobDescription || null,
       autonomy: d.autonomy,
       model: d.model,
       temperature: d.temperature,
+      maxTokens: d.maxTokens,
       systemPrompt: d.systemPrompt || null,
       scenarios,
       permissions: d.permissions ?? [],
       aiModelId: d.aiModelId ?? null,
       archetype: d.archetype,
       personaConfig: (d.personaConfig ?? undefined) as Prisma.InputJsonValue | undefined,
+      requireApprovalForSensitive: d.requireApprovalForSensitive ?? null,
+      requireMessageReview: d.requireMessageReview ?? null,
+      spendApprovalCapSar: d.spendApprovalCapSar ?? null,
       force: opts?.force,
     });
     revalidatePath('/agents');
@@ -187,9 +192,12 @@ export async function updateAgent(id: string, raw: AgentInput): Promise<AgentAct
         initial: initialOf(d.name),
         role: d.role,
         roleEn: d.roleEn || null,
-        persona: d.persona,
+        persona: d.persona?.trim() || derivePersonaSummary(d.role, d.jobDescription),
         jobDescription: d.jobDescription?.trim() || null,
         autonomy: d.autonomy,
+        ...(d.requireApprovalForSensitive !== undefined ? { requireApprovalForSensitive: d.requireApprovalForSensitive } : {}),
+        ...(d.requireMessageReview !== undefined ? { requireMessageReview: d.requireMessageReview } : {}),
+        ...(d.spendApprovalCapSar !== undefined ? { spendApprovalCapSar: d.spendApprovalCapSar } : {}),
         ...(d.permissions ? { permissions: d.permissions } : {}),
         ...(d.aiModelId !== undefined ? { aiModelId: d.aiModelId || null } : {}),
         ...(d.archetype ? { archetype: d.archetype } : {}),

@@ -10,7 +10,7 @@ import { getProviderForModel } from '@/lib/ai';
 import type { AiMessage } from '@/lib/ai';
 import { checkTokenBudget, chargeTokens } from '@/lib/billing/tokens';
 import { checkAgentBudget, chargeAgentTokens } from '@/lib/billing/agent-tokens';
-import { buildSystemPrompt } from './prompt';
+import { buildSystemPrompt, resolveGuardrails } from './prompt';
 import { loadAgentWithContext, runToolLoop, agentModelId, skillPromptBlock, skillToolIds } from './core';
 import { getMcpToolsForCompany } from '@/lib/mcp/registry';
 import { recallMemoryBlock } from './memory';
@@ -102,7 +102,7 @@ export async function runAgentTask(
     company: agent.company,
     dna: agent.company.companyDNA,
     settings: agent.company.settings,
-    guardrails: agent.company, // enforce owner governance during autonomous runs
+    guardrails: resolveGuardrails(agent, agent.company), // per-agent overrides fall back to company
     audience: 'internal', // autonomous task on the business's behalf, not a customer chat
   });
   const memoryBlock = await recallMemoryBlock(

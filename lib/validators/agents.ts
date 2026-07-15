@@ -7,9 +7,11 @@ export const agentSchema = z.object({
   nameEn: z.string().trim().max(60).optional().nullable(),
   role: z.string().trim().min(1).max(80),
   roleEn: z.string().trim().max(80).optional().nullable(),
-  persona: z.string().trim().min(1).max(4000),
-  // Job Description "constitution" — mandate + responsibilities + boundaries
-  // (distinct from persona=personality). Governs the agent's decisions.
+  // Free-text persona is retired from the form (personaConfig drives behavior);
+  // kept optional for back-compat + derived server-side when absent.
+  persona: z.string().trim().max(4000).optional().nullable(),
+  // Job Description "constitution" — the agent's single instructions/mandate:
+  // responsibilities + boundaries. Governs the agent's decisions.
   jobDescription: z.string().trim().max(4000).optional().nullable(),
   departmentId: z.string().trim().min(1),
   // Optional manager (another agent in the same company).
@@ -26,6 +28,10 @@ export const agentSchema = z.object({
   aiModelId: z.string().trim().max(60).nullable().optional(),
   // Role-model archetype (capability bundle → hard customer/internal scope).
   archetype: z.string().trim().max(40).optional(),
+  // Per-agent governance overrides — null = inherit the company guardrail.
+  requireApprovalForSensitive: z.boolean().nullable().optional(),
+  requireMessageReview: z.boolean().nullable().optional(),
+  spendApprovalCapSar: z.coerce.number().int().min(0).max(1_000_000).nullable().optional(),
   // Structured persona (compiled deterministically into the prompt). Partial —
   // parsePersonaConfig fills any missing knob with a sensible default.
   personaConfig: z

@@ -4,7 +4,12 @@ import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { StudioClient, type StudioAgent } from '@/components/dashboard/studio-client';
 
-export default async function StudioPage() {
+export default async function StudioPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ agent?: string }>;
+}) {
+  const { agent: agentParam } = await searchParams;
   const t = await getTranslations('pages.studio');
   const session = await auth();
   const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
@@ -37,7 +42,7 @@ export default async function StudioPage() {
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
-      <StudioClient agents={list} />
+      <StudioClient agents={list} initialAgentId={agentParam} />
     </div>
   );
 }
