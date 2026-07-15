@@ -17,8 +17,17 @@ import { getToolsForAgent } from './tools';
 // bound token cost; older context will come from episodic/semantic memory.
 const WORKING_MEMORY_LIMIT = 20;
 
+export interface ChatTiming {
+  firstTokenMs: number;
+  totalMs: number;
+  preflightMs: number;
+  model: string;
+  tools: number;
+  toolsOffered: number;
+}
+
 export type RunAgentResult =
-  | { ok: true; reply: string; tokensUsed: number }
+  | { ok: true; reply: string; tokensUsed: number; meta?: ChatTiming }
   | {
       ok: false;
       reason:
@@ -203,5 +212,17 @@ export async function runAgentChat(
   await chargeAgentTokens(agentId, tokensUsed);
   console.log(`[token-guard] dashboard-chat | tenant=${companyId} | used=${tokensUsed} | remaining=${remaining ?? 'BYOK'}`);
 
-  return { ok: true, reply, tokensUsed };
+  return {
+    ok: true,
+    reply,
+    tokensUsed,
+    meta: {
+      firstTokenMs: firstTokenAt ? firstTokenAt - t0 : -1,
+      totalMs: Date.now() - t0,
+      preflightMs,
+      model: `${providerResult.provider.id}/${modelId}`,
+      tools: toolCount,
+      toolsOffered,
+    },
+  };
 }
