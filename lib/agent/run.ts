@@ -46,6 +46,7 @@ export async function runAgentChat(
   opts?: { onDelta?: (delta: string) => void }
 ): Promise<RunAgentResult> {
   const { agentId, companyId, userMessage, userId } = input;
+  const t0 = Date.now(); // diagnostic timing (see the [chat-timing] log below)
 
   const agent = await loadAgentWithContext(agentId, companyId);
   if (!agent) return { ok: false, reason: 'agent_not_found' };
@@ -122,6 +123,13 @@ export async function runAgentChat(
     // Agents with MCP access (empty allow-list = all tools, or an explicit
     // `use_mcp` grant) also receive the company's registered third-party MCP tools.
     const wantsMcp = agent.permissions.length === 0 || agent.permissions.includes('use_mcp');
+    const tMcp0 = Date.now();
+    const tools = wantsMcp ? [...baseTools, ...(await getMcpToolsForCompany(companyId))] : baseTools;
+    const mcpMs = Date.now() - tMcp0;
+    const preflightMs = Date.now() - t0;
+
+    let firstTokenAt = 0;
+    let toolCount = 0;
     const loopArgs = {
       provider: providerResult.provider,
       system,
@@ -130,13 +138,30 @@ export async function runAgentChat(
       model: agentModelId(agent.aiModel, providerResult.provider.id),
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
-      tools: wantsMcp ? [...baseTools, ...(await getMcpToolsForCompany(companyId))] : baseTools,
+      tools,
       thinkingBudget: 0, // interactive dashboard chat → no thinking, snappy first token
       ctx: { companyId, agentId },
+      onToolResult: () => {
+        toolCount += 1;
+      },
     };
-    ({ reply, tokensUsed } = opts?.onDelta
-      ? await runToolLoopStream(loopArgs, opts.onDelta)
+    const onDelta = opts?.onDelta;
+    const timedDelta = onDelta
+      ? (d: string) => {
+          if (!firstTokenAt) firstTokenAt = Date.now();
+          onDelta(d);
+        }
+      : undefined;
+    ({ reply, tokensUsed } = timedDelta
+      ? await runToolLoopStream(loopArgs, timedDelta)
       : await runToolLoop(loopArgs));
+
+    // One line so we can SEE where the latency goes on a slow reply.
+    console.log(
+      `[chat-timing] agent=${agentId} model=${providerResult.provider.id}/${loopArgs.model ?? agent.model} ` +
+        `preflight=${preflightMs}ms mcp=${mcpMs}ms toolsOffered=${tools.length} tools=${toolCount} ` +
+        `firstToken=${firstTokenAt ? firstTokenAt - t0 : -1}ms total=${Date.now() - t0}ms`
+    );
   } catch (err) {
     console.error('Agent provider error', { agentId, companyId, err });
     return {
