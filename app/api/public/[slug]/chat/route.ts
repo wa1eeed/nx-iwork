@@ -61,9 +61,24 @@ export async function POST(req: Request, { params }: { params: Promise<{ slug: s
     return NextResponse.json({ ok: false, reason: 'unavailable' }, { status: 404 });
   }
 
-  // Designated agent, or fall back to the first active CUSTOMER-FACING agent —
-  // an internal archetype must never end up answering the public widget.
-  let agentId = company.websiteConfig.chatAgentId;
+  // Use the designated agent ONLY if it's still an active customer-facing agent;
+  // otherwise fall back to the first that is. This mirrors the landing-page widget
+  // resolution exactly — otherwise a widget configured with an internal/archived
+  // agent renders fine but silently fails to reply (runPublicAgentChat rejects a
+  // non-customer-facing agent), which reads to the owner as "the widget is broken".
+  let agentId: string | null = null;
+  if (company.websiteConfig.chatAgentId) {
+    const designated = await db.agent.findFirst({
+      where: {
+        id: company.websiteConfig.chatAgentId,
+        companyId: company.id,
+        status: { not: 'ARCHIVED' },
+        surface: 'CUSTOMER_FACING',
+      },
+      select: { id: true },
+    });
+    agentId = designated?.id ?? null;
+  }
   if (!agentId) {
     const fallback = await db.agent.findFirst({
       where: { companyId: company.id, status: { not: 'ARCHIVED' }, surface: 'CUSTOMER_FACING' },
