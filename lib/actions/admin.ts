@@ -6,6 +6,7 @@ import { db } from '@/lib/db';
 import { requireSuperAdmin } from '@/lib/admin';
 import { agentTokenCap } from '@/lib/plans';
 import { seedRefine } from '@/lib/seed/refine';
+import { seedDemoTenants as runSeedDemoTenants, type DemoTenantResult } from '@/lib/seed/demo-tenants';
 
 export type AdminResult = { ok: true } | { ok: false; error: 'forbidden' | 'invalid' | 'generic' };
 
@@ -26,6 +27,27 @@ export async function seedRefineDemo(): Promise<SeedRefineResult> {
     return { ok: true, slug: r.slug, services: r.services, clinics: r.clinics };
   } catch (err) {
     console.error('seedRefineDemo failed', err);
+    return { ok: false, error: 'generic' };
+  }
+}
+
+export type SeedDemoResult =
+  | { ok: true; tenants: DemoTenantResult[] }
+  | { ok: false; error: 'forbidden' | 'generic' };
+
+// Build (or rebuild) the multi-sector demo tenants (dental / real-estate / home
+// services). `only` seeds a single slug so the caller can run them one at a time
+// and keep each request short (each hires agents through hrAgent).
+export async function seedDemoTenants(only?: string): Promise<SeedDemoResult> {
+  const admin = await requireSuperAdmin();
+  if (!admin.ok) return { ok: false, error: 'forbidden' };
+  try {
+    const r = await runSeedDemoTenants({ only });
+    await audit(admin.userId, 'admin.seed.demo', null, { only: only ?? 'all', tenants: r.tenants.length });
+    revalidatePath('/admin');
+    return { ok: true, tenants: r.tenants };
+  } catch (err) {
+    console.error('seedDemoTenants failed', err);
     return { ok: false, error: 'generic' };
   }
 }
