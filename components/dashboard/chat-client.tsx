@@ -126,13 +126,7 @@ export function ChatClient({
         for (const ev of events) {
           const line = ev.split('\n').find((l) => l.startsWith('data: '));
           if (!line) continue;
-          let payload: {
-            type: string;
-            text?: string;
-            reply?: string;
-            reason?: string;
-            meta?: { firstTokenMs: number; totalMs: number; tools: number; toolsOffered: number; model: string };
-          };
+          let payload: { type: string; text?: string; reply?: string; reason?: string };
           try {
             payload = JSON.parse(line.slice(6));
           } catch {
@@ -143,15 +137,6 @@ export function ChatClient({
             setAgent(acc);
           } else if (payload.type === 'done') {
             setAgent(payload.reply ?? acc);
-            // TEMP perf diagnostic — shows where the reply latency went, in the UI
-            // so no server logs are needed. Remove once chat speed is sorted.
-            const m = payload.meta;
-            if (m) {
-              toast(
-                `⚡ ${(m.totalMs / 1000).toFixed(1)}s · first token ${(m.firstTokenMs / 1000).toFixed(1)}s · ${m.tools} tool(s) · ${m.toolsOffered} offered · ${m.model}`,
-                { duration: 9000 }
-              );
-            }
           } else if (payload.type === 'error') {
             errored = true;
             toast.error(errLabel(payload.reason));
@@ -252,22 +237,19 @@ export function ChatClient({
                     : 'bg-muted'
                 )}
               >
-                {/* No typography plugin in this project, so style the common
-                    markdown nodes explicitly for readable replies. */}
-                <div className="space-y-1 [&_a]:underline [&_li]:ms-4 [&_li]:list-disc [&_strong]:font-semibold">
-                  <ReactMarkdown>{m.content}</ReactMarkdown>
-                </div>
+                {/* Agent bubble with no text yet → the agent is "typing". */}
+                {m.role === 'agent' && !m.content ? (
+                  <TypingDots />
+                ) : (
+                  // No typography plugin in this project, so style the common
+                  // markdown nodes explicitly for readable replies.
+                  <div className="space-y-1 [&_a]:underline [&_li]:ms-4 [&_li]:list-disc [&_strong]:font-semibold">
+                    <ReactMarkdown>{m.content}</ReactMarkdown>
+                  </div>
+                )}
               </div>
             </div>
           ))}
-          {sending && (
-            <div className="flex justify-start">
-              <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-2 text-sm text-muted-foreground">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                {t('typing')}
-              </div>
-            </div>
-          )}
         </div>
 
         <div className="flex items-end gap-2 border-t p-3">
@@ -286,10 +268,23 @@ export function ChatClient({
             className="shrink-0"
             aria-label={t('inputPlaceholder')}
           >
-            <Send className="h-4 w-4" />
+            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
           </Button>
         </div>
       </div>
     </div>
+  );
+}
+
+// The classic "agent is typing" indicator — three dots with a staggered bounce,
+// shown in the reply bubble until the first token streams in.
+function TypingDots() {
+  const t = useTranslations('chatClient');
+  return (
+    <span className="flex items-center gap-1 py-1" role="status" aria-label={t('typing')}>
+      <span className="size-1.5 animate-bounce rounded-full bg-current opacity-50 [animation-delay:-0.3s]" />
+      <span className="size-1.5 animate-bounce rounded-full bg-current opacity-50 [animation-delay:-0.15s]" />
+      <span className="size-1.5 animate-bounce rounded-full bg-current opacity-50" />
+    </span>
   );
 }
