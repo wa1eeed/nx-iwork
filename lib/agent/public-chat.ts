@@ -148,6 +148,7 @@ export async function runPublicAgentChat(
     temperature: agent.temperature,
     maxTokens: agent.maxTokens,
     tools,
+    thinkingBudget: 0, // customer-facing chat → snappy first token
     ctx: { companyId, agentId },
   };
 

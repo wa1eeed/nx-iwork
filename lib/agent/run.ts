@@ -50,25 +50,28 @@ export async function runAgentChat(
   const agent = await loadAgentWithContext(agentId, companyId);
   if (!agent) return { ok: false, reason: 'agent_not_found' };
 
-  // A registry model pinned to this agent chooses its own vendor; otherwise the
-  // company's default provider (managed Vertex / BYOK) runs the tier.
-  const providerResult = await getProviderForModel(companyId, agent.aiModel);
+  // Everything else the turn needs is independent → run it in ONE parallel round
+  // instead of ~5 serial round-trips to the remote DB + the memory embedding call.
+  // That serial pre-flight was a big chunk of the "slow to reply" latency.
+  const [providerResult, budget, agentBudget, history, memoryBlock] = await Promise.all([
+    // A registry model pinned to this agent chooses its own vendor; otherwise the
+    // company's default provider (managed Vertex / BYOK) runs the tier.
+    getProviderForModel(companyId, agent.aiModel),
+    checkTokenBudget(companyId),
+    checkAgentBudget(agentId),
+    // Working memory: last N messages for this agent, oldest-first for the model.
+    db.chatMessage.findMany({
+      where: { agentId, companyId },
+      orderBy: { createdAt: 'desc' },
+      take: WORKING_MEMORY_LIMIT,
+      select: { role: true, content: true },
+    }),
+    // Relevant long-term memories for this turn (empty when none/disabled).
+    recallMemoryBlock(agentId, companyId, userMessage),
+  ]);
   if (!providerResult.ok) return { ok: false, reason: providerResult.reason };
-
-  // Managed mode: refuse before spending if the token bank is empty.
-  const budget = await checkTokenBudget(companyId);
   if (!budget.ok) return { ok: false, reason: budget.reason };
-  // …and if this agent has hit its monthly per-agent ceiling.
-  const agentBudget = await checkAgentBudget(agentId);
   if (!agentBudget.ok) return { ok: false, reason: 'billing_limit' };
-
-  // Working memory: last N messages for this agent, oldest-first for the model.
-  const history = await db.chatMessage.findMany({
-    where: { agentId, companyId },
-    orderBy: { createdAt: 'desc' },
-    take: WORKING_MEMORY_LIMIT,
-    select: { role: true, content: true },
-  });
 
   const messages: AiMessage[] = history
     .reverse()
@@ -89,8 +92,7 @@ export async function runAgentChat(
     audience: 'internal', // dashboard chat: the owner is talking, not a customer
   });
 
-  // Inject relevant long-term memories for this turn (empty when none/disabled).
-  const memoryBlock = await recallMemoryBlock(agentId, companyId, userMessage);
+  // Inject relevant long-term memories for this turn (recalled in the batch above).
   if (memoryBlock) system += `\n\n${memoryBlock}`;
 
   // Inject the instructions from any skills attached to this agent.
@@ -129,6 +131,7 @@ export async function runAgentChat(
       temperature: agent.temperature,
       maxTokens: agent.maxTokens,
       tools: wantsMcp ? [...baseTools, ...(await getMcpToolsForCompany(companyId))] : baseTools,
+      thinkingBudget: 0, // interactive dashboard chat → no thinking, snappy first token
       ctx: { companyId, agentId },
     };
     ({ reply, tokensUsed } = opts?.onDelta

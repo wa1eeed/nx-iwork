@@ -55,6 +55,10 @@ export interface AiCompletionRequest {
   model?: string;
   temperature?: number;
   maxTokens?: number;
+  /** Gemini 2.5 "thinking" token budget. 0 = off (fastest first token, for
+   *  interactive chat); a positive number reasons before answering (better for
+   *  autonomous tasks). Undefined → provider/env default. */
+  thinkingBudget?: number;
   /** Tools the model may call this turn. */
   tools?: AiTool[];
   /** Abort if the provider hangs (network, cold model). */
