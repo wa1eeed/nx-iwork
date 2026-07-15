@@ -126,7 +126,13 @@ export function ChatClient({
         for (const ev of events) {
           const line = ev.split('\n').find((l) => l.startsWith('data: '));
           if (!line) continue;
-          let payload: { type: string; text?: string; reply?: string; reason?: string };
+          let payload: {
+            type: string;
+            text?: string;
+            reply?: string;
+            reason?: string;
+            meta?: { firstTokenMs: number; totalMs: number; tools: number; toolsOffered: number; model: string };
+          };
           try {
             payload = JSON.parse(line.slice(6));
           } catch {
@@ -137,6 +143,15 @@ export function ChatClient({
             setAgent(acc);
           } else if (payload.type === 'done') {
             setAgent(payload.reply ?? acc);
+            // TEMP perf diagnostic — shows where the reply latency went, in the UI
+            // so no server logs are needed. Remove once chat speed is sorted.
+            const m = payload.meta;
+            if (m) {
+              toast(
+                `⚡ ${(m.totalMs / 1000).toFixed(1)}s · first token ${(m.firstTokenMs / 1000).toFixed(1)}s · ${m.tools} tool(s) · ${m.toolsOffered} offered · ${m.model}`,
+                { duration: 9000 }
+              );
+            }
           } else if (payload.type === 'error') {
             errored = true;
             toast.error(errLabel(payload.reason));

@@ -53,7 +53,7 @@ export async function POST(
           { onDelta: (delta) => send({ type: 'delta', text: delta }) }
         );
         if (result.ok) {
-          send({ type: 'done', reply: result.reply, tokensUsed: result.tokensUsed });
+          send({ type: 'done', reply: result.reply, tokensUsed: result.tokensUsed, meta: result.meta });
         } else {
           send({ type: 'error', reason: result.reason, message: result.message });
         }
