@@ -1402,6 +1402,10 @@
     "archiveTitle": "Archive this agent",
     "archiveNote": "Hides it from your workforce. Chat history and task records are kept — you can restore it later."
   },
+  "impersonation": {
+    "viewingAs": "Platform admin view — you're browsing “{name}”. Changes here are real.",
+    "exit": "Exit"
+  },
   "agentKpis": {
     "title": "KPI targets",
     "help": "What “good” looks like for this role. Edit the targets to match your business — the seeded values are only a starting point.",
@@ -1628,7 +1632,8 @@
       "colStatus": "Status",
       "colAgents": "Agents",
       "colTokens": "Credits",
-      "view": "Manage"
+      "view": "Manage",
+      "impersonate": "Enter dashboard"
     },
     "company": {
       "back": "Companies",

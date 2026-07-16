@@ -1,6 +1,7 @@
 import { Prisma, type PlanTier } from '@prisma/client';
 import { db } from '@/lib/db';
 import { isReservedSlug } from '@/lib/reserved-slugs';
+import { impersonatedCompanyId } from '@/lib/impersonation';
 
 const SLUG_MAX_LENGTH = 40;
 const SLUG_FALLBACK = 'company';
@@ -92,12 +93,22 @@ export async function createCompanyForUser(input: CreateCompanyInput) {
 // Used by layouts/server actions to assert the user belongs to a company. The
 // session token's companyId can lag behind reality (e.g. immediately after
 // onboarding), so we read from DB on each call.
+//
+// SUPER_ADMIN impersonation: when a valid signed impersonation cookie is
+// present AND the caller's DB role is SUPER_ADMIN, every tenant-scoped surface
+// resolves to the impersonated company — one choke point, no per-page changes.
+// Normal accounts ignore the cookie entirely.
 export async function getUserCompany(userId: string) {
   const user = await db.user.findUnique({
     where: { id: userId },
-    select: { companyId: true },
+    select: { companyId: true, role: true },
   });
-  return user?.companyId ?? null;
+  if (!user) return null;
+  if (user.role === 'SUPER_ADMIN') {
+    const impersonated = await impersonatedCompanyId();
+    if (impersonated) return impersonated;
+  }
+  return user.companyId ?? null;
 }
 
 export function isUniqueConstraintError(err: unknown): boolean {

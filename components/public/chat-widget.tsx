@@ -18,11 +18,14 @@ export function ChatWidget({
   agentName,
   greeting,
   primaryColor,
+  position,
 }: {
   slug: string;
   agentName: string;
   greeting: string;
   primaryColor?: string | null;
+  /** WebsiteConfig.chatPosition — "bottom-right" (default) or "bottom-left". */
+  position?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -45,6 +48,9 @@ export function ChatWidget({
   }, [messages.length, sending]);
 
   const color = primaryColor || undefined;
+  // Physical side from the owner's setting (was hardcoded); mobile offsets sit
+  // above the sticky booking bar.
+  const side = position === 'bottom-left' ? 'left-5' : 'right-5';
 
   async function send() {
     const text = input.trim();
@@ -124,7 +130,7 @@ export function ChatWidget({
       {/* Launcher */}
       <button
         onClick={() => setOpen((o) => !o)}
-        className="fixed bottom-5 end-5 z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition hover:scale-105"
+        className={`fixed bottom-20 sm:bottom-5 ${side} z-50 flex h-14 w-14 items-center justify-center rounded-full text-white shadow-lg transition hover:scale-105`}
         style={{ backgroundColor: color ?? '#06b6d4' }}
         aria-label="المحادثة"
       >
@@ -133,7 +139,7 @@ export function ChatWidget({
 
       {/* Panel */}
       {open && (
-        <div className="fixed bottom-24 end-5 z-50 flex h-[28rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl dark:bg-neutral-900">
+        <div className={`fixed bottom-[9.25rem] sm:bottom-24 ${side} z-50 flex h-[26rem] sm:h-[28rem] w-[22rem] max-w-[calc(100vw-2.5rem)] flex-col overflow-hidden rounded-2xl border bg-white shadow-2xl dark:bg-neutral-900`}>
           <header className="flex items-center gap-2 p-3 text-white" style={{ backgroundColor: color ?? '#06b6d4' }}>
             <MessageCircle className="h-5 w-5" />
             <span className="text-sm font-semibold">{agentName}</span>
