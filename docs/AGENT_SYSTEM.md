@@ -2,6 +2,31 @@
 
 > **هذا أهم ملف تقني في المشروع.** يصف كيف يعمل "الموظف الذكي" الحقيقي - مش chatbot عادي.
 
+> **🆕 2026-07-16 — agent-module redesign.** The configuration/governance layer
+> described below was overhauled; the authoritative record is
+> [`AGENT_MODULE_REDESIGN.md`](./AGENT_MODULE_REDESIGN.md). Headlines that
+> supersede older statements in this file:
+> - **ONE model picker** — the registry dropdown (filtered to the company's
+>   ACTIVE provider) replaced the tier cards; a cross-provider pick can no
+>   longer be silently dropped. The tier remains a fallback only.
+> - **ONE instructions field** — `jobDescription` governs behavior; the
+>   free-text `persona` + `systemPrompt` textareas were retired from the form
+>   (persona is derived server-side via `derivePersonaSummary`).
+> - **Per-agent governance** — `Agent.{requireApprovalForSensitive,
+>   requireMessageReview,spendApprovalCapSar}` (null = inherit company),
+>   resolved by `resolveGuardrails()` and injected on chat/task/sandbox.
+> - **Verbosity → `maxTokens`** (2048/4096/8192) and temperature presets.
+> - **Owner-editable KPIs** (custom hires seed from the archetype) and an
+>   **effective-capabilities** display (permissions ∪ skill tools + MCP).
+> - **`search_catalog`** matches Arabic word variants across
+>   title/subtitle/description, returns up to 30 items, and falls back to the
+>   full catalog (kind-agnostic) on no match. The customer prompt **requires**
+>   a catalog call for any price/availability answer, and directs agents to
+>   `list_object_types`/`query_records` for owner-defined data (both now on
+>   the public-widget allowlist, still permission-gated).
+> - **Thinking budgets:** public widget `1024` (reliable tool use);
+>   internal dashboard chat `0` (speed).
+
 ---
 
 ## 🎯 الفلسفة الأساسية

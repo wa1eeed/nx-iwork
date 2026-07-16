@@ -5,6 +5,38 @@ Tracked follow-ups beyond the current build. Newest first.
 
 ## 🔜 Planned
 
+### 🧩 Agent-module redesign — remaining phases
+Phases 1–3 shipped 2026-07-16 (see `docs/AGENT_MODULE_REDESIGN.md`). Remaining:
+- **Phase 4 — Skills**: clarify skills-vs-permissions on `/skills`, show each
+  skill's tool contribution, expose icon/category.
+- **Phase 5 — Light sections polish**: agent-work / outputs / departments / data —
+  naming consistency, dead-control removal.
+
+### 🌐 Translate the remaining Arabic docs to English
+Engineering docs are English-primary; two are still (partly) Arabic:
+- `docs/PROJECT.md` (the constitution — fully Arabic)
+- `docs/AGENT_SYSTEM.md` (mixed — the explanatory sections are Arabic)
+Translate both fully to English (owner request, 2026-07-16); keep the content
+identical, no restructuring.
+
+### ✅ Shipped this session (2026-07-15 → 16) — chat UX · agent-module redesign · demo verification
+- **Chat UX:** SSE anti-proxy-buffering (primer + keepalives) · typing indicators
+  (dashboard + widget) · widget agent-resolution fix · latency instrumentation.
+- **Agent config Phase 1:** ONE model picker (active-provider filtered) · ONE
+  instructions field (persona derived) · style presets + verbosity→maxTokens ·
+  **per-agent governance** (approval/review/SAR cap, inherit-or-override;
+  migration `20260716000000`) · archetype seeds least-privilege tools ·
+  Test-in-Studio deep link.
+- **Agent profile Phase 2:** owner-editable KPIs (custom hires seed from
+  archetype) · effective-capabilities rail (skills ∪ permissions + MCP badge) ·
+  real model label · unified 5-event trigger catalog everywhere.
+- **Demo tenants:** `/basma` (dental) · `/almaali` (real estate + Business
+  Objects) · `/khedmatak` (home services) — one-click idempotent seed from `/admin`.
+- **Agent accuracy (platform-wide):** Arabic word/variant catalog search +
+  take:30 + kind-agnostic fallback · object tools on the public allowlist ·
+  price-lookup prompt hardening · widget thinkingBudget 1024.
+- **Ops:** `GET /api/version` build marker (PUSHED ≠ LIVE — Coolify queue stall).
+
 ### 🎯 Multi-agent architecture (the headline) — phased
 The next major build. Make every department's AI employee worthwhile alongside the
 deterministic workflow — the **two-layer contract**: the system owns transactions

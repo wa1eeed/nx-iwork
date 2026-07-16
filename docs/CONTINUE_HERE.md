@@ -6,7 +6,7 @@
 > `docs/ADMIN.md`; infra/CDN/Cloud-Run in `docs/INFRA.md`; file storage in
 > `docs/STORAGE.md`.
 
-**Last updated:** 2026-07-14
+**Last updated:** 2026-07-16
 **Live:** https://bznss.one/ · repo `github.com/wa1eeed/nx-iwork`
 **Deploy:** `git push origin HEAD:main` → Coolify builds & runs
 `prisma migrate deploy && node server.js`. **`main` is the deploy branch**, not
@@ -194,6 +194,55 @@ admin layer. Full strategy + gap analysis in **`docs/OPENCLAW_PARITY.md`**.
 
 ---
 
+### Then this session (2026-07-15 → 07-16), shipped to `main` — chat UX + agent-module redesign + demo verification
+
+> Full detail: **`docs/AGENT_MODULE_REDESIGN.md`** (the single record of this arc).
+
+34. **Chat experience fixes.** SSE **anti-proxy-buffering** (2KB comment primer +
+    15s keepalives on both chat routes — deltas stream live through
+    Cloudflare/Traefik); **three-dot typing indicators** (dashboard chat + public
+    widget); the widget **"doesn't reply" fix** (`/api/public/[slug]/chat` resolves
+    the designated agent exactly like the landing page: active + CUSTOMER_FACING,
+    else fallback); dashboard-chat latency work (parallel pre-flight in
+    `runAgentChat`, `[chat-timing]` logs, `thinkingBudget: 0` on the internal path).
+35. **Agent config redesign — Phase 1** (`agent-form.tsx`): **ONE model picker**
+    (registry filtered to the ACTIVE provider — also fixes the silent cross-provider
+    drop), **ONE instructions field** (`jobDescription`; free-text persona +
+    systemPrompt retired from the form, persona derived server-side), **response
+    style** presets (temperature) + **verbosity→maxTokens**, **per-agent governance**
+    (approval/message-review/monthly SAR cap as inherit/on/off — resolved by
+    `resolveGuardrails` on chat/task/sandbox), archetype seeds **least-privilege**
+    permissions, **Test-in-Studio** deep link (`/studio?agent=`). Migration
+    `20260716000000_agent_governance` (3 nullable `Agent` columns).
+36. **Agent profile redesign — Phase 2** (`agents/[id]`): **owner-editable KPIs**
+    (`AgentKpisEditor` + `updateAgentKpis`; custom hires now seed KPIs from their
+    archetype), **effective capabilities rail** (permissions ∪ skill tools, dashed
+    chips + MCP badge — matches the runtime), **real model label** (registry label
+    or "Default (auto)" — no stale tier chips), **unified trigger catalog** (all 5
+    `TRIGGER_EVENTS` across the profile Scenarios tab, Knowledge TriggerManager,
+    and the create-form — one vocabulary).
+37. **Multi-sector demo tenants** — super-admin `/admin` → "Seed demo tenants":
+    `/basma` (dental) · `/almaali` (real estate, exercises **Business Objects** with
+    a `properties` type + 8 listings) · `/khedmatak` (home services). Full realistic
+    data each (departments/services/staff/4 agents via `hrAgent`/customers/bookings/
+    orders/FAQ/coupons/outputs/tasks/reviews). Idempotent per tenant.
+    `lib/seed/demo-tenants{,.data}.ts`. Logins in `docs/AGENT_MODULE_REDESIGN.md`.
+38. **Agent-accuracy fixes (platform-wide, surfaced by the demo):**
+    `search_catalog` word-by-word matching across title/subtitle/description +
+    **Arabic variants** (definite-article strip + hamza toggle) + `take:30` (was 10 —
+    silently truncated 11+-service catalogs) + kind-agnostic fallback;
+    `list_object_types`/`query_records` added to the widget's `PUBLIC_ALLOWLIST`
+    (still permission-gated); prompt hardening (**always** call `search_catalog` for
+    prices — never quote from FAQ/memory; query Business Objects before over-asking);
+    public widget `thinkingBudget: 1024` for **consistent** tool-calling (at 0,
+    flash answered reflexively — same question: right price once, "not available"
+    the next). Verified live: stable exact prices ×7, real property listings.
+39. **Deploy verification** — `GET /api/version` (`{marker, commit}`; bump `MARKER`
+    per verified deploy). Lesson: **PUSHED ≠ LIVE** — Coolify's queue stalled ~95min
+    while 5 pushes piled up and every prod test hit the old container.
+
+---
+
 ## 🔜 Next up (resume here, in priority order)
 
 1. **🎯 OpenClaw-parity reach + extensibility (the headline).** The governance +
@@ -216,12 +265,17 @@ admin layer. Full strategy + gap analysis in **`docs/OPENCLAW_PARITY.md`**.
      (`skillPromptBlock`) + expands the tool allow-list (`skillToolIds`).
    - **Agent Studio — SHIPPED** (`/studio`): sandbox-run an agent (reply + model +
      tokens + full tool-call trace), no history saved.
-   **OpenClaw-parity roadmap is now fully delivered.** Remaining is depth: a Router
-   agent per channel thread, WhatsApp Embedded-Signup go-live (Meta approval), and
-   autonomy hardening (scheduler/cron reliability — in progress).
-   - **Agent Studio / test sandbox** — build/test surface showing tool calls + which
-     model answered (today `/chat` is the owner↔agent console).
+   **OpenClaw-parity roadmap is now fully delivered** (incl. the Router, autonomy
+   heartbeat/reaper, and the Studio). Remaining depth: WhatsApp Embedded-Signup
+   go-live (Meta Tech Provider approval — owner action).
    Guiding law: the two-layer contract. See `docs/AGENT_SYSTEM.md`.
+1b. **Agent-module redesign — remaining phases** (`docs/AGENT_MODULE_REDESIGN.md`;
+   phases 1–3 shipped 2026-07-16): **Phase 4 — Skills** (clarify skills-vs-permissions
+   on `/skills`, show each skill's tool contribution, expose icon/category) ·
+   **Phase 5 — light-sections polish** (agent-work / outputs / departments / data:
+   naming consistency, dead-control removal).
+1c. **Docs translation to English** — `docs/PROJECT.md` + the Arabic sections of
+   `docs/AGENT_SYSTEM.md` (the rest of `docs/` is already English).
 2. **Tap subscription auto-renewal** — recurring charge + webhook idempotency +
    dunning/retry on failure + receipt email.
 3. **Deep-component i18n (English-primary)** — the remaining translation long-tail
@@ -253,7 +307,15 @@ admin layer. Full strategy + gap analysis in **`docs/OPENCLAW_PARITY.md`**.
   scheduler. Edit via the Guardrails tab (`/settings`) or the top-bar Automation toggle.
 - **Demo data:** `DATABASE_URL=… npm run seed:demo` rebuilds the idempotent **"Zahra
   Home"** demo tenant (login printed on completion). Safe to re-run; it wipes only that
-  demo company's data. Never point it at a real tenant.
+  demo company's data. Never point it at a real tenant. **Multi-sector demos**
+  (`/basma` dental · `/almaali` real estate · `/khedmatak` home services) rebuild from
+  super-admin `/admin` → "Seed demo tenants" — idempotent per tenant. ⚠️ Agent
+  **permissions are granted at hire**: changing seeded permissions needs a re-seed,
+  not just a deploy.
+- **PUSHED ≠ LIVE.** Coolify's auto-deploy can stall/queue (once ~95min behind).
+  Verify which build serves via **`GET /api/version`** (`{marker, commit}`; bump
+  `MARKER` in `app/api/version/route.ts` on deploys you must verify). If stale,
+  trigger a manual deploy in Coolify.
 - **English is primary**, Arabic secondary. New UI uses `next-intl` (`messages/en.json`
   + `ar.json`); don't hardcode strings.
 - **All agent creation MUST go through the HR gateway** (`hrAgent.onboardAndDeployAgent`

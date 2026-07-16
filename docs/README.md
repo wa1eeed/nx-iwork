@@ -23,6 +23,7 @@ how-to · planning) used by most large platforms.
 | [`PROJECT.md`](./PROJECT.md) | Project constitution — vision, roles, the core architectural decisions. |
 | [`AGENT_SYSTEM.md`](./AGENT_SYSTEM.md) | The agent engine — loop, function-calling tools, 3-layer memory, scheduler, events, conversation modes, per-agent model, Business Objects tools. |
 | [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md) | The OpenClaw-parity strategy — positioning, the capability map (us vs OpenClaw), model registry, Business Objects, Agent Work, and the ordered gap (channels · MCP · Skills · Studio). |
+| [`AGENT_MODULE_REDESIGN.md`](./AGENT_MODULE_REDESIGN.md) | The 2026-07-16 AI-module overhaul — the config-dedup audit, per-agent governance, editable KPIs, effective capabilities, multi-sector demo tenants, the agent-accuracy fixes, and `/api/version` deploy verification. |
 
 ## 📖 Reference (the *what*)
 
