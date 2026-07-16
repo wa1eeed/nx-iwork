@@ -19,6 +19,28 @@ Engineering docs are English-primary; two are still (partly) Arabic:
 Translate both fully to English (owner request, 2026-07-16); keep the content
 identical, no restructuring.
 
+### ✅ Shipped 2026-07-16 (later arc) — landing v2 · impersonation · Tap auto-renewal
+- **Landing pages v2** (task #42): platform `/` — live real-agent hero demo
+  (basma via public SSE, 3-msg cap → signup upsell), live-examples section (the
+  3 demo tenants), bento capability grid, scroll choreography (`Reveal*`
+  primitives), mobile nav, rich footer. Tenant storefronts — `generateMetadata`
+  + `LocalBusiness` JSON-LD (SEO was absent!), hero media (heroImages/heroVideo
+  finally render), heroCTA/aboutEn/chatPosition/socials wired, review stars in
+  the hero, sticky mobile booking bar + storefront hamburger, next/image.
+- **Super-admin impersonation** (#84): "Enter dashboard" per company on
+  `/admin/companies` — 4h HMAC cookie honored ONLY for SUPER_ADMIN inside
+  `getUserCompany()` (the single choke point), amber exit banner, audit-logged.
+  Follow-up fix: 7 route handlers (agents chat/sandbox, task run, uploads×3,
+  BYOK test) + settings actions now resolve the tenant through `getUserCompany`.
+- **Tap subscription auto-renewal** (Track D, #39): `save_card` checkouts +
+  token capture on settle; `chargeSavedCard` merchant-initiated renewals;
+  renewal engine in the cron (due scan → advance-cursor-first → charge →
+  idempotent settle; dunning +24h/+72h → downgrade to FREE); webhook renewal +
+  failure branches; bilingual receipt/dunning/ended emails; `/subscription`
+  auto-renew toggle + saved-card display. Migration `20260716180000`.
+- **Ops**: `GET /api/version` build marker; Coolify auto-deploy is stalling —
+  every deploy currently needs a manual click (investigate the GitHub webhook).
+
 ### ✅ Shipped this session (2026-07-15 → 16) — chat UX · agent-module redesign · demo verification
 - **Chat UX:** SSE anti-proxy-buffering (primer + keepalives) · typing indicators
   (dashboard + widget) · widget agent-resolution fix · latency instrumentation.
