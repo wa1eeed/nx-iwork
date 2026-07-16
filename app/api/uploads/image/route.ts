@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { getUserCompany } from '@/lib/companies';
 import { getStorage, companyKey, isStorageConfigured } from '@/lib/storage';
 import { processImage } from '@/lib/storage/image';
 import { reserveAndRecordFile, getStorageStatus } from '@/lib/storage/quota';
@@ -23,11 +23,9 @@ export async function POST(req: Request) {
   if (!isStorageConfigured()) {
     return NextResponse.json({ ok: false, reason: 'storage_not_configured' }, { status: 503 });
   }
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { companyId: true },
-  });
-  if (!user?.companyId) {
+  // Impersonation-aware tenant resolution (single choke point in lib/companies).
+  const companyId = await getUserCompany(session.user.id);
+  if (!companyId) {
     return NextResponse.json({ ok: false, reason: 'no_company' }, { status: 400 });
   }
 
@@ -57,12 +55,12 @@ export async function POST(req: Request) {
   const size = processed.buffer.length;
 
   // Pre-check quota to avoid a wasted upload.
-  const status = await getStorageStatus(user.companyId);
+  const status = await getStorageStatus(companyId);
   if (status && status.used + size > status.limit) {
     return NextResponse.json({ ok: false, reason: 'quota_exceeded', message: QUOTA_MSG }, { status: 403 });
   }
 
-  const key = companyKey(user.companyId, purpose, `${randomUUID()}.${processed.ext}`);
+  const key = companyKey(companyId, purpose, `${randomUUID()}.${processed.ext}`);
 
   let url: string;
   try {
@@ -76,7 +74,7 @@ export async function POST(req: Request) {
   // Atomic reserve + File row. If the final check fails (race) or the DB errors,
   // clean up the object we just wrote so storage never drifts.
   const reserved = await reserveAndRecordFile({
-    companyId: user.companyId,
+    companyId: companyId,
     key,
     url,
     purpose,

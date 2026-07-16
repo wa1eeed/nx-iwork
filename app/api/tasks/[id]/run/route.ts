@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { getUserCompany } from '@/lib/companies';
 import { runAgentTask } from '@/lib/agent/task';
 
 // Manually triggers task execution ("run now"). The scheduler will call
@@ -15,16 +15,14 @@ export async function POST(
     return NextResponse.json({ ok: false, reason: 'unauthenticated' }, { status: 401 });
   }
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { companyId: true },
-  });
-  if (!user?.companyId) {
+  // Impersonation-aware tenant resolution (single choke point in lib/companies).
+  const companyId = await getUserCompany(session.user.id);
+  if (!companyId) {
     return NextResponse.json({ ok: false, reason: 'no_company' }, { status: 400 });
   }
 
   const { id } = await params;
-  const result = await runAgentTask(id, user.companyId);
+  const result = await runAgentTask(id, companyId);
 
   if (result.ok) {
     return NextResponse.json({ ok: true, result: result.result, tokensUsed: result.tokensUsed });

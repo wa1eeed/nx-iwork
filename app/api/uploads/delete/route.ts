@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { getUserCompany } from '@/lib/companies';
 import { deleteTenantFile } from '@/lib/storage/quota';
 
 const schema = z.object({ url: z.string().url().max(2048) });
@@ -13,11 +14,9 @@ export async function POST(req: Request) {
   if (!session?.user?.id) {
     return NextResponse.json({ ok: false, reason: 'unauthenticated' }, { status: 401 });
   }
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { companyId: true },
-  });
-  if (!user?.companyId) {
+  // Impersonation-aware tenant resolution (single choke point in lib/companies).
+  const companyId = await getUserCompany(session.user.id);
+  if (!companyId) {
     return NextResponse.json({ ok: false, reason: 'no_company' }, { status: 400 });
   }
 
@@ -33,13 +32,13 @@ export async function POST(req: Request) {
   }
 
   const file = await db.file.findFirst({
-    where: { companyId: user.companyId, url: parsed.data.url },
+    where: { companyId: companyId, url: parsed.data.url },
     select: { key: true },
   });
   // Not tracked (legacy / other flow) — nothing to free; report success so the
   // UI can drop the reference.
   if (!file) return NextResponse.json({ ok: true, freed: false });
 
-  const res = await deleteTenantFile(user.companyId, file.key);
+  const res = await deleteTenantFile(companyId, file.key);
   return NextResponse.json({ ok: res.ok, freed: res.ok });
 }

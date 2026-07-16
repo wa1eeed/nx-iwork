@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { getUserCompany } from '@/lib/companies';
 import { decrypt } from '@/lib/encryption';
 import { testKey } from '@/lib/byok';
 
@@ -14,16 +15,14 @@ export async function POST() {
     return NextResponse.json({ ok: false, reason: 'unauthenticated' }, { status: 401 });
   }
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { companyId: true },
-  });
-  if (!user?.companyId) {
+  // Impersonation-aware tenant resolution (single choke point in lib/companies).
+  const companyId = await getUserCompany(session.user.id);
+  if (!companyId) {
     return NextResponse.json({ ok: false, reason: 'no_company' }, { status: 400 });
   }
 
   const apiSettings = await db.companyApiSettings.findUnique({
-    where: { companyId: user.companyId },
+    where: { companyId: companyId },
     select: { byokApiKey: true, byokProvider: true },
   });
   if (!apiSettings?.byokApiKey) {
@@ -45,7 +44,7 @@ export async function POST() {
   const result = await testKey(apiSettings.byokProvider, plaintext);
 
   await db.companyApiSettings.update({
-    where: { companyId: user.companyId },
+    where: { companyId: companyId },
     data: {
       byokVerified: result.ok,
       byokLastTest: new Date(),

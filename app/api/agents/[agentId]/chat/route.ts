@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { getUserCompany } from '@/lib/companies';
 import { runAgentChat } from '@/lib/agent/run';
 
 // Owner/member chats with one of their AI employees. Tenant isolation is
@@ -15,11 +15,10 @@ export async function POST(
     return NextResponse.json({ ok: false, reason: 'unauthenticated' }, { status: 401 });
   }
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { companyId: true },
-  });
-  if (!user?.companyId) {
+  // getUserCompany (not a raw user lookup) so SUPER_ADMIN impersonation works —
+  // otherwise chatting with a tenant's agents fails with no_company for admins.
+  const resolvedCompanyId = await getUserCompany(session.user.id);
+  if (!resolvedCompanyId) {
     return NextResponse.json({ ok: false, reason: 'no_company' }, { status: 400 });
   }
 
@@ -40,7 +39,7 @@ export async function POST(
 
   // Stream the reply token-by-token over SSE: the agent's text is emitted as it
   // generates (onDelta); a final 'done' (or 'error') event closes the turn.
-  const companyId = user.companyId;
+  const companyId = resolvedCompanyId;
   const userId = session.user.id;
   const encoder = new TextEncoder();
   const stream = new ReadableStream<Uint8Array>({
