@@ -1,9 +1,11 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { redirect } from 'next/navigation';
 import type { CompanyStatus, PlanTier, Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { requireSuperAdmin } from '@/lib/admin';
+import { setImpersonationCookie, clearImpersonationCookie } from '@/lib/impersonation';
 import { agentTokenCap } from '@/lib/plans';
 import { seedRefine } from '@/lib/seed/refine';
 import { seedDemoTenants as runSeedDemoTenants, type DemoTenantResult } from '@/lib/seed/demo-tenants';
@@ -50,6 +52,25 @@ export async function seedDemoTenants(only?: string): Promise<SeedDemoResult> {
     console.error('seedDemoTenants failed', err);
     return { ok: false, error: 'generic' };
   }
+}
+
+// Impersonation: browse a tenant's dashboard as the super admin (signed cookie
+// honored ONLY for SUPER_ADMIN sessions — see lib/impersonation.ts). Audited.
+export async function startImpersonation(companyId: string): Promise<void> {
+  const admin = await requireSuperAdmin();
+  if (!admin.ok) redirect('/');
+  const company = await db.company.findUnique({ where: { id: companyId }, select: { id: true, name: true } });
+  if (!company) redirect('/admin/companies');
+  await setImpersonationCookie(company.id);
+  await audit(admin.userId, 'admin.impersonate.start', company.id, { name: company.name });
+  redirect('/overview');
+}
+
+export async function stopImpersonation(): Promise<void> {
+  const admin = await requireSuperAdmin();
+  await clearImpersonationCookie();
+  if (admin.ok) await audit(admin.userId, 'admin.impersonate.stop', null, {});
+  redirect('/admin/companies');
 }
 
 const VALID_TIERS: PlanTier[] = ['FREE', 'STARTER', 'GROWTH', 'SCALE', 'ENTERPRISE'];

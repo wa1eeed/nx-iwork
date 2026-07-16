@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { Prisma } from '@prisma/client';
-import { Search, ArrowRight } from 'lucide-react';
+import { Search, ArrowRight, LogIn } from 'lucide-react';
 import { db } from '@/lib/db';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { formatNumber } from '@/lib/format';
+import { startImpersonation } from '@/lib/actions/admin';
 
 const STATUS_CLS: Record<string, string> = {
   ACTIVE: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400',
@@ -74,10 +75,10 @@ export default async function AdminCompaniesPage({
           ) : (
             <ul className="divide-y">
               {companies.map((c) => (
-                <li key={c.id}>
+                <li key={c.id} className="flex items-stretch">
                   <Link
                     href={`/admin/companies/${c.id}`}
-                    className="grid grid-cols-2 items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-accent/40 sm:grid-cols-12"
+                    className="grid min-w-0 flex-1 grid-cols-2 items-center gap-3 px-4 py-3 text-sm transition-colors hover:bg-accent/40 sm:grid-cols-12"
                   >
                     <span className="col-span-2 min-w-0 sm:col-span-5">
                       <span className="block truncate font-medium">{c.name}</span>
@@ -95,6 +96,17 @@ export default async function AdminCompaniesPage({
                       <ArrowRight className="size-3.5 text-muted-foreground rtl:rotate-180" />
                     </span>
                   </Link>
+                  {/* Impersonate — enter this tenant's dashboard as the super admin. */}
+                  <form action={startImpersonation.bind(null, c.id)} className="flex items-center border-s px-2">
+                    <button
+                      type="submit"
+                      title={t('companies.impersonate')}
+                      className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium text-primary transition hover:bg-primary/10"
+                    >
+                      <LogIn className="size-3.5 rtl:rotate-180" />
+                      <span className="hidden md:inline">{t('companies.impersonate')}</span>
+                    </button>
+                  </form>
                 </li>
               ))}
             </ul>
