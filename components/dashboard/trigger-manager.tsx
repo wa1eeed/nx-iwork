@@ -13,6 +13,8 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent } from '@/components/ui/card';
 import { createTrigger, toggleTrigger, deleteTrigger } from '@/lib/actions/knowledge';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { TRIGGER_EVENTS } from '@/lib/agent/events-catalog';
+import type { TriggerInput } from '@/lib/validators/knowledge';
 
 export interface TriggerRow {
   id: string;
@@ -23,14 +25,10 @@ export interface TriggerRow {
   fireCount: number;
 }
 
-const EVENTS: { value: 'LEAD_CREATED' | 'ORDER_CREATED' | 'ORDER_PAID'; labelKey: string }[] = [
-  { value: 'LEAD_CREATED', labelKey: 'eventLeadCreated' },
-  { value: 'ORDER_CREATED', labelKey: 'eventOrderCreated' },
-  { value: 'ORDER_PAID', labelKey: 'eventOrderPaid' },
-];
-const EVENT_KEY = Object.fromEntries(EVENTS.map((e) => [e.value, e.labelKey]));
 const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
 
+// Company-wide trigger editor. Events come from the shared TRIGGER_EVENTS
+// catalog (labels in `events.*`) so all trigger UIs offer the same vocabulary.
 export function TriggerManager({
   triggers,
   agents,
@@ -39,11 +37,12 @@ export function TriggerManager({
   agents: { id: string; name: string }[];
 }) {
   const t = useTranslations('triggerMgr');
+  const te = useTranslations('events');
   const tc = useTranslations('common');
   const confirm = useConfirm();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
-  const [event, setEvent] = useState<TriggerRow['event']>('LEAD_CREATED');
+  const [event, setEvent] = useState<TriggerInput['event']>('LEAD_CREATED');
   const [agentId, setAgentId] = useState(agents[0]?.id ?? '');
   const [name, setName] = useState('');
   const [taskTemplate, setTaskTemplate] = useState('');
@@ -55,7 +54,7 @@ export function TriggerManager({
     if (!taskTemplate.trim()) return toast.error(t('taskRequired'));
     start(async () => {
       const res = await createTrigger({
-        event: event as 'LEAD_CREATED' | 'ORDER_CREATED' | 'ORDER_PAID',
+        event,
         agentId,
         name: name.trim(),
         taskTemplate: taskTemplate.trim(),
@@ -108,9 +107,9 @@ export function TriggerManager({
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
                 <Label>{t('onEvent')}</Label>
-                <select className={selectCls} value={event} onChange={(e) => setEvent(e.target.value)}>
-                  {EVENTS.map((ev) => (
-                    <option key={ev.value} value={ev.value}>{t(ev.labelKey)}</option>
+                <select className={selectCls} value={event} onChange={(e) => setEvent(e.target.value as TriggerInput['event'])}>
+                  {TRIGGER_EVENTS.map((ev) => (
+                    <option key={ev} value={ev}>{te(ev)}</option>
                   ))}
                 </select>
               </div>
@@ -155,7 +154,7 @@ export function TriggerManager({
             <div className="min-w-0 flex-1">
               <p className="truncate font-medium">{row.name}</p>
               <p className="text-xs text-muted-foreground">
-                {EVENT_KEY[row.event] ? t(EVENT_KEY[row.event]) : row.event} → {row.agentName ?? '—'} · {t('fireCount', { count: row.fireCount })}
+                {(TRIGGER_EVENTS as string[]).includes(row.event) ? te(row.event) : row.event} → {row.agentName ?? '—'} · {t('fireCount', { count: row.fireCount })}
               </p>
             </div>
             <Switch checked={row.isActive} onCheckedChange={(c) => toggle(row.id, c)} disabled={saving} />

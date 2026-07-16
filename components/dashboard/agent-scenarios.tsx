@@ -13,6 +13,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { feedback } from '@/lib/ui/feedback';
 import { createTrigger, toggleTrigger, deleteTrigger } from '@/lib/actions/knowledge';
 import { useConfirm } from '@/components/ui/confirm-dialog';
+import { TRIGGER_EVENTS } from '@/lib/agent/events-catalog';
+import type { TriggerInput } from '@/lib/validators/knowledge';
 
 export interface ScenarioRow {
   id: string;
@@ -22,22 +24,19 @@ export interface ScenarioRow {
   fireCount: number;
 }
 
-const EVENTS: { value: 'LEAD_CREATED' | 'ORDER_CREATED' | 'ORDER_PAID'; labelKey: string }[] = [
-  { value: 'LEAD_CREATED', labelKey: 'eventLeadCreated' },
-  { value: 'ORDER_CREATED', labelKey: 'eventOrderCreated' },
-  { value: 'ORDER_PAID', labelKey: 'eventOrderPaid' },
-];
-const EVENT_KEY = Object.fromEntries(EVENTS.map((e) => [e.value, e.labelKey]));
 const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
 
 // Per-agent "playbook": configure how THIS agent reacts to business events.
+// Events come from the shared TRIGGER_EVENTS catalog (labels in `events.*`),
+// so every trigger UI offers the same full vocabulary.
 export function AgentScenarios({ agentId, scenarios }: { agentId: string; scenarios: ScenarioRow[] }) {
   const t = useTranslations('agentScenarios');
+  const te = useTranslations('events');
   const tc = useTranslations('common');
   const confirm = useConfirm();
   const router = useRouter();
   const [adding, setAdding] = useState(false);
-  const [event, setEvent] = useState<ScenarioRow['event']>('LEAD_CREATED');
+  const [event, setEvent] = useState<TriggerInput['event']>('LEAD_CREATED');
   const [name, setName] = useState('');
   const [taskTemplate, setTaskTemplate] = useState('');
   const [pending, start] = useTransition();
@@ -47,7 +46,7 @@ export function AgentScenarios({ agentId, scenarios }: { agentId: string; scenar
     if (!taskTemplate.trim()) return feedback('error', t('whatRequired'));
     start(async () => {
       const res = await createTrigger({
-        event: event as 'LEAD_CREATED' | 'ORDER_CREATED' | 'ORDER_PAID',
+        event,
         agentId,
         name: name.trim(),
         taskTemplate: taskTemplate.trim(),
@@ -103,9 +102,9 @@ export function AgentScenarios({ agentId, scenarios }: { agentId: string; scenar
           <div className="space-y-3 rounded-lg border p-4">
             <div className="space-y-1">
               <Label>{t('whenLabel')}</Label>
-              <select className={selectCls} value={event} onChange={(e) => setEvent(e.target.value)}>
-                {EVENTS.map((ev) => (
-                  <option key={ev.value} value={ev.value}>{t(ev.labelKey)}</option>
+              <select className={selectCls} value={event} onChange={(e) => setEvent(e.target.value as TriggerInput['event'])}>
+                {TRIGGER_EVENTS.map((ev) => (
+                  <option key={ev} value={ev}>{te(ev)}</option>
                 ))}
               </select>
             </div>
@@ -138,7 +137,7 @@ export function AgentScenarios({ agentId, scenarios }: { agentId: string; scenar
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-sm font-medium">{s.name}</p>
                   <p className="text-xs text-muted-foreground">
-                    {EVENT_KEY[s.event] ? t(EVENT_KEY[s.event]) : s.event} · {t('fireCount', { count: s.fireCount })}
+                    {(TRIGGER_EVENTS as string[]).includes(s.event) ? te(s.event) : s.event} · {t('fireCount', { count: s.fireCount })}
                   </p>
                 </div>
                 <Switch checked={s.isActive} onCheckedChange={(c) => toggle(s.id, c)} disabled={pending} />

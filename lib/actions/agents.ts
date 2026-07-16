@@ -1,6 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
+import { z } from 'zod';
 import type { TriggerEvent } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -217,6 +218,38 @@ export async function updateAgent(id: string, raw: AgentInput): Promise<AgentAct
     return { ok: true, id };
   } catch (err) {
     console.error('updateAgent failed', err);
+    return { ok: false, error: 'generic' };
+  }
+}
+
+// Owner-editable KPI targets ([{ key, label, target, unit }]) — shown on the
+// profile KPIs tab. Templates/archetypes only SEED these; this is the edit path.
+const kpiSchema = z
+  .array(
+    z.object({
+      key: z.string().trim().min(1).max(40),
+      label: z.string().trim().min(1).max(60),
+      target: z.coerce.number().min(0).max(1_000_000),
+      unit: z.string().trim().max(12).default(''),
+    })
+  )
+  .max(8);
+
+export async function updateAgentKpis(id: string, raw: unknown): Promise<AgentActionResult> {
+  const cid = await companyId();
+  if (!cid) return { ok: false, error: 'no_company' };
+  const parsed = kpiSchema.safeParse(raw);
+  if (!parsed.success) return { ok: false, error: 'validation' };
+  try {
+    const res = await db.agent.updateMany({
+      where: { id, companyId: cid },
+      data: { kpis: parsed.data as unknown as Prisma.InputJsonValue },
+    });
+    if (res.count === 0) return { ok: false, error: 'not_found' };
+    revalidatePath(`/agents/${id}`);
+    return { ok: true, id };
+  } catch (err) {
+    console.error('updateAgentKpis failed', err);
     return { ok: false, error: 'generic' };
   }
 }
