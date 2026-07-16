@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // available. No secrets — a short marker + commit sha only.
 export const dynamic = 'force-dynamic';
 
-const MARKER = 'skills-v4-clarity';
+const MARKER = 'landing-v2-live-demo';
 
 export function GET() {
   return NextResponse.json({

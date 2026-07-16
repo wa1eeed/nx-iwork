@@ -180,11 +180,13 @@
   "landing": {
     "nav": {
       "features": "Features",
+      "examples": "Live examples",
       "how": "How it works",
       "pricing": "Pricing",
       "signin": "Sign in",
       "getStarted": "Get started",
-      "account": "My account"
+      "account": "My account",
+      "menu": "Menu"
     },
     "dashboard": "Go to dashboard",
     "hero": {
@@ -194,8 +196,65 @@
       "lede": "Hire AI employees by department — they answer customers on WhatsApp, Telegram and your website, book appointments, follow up, and run the back office. Around the clock, in your language.",
       "ctaPrimary": "Start free",
       "ctaSecondary": "See how it works",
+      "ctaExamples": "See it live",
       "trust": "No credit card required · Free to start · Live in minutes",
       "channels": "Works on WhatsApp · Telegram · your website"
+    },
+    "demo": {
+      "hint": "This is a real AI employee — try her right now, no signup",
+      "agentName": "Mona — Basma Dental Clinic",
+      "agentRole": "Reception & bookings · a live demo business",
+      "liveBadge": "Live",
+      "greeting": "Welcome to Basma Riyadh Dental Clinic 🦷 Ask me about services, prices, or book an appointment — I'm a real AI employee.",
+      "prompts": {
+        "p1": "How much is laser teeth whitening?",
+        "p2": "What services do you offer?",
+        "p3": "I want to book a checkup"
+      },
+      "placeholder": "Ask Mona anything…",
+      "capPlaceholder": "Demo limit reached — create your own agent",
+      "capTitle": "That's the demo limit — but yours won't have one",
+      "capBody": "Create your business in minutes and hire an AI employee exactly like Mona — on your services, prices, and calendar.",
+      "capCta": "Create your AI employee",
+      "unavailable": "The demo is busy right now — try again in a moment.",
+      "send": "Send"
+    },
+    "examples": {
+      "badge": "Real businesses, live now",
+      "title": "Don't take our word for it — visit one",
+      "subtitle": "Three fully-running demo businesses in very different sectors. Browse their sites, chat with their AI employees, book like a customer.",
+      "liveBadge": "Live",
+      "visit": "Visit the live site",
+      "items": {
+        "dental": {
+          "name": "Basma Dental Clinic",
+          "sector": "Dental clinic · Riyadh",
+          "desc": "11 services with real prices, doctors, and an AI receptionist that answers and books against the actual calendar."
+        },
+        "realestate": {
+          "name": "Dar Al-Maali Real Estate",
+          "sector": "Real-estate office · Riyadh",
+          "desc": "Property listings as live data — the AI agent quotes real districts and prices, and schedules viewings."
+        },
+        "homeservices": {
+          "name": "Khedmatak Home Services",
+          "sector": "Home services · Dammam",
+          "desc": "Cleaning and maintenance teams with field scheduling — the AI intake agent prices and books visits."
+        }
+      }
+    },
+    "bento": {
+      "working": "Working",
+      "webChannel": "Your website",
+      "agents": {
+        "a1": { "initial": "M", "name": "Mona", "role": "Reception & bookings" },
+        "a2": { "initial": "S", "name": "Sultan", "role": "Sales & follow-up" },
+        "a3": { "initial": "L", "name": "Layan", "role": "Marketing & content" }
+      },
+      "guardrails": {
+        "g1": "Approval required for sensitive actions",
+        "g2": "Monthly spend cap per agent"
+      }
     },
     "stats": {
       "sectors": {
@@ -358,6 +417,8 @@
     "footer": {
       "tagline": "The all-in-one platform for service businesses.",
       "product": "Product",
+      "explore": "Explore",
+      "account": "Account",
       "rights": "All rights reserved."
     },
     "mock": {
