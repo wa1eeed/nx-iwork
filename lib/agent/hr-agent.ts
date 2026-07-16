@@ -213,6 +213,9 @@ export class HRAgentService {
         archetype: customArchetype,
         surface: (customArch?.surface ?? 'CUSTOMER_FACING') as AgentSurface,
         personaConfig: (payload.personaConfig ?? customArch?.persona ?? undefined) as Prisma.InputJsonValue | undefined,
+        // Custom hires start with their archetype's KPI targets (previously only
+        // template hires got KPIs) — editable afterwards on the profile.
+        kpis: (customArch?.kpis ?? undefined) as Prisma.InputJsonValue | undefined,
         jobDescription: payload.jobDescription?.trim() || null,
         autonomy: payload.autonomy ?? 'ASK',
         model: payload.model ?? 'HAIKU',

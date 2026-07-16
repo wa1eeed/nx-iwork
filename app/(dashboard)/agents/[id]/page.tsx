@@ -19,6 +19,7 @@ import { getToolsForAgent } from '@/lib/agent/tools';
 import { TOOL_LABELS } from '@/lib/agent/tool-labels';
 import { formatNumber, formatDate } from '@/lib/format';
 import { AgentScenarios } from '@/components/dashboard/agent-scenarios';
+import { AgentKpisEditor } from '@/components/dashboard/agent-kpis-editor';
 import { parsePersonaConfig } from '@/lib/agent/persona';
 import type { AgentKpi } from '@/lib/agent/templates';
 
@@ -39,7 +40,13 @@ export default async function AgentProfilePage({
   const [agent, departments, managers, schedules, settings, tasks, company, scenarios, memories, pendingApprovals, taskCount, chatCount, memoryCount, agentOutputs] = await Promise.all([
     db.agent.findFirst({
       where: { id, companyId },
-      include: { department: { select: { name: true, nameEn: true, color: true } } },
+      include: {
+        department: { select: { name: true, nameEn: true, color: true } },
+        // The pinned registry model (for the real model label) + attached skills
+        // (their tools are part of the agent's EFFECTIVE capabilities).
+        aiModel: { select: { label: true } },
+        skills: { select: { skill: { select: { name: true, tools: true } } } },
+      },
     }),
     db.department.findMany({
       where: { companyId },
@@ -116,7 +123,12 @@ export default async function AgentProfilePage({
 
   const kpis = (agent.kpis as unknown as AgentKpi[] | null) ?? [];
 
-  // Capabilities = the tools it actually receives = module-enabled ∩ its permissions.
+  // EFFECTIVE capabilities = module-enabled ∩ (permissions ∪ skill-granted tools)
+  // — mirrors the runtime (lib/agent/run.ts), which unions skills in. Showing
+  // permissions alone understated what the agent can actually do.
+  const skillTools = Array.from(new Set(agent.skills.flatMap((s) => s.skill.tools ?? [])));
+  const effectivePerms =
+    agent.permissions.length > 0 ? Array.from(new Set([...agent.permissions, ...skillTools])) : [];
   const tools = getToolsForAgent(
     {
       hasEcommerce: company?.hasEcommerce ?? true,
@@ -124,8 +136,10 @@ export default async function AgentProfilePage({
       hasBookings: company?.hasBookings ?? false,
       hasObjects: (company?._count.objectTypes ?? 0) > 0,
     },
-    agent.permissions
+    effectivePerms
   );
+  const fromSkills = new Set(skillTools.filter((tId) => !agent.permissions.includes(tId)));
+  const hasMcp = agent.permissions.length === 0 || agent.permissions.includes('use_mcp');
 
   // Model picker: only models on the company's ACTIVE provider actually run
   // (a cross-provider pick is silently dropped at inference), so filter to it.
@@ -174,7 +188,10 @@ export default async function AgentProfilePage({
   const deptName = en ? agent.department.nameEn || agent.department.name : agent.department.name;
   const roleLabel = en ? agent.roleEn || agent.role : agent.role;
   const manager = managers.find((m) => m.id === agent.parentId);
-  const tierLabel = ({ HAIKU: 'Fast', SONNET: 'Balanced', OPUS: 'Advanced' } as const)[agent.model];
+  // The model that actually runs this agent: the pinned registry model's label,
+  // or the platform default (tier-resolved) — no more stale "Fast/Balanced" tier
+  // chips that didn't match what Studio/runtime report.
+  const modelLabel = agent.aiModel?.label ?? t('modelDefault');
   const avatarStatus =
     agent.status === 'ONBOARDING' ? 'ONBOARDING' : agent.status === 'PAUSED' ? 'PAUSED' : agent.status === 'OFFLINE' ? 'IDLE' : 'ONLINE';
   const needsYou = pendingApprovals.length > 0;
@@ -219,8 +236,8 @@ export default async function AgentProfilePage({
           </p>
         </div>
         <div className="flex shrink-0 items-center gap-2">
-          <span className="rounded-full bg-[hsl(var(--muted))] px-3 py-1 text-xs text-muted-foreground">
-            {tierLabel} {t('model')}
+          <span className="rounded-full bg-[hsl(var(--muted))] px-3 py-1 text-xs text-muted-foreground" dir="auto">
+            {modelLabel}
           </span>
           <PauseAgentButton id={agent.id} paused={agent.status === 'PAUSED'} />
         </div>
@@ -360,25 +377,11 @@ export default async function AgentProfilePage({
             </CardContent>
           </Card>
 
-          <Card>
-            <CardContent className="space-y-3 p-5">
-              <p className="text-sm font-medium">{t('kpiTargets')}</p>
-              {kpis.length === 0 ? (
-                <p className="py-6 text-center text-sm text-muted-foreground">{t('noKpis')}</p>
-              ) : (
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {kpis.map((k) => (
-                    <div key={k.key} className="flex items-center justify-between rounded-lg border p-3">
-                      <span className="text-sm">{k.label}</span>
-                      <span className="font-mono text-sm font-semibold tabular-nums" dir="ltr">
-                        {k.target}{k.unit}
-                      </span>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          {/* Owner-editable KPI targets (archetype/template values are only seeds). */}
+          <AgentKpisEditor
+            agentId={agent.id}
+            initial={kpis.map((k) => ({ key: k.key, label: k.label, target: k.target, unit: k.unit ?? '' }))}
+          />
         </TabsContent>
 
         <TabsContent value="memory" className="space-y-5">
@@ -479,7 +482,7 @@ export default async function AgentProfilePage({
           <div className="rounded-2xl border bg-card p-4">
             {[
               { l: t('factStatus'), v: statusPill },
-              { l: t('factModel'), v: tierLabel },
+              { l: t('factModel'), v: modelLabel },
               { l: t('factReportsTo'), v: manager?.name ?? t('owner') },
               { l: t('factDepartment'), v: deptName },
             ].map((r, i) => (
@@ -508,7 +511,8 @@ export default async function AgentProfilePage({
             <p className="mt-2 text-[11px] text-muted-foreground">{t('capNote')}</p>
           </div>
 
-          {/* Capabilities = the tools it actually receives (modules ∩ permissions). */}
+          {/* EFFECTIVE capabilities: modules ∩ (permissions ∪ skills), matching the
+              runtime. Skill-granted tools get a dashed chip; MCP shown when granted. */}
           <div className="rounded-2xl border bg-card p-4">
             <p className="mb-2 flex items-center gap-2 text-xs font-medium text-muted-foreground">
               <Sparkles className="h-3.5 w-3.5 dept-accent-text" />
@@ -516,11 +520,26 @@ export default async function AgentProfilePage({
             </p>
             <div className="flex flex-wrap gap-1.5">
               {tools.map((tool) => (
-                <span key={tool.name} className="dept-tint-bg dept-accent-text rounded-full px-2.5 py-0.5 text-[11px]">
+                <span
+                  key={tool.name}
+                  className={
+                    fromSkills.has(tool.name)
+                      ? 'dept-accent-text rounded-full border border-dashed px-2.5 py-0.5 text-[11px]'
+                      : 'dept-tint-bg dept-accent-text rounded-full px-2.5 py-0.5 text-[11px]'
+                  }
+                >
                   {TOOL_LABELS[tool.name] ?? tool.name}
                 </span>
               ))}
+              {hasMcp && (
+                <span className="rounded-full bg-violet-500/15 px-2.5 py-0.5 text-[11px] text-violet-600 dark:text-violet-400">
+                  MCP
+                </span>
+              )}
             </div>
+            {fromSkills.size > 0 && (
+              <p className="mt-2 text-[11px] text-muted-foreground">{t('viaSkills', { count: fromSkills.size })}</p>
+            )}
           </div>
         </aside>
       </div>

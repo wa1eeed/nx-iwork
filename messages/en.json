@@ -1295,7 +1295,9 @@
     "owner": "You (owner)",
     "model": "model",
     "factStatus": "Status",
-    "factModel": "Model tier",
+    "factModel": "Model",
+    "modelDefault": "Default (auto)",
+    "viaSkills": "{count} granted by skills (dashed)",
     "factReportsTo": "Reports to",
     "factDepartment": "Department",
     "tokensThisMonth": "Tokens this month",
@@ -1334,6 +1336,21 @@
     "importance": "Importance",
     "archiveTitle": "Archive this agent",
     "archiveNote": "Hides it from your workforce. Chat history and task records are kept — you can restore it later."
+  },
+  "agentKpis": {
+    "title": "KPI targets",
+    "help": "What “good” looks like for this role. Edit the targets to match your business — the seeded values are only a starting point.",
+    "add": "Add KPI",
+    "empty": "No KPIs yet — add the targets this employee should hit.",
+    "label": "KPI",
+    "target": "Target",
+    "unit": "Unit",
+    "labelPlaceholder": "e.g. Bookings per month",
+    "unitPlaceholder": "e.g. % or /mo",
+    "save": "Save KPIs",
+    "saved": "KPI targets saved.",
+    "saveError": "Couldn't save the KPIs.",
+    "remove": "Remove KPI"
   },
   "agentForm": {
     "identity": "Identity",
