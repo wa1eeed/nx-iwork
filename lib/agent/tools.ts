@@ -696,33 +696,49 @@ export async function executeTool(
         const kind = args.kind ?? 'all';
         // Match the query across title + subtitle + description, word by word, so
         // a customer's phrasing ("تقويم الأسنان الشفاف") still finds the service
-        // titled "تقويم شفاف" instead of the old title-only exact-substring match
-        // (which wrongly reported existing services as unavailable).
+        // titled "تقويم شفاف". Each word also expands to Arabic surface variants —
+        // definite-article prefixes stripped (الشفاف→شفاف) and hamza-on-alef
+        // toggled (اسنان↔أسنان) — because `contains` is literal and the customer's
+        // spelling rarely matches the stored one exactly.
+        const variants = (w: string): string[] => {
+          const out = new Set<string>([w]);
+          const stripped = w.replace(/^(وال|بال|فال|كال|لل|ال)/, '');
+          if (stripped.length >= 3) out.add(stripped);
+          for (const v of [...out]) {
+            if (v.startsWith('ا')) out.add(`أ${v.slice(1)}`);
+            if (/^[أإآ]/.test(v)) out.add(`ا${v.slice(1)}`);
+          }
+          return [...out];
+        };
         const words = args.query
           ? args.query.split(/\s+/).map((w) => w.trim()).filter((w) => w.length >= 3)
           : [];
+        const terms = words.flatMap(variants);
         const anyWord = (fields: string[]) =>
-          words.length
-            ? { OR: fields.flatMap((f) => words.map((w) => ({ [f]: { contains: w, mode: Prisma.QueryMode.insensitive } }))) }
+          terms.length
+            ? { OR: fields.flatMap((f) => terms.map((w) => ({ [f]: { contains: w, mode: Prisma.QueryMode.insensitive } }))) }
             : {};
         const svcSelect = { id: true, title: true, description: true, price: true, priceLabel: true, customFields: true } as const;
         const prodSelect = { id: true, title: true, description: true, price: true, stock: true, customFields: true } as const;
-        const activeSvc = (where: object) => db.service.findMany({ where: { companyId: ctx.companyId, isActive: true, ...where }, take: 10, select: svcSelect });
-        const activeProd = (where: object) => db.product.findMany({ where: { companyId: ctx.companyId, isActive: true, ...where }, take: 10, select: prodSelect });
+        // take 30 (not 10): a business with 11+ services would otherwise get an
+        // arbitrary item silently dropped from "list everything" — the agent then
+        // denies a service that exists. sortOrder keeps the list stable.
+        const activeSvc = (where: object) =>
+          db.service.findMany({ where: { companyId: ctx.companyId, isActive: true, ...where }, take: 30, orderBy: { sortOrder: 'asc' }, select: svcSelect });
+        const activeProd = (where: object) =>
+          db.product.findMany({ where: { companyId: ctx.companyId, isActive: true, ...where }, take: 30, orderBy: { createdAt: 'asc' }, select: prodSelect });
 
         let [services, products] = await Promise.all([
           kind === 'product' ? [] : activeSvc(anyWord(['title', 'subtitle', 'description'])),
           kind === 'service' ? [] : activeProd(anyWord(['title', 'description'])),
         ]);
 
-        // If the customer's wording matched nothing, return the real catalog (top
-        // items) so the agent offers actual alternatives instead of concluding
-        // "not available" — the #1 cause of wrong "we don't have that" replies.
+        // If the wording matched nothing, return the real catalog — IGNORING the
+        // model's kind filter (a wrong kind:'product' in a services-only business
+        // must not produce an empty result) — so the agent offers actual
+        // alternatives instead of concluding "not available".
         if (words.length && services.length === 0 && products.length === 0) {
-          [services, products] = await Promise.all([
-            kind === 'product' ? [] : activeSvc({}),
-            kind === 'service' ? [] : activeProd({}),
-          ]);
+          [services, products] = await Promise.all([activeSvc({}), activeProd({})]);
         }
 
         return ok({
