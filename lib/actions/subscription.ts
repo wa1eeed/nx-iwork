@@ -21,6 +21,32 @@ export type SubscribeResult =
   | { ok: true }
   | { ok: false; error: 'unauthorized' | 'invalid' | 'insufficient' | 'plan_not_found' | 'generic' };
 
+// Toggle auto-renewal. Off = the subscription simply lapses at period end
+// (cancelAt stamps the intent); On = the renewal engine charges the saved card.
+export async function setAutoRenew(enabled: boolean): Promise<SubscribeResult> {
+  const session = await auth();
+  const companyId = session?.user?.id ? await getUserCompany(session.user.id) : null;
+  if (!companyId) return { ok: false, error: 'unauthorized' };
+  try {
+    const sub = await db.subscription.findUnique({
+      where: { companyId },
+      select: { id: true, currentPeriodEnd: true },
+    });
+    if (!sub) return { ok: false, error: 'invalid' };
+    await db.subscription.update({
+      where: { id: sub.id },
+      data: enabled
+        ? { autoRenew: true, cancelAt: null, cancelledAt: null, renewsAt: sub.currentPeriodEnd }
+        : { autoRenew: false, cancelAt: sub.currentPeriodEnd, cancelledAt: new Date() },
+    });
+    revalidatePath('/subscription');
+    return { ok: true };
+  } catch (err) {
+    console.error('setAutoRenew failed', err);
+    return { ok: false, error: 'generic' };
+  }
+}
+
 // Pay for a plan from the wallet balance.
 export async function subscribeWithWallet(tier: string): Promise<SubscribeResult> {
   const session = await auth();
@@ -75,6 +101,8 @@ export async function startSubscriptionTapCheckout(tier: string): Promise<TapChe
       postUrl: `${origin}/api/payments/tap/webhook`,
       description: `${plan.nameEn} plan subscription`,
       metadata: { kind: 'subscription', tier },
+      // Tokenize the card so the renewal engine can charge it next period.
+      saveCard: true,
     });
     if (!charge) return { ok: false, error: 'generic' };
     return { ok: true, url: charge.url };

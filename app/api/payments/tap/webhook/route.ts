@@ -1,7 +1,8 @@
 import { NextResponse } from 'next/server';
 import { retrieveCharge, isCaptured, isFailure } from '@/lib/payments/tap';
 import { completeTopUp, failTopUp } from '@/lib/wallet';
-import { settleSubscriptionPayment, isSelectableTier } from '@/lib/billing/subscription';
+import { settleSubscriptionPayment, cardFromCharge, isSelectableTier } from '@/lib/billing/subscription';
+import { recordRenewalFailure } from '@/lib/billing/renewals';
 
 export const dynamic = 'force-dynamic';
 
@@ -29,14 +30,16 @@ export async function POST(req: Request) {
   if (!charge) return NextResponse.json({ ok: true });
 
   try {
+    const kind = String(charge.metadata?.kind ?? 'topup');
     if (isCaptured(charge)) {
-      const kind = String(charge.metadata?.kind ?? 'topup');
-      if (kind === 'subscription') {
+      if (kind === 'subscription' || kind === 'subscription_renewal') {
         const companyId = String(charge.metadata?.companyId ?? '');
         const tier = String(charge.metadata?.tier ?? '');
         if (companyId && isSelectableTier(tier)) {
-          const settled = await settleSubscriptionPayment(companyId, tier, charge.id);
-          if (settled) console.log(`[tap webhook] activated ${tier} for ${companyId} (${charge.id})`);
+          // Store the saved-card token (present on save_card checkouts +
+          // merchant-initiated renewals) so auto-renewal stays armed.
+          const settled = await settleSubscriptionPayment(companyId, tier, charge.id, cardFromCharge(charge));
+          if (settled) console.log(`[tap webhook] activated ${tier} for ${companyId} (${charge.id}, ${kind})`);
         }
       } else {
         const res = await completeTopUp(charge.id);
@@ -45,7 +48,16 @@ export async function POST(req: Request) {
         }
       }
     } else if (isFailure(charge)) {
-      await failTopUp(charge.id);
+      if (kind === 'subscription_renewal') {
+        // A failed renewal drives dunning even when the engine missed the
+        // synchronous failure (crash/timeout between charge and record).
+        const companyId = String(charge.metadata?.companyId ?? '');
+        if (companyId) await recordRenewalFailure(companyId, charge.id);
+      } else if (kind === 'topup') {
+        await failTopUp(charge.id);
+      }
+      // A failed first subscription checkout needs no state change: nothing was
+      // activated and the buyer simply retries from /subscription.
     }
   } catch (err) {
     console.error('[tap webhook] processing failed', err);

@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // available. No secrets — a short marker + commit sha only.
 export const dynamic = 'force-dynamic';
 
-const MARKER = 'impersonation-fix-routes';
+const MARKER = 'tap-autorenewal-v1';
 
 export function GET() {
   return NextResponse.json({

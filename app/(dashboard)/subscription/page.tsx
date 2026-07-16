@@ -4,6 +4,7 @@ import { getUserCompany } from '@/lib/companies';
 import {
   getSubscriptionView,
   settleSubscriptionPayment,
+  cardFromCharge,
   isSelectableTier,
 } from '@/lib/billing/subscription';
 import { retrieveCharge, isCaptured, isTapConfigured } from '@/lib/payments/tap';
@@ -32,7 +33,7 @@ export default async function SubscriptionPage({
       const cid = String(charge.metadata?.companyId ?? '');
       const tier = String(charge.metadata?.tier ?? '');
       if (cid && isSelectableTier(tier)) {
-        await settleSubscriptionPayment(cid, tier, charge.id);
+        await settleSubscriptionPayment(cid, tier, charge.id, cardFromCharge(charge));
         banner = 'success';
       }
     } else if (sp.sub === 'return') {

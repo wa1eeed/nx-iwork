@@ -19,6 +19,10 @@ export interface TapCharge {
   transaction?: { url?: string };
   reference?: { transaction?: string; order?: string };
   metadata?: Record<string, unknown>;
+  // Present on charges made with save_card:true (after capture) — the token
+  // pair that enables merchant-initiated renewal charges.
+  customer?: { id?: string };
+  card?: { id?: string; brand?: string; last_four?: string };
 }
 
 export function isTapConfigured(): boolean {
@@ -42,6 +46,10 @@ interface CreateChargeInput {
   description?: string;
   // Extra metadata echoed back on the charge (e.g. { kind: 'subscription', tier }).
   metadata?: Record<string, string>;
+  // Tokenize the card on this charge (subscription checkouts) so renewals can
+  // charge it merchant-initiated later. The token is read off retrieveCharge
+  // at settle time (charge.customer.id + charge.card.id).
+  saveCard?: boolean;
 }
 
 export async function createCharge(
@@ -58,7 +66,7 @@ export async function createCharge(
     amount: round2(input.amount),
     currency: 'SAR',
     threeDSecure: true,
-    save_card: false,
+    save_card: input.saveCard === true,
     description: input.description ?? 'Wallet top-up',
     metadata: { companyId: input.companyId, kind: 'topup', ...input.metadata },
     customer: {
@@ -90,6 +98,48 @@ export async function createCharge(
     return { id: charge.id, url };
   } catch (err) {
     console.error('[tap] createCharge error', err);
+    return null;
+  }
+}
+
+// Merchant-initiated renewal charge against a saved card — no hosted page, no
+// redirect. The caller (renewal engine) inspects the returned charge status
+// synchronously; the webhook fires too, and both paths converge on the same
+// idempotent settle (Invoice.providerInvoiceId unique).
+export async function chargeSavedCard(input: {
+  amount: number;
+  companyId: string;
+  customerId: string; // Tap cus_xxx
+  cardId: string; // Tap card_xxx
+  description?: string;
+  metadata?: Record<string, string>;
+}): Promise<TapCharge | null> {
+  const key = process.env.TAP_SECRET_KEY;
+  if (!key) return null;
+  const body = {
+    amount: round2(input.amount),
+    currency: 'SAR',
+    threeDSecure: false, // merchant-initiated; issuer may still enforce
+    save_card: false,
+    merchant_initiated: true,
+    description: input.description ?? 'Subscription renewal',
+    metadata: { companyId: input.companyId, ...input.metadata },
+    customer: { id: input.customerId },
+    source: { id: input.cardId },
+  };
+  try {
+    const res = await fetch(`${TAP_API}/charges`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) {
+      console.error('[tap] chargeSavedCard failed', res.status, await safeText(res));
+      return null;
+    }
+    return (await res.json()) as TapCharge;
+  } catch (err) {
+    console.error('[tap] chargeSavedCard error', err);
     return null;
   }
 }

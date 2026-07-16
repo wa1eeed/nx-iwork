@@ -45,6 +45,10 @@ export interface SubscriptionView {
   walletBalance: number;
   plans: PlanView[];
   invoices: InvoiceView[];
+  // Auto-renewal state (Tap saved card).
+  autoRenew: boolean;
+  renewsAt: string | null;
+  card: { brand: string; last4: string } | null;
 }
 
 function invoiceNumber(): string {
@@ -61,7 +65,15 @@ export async function getSubscriptionView(
     db.company.findUnique({ where: { id: companyId }, select: { plan: true } }),
     db.subscription.findUnique({
       where: { companyId },
-      select: { status: true, currentPeriodEnd: true },
+      select: {
+        status: true,
+        currentPeriodEnd: true,
+        autoRenew: true,
+        renewsAt: true,
+        cardBrand: true,
+        cardLast4: true,
+        cardId: true,
+      },
     }),
     db.plan.findMany({ where: { tier: { in: SELECTABLE_TIERS } }, orderBy: { sortOrder: 'asc' } }),
     db.invoice.findMany({ where: { companyId }, orderBy: { createdAt: 'desc' }, take: 50 }),
@@ -73,6 +85,9 @@ export async function getSubscriptionView(
     currentTier: company?.plan ?? 'STARTER',
     status: sub?.status ?? 'TRIAL',
     currentPeriodEnd: sub?.currentPeriodEnd ? sub.currentPeriodEnd.toISOString() : null,
+    autoRenew: sub?.autoRenew ?? false,
+    renewsAt: sub?.renewsAt ? sub.renewsAt.toISOString() : null,
+    card: sub?.cardId && sub.cardLast4 ? { brand: sub.cardBrand ?? 'CARD', last4: sub.cardLast4 } : null,
     walletBalance: wallet ? wallet.balance.toNumber() : 0,
     plans: plans.map((p) => ({
       tier: p.tier,
@@ -94,7 +109,9 @@ export async function getSubscriptionView(
 }
 
 // Activate `tier` for one period, write a PAID invoice, sync Company.plan + the
-// per-agent token cap. Shared by the wallet and Tap-settle paths.
+// per-agent token cap. Shared by the wallet, Tap-settle, and renewal paths.
+// `card` (from a save_card Tap charge) arms auto-renewal: the renewal engine
+// only charges subscriptions that hold a token.
 async function activate(
   tx: Prisma.TransactionClient,
   opts: {
@@ -103,6 +120,7 @@ async function activate(
     price: number;
     payVia: 'wallet' | 'tap';
     providerInvoiceId?: string;
+    card?: { customerId?: string; cardId?: string; brand?: string; last4?: string };
   }
 ) {
   const plan = await tx.plan.findUnique({ where: { tier: opts.tier } });
@@ -110,6 +128,14 @@ async function activate(
 
   const now = new Date();
   const end = new Date(now.getTime() + PERIOD_DAYS * 24 * 60 * 60 * 1000);
+
+  // Card token fields only when we actually captured one (never blank existing).
+  const cardData = {
+    ...(opts.card?.customerId ? { providerCustomerId: opts.card.customerId } : {}),
+    ...(opts.card?.cardId ? { cardId: opts.card.cardId } : {}),
+    ...(opts.card?.brand ? { cardBrand: opts.card.brand } : {}),
+    ...(opts.card?.last4 ? { cardLast4: opts.card.last4 } : {}),
+  };
 
   const sub = await tx.subscription.upsert({
     where: { companyId: opts.companyId },
@@ -119,15 +145,22 @@ async function activate(
       status: 'ACTIVE',
       currentPeriodStart: now,
       currentPeriodEnd: end,
+      // A fresh period always renews at its end; dunning state resets on pay.
+      renewsAt: end,
+      failedAttempts: 0,
       provider: opts.payVia,
       interval: 'month',
+      ...cardData,
     },
     update: {
       planId: plan.id,
       status: 'ACTIVE',
       currentPeriodStart: now,
       currentPeriodEnd: end,
+      renewsAt: end,
+      failedAttempts: 0,
       provider: opts.payVia,
+      ...cardData,
     },
   });
 
@@ -201,11 +234,14 @@ export async function subscribeFromWallet(
 }
 
 // Settle a Tap-paid subscription. Idempotent: the unique providerInvoiceId means
-// a racing webhook + return reconcile activates exactly once.
+// a racing webhook + return reconcile activates exactly once. Pass the retrieved
+// charge's card/customer (present on save_card checkouts + renewals) so the
+// token is stored and auto-renewal stays armed.
 export async function settleSubscriptionPayment(
   companyId: string,
   tier: PlanTier,
-  chargeId: string
+  chargeId: string,
+  card?: { customerId?: string; cardId?: string; brand?: string; last4?: string }
 ): Promise<boolean> {
   try {
     return await db.$transaction(async (tx) => {
@@ -222,6 +258,7 @@ export async function settleSubscriptionPayment(
         price: round2(plan.priceMonthly.toNumber()),
         payVia: 'tap',
         providerInvoiceId: chargeId,
+        card,
       });
       return true;
     });
@@ -231,6 +268,20 @@ export async function settleSubscriptionPayment(
     }
     throw err;
   }
+}
+
+// Convenience: extract the saved-card token off a retrieved Tap charge.
+export function cardFromCharge(charge: {
+  customer?: { id?: string };
+  card?: { id?: string; brand?: string; last_four?: string };
+}): { customerId?: string; cardId?: string; brand?: string; last4?: string } | undefined {
+  if (!charge.card?.id && !charge.customer?.id) return undefined;
+  return {
+    customerId: charge.customer?.id,
+    cardId: charge.card?.id,
+    brand: charge.card?.brand,
+    last4: charge.card?.last_four,
+  };
 }
 
 export function isSelectableTier(value: string): value is PlanTier {
