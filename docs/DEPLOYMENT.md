@@ -101,10 +101,20 @@ orphaned in `WORKING` by a restart, so nothing hangs.
 curl -o /dev/null -w "%{http_code}\n" https://bznss.one/         # 200
 curl -s https://bznss.one/api/health                             # {"ok":true,"env":"production",…} — 200/503; no secrets
 curl -H "x-cron-secret: $CRON_SECRET" https://bznss.one/api/ai/health   # {"ok":true,…,"dims":1536}
+curl -s https://bznss.one/api/version                            # {"marker":"…","commit":"…"} — WHICH build serves
 ```
 
 Point the Coolify health check (and an external uptime monitor) at `/api/health` —
 it does a DB round-trip and returns 503 when the database is unreachable.
+
+**PUSHED ≠ LIVE.** Coolify queues sequential deploys and the queue can stall
+(observed ~95 min behind while 5 pushes piled up) — so a green push does **not**
+mean the code serves. Before verifying any behavior on prod, confirm the build
+via **`GET /api/version`**: bump the `MARKER` constant in
+`app/api/version/route.ts` on deploys you need to verify, push, and poll until
+the marker flips (the `sentry-release` sha in any page's HTML is a fallback
+signal). If it stays stale >15 min, trigger a **manual deploy** in Coolify and
+check the GitHub-webhook wiring.
 
 Then sign in at `https://bznss.one/admin` with the bootstrap admin.
 

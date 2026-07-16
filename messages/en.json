@@ -1230,7 +1230,11 @@
       "instructionsPlaceholder": "How the agent should perform this skill — added to its system prompt.",
       "instructionsHelp": "Injected into the system prompt of any agent that has this skill.",
       "grantsTools": "Grants these tools",
+      "grantsToolsHelp": "Granted ON TOP of each agent's own permissions (merged at runtime) — an attached agent can use these even if they're off in its permission matrix. They appear as dashed chips on the agent profile.",
+      "explainerTitle": "Skills vs permissions:",
+      "explainerBody": "an agent's permission matrix is its base allow-list; a skill layers reusable instructions + extra tools on top for every agent it's attached to. Edit the skill once — every attached agent updates.",
       "toolsN": "{count} tools",
+      "moreTools": "+{count} more",
       "agentsN": "{count} agents",
       "err": {
         "name_required": "Add a name",

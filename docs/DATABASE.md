@@ -1072,4 +1072,17 @@ backward compatible.
   (Agent Work shows a green pill, or an amber warning if it stops). Paired with
   `runReapStuckTasks` (re-queues tasks orphaned in `WORKING` by a crash).
 
-Migrations: `20260710120000_task_depends_on` … `20260714230000_automation_heartbeat`.
+## 🆕 Schema additions (2026-07-16)
+
+### Per-agent governance  — migration `20260716000000_agent_governance`
+- **`Agent.requireApprovalForSensitive Boolean?`** · **`Agent.requireMessageReview
+  Boolean?`** · **`Agent.spendApprovalCapSar Int?`** — per-agent guardrail
+  overrides; **null = inherit the company-wide guardrail** (`Company.*` flags).
+  Resolved by `resolveGuardrails(agent, company)` in `lib/agent/prompt.ts` (a
+  per-agent SAR cap implies cap-enabled even when the company's is off) and
+  injected on all three prompt paths (chat / autonomous task / Studio sandbox).
+  Edited on the agent form's "Governance & limits" card. Additive + nullable —
+  no backfill, no behavior change for existing agents.
+  See [`AGENT_MODULE_REDESIGN.md`](./AGENT_MODULE_REDESIGN.md).
+
+Migrations: `20260710120000_task_depends_on` … `20260716000000_agent_governance`.

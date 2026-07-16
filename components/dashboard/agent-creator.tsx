@@ -53,8 +53,6 @@ const ICONS: Record<string, LucideIcon> = {
   bot: Bot,
 };
 
-const TIER: Record<string, string> = { HAIKU: 'Fast', SONNET: 'Balanced', OPUS: 'Advanced' };
-
 type Dept = { id: string; name: string };
 
 // Two-step hire: pick a template (or build custom) → configure & onboard. Both
@@ -180,9 +178,9 @@ function TemplatesGrid({
               </span>
               <div className="min-w-0">
                 <p className="font-semibold">{role}</p>
-                <p className="text-xs text-muted-foreground">
-                  {dept} · {TIER[tpl.model]}
-                </p>
+                {/* Model is chosen in the configure step (ONE picker) — a stale
+                    tier label here contradicted it. */}
+                <p className="text-xs text-muted-foreground">{dept}</p>
               </div>
             </button>
           );
