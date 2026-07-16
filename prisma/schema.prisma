@@ -1690,10 +1690,25 @@ model Subscription {
 
   interval String @default("month")
 
+  // Auto-renewal (Tap merchant-initiated charges on a saved card). The renewal
+  // engine (lib/billing/renewals.ts, driven by /api/cron/run) scans for due
+  // subscriptions and charges the saved card; failures dun with a retry ladder
+  // then downgrade. Card token fields are populated by the first save_card
+  // checkout; providerCustomerId holds Tap's cus_xxx.
+  autoRenew      Boolean   @default(true)
+  renewsAt       DateTime? // next renewal attempt; = currentPeriodEnd on success
+  cardId         String? // Tap card_xxx token for merchant-initiated charges
+  cardBrand      String? // display only ("VISA")
+  cardLast4      String? // display only ("4242")
+  failedAttempts Int       @default(0) // dunning counter, reset on success
+  lastAttemptAt  DateTime?
+
   invoices Invoice[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  @@index([status, autoRenew, renewsAt])
 }
 
 enum InvoiceStatus {

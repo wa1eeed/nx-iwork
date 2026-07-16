@@ -3,6 +3,7 @@ import { timingSafeEqual } from 'node:crypto';
 import { Prisma } from '@prisma/client';
 import { db } from '@/lib/db';
 import { runDueSchedules, runDueTasks, runDueReminders, runReapStuckTasks } from '@/lib/agent/scheduler';
+import { runDueRenewals } from '@/lib/billing/renewals';
 
 // Cron trigger for the scheduler, callable from inside the production image
 // (it's part of the Next build, unlike scripts/scheduler.ts which needs tsx +
@@ -40,15 +41,17 @@ async function handle(req: Request) {
   }
 
   try {
-    const [schedules, events, reminders, reaped] = await Promise.all([
+    const [schedules, events, reminders, reaped, renewals] = await Promise.all([
       runDueSchedules(),
       runDueTasks(),
       runDueReminders(),
       runReapStuckTasks(),
+      // Subscription auto-renewal pass (due scan → saved-card charge → dunning).
+      runDueRenewals(),
     ]);
     // Heartbeat: stamp that autonomous execution ran, so the dashboard can prove
     // it's alive and warn the owner if the cron ever stops firing.
-    const summary = { schedules, events, reminders, reaped };
+    const summary = { schedules, events, reminders, reaped, renewals };
     const summaryJson = summary as unknown as Prisma.InputJsonValue;
     await db.platformSettings.upsert({
       where: { id: 'singleton' },

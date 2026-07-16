@@ -5,11 +5,12 @@ import { useRouter } from 'next/navigation';
 import { useTranslations, useLocale } from 'next-intl';
 import { AnimatePresence, motion } from 'framer-motion';
 import { toast } from 'sonner';
-import { Check, Wallet, CreditCard, X } from 'lucide-react';
+import { Check, Wallet, CreditCard, X, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
 import { formatSar, formatDate } from '@/lib/format';
-import { subscribeWithWallet, startSubscriptionTapCheckout } from '@/lib/actions/subscription';
+import { subscribeWithWallet, startSubscriptionTapCheckout, setAutoRenew } from '@/lib/actions/subscription';
 import type { SubscriptionView, PlanView } from '@/lib/billing/subscription';
 
 export function SubscriptionClient({
@@ -44,6 +45,17 @@ export function SubscriptionClient({
       }
     });
 
+  const toggleAutoRenew = (enabled: boolean) =>
+    start(async () => {
+      const res = await setAutoRenew(enabled);
+      if (res.ok) {
+        toast.success(enabled ? t('autoRenewOn') : t('autoRenewOff'));
+        router.refresh();
+      } else {
+        toast.error(t('genericError'));
+      }
+    });
+
   const payTap = (tier: string) =>
     start(async () => {
       const res = await startSubscriptionTapCheckout(tier);
@@ -69,7 +81,7 @@ export function SubscriptionClient({
             <p className="mt-1 text-xs text-white/80">
               {t(`status.${view.status}`)}
               {view.currentPeriodEnd
-                ? ` · ${t('renewsOn', { date: formatDate(view.currentPeriodEnd, locale) })}`
+                ? ` · ${t(view.autoRenew ? 'renewsOn' : 'expiresOn', { date: formatDate(view.currentPeriodEnd, locale) })}`
                 : ''}
             </p>
           </div>
@@ -78,6 +90,28 @@ export function SubscriptionClient({
             <p className="text-lg font-semibold tabular-nums">{money(view.walletBalance)}</p>
           </div>
         </div>
+        {/* Auto-renewal (Tap saved card) — appears once a card was tokenized. */}
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 border-t p-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="flex size-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <RefreshCw className="size-4" />
+            </span>
+            <div className="min-w-0">
+              <p className="text-sm font-medium">{t('autoRenew')}</p>
+              <p className="truncate text-xs text-muted-foreground">
+                {view.card
+                  ? t('savedCard', { brand: view.card.brand, last4: view.card.last4 })
+                  : t('autoRenewNoCard')}
+              </p>
+            </div>
+          </div>
+          <Switch
+            checked={view.autoRenew}
+            onCheckedChange={toggleAutoRenew}
+            disabled={pending || (!view.card && !view.autoRenew)}
+            aria-label={t('autoRenew')}
+          />
+        </CardContent>
       </Card>
 
       {/* Plans */}
