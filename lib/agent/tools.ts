@@ -694,48 +694,36 @@ export async function executeTool(
       case 'search_catalog': {
         const args = searchCatalogArgs.parse(rawArgs);
         const kind = args.kind ?? 'all';
-        const contains = args.query
-          ? { contains: args.query, mode: Prisma.QueryMode.insensitive }
-          : undefined;
+        // Match the query across title + subtitle + description, word by word, so
+        // a customer's phrasing ("تقويم الأسنان الشفاف") still finds the service
+        // titled "تقويم شفاف" instead of the old title-only exact-substring match
+        // (which wrongly reported existing services as unavailable).
+        const words = args.query
+          ? args.query.split(/\s+/).map((w) => w.trim()).filter((w) => w.length >= 3)
+          : [];
+        const anyWord = (fields: string[]) =>
+          words.length
+            ? { OR: fields.flatMap((f) => words.map((w) => ({ [f]: { contains: w, mode: Prisma.QueryMode.insensitive } }))) }
+            : {};
+        const svcSelect = { id: true, title: true, description: true, price: true, priceLabel: true, customFields: true } as const;
+        const prodSelect = { id: true, title: true, description: true, price: true, stock: true, customFields: true } as const;
+        const activeSvc = (where: object) => db.service.findMany({ where: { companyId: ctx.companyId, isActive: true, ...where }, take: 10, select: svcSelect });
+        const activeProd = (where: object) => db.product.findMany({ where: { companyId: ctx.companyId, isActive: true, ...where }, take: 10, select: prodSelect });
 
-        const [services, products] = await Promise.all([
-          kind === 'product'
-            ? []
-            : db.service.findMany({
-                where: {
-                  companyId: ctx.companyId,
-                  isActive: true,
-                  ...(contains ? { title: contains } : {}),
-                },
-                take: 10,
-                select: {
-                  id: true,
-                  title: true,
-                  description: true,
-                  price: true,
-                  priceLabel: true,
-                  customFields: true,
-                },
-              }),
-          kind === 'service'
-            ? []
-            : db.product.findMany({
-                where: {
-                  companyId: ctx.companyId,
-                  isActive: true,
-                  ...(contains ? { title: contains } : {}),
-                },
-                take: 10,
-                select: {
-                  id: true,
-                  title: true,
-                  description: true,
-                  price: true,
-                  stock: true,
-                  customFields: true,
-                },
-              }),
+        let [services, products] = await Promise.all([
+          kind === 'product' ? [] : activeSvc(anyWord(['title', 'subtitle', 'description'])),
+          kind === 'service' ? [] : activeProd(anyWord(['title', 'description'])),
         ]);
+
+        // If the customer's wording matched nothing, return the real catalog (top
+        // items) so the agent offers actual alternatives instead of concluding
+        // "not available" — the #1 cause of wrong "we don't have that" replies.
+        if (words.length && services.length === 0 && products.length === 0) {
+          [services, products] = await Promise.all([
+            kind === 'product' ? [] : activeSvc({}),
+            kind === 'service' ? [] : activeProd({}),
+          ]);
+        }
 
         return ok({
           services: services.map((s) => ({

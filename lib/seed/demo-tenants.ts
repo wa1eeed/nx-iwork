@@ -62,6 +62,7 @@ interface AgentSpec {
   tasksDone: number;
   tokensUsed: number;
   scenario?: string; // materialized as a LEAD_CREATED trigger
+  extraTools?: string[]; // granted on top of the archetype's tool bundle (e.g. Data-object reads)
 }
 interface CustSpec { name: string; status: LeadStatus }
 interface BookSpec { svc: string; cust: number; offset: number; status: BookingStatus }
@@ -330,7 +331,7 @@ async function seedTenant(spec: TenantSpec, password: string): Promise<DemoTenan
       archetype: a.archetype,
       autonomy: a.autonomy ?? (a.archetype === 'marketing' || a.archetype === 'finance' ? 'SUGGEST' : 'ASK'),
       model: 'SONNET',
-      permissions: getArchetype(a.archetype)?.permissions ?? [],
+      permissions: [...new Set([...(getArchetype(a.archetype)?.permissions ?? []), ...(a.extraTools ?? [])])],
       scenarios: a.scenario ? [{ event: 'LEAD_CREATED', action: a.scenario }] : [],
       force: true,
     });

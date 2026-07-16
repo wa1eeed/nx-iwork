@@ -133,6 +133,11 @@ export async function runPublicAgentChat(
     'list_open_slots',
     'create_booking',
     'create_lead',
+    // Read-only access to the company's custom data (e.g. a real-estate office's
+    // property listings). Still gated by the agent's own permissions + the
+    // hasObjects module flag, so the owner grants it per agent intentionally.
+    'list_object_types',
+    'query_records',
   ]);
   const tools = getToolsForAgent(
     { ...agent.company, hasObjects: agent.company._count.objectTypes > 0 },

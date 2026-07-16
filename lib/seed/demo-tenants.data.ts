@@ -195,7 +195,7 @@ export const REAL_ESTATE: TenantSpec = {
   agents: [
     {
       key: 'reception', name: 'خالد', nameEn: 'Khalid', role: 'استقبال واستفسارات العقارات', roleEn: 'Property Inquiries',
-      dept: 'reception', archetype: 'front_desk',
+      dept: 'reception', archetype: 'front_desk', extraTools: ['list_object_types', 'query_records'],
       jobDescription: 'استقبال المهتمين، فهم طلبهم (بيع/شراء/إيجار، الحي، الميزانية)، عرض العقارات المطابقة من قاعدة البيانات، وحجز معاينة. لا تلتزم بسعر أو تفاصيل غير موثّقة، وسجّل العميل المحتمل.',
       kpis: [{ key: 'leads', label: 'عملاء محتملون', target: 90, unit: '/شهر' }, { key: 'viewings', label: 'معاينات محجوزة', target: 40, unit: '/شهر' }],
       score: 92, tasksDone: 40, tokensUsed: 110_000,
@@ -203,7 +203,7 @@ export const REAL_ESTATE: TenantSpec = {
     },
     {
       key: 'sales', name: 'فهد', nameEn: 'Fahad', role: 'مبيعات وإغلاق الصفقات', roleEn: 'Sales & Closing',
-      dept: 'sales', archetype: 'sales',
+      dept: 'sales', archetype: 'sales', extraTools: ['list_object_types', 'query_records'],
       jobDescription: 'متابعة العملاء الجادّين، التفاوض ضمن النطاق المعتمد، وتحويل الاهتمام إلى صفقة موثّقة. أي خصم أو التزام تعاقدي يتجاوز صلاحيتك يحتاج موافقة الإدارة.',
       kpis: [{ key: 'closing', label: 'صفقات مغلقة', target: 8, unit: '/شهر' }, { key: 'pipeline', label: 'قيمة الصفقات', target: 5, unit: 'م ر.س' }],
       score: 91, tasksDone: 18, tokensUsed: 85_000,
@@ -211,7 +211,7 @@ export const REAL_ESTATE: TenantSpec = {
     },
     {
       key: 'care', name: 'لمى', nameEn: 'Lama', role: 'متابعة العملاء', roleEn: 'Client Follow-up',
-      dept: 'reception', archetype: 'care',
+      dept: 'reception', archetype: 'care', extraTools: ['list_object_types', 'query_records'],
       jobDescription: 'متابعة العملاء بعد المعاينات، الردّ على استفساراتهم، وجمع ملاحظاتهم لتحسين المطابقة. صعّد أي اعتراض أو مشكلة عقدية للإدارة.',
       kpis: [{ key: 'csat', label: 'رضا العملاء', target: 90, unit: '%' }, { key: 'reengage', label: 'إعادة تفعيل', target: 25, unit: '%' }],
       score: 88, tasksDone: 26, tokensUsed: 50_000,
