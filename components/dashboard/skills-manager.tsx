@@ -12,7 +12,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { useConfirm } from '@/components/ui/confirm-dialog';
 import { cn } from '@/lib/utils';
-import { TOOL_CATALOG, TOOL_GROUPS, type ToolGroup } from '@/lib/agent/tool-labels';
+import { TOOL_CATALOG, TOOL_GROUPS, TOOL_LABELS, type ToolGroup } from '@/lib/agent/tool-labels';
 import { createSkill, updateSkill, deleteSkill } from '@/lib/actions/skills';
 
 export interface SkillRow {
@@ -39,6 +39,13 @@ export function SkillsManager({ skills, agents }: { skills: SkillRow[]; agents: 
 
   return (
     <div className="space-y-4">
+      {/* Skills vs permissions — the one relationship owners kept asking about:
+          a skill LAYERS instructions + extra tools on top of the agent's own
+          permission matrix (union at runtime; dashed chips on the profile). */}
+      <div className="rounded-xl border border-primary/20 bg-primary/5 p-3 text-xs text-muted-foreground">
+        <span className="font-medium text-foreground">{t('explainerTitle')}</span> {t('explainerBody')}
+      </div>
+
       {skills.length === 0 && (
         <Card className="border-dashed">
           <CardContent className="space-y-2 py-10 text-center">
@@ -62,6 +69,21 @@ export function SkillsManager({ skills, agents }: { skills: SkillRow[]; agents: 
             <div className="min-w-0 flex-1">
               <p className="font-semibold">{s.name}</p>
               {s.description && <p className="line-clamp-1 text-xs text-muted-foreground">{s.description}</p>}
+              {/* The skill's actual tool contribution, not just a count. */}
+              {s.tools.length > 0 && (
+                <span className="mt-1.5 flex flex-wrap gap-1">
+                  {s.tools.slice(0, 4).map((tid) => (
+                    <span key={tid} className="rounded-full border border-dashed px-2 py-0.5 text-[10px] text-muted-foreground">
+                      {TOOL_LABELS[tid] ?? tid}
+                    </span>
+                  ))}
+                  {s.tools.length > 4 && (
+                    <span className="rounded-full px-1.5 py-0.5 text-[10px] text-muted-foreground">
+                      {t('moreTools', { count: s.tools.length - 4 })}
+                    </span>
+                  )}
+                </span>
+              )}
               <p className="mt-1 flex items-center gap-3 text-[11px] text-muted-foreground">
                 <span className="inline-flex items-center gap-1"><Wrench className="size-3" />{t('toolsN', { count: s.tools.length })}</span>
                 <span className="inline-flex items-center gap-1"><Users className="size-3" />{t('agentsN', { count: s.agentIds.length })}</span>
@@ -169,6 +191,7 @@ function SkillEditor({ initial, agents, onClose }: { initial: SkillRow | null; a
           {/* Tool grant picker (grouped) */}
           <div className="space-y-2">
             <Label>{t('grantsTools')}</Label>
+            <p className="text-xs text-muted-foreground">{t('grantsToolsHelp')}</p>
             <div className="space-y-3 rounded-xl border p-3">
               {TOOL_GROUPS.map((group) => {
                 const items = TOOL_CATALOG.filter((tl) => tl.group === group);
