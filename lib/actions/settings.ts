@@ -5,6 +5,7 @@ import { z } from 'zod';
 import { Prisma } from '@prisma/client';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
+import { getUserCompany } from '@/lib/companies';
 import { encrypt } from '@/lib/encryption';
 import { testKey } from '@/lib/byok';
 import { sendTelegramTest } from '@/lib/notify/telegram';
@@ -34,11 +35,8 @@ type Result<T = void> =
 async function authedCompanyId(): Promise<string | null> {
   const session = await auth();
   if (!session?.user?.id) return null;
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { companyId: true },
-  });
-  return user?.companyId ?? null;
+  // Impersonation-aware (SUPER_ADMIN browsing a tenant edits THAT tenant).
+  return getUserCompany(session.user.id);
 }
 
 export async function updateLocalization(

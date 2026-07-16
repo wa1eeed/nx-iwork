@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { auth } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { getUserCompany } from '@/lib/companies';
 import { getStorage, companyKey, isStorageConfigured } from '@/lib/storage';
 import { reserveAndRecordFile } from '@/lib/storage/quota';
 
@@ -40,11 +40,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ ok: false, reason: 'storage_not_configured' }, { status: 503 });
   }
 
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { companyId: true },
-  });
-  if (!user?.companyId) {
+  // Impersonation-aware tenant resolution (single choke point in lib/companies).
+  const companyId = await getUserCompany(session.user.id);
+  if (!companyId) {
     return NextResponse.json({ ok: false, reason: 'no_company' }, { status: 400 });
   }
 
@@ -63,7 +61,7 @@ export async function POST(req: Request) {
   }
 
   const ext = TYPE_EXT[parsed.data.contentType];
-  const key = companyKey(user.companyId, parsed.data.purpose, `${randomUUID()}.${ext}`);
+  const key = companyKey(companyId, parsed.data.purpose, `${randomUUID()}.${ext}`);
 
   // Sign first — generating a presigned URL has no side effect, so an over-quota
   // request can be rejected after without leaking an upload URL.
@@ -77,7 +75,7 @@ export async function POST(req: Request) {
 
   // Atomic quota check + reservation + File registry row. Over quota → 403.
   const reserved = await reserveAndRecordFile({
-    companyId: user.companyId,
+    companyId: companyId,
     key,
     url: signed.publicUrl,
     purpose: parsed.data.purpose,
