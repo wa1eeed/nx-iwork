@@ -153,7 +153,12 @@ export async function runPublicAgentChat(
     temperature: agent.temperature,
     maxTokens: agent.maxTokens,
     tools,
-    thinkingBudget: 0, // customer-facing chat → snappy first token
+    // Light reasoning budget so the model RELIABLY decides to call its tools
+    // (search_catalog for prices, query_records for listings). At 0 the flash
+    // model answered reflexively — sometimes from memory — which produced flaky
+    // wrong prices and false "not available". Accuracy for a customer-facing
+    // pricing/booking agent outweighs the ~1s it adds to the first token.
+    thinkingBudget: 1024,
     ctx: { companyId, agentId },
   };
 
