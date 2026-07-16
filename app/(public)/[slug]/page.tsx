@@ -1,15 +1,66 @@
+import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, Mail, MessageCircle, Clock, CalendarCheck, CheckCircle2, Sparkles } from 'lucide-react';
+import { Phone, Mail, MessageCircle, Clock, CalendarCheck, CheckCircle2, Sparkles, Star } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ChatWidget } from '@/components/public/chat-widget';
 import { ReviewsSection } from '@/components/public/reviews-section';
 import { OrderButton } from '@/components/public/order-button';
 import { BookingButton } from '@/components/public/booking-button';
+import { StickyBookBar } from '@/components/public/sticky-book-bar';
 import { SiteHeader, SiteFooter, type SiteNavLink } from '@/components/public/site-chrome';
 
 export const dynamic = 'force-dynamic';
+
+const SITE_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://bznss.one';
+
+// Every tenant storefront ships with real SEO: title/description/OG from the
+// owner's WebsiteConfig (metaTitle/metaDescription/ogImage existed unused).
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ slug: string }>;
+}): Promise<Metadata> {
+  const { slug } = await params;
+  const company = await db.company.findUnique({
+    where: { slug },
+    select: {
+      name: true,
+      logo: true,
+      status: true,
+      settings: { select: { primaryLanguage: true } },
+      websiteConfig: {
+        select: { metaTitle: true, metaDescription: true, ogImage: true, heroSubtitle: true, heroSubtitleEn: true },
+      },
+    },
+  });
+  if (!company || company.status === 'SUSPENDED') return {};
+  const ar = (company.settings?.primaryLanguage ?? 'ar') === 'ar';
+  const wc = company.websiteConfig;
+  const title = wc?.metaTitle || company.name;
+  const description =
+    wc?.metaDescription ||
+    (ar ? wc?.heroSubtitle : wc?.heroSubtitleEn) ||
+    wc?.heroSubtitle ||
+    (ar ? `احجز خدمات ${company.name} أونلاين` : `Book ${company.name} services online`);
+  const image = wc?.ogImage || company.logo || undefined;
+  return {
+    title,
+    description,
+    metadataBase: new URL(SITE_URL),
+    alternates: { canonical: `/${slug}` },
+    openGraph: {
+      title,
+      description,
+      url: `${SITE_URL}/${slug}`,
+      siteName: company.name,
+      type: 'website',
+      ...(image ? { images: [{ url: image }] } : {}),
+    },
+    twitter: { card: image ? 'summary_large_image' : 'summary', title, description },
+  };
+}
 
 export default async function PublicBusinessPage({
   params,
@@ -122,6 +173,37 @@ export default async function PublicBusinessPage({
     (ar ? wc?.heroSubtitle : wc?.heroSubtitleEn) ||
     wc?.heroSubtitle ||
     (ar ? 'احجز خدماتك بسهولة عبر الإنترنت' : 'Book our services easily online');
+  // Owner-configured CTA label (heroCTA/heroCTAEn existed but were ignored).
+  const heroCta = (ar ? wc?.heroCTA : wc?.heroCTAEn) || wc?.heroCTA || (ar ? 'احجز موعدك الآن' : 'Book now');
+  // Hero media — heroImages/heroVideo columns were stored but never rendered.
+  const heroMedia =
+    wc?.heroType === 'VIDEO' && wc.heroVideo
+      ? ({ kind: 'video', src: wc.heroVideo } as const)
+      : wc?.heroImages?.[0]
+        ? ({ kind: 'image', src: wc.heroImages[0] } as const)
+        : null;
+  const avgRating = reviewAgg._avg.rating ?? 0;
+
+  // SEO: LocalBusiness structured data (+ rating when reviews exist) so tenant
+  // storefronts are eligible for rich results.
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'LocalBusiness',
+    name: company.name,
+    url: `${SITE_URL}/${slug}`,
+    ...(wc?.ogImage || company.logo ? { image: wc?.ogImage || company.logo } : {}),
+    ...(wc?.phone ? { telephone: wc.phone } : {}),
+    ...(wc?.address ? { address: wc.address } : {}),
+    ...(reviewAgg._count > 0
+      ? {
+          aggregateRating: {
+            '@type': 'AggregateRating',
+            ratingValue: Number(avgRating.toFixed(1)),
+            reviewCount: reviewAgg._count,
+          },
+        }
+      : {}),
+  };
 
   // Group services under their clinic/department; the rest go to a general block.
   type Svc = (typeof services)[number];
@@ -145,11 +227,12 @@ export default async function PublicBusinessPage({
       <Link href={`/${slug}/service/${s.id}`} className="block">
         <div className="relative aspect-[16/10] overflow-hidden">
           {s.image ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
+            <Image
               src={s.image}
               alt={s.title}
-              className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+              fill
+              sizes="300px"
+              className="object-cover transition duration-300 group-hover:scale-105"
             />
           ) : (
             <div
@@ -205,8 +288,14 @@ export default async function PublicBusinessPage({
     href: `/${slug}/p/${p.slug}`,
   }));
 
+  // With hero media behind the text, everything flips to light-on-dark.
+  const onMedia = Boolean(heroMedia);
+  const heroMuted = onMedia ? 'text-white/85' : 'text-muted-foreground';
+  const chipAccent = onMedia ? '#ffffff' : accent;
+
   return (
     <div className="min-h-screen bg-background text-foreground" dir={ar ? 'rtl' : 'ltr'}>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
       <SiteHeader
         slug={slug}
         companyName={company.name}
@@ -217,58 +306,107 @@ export default async function PublicBusinessPage({
         ctaLabel={ar ? 'احجز موعد' : 'Book now'}
       />
 
-      {/* Hero */}
-      <section className="relative overflow-hidden border-b">
-        <div
-          className="absolute inset-0 -z-10 opacity-[0.14]"
-          style={{ background: `radial-gradient(55% 75% at 70% 0%, ${accent}, transparent)` }}
-        />
-        <div
-          className="absolute inset-0 -z-10 opacity-[0.04]"
-          style={{
-            backgroundImage:
-              'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
-            backgroundSize: '44px 44px',
-          }}
-        />
+      {/* Hero — with the owner's image/video when configured, gradient otherwise */}
+      <section className={`relative overflow-hidden border-b ${onMedia ? 'text-white' : ''}`}>
+        {heroMedia ? (
+          <>
+            {heroMedia.kind === 'video' ? (
+              <video
+                className="absolute inset-0 -z-20 h-full w-full object-cover"
+                src={heroMedia.src}
+                autoPlay
+                muted
+                loop
+                playsInline
+              />
+            ) : (
+              <Image
+                src={heroMedia.src}
+                alt=""
+                fill
+                priority
+                sizes="100vw"
+                className="-z-20 object-cover"
+              />
+            )}
+            {/* Contrast overlay + accent glow */}
+            <div className="absolute inset-0 -z-10 bg-black/55" />
+            <div
+              className="absolute inset-0 -z-10 opacity-30"
+              style={{ background: `radial-gradient(60% 80% at 50% 100%, ${accent}, transparent)` }}
+            />
+          </>
+        ) : (
+          <>
+            <div
+              className="absolute inset-0 -z-10 opacity-[0.14]"
+              style={{ background: `radial-gradient(55% 75% at 70% 0%, ${accent}, transparent)` }}
+            />
+            <div
+              className="absolute inset-0 -z-10 opacity-[0.04]"
+              style={{
+                backgroundImage:
+                  'linear-gradient(currentColor 1px, transparent 1px), linear-gradient(90deg, currentColor 1px, transparent 1px)',
+                backgroundSize: '44px 44px',
+              }}
+            />
+          </>
+        )}
         <div className="mx-auto max-w-6xl px-5 py-24 text-center">
-          <span
-            className="inline-flex items-center gap-1.5 rounded-full border bg-background/60 px-3.5 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur"
-          >
-            <CalendarCheck className="size-3.5" style={{ color: accent }} /> {ar ? 'احجز موعدك أونلاين خلال دقيقة' : 'Book online in under a minute'}
-          </span>
+          <div className="flex flex-wrap items-center justify-center gap-2">
+            <span
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-medium backdrop-blur ${onMedia ? 'border-white/25 bg-white/10 text-white/90' : 'bg-background/60 text-muted-foreground'}`}
+            >
+              <CalendarCheck className="size-3.5" style={{ color: chipAccent }} /> {ar ? 'احجز موعدك أونلاين خلال دقيقة' : 'Book online in under a minute'}
+            </span>
+            {reviewAgg._count > 0 && (
+              <span
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3.5 py-1.5 text-xs font-semibold backdrop-blur ${onMedia ? 'border-white/25 bg-white/10 text-white/90' : 'bg-background/60'}`}
+              >
+                <Star className="size-3.5 fill-amber-400 text-amber-400" />
+                {avgRating.toFixed(1)}
+                <span className={`font-normal ${heroMuted}`}>
+                  ({reviewAgg._count} {ar ? 'تقييم' : 'reviews'})
+                </span>
+              </span>
+            )}
+          </div>
           <h1 className="mt-5 text-4xl font-extrabold tracking-tight sm:text-5xl md:text-6xl">{heroTitle}</h1>
-          <p className="mx-auto mt-4 max-w-2xl text-lg text-muted-foreground">{heroSubtitle}</p>
+          <p className={`mx-auto mt-4 max-w-2xl text-lg ${heroMuted}`}>{heroSubtitle}</p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <a
               href="#services"
               className="inline-flex items-center gap-2 rounded-full px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:opacity-90"
               style={{ backgroundColor: accent }}
             >
-              <CalendarCheck className="size-4" /> {ar ? 'احجز موعدك الآن' : 'Book now'}
+              <CalendarCheck className="size-4" /> {heroCta}
             </a>
             {(wc?.phone || wc?.whatsapp) && (
               <a
                 href={wc?.whatsapp ? `https://wa.me/${wc.whatsapp.replace(/\D/g, '')}` : `tel:${wc?.phone}`}
-                className="inline-flex items-center gap-2 rounded-full border bg-background/60 px-6 py-3 text-sm font-semibold backdrop-blur transition hover:bg-accent"
+                className={`inline-flex items-center gap-2 rounded-full border px-6 py-3 text-sm font-semibold backdrop-blur transition ${onMedia ? 'border-white/30 bg-white/10 text-white hover:bg-white/20' : 'bg-background/60 hover:bg-accent'}`}
               >
                 <MessageCircle className="size-4" /> {ar ? 'تواصل معنا' : 'Contact us'}
               </a>
             )}
           </div>
-          <div className="mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs text-muted-foreground">
-            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-3.5" style={{ color: accent }} /> {ar ? 'تأكيد فوري للحجز' : 'Instant booking confirmation'}</span>
-            <span className="inline-flex items-center gap-1.5"><Clock className="size-3.5" style={{ color: accent }} /> {ar ? 'مواعيد مرنة تناسبك' : 'Flexible times that suit you'}</span>
-            <span className="inline-flex items-center gap-1.5"><MessageCircle className="size-3.5" style={{ color: accent }} /> {ar ? 'دعم مباشر عبر الشات' : 'Live chat support'}</span>
+          <div className={`mt-8 flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-xs ${heroMuted}`}>
+            <span className="inline-flex items-center gap-1.5"><CheckCircle2 className="size-3.5" style={{ color: chipAccent }} /> {ar ? 'تأكيد فوري للحجز' : 'Instant booking confirmation'}</span>
+            <span className="inline-flex items-center gap-1.5"><Clock className="size-3.5" style={{ color: chipAccent }} /> {ar ? 'مواعيد مرنة تناسبك' : 'Flexible times that suit you'}</span>
+            <span className="inline-flex items-center gap-1.5"><MessageCircle className="size-3.5" style={{ color: chipAccent }} /> {ar ? 'دعم مباشر عبر الشات' : 'Live chat support'}</span>
           </div>
         </div>
       </section>
 
-      {/* About */}
-      {wc?.showAbout !== false && wc?.aboutContent && (
+      {/* About — honors the English fields on an English storefront */}
+      {wc?.showAbout !== false && (wc?.aboutContent || wc?.aboutContentEn) && (
         <section className="mx-auto max-w-3xl px-5 py-12 text-center">
-          {wc.aboutTitle && <h2 className="mb-3 text-2xl font-bold">{wc.aboutTitle}</h2>}
-          <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">{wc.aboutContent}</p>
+          {(ar ? wc?.aboutTitle : wc?.aboutTitleEn || wc?.aboutTitle) && (
+            <h2 className="mb-3 text-2xl font-bold">{ar ? wc?.aboutTitle : wc?.aboutTitleEn || wc?.aboutTitle}</h2>
+          )}
+          <p className="whitespace-pre-wrap leading-relaxed text-muted-foreground">
+            {(ar ? wc?.aboutContent : wc?.aboutContentEn || wc?.aboutContent) ?? ''}
+          </p>
         </section>
       )}
 
@@ -322,10 +460,11 @@ export default async function PublicBusinessPage({
                   className="group rounded-2xl border bg-card p-5 text-center transition hover:shadow-md"
                 >
                   {m.image ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <Image
                       src={m.image}
                       alt={m.name}
+                      width={80}
+                      height={80}
                       className="mx-auto size-20 rounded-full border object-cover"
                     />
                   ) : (
@@ -432,7 +571,19 @@ export default async function PublicBusinessPage({
         sections={headerNav}
         contact={{ phone: wc?.phone, whatsapp: wc?.whatsapp, email: wc?.email, address: wc?.address }}
         accent={accent}
+        socials={{
+          instagram: wc?.instagram,
+          twitter: wc?.twitter,
+          tiktok: wc?.tiktok,
+          linkedin: wc?.linkedin,
+          snapchat: wc?.snapchat,
+        }}
       />
+
+      {/* Mobile: the primary booking CTA stays reachable after the hero scrolls away */}
+      {(clinicSections.length > 0 || ungrouped.length > 0) && (
+        <StickyBookBar label={heroCta} whatsapp={wc?.whatsapp} accent={accent} />
+      )}
 
       {/* Chat widget */}
       {wc?.chatEnabled !== false && widgetAgent && (
@@ -441,6 +592,7 @@ export default async function PublicBusinessPage({
           agentName={widgetAgent.name}
           greeting={wc?.chatGreeting || (ar ? `مرحباً 👋 كيف أقدر أساعدك في ${company.name}؟` : `Hi 👋 How can we help you at ${company.name}?`)}
           primaryColor={wc?.chatPrimaryColor || accent}
+          position={wc?.chatPosition}
         />
       )}
     </div>

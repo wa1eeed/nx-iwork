@@ -6,11 +6,37 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { MapPin, Phone, Mail, MessageCircle } from 'lucide-react';
+import { MapPin, Phone, Mail, MessageCircle, Instagram, Twitter, Linkedin, Music2, Ghost } from 'lucide-react';
+import { MobileNav } from './mobile-nav';
 
 export interface SiteNavLink {
   label: string;
   href: string;
+}
+
+// Owner-configured social profiles (WebsiteConfig) — previously stored but
+// never rendered anywhere on the public site.
+export interface SiteSocials {
+  instagram?: string | null;
+  twitter?: string | null;
+  tiktok?: string | null;
+  linkedin?: string | null;
+  snapchat?: string | null;
+}
+
+const SOCIAL_DEFS: Array<{ key: keyof SiteSocials; icon: typeof Instagram; base: string }> = [
+  { key: 'instagram', icon: Instagram, base: 'https://instagram.com/' },
+  { key: 'twitter', icon: Twitter, base: 'https://x.com/' },
+  { key: 'tiktok', icon: Music2, base: 'https://tiktok.com/@' },
+  { key: 'linkedin', icon: Linkedin, base: 'https://linkedin.com/company/' },
+  { key: 'snapchat', icon: Ghost, base: 'https://snapchat.com/add/' },
+];
+
+// Accepts a full URL or a bare handle (with or without @).
+function socialHref(base: string, value: string): string {
+  const v = value.trim();
+  if (/^https?:\/\//i.test(v)) return v;
+  return `${base}${v.replace(/^@/, '')}`;
 }
 
 export function SiteHeader({
@@ -52,13 +78,16 @@ export function SiteHeader({
             )}
           </nav>
         )}
-        <a
-          href={ctaHref}
-          className="rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm"
-          style={{ backgroundColor: accent }}
-        >
-          {ctaLabel}
-        </a>
+        <div className="flex items-center gap-2">
+          <a
+            href={ctaHref}
+            className="rounded-full px-4 py-2 text-sm font-semibold text-white shadow-sm"
+            style={{ backgroundColor: accent }}
+          >
+            {ctaLabel}
+          </a>
+          <MobileNav links={navLinks} label={ctaLabel} />
+        </div>
       </div>
     </header>
   );
@@ -78,6 +107,7 @@ export function SiteFooter({
   sections,
   contact,
   accent,
+  socials,
 }: {
   companyName: string;
   year: number;
@@ -85,7 +115,9 @@ export function SiteFooter({
   sections?: SiteNavLink[];
   contact?: SiteContact;
   accent?: string;
+  socials?: SiteSocials;
 }) {
+  const socialLinks = SOCIAL_DEFS.filter((d) => socials?.[d.key]);
   const hasContact = contact && (contact.phone || contact.whatsapp || contact.email || contact.address);
   const mapsUrl = contact?.address
     ? `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(contact.address)}`
@@ -180,7 +212,25 @@ export function SiteFooter({
           </nav>
         )}
 
-        <p className={`text-xs text-muted-foreground ${rich ? 'mt-10 border-t pt-6' : ''} text-center`}>
+        {socialLinks.length > 0 && (
+          <div className={`flex justify-center gap-2.5 ${rich ? 'mt-8' : 'mt-2'}`}>
+            {socialLinks.map(({ key, icon: Icon, base }) => (
+              <a
+                key={key}
+                href={socialHref(base, socials![key]!)}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={key}
+                className="flex size-9 items-center justify-center rounded-full border text-muted-foreground transition hover:text-foreground"
+                style={{ borderColor: `${accent}40` }}
+              >
+                <Icon className="size-4" />
+              </a>
+            ))}
+          </div>
+        )}
+
+        <p className={`text-xs text-muted-foreground ${rich ? 'mt-6 border-t pt-6' : ''} text-center`}>
           © {year} {companyName}
         </p>
       </div>
