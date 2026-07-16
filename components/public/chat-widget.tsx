@@ -62,9 +62,15 @@ export function ChatWidget({
     const agentMsgId = `a${Date.now()}`;
     let acc = '';
     let started = false;
+    // Decide append-vs-update from the ACTUAL current state (m), not a mutable
+    // `started` flag: deltas are processed synchronously in the reader loop, so
+    // the flag flips to true before React runs the first (deferred) updater —
+    // which would then always take the .map() branch and never append the
+    // bubble, so the reply silently never renders. Checking m.some() is
+    // race-free regardless of how React batches the updates.
     const upsert = (content: string) =>
       setMessages((m) =>
-        started
+        m.some((msg) => msg.id === agentMsgId)
           ? m.map((msg) => (msg.id === agentMsgId ? { ...msg, content } : msg))
           : [...m, { id: agentMsgId, role: 'agent' as const, content }]
       );

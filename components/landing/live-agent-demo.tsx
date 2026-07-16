@@ -54,9 +54,14 @@ export function LiveAgentDemo() {
     const agentMsgId = `a${Date.now()}`;
     let acc = '';
     let started = false;
+    // Append-vs-update decided from the ACTUAL current state, not the mutable
+    // `started` flag — deltas process synchronously before React runs the first
+    // (deferred) updater, so the flag would always be true by then and the
+    // append branch would never fire, silently dropping the reply. See the same
+    // fix in components/public/chat-widget.tsx.
     const upsert = (content: string) =>
       setMessages((m) =>
-        started
+        m.some((msg) => msg.id === agentMsgId)
           ? m.map((msg) => (msg.id === agentMsgId ? { ...msg, content } : msg))
           : [...m, { id: agentMsgId, role: 'agent' as const, content }]
       );

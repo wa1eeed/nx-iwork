@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // available. No secrets — a short marker + commit sha only.
 export const dynamic = 'force-dynamic';
 
-const MARKER = 'tap-autorenewal-v1';
+const MARKER = 'chat-render-fix';
 
 export function GET() {
   return NextResponse.json({
