@@ -159,6 +159,11 @@ export async function runPublicAgentChat(
     // wrong prices and false "not available". Accuracy for a customer-facing
     // pricing/booking agent outweighs the ~1s it adds to the first token.
     thinkingBudget: 1024,
+    // Customer widget: stream ONLY the final reply, never the model's inter-round
+    // "let me check availability…" narration — so a multi-tool booking reads as
+    // one clean confirmation instead of a play-by-play. (Dashboard chat keeps
+    // token-by-token streaming since the owner benefits from seeing tool activity.)
+    streamFinalOnly: true,
     ctx: { companyId, agentId },
   };
 
