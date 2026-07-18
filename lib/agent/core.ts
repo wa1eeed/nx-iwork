@@ -89,6 +89,16 @@ export interface ToolLoopArgs {
   thinkingBudget?: number;
   /** Optional trace hook: called after each tool runs (used by the sandbox). */
   onToolResult?: (t: { name: string; args: Record<string, unknown>; result: string }) => void;
+  /**
+   * Stream ONLY the final answer's text, never the model's inter-round narration
+   * (the "let me check availability…" preambles it emits before/between tool
+   * calls). On the customer widget those leak internal mechanics; suppressing
+   * them at the stream layer guarantees a clean single reply regardless of how
+   * chatty the model is. The persisted reply is already the final round only, so
+   * this just makes the streamed text match it. Dashboard/owner chat leaves it
+   * off (unchanged token-by-token streaming).
+   */
+  streamFinalOnly?: boolean;
 }
 
 export interface ToolLoopResult {
@@ -150,7 +160,7 @@ export async function runToolLoopStream(
   args: ToolLoopArgs,
   onDelta: (delta: string) => void
 ): Promise<ToolLoopResult> {
-  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx, thinkingBudget } = args;
+  const { provider, system, messages, tier, model, temperature, maxTokens, tools, ctx, thinkingBudget, streamFinalOnly } = args;
   if (!provider.completeStream) {
     const r = await runToolLoop(args);
     onDelta(r.reply);
@@ -166,7 +176,10 @@ export async function runToolLoopStream(
     let next = await gen.next();
     while (!next.done) {
       roundText += next.value;
-      onDelta(next.value);
+      // In streamFinalOnly mode a round's text is buffered, not streamed, until we
+      // know it's the final one — so inter-round tool-call narration never reaches
+      // the client. Otherwise stream token-by-token as it generates.
+      if (!streamFinalOnly) onDelta(next.value);
       next = await gen.next();
     }
     const completion = next.value;
@@ -174,6 +187,9 @@ export async function runToolLoopStream(
 
     if (!completion.needsTools || completion.toolCalls.length === 0) {
       reply = (completion.text || roundText).trim();
+      // Final answer of a suppressed stream: emit it once, now that it's known
+      // to be the customer-facing reply (no tool calls followed).
+      if (streamFinalOnly && reply) onDelta(reply);
       break;
     }
 
@@ -191,6 +207,7 @@ export async function runToolLoopStream(
       reply =
         (completion.text || roundText).trim() ||
         'تعذّر إكمال الطلب بالكامل الآن. حوّلني لزميل بشري إن احتجت.';
+      if (streamFinalOnly && reply) onDelta(reply);
     }
   }
 
