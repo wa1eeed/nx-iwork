@@ -1,10 +1,9 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
 import { Sprout, Activity, CalendarCheck, ShoppingBag, ListChecks, ArrowRight } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { getUserCompany } from '@/lib/companies';
+import { dashboardCompanyIdOrRedirect } from '@/lib/companies';
 import { deptHue } from '@/lib/ui/dept-accent';
 import { ApprovalCard, type ApprovalCardData } from '@/components/dashboard/approval-card';
 import { BusinessCounters } from '@/components/dashboard/business-counters';
@@ -14,10 +13,7 @@ import { BusinessCounters } from '@/components/dashboard/business-counters';
 // live activity feed. (The AI workforce roster lives on /agents.)
 export default async function OverviewPage() {
   const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) redirect('/login');
-  const companyId = await getUserCompany(userId);
-  if (!companyId) redirect('/onboarding');
+  const companyId = await dashboardCompanyIdOrRedirect(session);
 
   const t = await getTranslations('overview');
   const tb = await getTranslations('biz.overview');

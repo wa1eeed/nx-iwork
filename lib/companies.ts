@@ -1,7 +1,9 @@
 import { Prisma, type PlanTier } from '@prisma/client';
+import { redirect } from 'next/navigation';
 import { db } from '@/lib/db';
 import { isReservedSlug } from '@/lib/reserved-slugs';
 import { impersonatedCompanyId } from '@/lib/impersonation';
+import { isAllowlistedSuperAdmin } from '@/lib/admin-allowlist';
 
 const SLUG_MAX_LENGTH = 40;
 const SLUG_FALLBACK = 'company';
@@ -109,6 +111,25 @@ export async function getUserCompany(userId: string) {
     if (impersonated) return impersonated;
   }
   return user.companyId ?? null;
+}
+
+// Resolve the acting company for a dashboard page, or redirect the SAME way the
+// dashboard layout does. Critically: a company-less caller who is a SUPER_ADMIN
+// (by DB role OR email allowlist) goes to /admin — NOT /onboarding. Page guards
+// that hardcoded redirect('/onboarding') were racing the layout and sometimes
+// flashed the new-account wizard at an admin (esp. while impersonating, since a
+// raw user.companyId lookup is blind to the impersonation cookie). Use this in
+// every dashboard page that needs the companyId so the behavior is consistent.
+export async function dashboardCompanyIdOrRedirect(session: {
+  user?: { id?: string | null; role?: string | null; email?: string | null } | null;
+} | null): Promise<string> {
+  const userId = session?.user?.id;
+  if (!userId) redirect('/login');
+  const companyId = await getUserCompany(userId);
+  if (companyId) return companyId;
+  const isSuperAdmin =
+    session?.user?.role === 'SUPER_ADMIN' || isAllowlistedSuperAdmin(session?.user?.email);
+  redirect(isSuperAdmin ? '/admin' : '/onboarding');
 }
 
 export function isUniqueConstraintError(err: unknown): boolean {

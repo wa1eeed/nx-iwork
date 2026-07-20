@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
+import { dashboardCompanyIdOrRedirect } from '@/lib/companies';
 import { db } from '@/lib/db';
 import { maskApiKey } from '@/lib/byok';
 import {
@@ -41,17 +42,14 @@ function channelState(channels: ChannelRow[], type: 'TELEGRAM' | 'WHATSAPP') {
 
 export default async function SettingsPage() {
   const session = await auth();
-  if (!session?.user?.id) redirect('/login');
-
-  const user = await db.user.findUnique({
-    where: { id: session.user.id },
-    select: { companyId: true },
-  });
-  if (!user?.companyId) redirect('/onboarding');
+  // Impersonation-aware: a SUPER_ADMIN browsing a tenant edits THAT tenant's
+  // settings. A raw companyId read here was blind to the impersonation
+  // cookie and bounced the admin to the new-account onboarding wizard.
+  const companyId = await dashboardCompanyIdOrRedirect(session);
 
   const [company, settings, apiSettings, websiteConfig, wallet, companyHours, holidays, channels, channelAgents] = await Promise.all([
     db.company.findUnique({
-      where: { id: user.companyId },
+      where: { id: companyId },
       select: {
         name: true,
         nameEn: true,
@@ -75,10 +73,10 @@ export default async function SettingsPage() {
       },
     }),
     db.businessSettings.findUnique({
-      where: { companyId: user.companyId },
+      where: { companyId: companyId },
     }),
     db.companyApiSettings.findUnique({
-      where: { companyId: user.companyId },
+      where: { companyId: companyId },
       select: {
         byokApiKey: true,
         byokProvider: true,
@@ -87,7 +85,7 @@ export default async function SettingsPage() {
       },
     }),
     db.websiteConfig.findUnique({
-      where: { companyId: user.companyId },
+      where: { companyId: companyId },
       select: {
         heroTitle: true,
         heroTitleEn: true,
@@ -96,25 +94,25 @@ export default async function SettingsPage() {
       },
     }),
     db.wallet.findUnique({
-      where: { companyId: user.companyId },
+      where: { companyId: companyId },
       select: { balance: true, currency: true },
     }),
     db.companyHours.findMany({
-      where: { companyId: user.companyId },
+      where: { companyId: companyId },
       orderBy: [{ dayOfWeek: 'asc' }, { startTime: 'asc' }],
       select: { dayOfWeek: true, startTime: true, endTime: true },
     }),
     db.holiday.findMany({
-      where: { companyId: user.companyId },
+      where: { companyId: companyId },
       orderBy: { date: 'asc' },
       select: { id: true, date: true, name: true },
     }),
     db.channel.findMany({
-      where: { companyId: user.companyId },
+      where: { companyId: companyId },
       select: { type: true, agentId: true, botUsername: true, isActive: true },
     }),
     db.agent.findMany({
-      where: { companyId: user.companyId, surface: 'CUSTOMER_FACING', status: { not: 'ARCHIVED' } },
+      where: { companyId: companyId, surface: 'CUSTOMER_FACING', status: { not: 'ARCHIVED' } },
       orderBy: { name: 'asc' },
       select: { id: true, name: true },
     }),
