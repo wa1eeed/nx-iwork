@@ -859,6 +859,29 @@ export async function executeTool(
           resolvedServiceId = svc.id;
         }
 
+        // Slot integrity: for a service-linked booking the startAt MUST be one of
+        // the service's real generated slots. Fast models sometimes rebuild the
+        // time from the displayed label (e.g. "5:20 م") as if it were UTC — that
+        // shifts it by the tz offset (→ 8:20) and books the wrong hour. On a miss,
+        // hand back the real open slots so the agent re-offers the correct time
+        // (with its exact startAt) instead of booking a phantom one. Checked before
+        // any customer row is created, so a rejected attempt leaves no junk.
+        if (resolvedServiceId) {
+          const tz = await companyTimezone(ctx.companyId);
+          const daySlots = await generateDaySlots(ctx.companyId, resolvedServiceId, localDateISO(startAt, tz));
+          const exists = daySlots.some((s) => new Date(s.startAt).getTime() === startAt.getTime());
+          if (!exists) {
+            const open = daySlots.filter((s) => s.available).map((s) => ({ time: s.label, startAt: s.startAt }));
+            return JSON.stringify({
+              ok: false,
+              reason: 'invalid_slot',
+              error:
+                'الوقت المُمرَّر ليس ضمن المواعيد المتاحة لهذه الخدمة في ذلك اليوم. لا تُعِد بناء الوقت بنفسك — اعرض على العميل الأوقات التالية، وعند اختياره مرّر قيمة startAt الخاصة بذلك الوقت حرفياً كما وردت.',
+              open,
+            });
+          }
+        }
+
         // Every booking must belong to a real customer — the agent must have
         // collected who it's for. Verify an existing id, or find-or-create from
         // the name/phone it gathered; refuse a booking with no identity at all.
