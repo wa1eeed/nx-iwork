@@ -1,9 +1,8 @@
-import { redirect } from 'next/navigation';
 import { Sprout } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
-import { getUserCompany } from '@/lib/companies';
+import { dashboardCompanyIdOrRedirect } from '@/lib/companies';
 import { deptHue } from '@/lib/ui/dept-accent';
 import { ApprovalCard, type ApprovalCardData } from '@/components/dashboard/approval-card';
 
@@ -11,10 +10,7 @@ import { ApprovalCard, type ApprovalCardData } from '@/components/dashboard/appr
 // — approving wakes them to continue (the two-layer contract's human-in-the-loop).
 export default async function ApprovalsPage() {
   const session = await auth();
-  const userId = session?.user?.id;
-  if (!userId) redirect('/login');
-  const companyId = await getUserCompany(userId);
-  if (!companyId) redirect('/onboarding');
+  const companyId = await dashboardCompanyIdOrRedirect(session);
 
   const t = await getTranslations('overview');
   const en = (await getLocale()) === 'en';
