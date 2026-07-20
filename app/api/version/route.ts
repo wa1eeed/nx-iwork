@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // available. No secrets — a short marker + commit sha only.
 export const dynamic = 'force-dynamic';
 
-const MARKER = 'booking-exact-slot+human-tone';
+const MARKER = 'booking-by-displayed-time';
 
 export function GET() {
   return NextResponse.json({

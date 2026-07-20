@@ -162,21 +162,23 @@ export const AGENT_TOOLS: AiTool[] = [
   {
     name: 'create_booking',
     description:
-      'ثبّت حجز موعد لعميل (موديول الحجوزات). قبل استدعائها: (1) حدّد الخدمة عبر search_catalog ومرّر اسمها serviceName (ومعرّفها serviceId إن توفّر)، (2) اطلب اسم العميل ورقم جواله ومرّرهما (customerName + customerPhone) أو معرّف عميل موجود customerId — لا يُقبل حجز بلا هوية عميل، (3) اعرض الأوقات المتاحة عبر list_open_slots واختر وقتاً منها. النظام يفرض السعة ويتحقق من التعارض تلقائياً، ويقترح بدائل إن كان الوقت ممتلئاً.',
+      'ثبّت حجز موعد لعميل (موديول الحجوزات). قبل استدعائها: (1) حدّد الخدمة عبر search_catalog ومرّر اسمها serviceName، (2) اطلب اسم العميل ورقم جواله ومرّرهما (customerName + customerPhone) أو customerId — لا يُقبل حجز بلا هوية، (3) اعرض الأوقات عبر list_open_slots ودع العميل يختار. لتحديد الوقت مرّر date و time (الوقت المعروض للموعد الذي اختاره العميل حرفياً) — النظام يطابقه بالموعد الصحيح تلقائياً؛ لا تبنِ طابعاً زمنياً بنفسك. النظام يفرض السعة ويقترح بدائل إن امتلأ الوقت.',
     parameters: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'وصف الحجز (مثل: موعد تنظيف أسنان)' },
-        startAt: { type: 'string', description: 'وقت البداية ISO 8601 (من أوقات list_open_slots)' },
+        date: { type: 'string', description: 'يوم الموعد YYYY-MM-DD (من التقويم المرجعي، بتوقيت النشاط)' },
+        time: { type: 'string', description: 'الوقت المعروض للموعد الذي اختاره العميل، كما ظهر في list_open_slots حرفياً (مثل «9:10 صباحًا») — لا تحوّله لصيغة أخرى' },
+        startAt: { type: 'string', description: 'بديل ISO 8601 للحجوزات بلا خدمة فقط (يُفضَّل date+time للخدمات)' },
         endAt: { type: 'string', description: 'وقت النهاية ISO 8601 (اختياري — يحسبه النظام من مدة الخدمة)' },
-        serviceName: { type: 'string', description: 'اسم الخدمة القابلة للحجز كما في الكتالوج — مرّره دائماً ليتعرّف عليها النظام حتى لو كان المعرّف خاطئاً' },
-        serviceId: { type: 'string', description: 'معرّف الخدمة من search_catalog إن توفّر (يُفضَّل مع serviceName)' },
+        serviceName: { type: 'string', description: 'اسم الخدمة القابلة للحجز كما في الكتالوج — مرّره دائماً' },
+        serviceId: { type: 'string', description: 'معرّف الخدمة من search_catalog إن توفّر (مع serviceName)' },
         customerId: { type: 'string', description: 'معرّف العميل من الـ CRM إن كان مسجّلاً' },
         customerName: { type: 'string', description: 'اسم العميل — مطلوب إن لم يوجد customerId (يُنشأ سجل تلقائياً)' },
         customerPhone: { type: 'string', description: 'رقم جوال العميل للتواصل والتأكيد' },
         notes: { type: 'string' },
       },
-      required: ['title', 'startAt'],
+      required: ['title', 'serviceName', 'date', 'time'],
     },
   },
   {
@@ -461,7 +463,11 @@ const setBookingStaffArgs = z.object({
 
 const createBookingArgs = z.object({
   title: z.string().trim().min(1).max(300),
-  startAt: z.string().trim(),
+  // Preferred for a service booking: the displayed date + time the customer chose
+  // (the model copies these reliably). The engine snaps them to the exact slot.
+  date: z.string().trim().optional(), // YYYY-MM-DD (business timezone)
+  time: z.string().trim().optional(), // the slot's displayed time, e.g. "9:10 صباحًا"
+  startAt: z.string().trim().optional(), // ISO fallback (ad-hoc / no service)
   endAt: z.string().trim().optional(),
   serviceId: z.string().trim().optional(), // when set, the engine enforces slot capacity
   serviceName: z.string().trim().optional(), // fallback when the id is missing/mangled
@@ -709,6 +715,23 @@ function catalogTextWhere(query: string | undefined, fields: string[]): object {
     : {};
 }
 
+// Normalize a clock label ("9:10 صباحًا", "9:10 ص", "9:10 PM", "21:10") to a
+// canonical 24h "H:MM" key, so a model-echoed displayed time matches a slot's
+// label regardless of AM/PM wording. Digits are stripped before the meridiem
+// test so "10" can't be mistaken for a letter. Returns '' when no time is found.
+function normClock(s: string): string {
+  const m = s.match(/(\d{1,2}):(\d{2})/);
+  if (!m) return '';
+  let h = parseInt(m[1], 10);
+  const min = m[2];
+  const letters = s.replace(/[\d:]/g, '');
+  const pm = /م|مساء|pm/i.test(letters);
+  const am = /ص|صباح|am/i.test(letters);
+  if (pm && h < 12) h += 12;
+  if (am && h === 12) h = 0;
+  return `${h}:${min}`;
+}
+
 // Resolve a catalog service from the model's id OR a fuzzy name. Fast models often
 // corrupt the long cuid when copying it between tool calls (the "مشكلة في تحديد
 // الخدمة" booking failures), so the booking tools accept the service title too and
@@ -843,11 +866,6 @@ export async function executeTool(
 
       case 'create_booking': {
         const args = createBookingArgs.parse(rawArgs);
-        const startAt = parseDate(args.startAt);
-        if (!startAt) return fail('صيغة التاريخ غير صحيحة. استخدم ISO 8601.');
-        if (startAt.getTime() <= Date.now()) {
-          return fail('لا يمكن الحجز في وقت مضى. اعرض على العميل موعداً قادماً عبر list_open_slots.');
-        }
         const endAt = args.endAt ? parseDate(args.endAt) : null;
 
         // Resolve the service by id OR name (fast models mangle the cuid). Only a
@@ -859,27 +877,52 @@ export async function executeTool(
           resolvedServiceId = svc.id;
         }
 
-        // Slot integrity: for a service-linked booking the startAt MUST be one of
-        // the service's real generated slots. Fast models sometimes rebuild the
-        // time from the displayed label (e.g. "5:20 م") as if it were UTC — that
-        // shifts it by the tz offset (→ 8:20) and books the wrong hour. On a miss,
-        // hand back the real open slots so the agent re-offers the correct time
-        // (with its exact startAt) instead of booking a phantom one. Checked before
-        // any customer row is created, so a rejected attempt leaves no junk.
-        if (resolvedServiceId) {
+        // Resolve the exact booking instant. For a service booking the PRIMARY path
+        // is (date + displayed time): the model copies those reliably, and we snap
+        // to the service's real slot by matching the local clock — never trusting a
+        // model-built ISO, which fast models shift by the tz offset (5:20م→8:20م).
+        // On a miss we hand back the real open slots so the agent re-offers instead
+        // of booking a phantom hour. All checked BEFORE any customer row is created.
+        let startAt: Date | null = null;
+        if (resolvedServiceId && args.date && args.time) {
           const tz = await companyTimezone(ctx.companyId);
-          const daySlots = await generateDaySlots(ctx.companyId, resolvedServiceId, localDateISO(startAt, tz));
-          const exists = daySlots.some((s) => new Date(s.startAt).getTime() === startAt.getTime());
-          if (!exists) {
+          const daySlots = await generateDaySlots(ctx.companyId, resolvedServiceId, args.date);
+          const want = normClock(args.time);
+          const slot = want ? daySlots.find((s) => normClock(s.label) === want) : undefined;
+          if (!slot) {
             const open = daySlots.filter((s) => s.available).map((s) => ({ time: s.label, startAt: s.startAt }));
             return JSON.stringify({
               ok: false,
               reason: 'invalid_slot',
-              error:
-                'الوقت المُمرَّر ليس ضمن المواعيد المتاحة لهذه الخدمة في ذلك اليوم. لا تُعِد بناء الوقت بنفسك — اعرض على العميل الأوقات التالية، وعند اختياره مرّر قيمة startAt الخاصة بذلك الوقت حرفياً كما وردت.',
+              error: 'هذا الوقت ليس ضمن المواعيد المتاحة لهذه الخدمة في ذلك اليوم. اعرض على العميل الأوقات التالية واطلب منه اختيار واحد منها، ثم مرّر date و time الخاصين به.',
               open,
             });
           }
+          startAt = new Date(slot.startAt);
+        } else if (args.startAt) {
+          // Fallback: explicit ISO (ad-hoc bookings, or a service booking that only
+          // supplied startAt). A service-linked startAt still must be a real slot.
+          startAt = parseDate(args.startAt) ?? null;
+          if (startAt && resolvedServiceId) {
+            const tz = await companyTimezone(ctx.companyId);
+            const daySlots = await generateDaySlots(ctx.companyId, resolvedServiceId, localDateISO(startAt, tz));
+            const exists = daySlots.some((s) => new Date(s.startAt).getTime() === startAt!.getTime());
+            if (!exists) {
+              const open = daySlots.filter((s) => s.available).map((s) => ({ time: s.label, startAt: s.startAt }));
+              return JSON.stringify({
+                ok: false,
+                reason: 'invalid_slot',
+                error: 'الوقت المُمرَّر ليس ضمن المواعيد المتاحة لهذه الخدمة. مرّر date (YYYY-MM-DD) و time (الوقت المعروض للموعد) بدل بناء الوقت بنفسك.',
+                open,
+              });
+            }
+          }
+        }
+        if (!startAt) {
+          return fail('حدّد وقت الموعد: للخدمات مرّر date (YYYY-MM-DD) و time (الوقت المعروض من list_open_slots)؛ أو startAt بصيغة ISO.');
+        }
+        if (startAt.getTime() <= Date.now()) {
+          return fail('لا يمكن الحجز في وقت مضى. اعرض على العميل موعداً قادماً عبر list_open_slots.');
         }
 
         // Every booking must belong to a real customer — the agent must have
