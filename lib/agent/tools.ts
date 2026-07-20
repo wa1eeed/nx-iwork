@@ -123,10 +123,11 @@ export const AGENT_TOOLS: AiTool[] = [
     parameters: {
       type: 'object',
       properties: {
-        serviceId: { type: 'string', description: 'معرّف الخدمة (من search_catalog)' },
+        serviceId: { type: 'string', description: 'معرّف الخدمة من search_catalog (الأفضل)' },
+        serviceName: { type: 'string', description: 'اسم الخدمة كما في الكتالوج — مرّره دائماً مع serviceId ليتعرّف عليها النظام حتى لو كان المعرّف خاطئاً' },
         date: { type: 'string', description: 'اليوم المطلوب YYYY-MM-DD (بتوقيت النشاط)' },
       },
-      required: ['serviceId', 'date'],
+      required: ['serviceName', 'date'],
     },
   },
   {
@@ -161,14 +162,15 @@ export const AGENT_TOOLS: AiTool[] = [
   {
     name: 'create_booking',
     description:
-      'ثبّت حجز موعد لعميل (موديول الحجوزات). قبل استدعائها: (1) احصل على معرّف الخدمة serviceId من search_catalog، (2) اطلب اسم العميل ورقم جواله ومرّرهما (customerName + customerPhone) أو معرّف عميل موجود customerId — لا يُقبل حجز بلا هوية عميل، (3) اعرض الأوقات المتاحة عبر list_open_slots واختر وقتاً منها. النظام يفرض السعة ويتحقق من التعارض تلقائياً، ويقترح بدائل إن كان الوقت ممتلئاً.',
+      'ثبّت حجز موعد لعميل (موديول الحجوزات). قبل استدعائها: (1) حدّد الخدمة عبر search_catalog ومرّر اسمها serviceName (ومعرّفها serviceId إن توفّر)، (2) اطلب اسم العميل ورقم جواله ومرّرهما (customerName + customerPhone) أو معرّف عميل موجود customerId — لا يُقبل حجز بلا هوية عميل، (3) اعرض الأوقات المتاحة عبر list_open_slots واختر وقتاً منها. النظام يفرض السعة ويتحقق من التعارض تلقائياً، ويقترح بدائل إن كان الوقت ممتلئاً.',
     parameters: {
       type: 'object',
       properties: {
         title: { type: 'string', description: 'وصف الحجز (مثل: موعد تنظيف أسنان)' },
         startAt: { type: 'string', description: 'وقت البداية ISO 8601 (من أوقات list_open_slots)' },
         endAt: { type: 'string', description: 'وقت النهاية ISO 8601 (اختياري — يحسبه النظام من مدة الخدمة)' },
-        serviceId: { type: 'string', description: 'معرّف الخدمة القابلة للحجز (مطلوب لفرض السعة والتحقق من التوفّر)' },
+        serviceName: { type: 'string', description: 'اسم الخدمة القابلة للحجز كما في الكتالوج — مرّره دائماً ليتعرّف عليها النظام حتى لو كان المعرّف خاطئاً' },
+        serviceId: { type: 'string', description: 'معرّف الخدمة من search_catalog إن توفّر (يُفضَّل مع serviceName)' },
         customerId: { type: 'string', description: 'معرّف العميل من الـ CRM إن كان مسجّلاً' },
         customerName: { type: 'string', description: 'اسم العميل — مطلوب إن لم يوجد customerId (يُنشأ سجل تلقائياً)' },
         customerPhone: { type: 'string', description: 'رقم جوال العميل للتواصل والتأكيد' },
@@ -438,7 +440,8 @@ const checkAvailabilityArgs = z.object({
 });
 
 const listOpenSlotsArgs = z.object({
-  serviceId: z.string().trim().min(1),
+  serviceId: z.string().trim().optional(),
+  serviceName: z.string().trim().optional(),
   date: z.string().trim().min(1),
 });
 
@@ -461,6 +464,7 @@ const createBookingArgs = z.object({
   startAt: z.string().trim(),
   endAt: z.string().trim().optional(),
   serviceId: z.string().trim().optional(), // when set, the engine enforces slot capacity
+  serviceName: z.string().trim().optional(), // fallback when the id is missing/mangled
   customerId: z.string().trim().optional(),
   customerName: z.string().trim().max(200).optional(),
   customerPhone: z.string().trim().max(40).optional(),
@@ -681,6 +685,60 @@ function fmtWhen(d: Date, tz: string): { date: string; time: string; iso: string
   return { date, time, iso: d.toISOString() };
 }
 
+// Arabic surface variants for literal `contains` matching: strip definite-article
+// prefixes (الشفاف→شفاف) and toggle hamza-on-alef (اسنان↔أسنان) so a customer's
+// spelling still finds the stored one.
+function arabicVariants(w: string): string[] {
+  const out = new Set<string>([w]);
+  const stripped = w.replace(/^(وال|بال|فال|كال|لل|ال)/, '');
+  if (stripped.length >= 3) out.add(stripped);
+  for (const v of [...out]) {
+    if (v.startsWith('ا')) out.add(`أ${v.slice(1)}`);
+    if (/^[أإآ]/.test(v)) out.add(`ا${v.slice(1)}`);
+  }
+  return [...out];
+}
+
+// Prisma OR-WHERE matching `query` across text fields, word-by-word with Arabic
+// variants. Empty/short query → {} (matches everything).
+function catalogTextWhere(query: string | undefined, fields: string[]): object {
+  const words = query ? query.split(/\s+/).map((w) => w.trim()).filter((w) => w.length >= 3) : [];
+  const terms = words.flatMap(arabicVariants);
+  return terms.length
+    ? { OR: fields.flatMap((f) => terms.map((w) => ({ [f]: { contains: w, mode: Prisma.QueryMode.insensitive } }))) }
+    : {};
+}
+
+// Resolve a catalog service from the model's id OR a fuzzy name. Fast models often
+// corrupt the long cuid when copying it between tool calls (the "مشكلة في تحديد
+// الخدمة" booking failures), so the booking tools accept the service title too and
+// match it here: a valid id wins, else the closest ACTIVE service by name (exact
+// title preferred, then sortOrder).
+async function resolveServiceRef(
+  companyId: string,
+  serviceId: string | undefined,
+  serviceName: string | undefined
+): Promise<{ id: string; title: string } | null> {
+  if (serviceId) {
+    const byId = await db.service.findFirst({
+      where: { id: serviceId, companyId },
+      select: { id: true, title: true },
+    });
+    if (byId) return byId;
+  }
+  const q = (serviceName || '').trim();
+  if (q) {
+    const matches = await db.service.findMany({
+      where: { companyId, isActive: true, ...catalogTextWhere(q, ['title', 'subtitle', 'description']) },
+      take: 5,
+      orderBy: { sortOrder: 'asc' },
+      select: { id: true, title: true },
+    });
+    if (matches.length) return matches.find((m) => m.title.trim() === q) ?? matches[0];
+  }
+  return null;
+}
+
 export async function executeTool(
   name: string,
   rawArgs: Record<string, unknown>,
@@ -694,30 +752,12 @@ export async function executeTool(
       case 'search_catalog': {
         const args = searchCatalogArgs.parse(rawArgs);
         const kind = args.kind ?? 'all';
-        // Match the query across title + subtitle + description, word by word, so
-        // a customer's phrasing ("تقويم الأسنان الشفاف") still finds the service
-        // titled "تقويم شفاف". Each word also expands to Arabic surface variants —
-        // definite-article prefixes stripped (الشفاف→شفاف) and hamza-on-alef
-        // toggled (اسنان↔أسنان) — because `contains` is literal and the customer's
-        // spelling rarely matches the stored one exactly.
-        const variants = (w: string): string[] => {
-          const out = new Set<string>([w]);
-          const stripped = w.replace(/^(وال|بال|فال|كال|لل|ال)/, '');
-          if (stripped.length >= 3) out.add(stripped);
-          for (const v of [...out]) {
-            if (v.startsWith('ا')) out.add(`أ${v.slice(1)}`);
-            if (/^[أإآ]/.test(v)) out.add(`ا${v.slice(1)}`);
-          }
-          return [...out];
-        };
-        const words = args.query
-          ? args.query.split(/\s+/).map((w) => w.trim()).filter((w) => w.length >= 3)
-          : [];
-        const terms = words.flatMap(variants);
-        const anyWord = (fields: string[]) =>
-          terms.length
-            ? { OR: fields.flatMap((f) => terms.map((w) => ({ [f]: { contains: w, mode: Prisma.QueryMode.insensitive } }))) }
-            : {};
+        // Match the query across title + subtitle + description, word by word with
+        // Arabic surface variants (see catalogTextWhere), so a customer's phrasing
+        // ("تقويم الأسنان الشفاف") still finds the service titled "تقويم شفاف".
+        const svcWhere = catalogTextWhere(args.query, ['title', 'subtitle', 'description']);
+        const prodWhere = catalogTextWhere(args.query, ['title', 'description']);
+        const hasQuery = Object.keys(svcWhere).length > 0;
         const svcSelect = { id: true, title: true, description: true, price: true, priceLabel: true, customFields: true } as const;
         const prodSelect = { id: true, title: true, description: true, price: true, stock: true, customFields: true } as const;
         // take 30 (not 10): a business with 11+ services would otherwise get an
@@ -729,15 +769,15 @@ export async function executeTool(
           db.product.findMany({ where: { companyId: ctx.companyId, isActive: true, ...where }, take: 30, orderBy: { createdAt: 'asc' }, select: prodSelect });
 
         let [services, products] = await Promise.all([
-          kind === 'product' ? [] : activeSvc(anyWord(['title', 'subtitle', 'description'])),
-          kind === 'service' ? [] : activeProd(anyWord(['title', 'description'])),
+          kind === 'product' ? [] : activeSvc(svcWhere),
+          kind === 'service' ? [] : activeProd(prodWhere),
         ]);
 
         // If the wording matched nothing, return the real catalog — IGNORING the
         // model's kind filter (a wrong kind:'product' in a services-only business
         // must not produce an empty result) — so the agent offers actual
         // alternatives instead of concluding "not available".
-        if (words.length && services.length === 0 && products.length === 0) {
+        if (hasQuery && services.length === 0 && products.length === 0) {
           [services, products] = await Promise.all([activeSvc({}), activeProd({})]);
         }
 
@@ -756,15 +796,18 @@ export async function executeTool(
 
       case 'list_open_slots': {
         const args = listOpenSlotsArgs.parse(rawArgs);
+        // Resolve the service by id OR name — never trust the model to copy a cuid.
+        const svc = await resolveServiceRef(ctx.companyId, args.serviceId, args.serviceName);
+        if (!svc) return fail('لم أتعرّف على الخدمة المطلوبة. تحقّق من اسمها عبر search_catalog.');
         const tz = await companyTimezone(ctx.companyId);
-        const slots = await generateDaySlots(ctx.companyId, args.serviceId, args.date);
+        const slots = await generateDaySlots(ctx.companyId, svc.id, args.date);
         const open = slots.filter((s) => s.available).map((s) => ({ time: s.label, startAt: s.startAt }));
         const waitlist = slots.filter((s) => !s.available && s.waitlist).map((s) => ({ time: s.label, startAt: s.startAt }));
         // Nothing open on the requested day → surface the closest day that has room.
         let nextAvailable: { date: string; time: string; startAt: string }[] = [];
         if (open.length === 0) {
           const tomorrow = new Date(new Date(`${args.date}T00:00:00Z`).getTime() + DAY_MS);
-          nextAvailable = await suggestAlternatives(ctx.companyId, args.serviceId, tomorrow, tz);
+          nextAvailable = await suggestAlternatives(ctx.companyId, svc.id, tomorrow, tz);
         }
         return ok({
           note: 'الأوقات مُنسّقة بتوقيت النشاط (نظام ١٢ ساعة). اقتبسها حرفياً ولا تعِد حسابها.',
@@ -807,12 +850,13 @@ export async function executeTool(
         }
         const endAt = args.endAt ? parseDate(args.endAt) : null;
 
-        if (args.serviceId) {
-          const svc = await db.service.findFirst({
-            where: { id: args.serviceId, companyId: ctx.companyId },
-            select: { id: true },
-          });
-          if (!svc) return fail('الخدمة غير موجودة.');
+        // Resolve the service by id OR name (fast models mangle the cuid). Only a
+        // service-linked booking needs this; a bare-title ad-hoc booking skips it.
+        let resolvedServiceId: string | undefined;
+        if (args.serviceId || args.serviceName) {
+          const svc = await resolveServiceRef(ctx.companyId, args.serviceId, args.serviceName);
+          if (!svc) return fail('لم أتعرّف على الخدمة المطلوبة. تحقّق من اسمها عبر search_catalog قبل الحجز.');
+          resolvedServiceId = svc.id;
         }
 
         // Every booking must belong to a real customer — the agent must have
@@ -871,7 +915,7 @@ export async function executeTool(
         try {
           const booking = await createBooking({
             companyId: ctx.companyId,
-            serviceId: args.serviceId,
+            serviceId: resolvedServiceId,
             customerId,
             title: args.title,
             startAt,
@@ -918,10 +962,10 @@ export async function executeTool(
           });
         } catch (err) {
           if (err instanceof BookingError) {
-            if (err.code === 'slot_full' && args.serviceId) {
+            if (err.code === 'slot_full' && resolvedServiceId) {
               // Full and no waitlist — hand the agent real alternatives to offer.
               const tz = await companyTimezone(ctx.companyId);
-              const suggestions = await suggestAlternatives(ctx.companyId, args.serviceId, startAt, tz);
+              const suggestions = await suggestAlternatives(ctx.companyId, resolvedServiceId, startAt, tz);
               return JSON.stringify({
                 ok: false,
                 reason: 'slot_full',

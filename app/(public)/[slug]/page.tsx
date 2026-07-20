@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Phone, Mail, MessageCircle, Clock, CalendarCheck, CheckCircle2, Sparkles, Star } from 'lucide-react';
+import { Phone, Mail, MessageCircle, Clock, CalendarCheck, CheckCircle2, Sparkles, Star, Eye } from 'lucide-react';
 import { db } from '@/lib/db';
 import { ChatWidget } from '@/components/public/chat-widget';
 import { ReviewsSection } from '@/components/public/reviews-section';
@@ -263,12 +263,21 @@ export default async function PublicBusinessPage({
             </span>
           )}
         </div>
-        <div className="mt-3">
-          {s.durationMin != null && s.availability.length > 0 ? (
-            <BookingButton slug={slug} serviceId={s.id} color={accent} />
-          ) : (
-            <OrderButton slug={slug} serviceId={s.id} color={accent} />
-          )}
+        <div className="mt-3 flex items-stretch gap-2">
+          <Link
+            href={`/${slug}/service/${s.id}`}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-lg border py-2 text-sm font-medium transition hover:bg-muted"
+          >
+            <Eye className="size-4" />
+            {ar ? 'التفاصيل' : 'Details'}
+          </Link>
+          <div className="flex-1">
+            {s.durationMin != null && s.availability.length > 0 ? (
+              <BookingButton slug={slug} serviceId={s.id} color={accent} label={ar ? 'حجز سريع' : 'Quick book'} compact />
+            ) : (
+              <OrderButton slug={slug} serviceId={s.id} color={accent} />
+            )}
+          </div>
         </div>
       </div>
     </div>
