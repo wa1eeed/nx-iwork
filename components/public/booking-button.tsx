@@ -19,7 +19,21 @@ function localToday(): string {
 
 // Public booking CTA for a bookable service. Slots come from the deterministic
 // engine (/slots); confirming posts to /book which re-checks capacity atomically.
-export function BookingButton({ slug, serviceId, color }: { slug: string; serviceId: string; color?: string }) {
+export function BookingButton({
+  slug,
+  serviceId,
+  color,
+  label,
+  compact,
+}: {
+  slug: string;
+  serviceId: string;
+  color?: string;
+  /** Override the trigger label (e.g. "حجز سريع" on a two-button card). */
+  label?: string;
+  /** Drop the default top margin so a parent flex row controls spacing. */
+  compact?: boolean;
+}) {
   const t = useTranslations('publicBooking');
   const accent = color || '#06b6d4';
   const [open, setOpen] = useState(false);
@@ -108,11 +122,11 @@ export function BookingButton({ slug, serviceId, color }: { slug: string; servic
     <>
       <button
         onClick={start}
-        className="mt-2 flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium text-white transition hover:opacity-90"
+        className={`${compact ? '' : 'mt-2'} flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-sm font-medium text-white transition hover:opacity-90`}
         style={{ backgroundColor: accent }}
       >
         <Calendar className="h-4 w-4" />
-        {t('cta')}
+        {label ?? t('cta')}
       </button>
 
       {open && (
