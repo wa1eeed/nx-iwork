@@ -193,15 +193,23 @@
       "badge": "AI employees for your business",
       "headline": "Your business, run by",
       "headlineAccent": "AI employees",
-      "lede": "Hire AI employees by department — they answer customers on WhatsApp, Telegram and your website, book appointments, follow up, and run the back office. Around the clock, in your language.",
+      "lede": "A complete platform to run your business with AI employees for every department — sales, support, operations, and finance. They book, follow up, sell, and get work done autonomously across WhatsApp, Telegram and your website, around the clock.",
       "ctaPrimary": "Start free",
       "ctaSecondary": "See how it works",
       "ctaExamples": "See it live",
       "trust": "No credit card required · Free to start · Live in minutes",
-      "channels": "Works on WhatsApp · Telegram · your website"
+      "channels": "Works on WhatsApp · Telegram · your website",
+      "rolesIntro": "Your team includes",
+      "roles": {
+        "sales": "Sales",
+        "support": "Support",
+        "ops": "Operations",
+        "finance": "Finance",
+        "marketing": "Marketing"
+      }
     },
     "demo": {
-      "hint": "This is a real AI employee — try her right now, no signup",
+      "hint": "This is one of your AI employees — a real receptionist. Try her now, no signup",
       "agentName": "Mona — Basma Dental Clinic",
       "agentRole": "Reception & bookings · a live demo business",
       "liveBadge": "Live",
@@ -247,9 +255,21 @@
       "working": "Working",
       "webChannel": "Your website",
       "agents": {
-        "a1": { "initial": "M", "name": "Mona", "role": "Reception & bookings" },
-        "a2": { "initial": "S", "name": "Sultan", "role": "Sales & follow-up" },
-        "a3": { "initial": "L", "name": "Layan", "role": "Marketing & content" }
+        "a1": {
+          "initial": "M",
+          "name": "Mona",
+          "role": "Reception & bookings"
+        },
+        "a2": {
+          "initial": "S",
+          "name": "Sultan",
+          "role": "Sales & follow-up"
+        },
+        "a3": {
+          "initial": "L",
+          "name": "Layan",
+          "role": "Marketing & content"
+        }
       },
       "guardrails": {
         "g1": "Approval required for sensitive actions",
