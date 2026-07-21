@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { Building2, Bot, ListChecks, Coins, ArrowRight } from 'lucide-react';
+import { Building2, Bot, ListChecks, Coins, ArrowRight, Sparkles, TrendingUp } from 'lucide-react';
 import { db } from '@/lib/db';
 import { Card, CardContent } from '@/components/ui/card';
 import { HoverLift, AnimatedCounter } from '@/components/ui/motion';
@@ -17,9 +17,13 @@ const STATUS_CLS: Record<string, string> = {
 export default async function AdminOverviewPage() {
   const t = await getTranslations('admin');
   const locale = await getLocale();
+  const en = locale === 'en';
+  const weekAgo = new Date(Date.now() - 7 * 86_400_000);
 
-  const [companies, agents, tasks, tokens, byStatus, recent] = await Promise.all([
+  const [companies, activeCompanies, newWeek, agents, tasks, tokens, byStatus, recent] = await Promise.all([
     db.company.count(),
+    db.company.count({ where: { status: 'ACTIVE' } }),
+    db.company.count({ where: { createdAt: { gte: weekAgo } } }),
     db.agent.count({ where: { status: { not: 'ARCHIVED' } } }),
     db.task.count(),
     db.company.aggregate({ _sum: { tokenBalance: true } }),
@@ -32,10 +36,12 @@ export default async function AdminOverviewPage() {
   ]);
 
   const stats = [
-    { label: t('overview.companies'), value: companies, icon: Building2 },
-    { label: t('overview.agents'), value: agents, icon: Bot },
-    { label: t('overview.tasks'), value: tasks, icon: ListChecks },
-    { label: t('overview.tokens'), value: tokens._sum.tokenBalance ?? 0, icon: Coins },
+    { label: t('overview.companies'), value: companies, icon: Building2, tint: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' },
+    { label: en ? 'Active' : 'نشطة', value: activeCompanies, icon: Sparkles, tint: 'bg-teal-500/10 text-teal-600 dark:text-teal-400' },
+    { label: t('overview.agents'), value: agents, icon: Bot, tint: 'bg-violet-500/10 text-violet-600 dark:text-violet-400' },
+    { label: t('overview.tasks'), value: tasks, icon: ListChecks, tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-400' },
+    { label: t('overview.tokens'), value: tokens._sum.tokenBalance ?? 0, icon: Coins, tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-400' },
+    { label: en ? 'New this week' : 'جديدة هذا الأسبوع', value: newWeek, icon: TrendingUp, tint: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400' },
   ];
 
   return (
@@ -45,18 +51,20 @@ export default async function AdminOverviewPage() {
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-6">
         {stats.map((s) => (
           <HoverLift key={s.label}>
-            <Card className="h-full hover:shadow-elevated">
-              <CardContent className="p-4">
-                <div className="mb-2 flex size-9 items-center justify-center rounded-lg bg-gradient-brand-soft text-primary">
-                  <s.icon className="size-4" />
+            <Card className="h-full shadow-card transition hover:border-primary/30 hover:shadow-elevated">
+              <CardContent className="flex items-start gap-3 p-4">
+                <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${s.tint}`}>
+                  <s.icon className="size-5" />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-2xl font-bold leading-tight tabular-nums">
+                    <AnimatedCounter value={s.value} locale={locale} />
+                  </p>
+                  <p className="mt-0.5 truncate text-xs text-muted-foreground">{s.label}</p>
                 </div>
-                <p className="text-2xl font-semibold tabular-nums">
-                  <AnimatedCounter value={s.value} locale={locale} />
-                </p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
               </CardContent>
             </Card>
           </HoverLift>
