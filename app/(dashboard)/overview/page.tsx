@@ -7,6 +7,7 @@ import { dashboardCompanyIdOrRedirect } from '@/lib/companies';
 import { deptHue } from '@/lib/ui/dept-accent';
 import { ApprovalCard, type ApprovalCardData } from '@/components/dashboard/approval-card';
 import { BusinessCounters } from '@/components/dashboard/business-counters';
+import { RevenueSnapshot } from '@/components/dashboard/revenue-snapshot';
 
 // The Overview — a holistic, live snapshot of the *business*: upcoming bookings,
 // recent orders, agent tasks in progress, the decisions awaiting the owner, and a
@@ -198,6 +199,9 @@ export default async function OverviewPage() {
 
         {/* Right rail */}
         <aside className="space-y-4">
+          {/* IBP-style revenue summary — sparkline + income-statement breakdown */}
+          <RevenueSnapshot companyId={companyId} locale={locale} />
+
           <div className="rounded-2xl border bg-card p-4">
             <div className="mb-1 flex items-center gap-2">
               <h2 className="text-base font-semibold">{t('needsAttention')}</h2>
