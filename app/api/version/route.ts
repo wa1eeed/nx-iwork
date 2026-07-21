@@ -13,7 +13,7 @@ import { db } from '@/lib/db';
 // is inert unless this heartbeat is fresh. No secrets exposed — just a timestamp.
 export const dynamic = 'force-dynamic';
 
-const MARKER = 'cron-heartbeat';
+const MARKER = 'landing-workforce-framing';
 // Fresher than this ⇒ the runner is alive (cron fires ~every 60s).
 const CRON_HEALTHY_WINDOW_MS = 3 * 60 * 1000;
 

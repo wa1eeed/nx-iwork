@@ -11,6 +11,11 @@ import {
   Building2,
   Home,
   ExternalLink,
+  TrendingUp,
+  Headphones,
+  Briefcase,
+  Wallet,
+  Megaphone,
   type LucideIcon,
 } from 'lucide-react';
 import { auth } from '@/lib/auth';
@@ -47,6 +52,16 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: { card: 'summary_large_image', title, description },
   };
 }
+
+// The AI-employee roster shown as chips under the hero — signals "a whole team
+// across departments", so the page doesn't read as just a customer-service bot.
+const ROLES: { key: string; icon: LucideIcon }[] = [
+  { key: 'sales', icon: TrendingUp },
+  { key: 'support', icon: Headphones },
+  { key: 'ops', icon: Briefcase },
+  { key: 'finance', icon: Wallet },
+  { key: 'marketing', icon: Megaphone },
+];
 
 const STEP_TINTS = ['bg-amber-500/10 text-amber-600 dark:text-amber-400', 'bg-violet-500/10 text-violet-600 dark:text-violet-400', 'bg-sky-500/10 text-sky-600 dark:text-sky-400'];
 const STEPS = ['s1', 's2', 's3'] as const;
@@ -134,6 +149,19 @@ export default async function LandingPage() {
                 )}
               </div>
               {!isLoggedIn && <p className="text-xs text-muted-foreground">{t('hero.trust')}</p>}
+              {/* Department roster — the page is a whole AI workforce, not one bot */}
+              <div className="flex flex-wrap items-center justify-center gap-1.5 lg:justify-start">
+                <span className="text-xs text-muted-foreground">{t('hero.rolesIntro')}</span>
+                {ROLES.map(({ key, icon: Icon }) => (
+                  <span
+                    key={key}
+                    className="inline-flex items-center gap-1 rounded-full border bg-card/60 px-2.5 py-1 text-xs font-medium backdrop-blur"
+                  >
+                    <Icon className="size-3 text-primary" />
+                    {t(`hero.roles.${key}`)}
+                  </span>
+                ))}
+              </div>
               <div className="inline-flex items-center gap-2 rounded-full border bg-card/60 px-4 py-1.5 text-xs font-medium text-muted-foreground backdrop-blur">
                 <MessageCircle className="size-3.5 text-primary" />
                 {t('hero.channels')}
