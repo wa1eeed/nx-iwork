@@ -1608,13 +1608,21 @@ export async function executeTool(
           take: 200,
           select: { id: true, title: true, data: true },
         });
-        const q = args.query?.toLowerCase();
-        const matched = (q
-          ? rows.filter(
-              (r) =>
-                (r.title ?? '').toLowerCase().includes(q) ||
-                JSON.stringify(r.data ?? {}).toLowerCase().includes(q)
-            )
+        // Word-by-word AND match across title + all field values (each word may
+        // hit any field), with Arabic surface variants. A single-substring match
+        // failed for natural queries: "فيلا للبيع" never matched a record whose
+        // JSON has "ptype":"فيلا" and "listing":"للبيع" in separate fields, so the
+        // agent wrongly answered "لا توجد فلل للبيع" for a real available listing.
+        const words = (args.query ?? '')
+          .toLowerCase()
+          .split(/\s+/)
+          .map((w) => w.trim())
+          .filter((w) => w.length >= 2);
+        const matched = (words.length
+          ? rows.filter((r) => {
+              const hay = `${r.title ?? ''} ${JSON.stringify(r.data ?? {})}`.toLowerCase();
+              return words.every((w) => arabicVariants(w).some((v) => hay.includes(v)));
+            })
           : rows
         ).slice(0, limit);
         return ok({
