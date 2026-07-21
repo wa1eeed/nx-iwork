@@ -71,6 +71,13 @@ export function ChatWidget({
     const agentMsgId = `a${Date.now()}`;
     let acc = '';
     let started = false;
+    // Whether a terminal message (delta / done / error) has already been
+    // rendered. The post-loop + catch fallbacks MUST key off this, not
+    // `started` (which only tracks deltas): a billing_limit `error` event
+    // renders the friendly WhatsApp message, but `started` stays false, so a
+    // `started`-gated fallback would clobber it with the generic "تعذّر الرد" —
+    // exactly the scary message a visitor saw when the agent was out of budget.
+    let resolved = false;
     // Decide append-vs-update from the ACTUAL current state (m), not a mutable
     // `started` flag: deltas are processed synchronously in the reader loop, so
     // the flag flips to true before React runs the first (deferred) updater —
@@ -125,16 +132,19 @@ export function ChatWidget({
             acc += evt.text;
             upsert(acc);
             started = true;
+            resolved = true;
           } else if (evt.type === 'done') {
             if (!started) upsert(evt.reply || 'تم.');
+            resolved = true;
           } else if (evt.type === 'error') {
             if (!started) upsert(evt.reason === 'billing_limit' ? unavailableMsg : 'تعذّر الرد الآن. حاول بعد قليل.');
+            resolved = true;
           }
         }
       }
-      if (!started) upsert('تعذّر الرد الآن. حاول بعد قليل.');
+      if (!resolved) upsert('تعذّر الرد الآن. حاول بعد قليل.');
     } catch {
-      if (!started) upsert('فشل الاتصال.');
+      if (!resolved) upsert('فشل الاتصال.');
     } finally {
       setSending(false);
     }
