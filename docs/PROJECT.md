@@ -1,32 +1,32 @@
 # NX iWork - Project Constitution
 
-> **هذا الملف هو المرجع الأول والأساسي للمشروع.** اقرأه كاملاً قبل أي تطوير.
+> **This file is the first and foundational reference for the project.** Read it in full before any development.
 
 ---
 
-## 1. نظرة عامة
+## 1. Overview
 
-**الاسم:** NX iWork
+**Name:** NX iWork
 
-**الوصف:** منصة تمكّن أصحاب الأعمال من بناء شركة كاملة من موظفين ذكاء اصطناعي يعملون في أقسام، ينفذون مهام، ولديهم ذاكرة طويلة المدى.
+**Description:** A platform that lets business owners build an entire company of AI employees who work across departments, execute tasks, and have long-term memory.
 
-**النموذج التجاري:** **SaaS مُدار** — حيّ الآن على **bznss.one**. اشتراكات شهرية
-(باقات Starter/Growth/Scale) + **بنك توكنز** مُدار للذكاء + **محفظة** (SAR) + **سوق
-خدمات/إضافات**. (التوجه القديم «بيع نسخ مرخصة» تم استبداله بالـ SaaS المُدار.)
+**Business model:** **Managed SaaS** — now live at **bznss.one**. Monthly subscriptions
+(Starter/Growth/Scale plans) + a managed **token bank** for AI + a **wallet** (SAR) + a
+**services/add-ons marketplace**. (The old "sell licensed copies" direction was replaced by managed SaaS.)
 
-**السوق:** السعودية أولاً، ثم الخليج، ثم عالمياً.
+**Market:** Saudi Arabia first, then the Gulf, then global.
 
-**اللغات:** عربي (Tajawal) + إنجليزي (Inter)، قابل للتعطيل من Settings.
+**Languages:** Arabic (Tajawal) + English (Inter), can be turned off from Settings.
 
 ---
 
-## 2. القيم الأساسية
+## 2. Core values
 
-1. **البساطة لصاحب البزنس** - رائد الأعمال غير تقني
-2. **القابلية للنسخ** - بنية تدعم بيع نسخ بدون عناء
-3. **الأمان أولاً** - تشفير، عزل، 2FA
-4. **المرونة الكاملة** - كل شي قابل للتخصيص (لغة، عملة، تاريخ، ثيم)
-5. **الذكاء الحقيقي** - موظفين أذكياء بذاكرة، مش chatbots
+1. **Simplicity for the business owner** - the entrepreneur is non-technical
+2. **Replicability** - an architecture that supports selling copies effortlessly
+3. **Security first** - encryption, isolation, 2FA
+4. **Full flexibility** - everything is customizable (language, currency, date, theme)
+5. **Real intelligence** - smart employees with memory, not chatbots
 
 ---
 
@@ -37,32 +37,32 @@
 - TypeScript (strict)
 - Tailwind CSS + shadcn/ui
 - Tajawal + Inter fonts
-- next-intl للترجمة
-- framer-motion للحركات
-- lucide-react للأيقونات
+- next-intl for translation
+- framer-motion for animations
+- lucide-react for icons
 
 ### Backend
 - Next.js API Routes + Server Actions
 - Prisma ORM
-- PostgreSQL 16 + pgvector (للـ semantic memory)
+- PostgreSQL 16 + pgvector (for semantic memory)
 - NextAuth.js v5
 - bcryptjs
 
 ### AI (Provider-Agnostic)
-- **طبقة محايدة** (`lib/ai/`) — واجهة موحّدة، وباقي الكود لا يستورد أي SDK مزوّد
-- **افتراضياً Managed عبر Google Vertex** (Gemini 2.5) بمصادقة **ADC بلا مفاتيح**،
-  والمحاسبة عبر **بنك توكنز** لكل شركة. **BYOK** خيار اختياري (مفتاح الشركة مشفّر،
-  Gemini/Claude). انظر [`AI_VERTEX.md`](./AI_VERTEX.md).
-- **استدعاء الدوال (Function Calling):** الوكلاء ينفّذون أدوات (كتالوج، CRM، مهام) بدل الاكتفاء بالمحادثة — قراءة منظمة بدل PDF لتوفير التوكنز
-- Model tiers مجرّدة (Fast/Balanced/Advanced) تُترجم لمعرّف نموذج لكل مزوّد (`lib/ai/models.ts`)
+- **Neutral layer** (`lib/ai/`) — a unified interface; the rest of the code never imports any provider SDK
+- **Managed by default via Google Vertex** (Gemini 2.5) with **keyless ADC** authentication,
+  and billing via a per-company **token bank**. **BYOK** is optional (the company's key is encrypted,
+  Gemini/Claude). See [`AI_VERTEX.md`](./AI_VERTEX.md).
+- **Function Calling:** agents execute tools (catalog, CRM, tasks) instead of just chatting — structured reads instead of PDFs to save tokens
+- Abstract model tiers (Fast/Balanced/Advanced) map to a per-provider model id (`lib/ai/models.ts`)
 
-### Integrations (طبقات محايدة معزولة — تطوير أي واحدة لا يلمس الباقي)
-- **Cloudflare R2** (تخزين S3-compatible، رفع presigned مباشر بلا مرور على الـ VPS، مبدأ هجين + كوتا + ضغط صور) — `lib/storage/` ✅
-- **Resend** (إيميل مركزي + **مُرسِل per-tenant**: اسم/reply-to/تسويق) + **Twilio** (SMS اختياري) + Telegram (تصعيد) — `lib/notifications/` ✅
-- **Embeddings** (Google Gemini `gemini-embedding-001` @ 1536، HNSW) للذاكرة الدلالية — `lib/ai/embeddings.ts` ✅
-- **Tap.company** (شحن المحفظة + دفع الاشتراكات بالبطاقة/Apple Pay) — ✅ مُنفّذ (التجديد التلقائي مخطّط)
-- **Sentry** (تتبّع أخطاء، موسوم بـ `APP_ENV`) + `GET /api/health` + **ثلاث بيئات** عبر `APP_ENV` (`lib/env.ts`) — ✅ مُنفّذ
-- **API عام v1** لتكامل أطراف ثالثة — مخطّط
+### Integrations (isolated neutral layers — building any one doesn't touch the others)
+- **Cloudflare R2** (S3-compatible storage, direct presigned uploads that bypass the VPS, hybrid approach + quota + image compression) — `lib/storage/` ✅
+- **Resend** (central email + **per-tenant sender**: name/reply-to/marketing) + **Twilio** (optional SMS) + Telegram (escalation) — `lib/notifications/` ✅
+- **Embeddings** (Google Gemini `gemini-embedding-001` @ 1536, HNSW) for semantic memory — `lib/ai/embeddings.ts` ✅
+- **Tap.company** (wallet top-up + subscription payment by card/Apple Pay) — ✅ implemented (auto-renewal planned)
+- **Sentry** (error tracking, tagged with `APP_ENV`) + `GET /api/health` + **three environments** via `APP_ENV` (`lib/env.ts`) — ✅ implemented
+- **Public API v1** for third-party integration — planned
 
 ### DevOps
 - Docker (multi-stage)
@@ -72,153 +72,153 @@
 
 ---
 
-## 4. الأدوار في النظام
+## 4. Roles in the system
 
-### 1. Super Admin (وليد)
-- وصول لكل شي عبر `/admin` (لوحة السوبر أدمن — انظر [`ADMIN.md`](./ADMIN.md))
-- إدارة الشركات، الباقات، أرصدة التوكنز، سقوف التخزين، إعدادات المنصّة
-- اعتماد managed (Vertex) عبر service account واحد — لا مفاتيح API مكشوفة
+### 1. Super Admin (Waleed)
+- Access to everything via `/admin` (the super-admin panel — see [`ADMIN.md`](./ADMIN.md))
+- Manage companies, plans, token balances, storage caps, platform settings
+- Managed credentials (Vertex) via a single service account — no exposed API keys
 
 ### 2. Business Owner
-- صاحب الشركة (المشترك)
-- لوحة التحكم على `bznss.one` (مسارات `/overview`, `/agents`, …)
-- يضيف موظفين، أقسام، خدمات، منتجات
+- The company owner (the subscriber)
+- The dashboard on `bznss.one` (routes `/overview`, `/agents`, …)
+- Adds employees, departments, services, products
 
 ### 3. Business Member
-- موظف بشري في الشركة
-- صلاحيات محدودة حسب ما يحدد الـ Owner
+- A human employee at the company
+- Limited permissions as defined by the Owner
 
 ### 4. AI Agent
-- ليس مستخدماً، كيان داخل النظام
-- له شخصية، ذاكرة، صلاحيات
+- Not a user; an entity inside the system
+- Has a persona, memory, permissions
 
 ### 5. Visitor
-- زائر الموقع العام (`bznss.one/{slug}` أو النطاق المخصّص للشركة)
-- يتفاعل مع AI Agents عبر chat widget
+- A visitor to the public site (`bznss.one/{slug}` or the company's custom domain)
+- Interacts with AI Agents via the chat widget
 
 ---
 
-## 5. الميزات الجوهرية
+## 5. Core features
 
-### للـ Business Owner
+### For the Business Owner
 
-**إدارة الموظفين:**
-- إنشاء AI Agent بشخصية وأدوار
-- ربط بقسم ومدير
-- إعطاء System Prompt + Skills
-- مراقبة الأداء (3 tabs + Timeline)
+**Employee management:**
+- Create an AI Agent with a persona and roles
+- Link to a department and manager
+- Give it a System Prompt + Skills
+- Monitor performance (3 tabs + Timeline)
 
-**إدارة المهام:**
-- تكليف موظف بمهمة
-- متابعة التقدم
-- مراجعة النتيجة
-- Approvals للقرارات الحساسة
+**Task management:**
+- Assign a task to an employee
+- Track progress
+- Review the result
+- Approvals for sensitive decisions
 
-**المحادثة:**
-- chat مباشر مع أي موظف
-- Streaming من Claude
-- ذاكرة طويلة المدى
+**Chat:**
+- Direct chat with any employee
+- Streaming from Claude
+- Long-term memory
 
-**الإعدادات (Configurable):**
-- اللغة: عربي/إنجليزي/الاثنين
-- العملة: SAR/USD/AED/EUR/GBP
-- التاريخ: ميلادي/هجري/الاثنين
-- التوقيت: Asia/Riyadh وغيره
-- الثيم: Dark/Light
-- Branding: شعار، ألوان، اسم
+**Settings (Configurable):**
+- Language: Arabic/English/both
+- Currency: SAR/USD/AED/EUR/GBP
+- Date: Gregorian/Hijri/both
+- Timezone: Asia/Riyadh and others
+- Theme: Dark/Light
+- Branding: logo, colors, name
 
-**الفرونت إند العام:**
-- Landing page موحدة قابلة للتخصيص
-- Hero (نص+صورة أو slider)
-- خدمات (مع طلب من الزائر)
-- منتجات (مع cart + checkout)
-- Chat widget في الزاوية
+**Public front end:**
+- A unified, customizable landing page
+- Hero (text+image or slider)
+- Services (with visitor requests)
+- Products (with cart + checkout)
+- Chat widget in the corner
 - Custom Domain support
 
-### للـ Super Admin
+### For the Super Admin
 
 **Dashboard:**
-- إجمالي الإيرادات
-- العملاء النشطين
-- استخدام النظام
+- Total revenue
+- Active customers
+- System usage
 
-**إدارة العملاء:**
-- قائمة، تفاصيل، تعليق، حذف
+**Customer management:**
+- List, details, suspend, delete
 
-**إعدادات المنصة:**
-- Branding عام
+**Platform settings:**
+- Global branding
 - Feature flags
-- وضع الصيانة
+- Maintenance mode
 
 ---
 
-## 6. القرارات المعمارية
+## 6. Architectural decisions
 
-### قرار 1: Multi-Tenancy من اليوم الأول
-**القرار:** Shared Database, Shared Schema with `companyId` isolation
-**ليش:** يدعم النموذج المزدوج (نسخ + SaaS) بنفس الكود
+### Decision 1: Multi-tenancy from day one
+**Decision:** Shared Database, Shared Schema with `companyId` isolation
+**Why:** supports the dual model (copies + SaaS) with the same code
 
-### قرار 2: نموذج ذكاء مزدوج — Managed (افتراضي) + BYOK (اختياري)
-**القرار:** الافتراضي **managed**: المنصة تتصل بـ **Google Vertex** (Gemini 2.5) عبر service account واحد ومصادقة **ADC بلا مفاتيح**، وتُحاسِب كل شركة عبر **بنك توكنز** (`Company.tokenBalance`) — المنصة تدفع لجوجل. و**BYOK** خيار اختياري: الشركة تضع مفتاحها (مشفّر AES-256-GCM) وتختار المزوّد (Gemini/Claude) وتدفع مباشرة.
-**ليش:** managed يعطي تجربة جاهزة بلا إعداد للعميل، والمنصة تتحكم بالتكلفة عبر بنك التوكنز؛ وBYOK يبقى لمن يريد مفتاحه/مزوّده (التكلفة عليه). الطبقة محايدة (`lib/ai/`) فالتبديل = ملف واحد.
-**⚠️ تحديث القرار:** سابقاً كان التوجه **BYOK-أولاً**؛ تحوّلنا إلى **managed-أولاً عبر Vertex + بنك توكنز** بعد اعتماد سياسة جوجل keyless ونموذج الـ SaaS المُدار. المرجع الحالي: [`../README.md`](../README.md) و[`AI_VERTEX.md`](./AI_VERTEX.md).
+### Decision 2: Dual AI model — Managed (default) + BYOK (optional)
+**Decision:** the default is **managed**: the platform connects to **Google Vertex** (Gemini 2.5) via a single service account and **keyless ADC** authentication, and bills each company via a **token bank** (`Company.tokenBalance`) — the platform pays Google. **BYOK** is optional: the company supplies its own key (AES-256-GCM encrypted), picks the provider (Gemini/Claude), and pays directly.
+**Why:** managed gives a ready-to-use experience with no customer setup, and the platform controls cost via the token bank; BYOK remains for those who want their own key/provider (the cost is theirs). The layer is neutral (`lib/ai/`), so switching = one file.
+**⚠️ Decision update:** the direction used to be **BYOK-first**; we moved to **managed-first via Vertex + token bank** after adopting Google's keyless policy and the managed-SaaS model. Current reference: [`../README.md`](../README.md) and [`AI_VERTEX.md`](./AI_VERTEX.md).
 
-### قرار 2-ب: نموذج بيانات مرن لأي نشاط
-**القرار:** جداول أساسية ثابتة (Customer/Service/Product/Task) + حقل `customFields` (JSON) في كل منها
-**ليش:** نشاط واحد (عقار/حجوزات/خدمات/متاجر) يضيف خصائصه (عدد الغرف، وقت الوصول، الميزانية) دون أي تعديل على الـ schema أو الكود.
+### Decision 2b: A flexible data model for any business
+**Decision:** fixed core tables (Customer/Service/Product/Task) + a `customFields` (JSON) field on each
+**Why:** a given business (real estate/bookings/services/stores) adds its own attributes (number of rooms, arrival time, budget) with no change to the schema or code.
 
-### قرار 2-ج: نظام مهام موحّد (قائمة/تقويم)
-**القرار:** جدول `Task` واحد بأنواع (`TaskKind`: AGENT_TASK / APPOINTMENT / REMINDER) + `startAt/endAt`
-**ليش:** يخدم مهام الوكلاء ومواعيد العملاء والتذكيرات معاً، يُعرض كقائمة أو تقويم، ويربط بالـ CRM.
+### Decision 2c: A unified task system (list/calendar)
+**Decision:** a single `Task` table with kinds (`TaskKind`: AGENT_TASK / APPOINTMENT / REMINDER) + `startAt/endAt`
+**Why:** serves agent tasks, customer appointments, and reminders together, is shown as a list or calendar, and links to the CRM.
 
-### قرار 3: Agent Loop المتقدم
-**القرار:** كل موظف له:
-1. **Working Memory** (آخر 20 رسالة في context)
-2. **Episodic Memory** (كل المهام في DB)
-3. **Semantic Memory** (vector embeddings في pgvector)
-4. **Wake Triggers** (events تنبّهه: مهمة، رسالة، schedule، webhook)
+### Decision 3: The advanced Agent Loop
+**Decision:** every employee has:
+1. **Working Memory** (the last 20 messages in context)
+2. **Episodic Memory** (all tasks in the DB)
+3. **Semantic Memory** (vector embeddings in pgvector)
+4. **Wake Triggers** (events that wake it: a task, a message, a schedule, a webhook)
 
-### قرار 4: Skills & Tools System
-**القرار:** كل موظف عنده Tools (أدوات تنفيذية عبر function-calling) + Skills (قدرات قابلة للتركيب)
-- Tools: أدوات **داخلية مباشرة** (كتالوج، CRM، مهام، ذاكرة) مبوّبة عبر `getToolsForAgent` (module ∩ `permissions`) — والنموذج لا يصل لأي أداة لم تُسلَّم له (بوابة صارمة).
-- Skills: قدرات متخصّصة قابلة للتركيب — **نظام Skills مخطّط** (المرحلة 2 من معمارية الوكلاء).
+### Decision 4: Skills & Tools System
+**Decision:** every employee has Tools (executable tools via function-calling) + Skills (composable capabilities)
+- Tools: **direct internal** tools (catalog, CRM, tasks, memory) gated through `getToolsForAgent` (module ∩ `permissions`) — the model cannot reach any tool it wasn't handed (a strict gate).
+- Skills: specialized composable capabilities — the **Skills system is planned** (phase 2 of the agent architecture).
 
-### قرار 5: العقد ثنائي الطبقة (النظام مقابل الوكلاء)
-**القرار:** **النظام** (كود حتمي داخل الوورك فلو) يملك المعاملات — الفواتير، الحجوزات، الطلبات، سجلات CRM — برمجياً وبموثوقية. و**الوكلاء** يؤدّون العمل الإنساني: الحكم، التواصل باللغة الطبيعية (مع العملاء وفيما بينهم)، الغموض، المبادرة، التنسيق بين الأقسام. الوكيل يُدرِك حالة النظام، يقرّر ضمن السياسة، يتواصل، و**يشغّل** الوورك فلو — ولا «يسجّل الفاتورة» بنفسه (النظام يفعل ذلك).
-**ليش:** يمنع الوكلاء الزائدين — كل وكيل مبرَّر فقط حيث يلزم الحكم/التواصل/المبادرة. (يحلّ محل قرار n8n القديم المُلغى؛ الأدوات الأساسية داخلية لا خارجية.)
+### Decision 5: The two-layer contract (system vs. agents)
+**Decision:** the **system** (deterministic code inside the workflow) owns transactions — invoices, bookings, orders, CRM records — programmatically and reliably. The **agents** do the human work: judgment, natural-language communication (with customers and among themselves), ambiguity, initiative, cross-department coordination. The agent is aware of the system's state, decides within policy, communicates, and **triggers** the workflow — but does not "record the invoice" itself (the system does that).
+**Why:** prevents redundant agents — each agent is justified only where judgment/communication/initiative are needed. (Replaces the old, cancelled n8n decision; the core tools are internal, not external.)
 
-### قرار 6: Configurable Settings
-**القرار:** كل شي قابل للتخصيص من Settings:
-- اللغة (en/ar/both)
-- العملة + التاريخ + التوقيت
-- الثيم
+### Decision 6: Configurable Settings
+**Decision:** everything is customizable from Settings:
+- Language (en/ar/both)
+- Currency + date + timezone
+- Theme
 - Branding
-**ليش:** يدعم بيع نسخ بـ branding مختلف، ويسهّل التوسع عالمياً
+**Why:** supports selling copies with different branding, and eases global expansion
 
-### قرار 7: النموذج = SaaS متعدّد المستأجرين + ثلاث بيئات
-**القرار:** المنصة الحيّة **SaaS متعدّد المستأجرين** (عزل عبر `companyId` + RLS)، تعمل عبر **ثلاث بيئات** (development/staging/production) يميّزها `APP_ENV` (`lib/env.ts`) — لأن `NODE_ENV` لا يفرّق staging عن production. وحدة واحدة على bznss.one، مسارات path-based.
-**ليش:** نموذج واحد مُدار مركزياً، وبيئات معزولة الأسرار/المفاتيح (test مقابل live). (وضع single-tenant لم يعد مُنفَّذاً في الكود.)
+### Decision 7: The model = multi-tenant SaaS + three environments
+**Decision:** the live platform is **multi-tenant SaaS** (isolation via `companyId` + RLS), running across **three environments** (development/staging/production) distinguished by `APP_ENV` (`lib/env.ts`) — because `NODE_ENV` doesn't separate staging from production. A single instance on bznss.one, path-based routes.
+**Why:** a single centrally managed model, with environments that isolate secrets/keys (test vs. live). (Single-tenant mode is no longer implemented in the code.)
 
-### قرار 8: Custom Domain Support
-**القرار:** العميل يوجّه دومينه (A-record للـ apex) والمنصة تتحقّق منه وتخدم `/{slug}` عليه؛ SSL يُدار عبر Coolify/Caddy.
-**ليش:** صاحب البزنس يربط دومينه الخاص بسهولة.
+### Decision 8: Custom Domain Support
+**Decision:** the customer points their domain (an A-record for the apex) and the platform verifies it and serves `/{slug}` on it; SSL is managed via Coolify/Caddy.
+**Why:** the business owner connects their own domain easily.
 
-### قرار 9: Data Sovereignty
-**القرار:** كل البيانات على VPS في السعودية
-**ليش:** متطلبات السوق السعودي ورؤية 2030
+### Decision 9: Data Sovereignty
+**Decision:** all data on a VPS in Saudi Arabia
+**Why:** requirements of the Saudi market and Vision 2030
 
 ---
 
-## 7. هيكل المشروع
+## 7. Project structure
 
 ```
 nx-iwork/
 ├── app/                          # Next.js App Router
-│   ├── (auth)/                   # تسجيل الدخول
+│   ├── (auth)/                   # Authentication
 │   │   ├── login/
 │   │   ├── signup/
 │   │   └── onboarding/
-│   ├── (dashboard)/              # لوحة Business Owner
+│   ├── (dashboard)/              # Business Owner dashboard
 │   │   ├── overview/
 │   │   ├── agents/
 │   │   ├── departments/
@@ -228,9 +228,9 @@ nx-iwork/
 │   │   ├── services/
 │   │   ├── products/
 │   │   └── settings/
-│   ├── (admin)/                  # لوحة Super Admin
+│   ├── (admin)/                  # Super Admin panel
 │   │   └── admin/
-│   ├── (public)/                 # الصفحة العامة
+│   ├── (public)/                 # Public page
 │   │   └── [businessSlug]/
 │   ├── api/
 │   └── page.tsx                  # marketing landing (/) + SEO/JSON-LD
@@ -253,65 +253,65 @@ nx-iwork/
 
 ---
 
-## 8. مبادئ التطوير
+## 8. Development principles
 
-1. **ميزة واحدة كل مرة** - ما نبني ميزات متوازية
-2. **اختبار قبل الانتقال** - كل feature تشتغل قبل التالية
-3. **Git بعد كل ميزة** - commits صغيرة وواضحة
-4. **توثيق فوري** - CHANGELOG.md محدّث
-5. **اسأل قبل القرارات الكبيرة** - وليد لازم يوافق
-
----
-
-## 9. التكاليف المتوقعة
-
-### للبدء:
-- VPS Coolify: 100 SAR/شهر
-- Domain (bznss.one): ~200 SAR/سنة
-- Claude API (BYOK من العملاء): 0
-- **المجموع: ~120 SAR/شهر**
-
-### بعد بيع 5 نسخ:
-- إيرادات: 200,000+ SAR
-- تكاليف ثابتة: 500 SAR/شهر
-- **هامش ربح: ~98%**
+1. **One feature at a time** - we don't build features in parallel
+2. **Test before moving on** - each feature works before the next
+3. **Git after every feature** - small, clear commits
+4. **Immediate documentation** - CHANGELOG.md kept up to date
+5. **Ask before big decisions** - Waleed must approve
 
 ---
 
-## 10. حالة التنفيذ (مُنجز)
+## 9. Expected costs
 
-النواة الأساسية للمنصة **مكتملة ومنشورة**:
+### To start:
+- VPS Coolify: 100 SAR/month
+- Domain (bznss.one): ~200 SAR/year
+- Claude API (BYOK from customers): 0
+- **Total: ~120 SAR/month**
 
-| القدرة | الحالة | المكان |
+### After selling 5 copies:
+- Revenue: 200,000+ SAR
+- Fixed costs: 500 SAR/month
+- **Profit margin: ~98%**
+
+---
+
+## 10. Implementation status (done)
+
+The platform's core is **complete and deployed**:
+
+| Capability | Status | Location |
 |---|---|---|
-| طبقة AI محايدة (Vertex/Gemini افتراضي مُدار، BYOK اختياري) | ✅ | `lib/ai/` |
-| وضع Managed: Vertex AI + بنك توكنز (`AI_MODE=managed`، **افتراضي**) | ✅ مُتحقَّق حيّاً | `lib/ai/providers/vertex.ts`, `lib/billing/tokens.ts` — مرجع: `docs/AI_VERTEX.md` |
-| محادثة الوكيل + استدعاء الأدوات (catalog/CRM/tasks/memory) | ✅ | `lib/agent/run.ts`, `tools.ts` |
-| نموذج بيانات مرن: CRM (Customer) + customFields + Task موحّد | ✅ | `prisma/schema.prisma` |
-| إدارة الأقسام والوكلاء + بناء الشخصية | ✅ | `app/(dashboard)/agents`, `departments` |
-| محرّك تنفيذ المهام (دورة حياة + محاولات + Timeline) | ✅ | `lib/agent/task.ts`, `core.ts` |
-| المشغّلات والجدولة (worker مستقل) | ✅ | `lib/agent/scheduler.ts`, `scripts/scheduler.ts` |
-| الذاكرة (semantic via pgvector + fallback) | ✅ | `lib/agent/memory.ts`, `lib/ai/embeddings.ts` |
-| تخزين R2 + كتالوج المنتجات | ✅ | `lib/storage/`, `app/(dashboard)/products` |
-| الإشعارات: إيميل per-tenant (Resend) + SMS (Twilio اختياري) + تصعيد (Telegram) | ✅ | `lib/notifications/`, `tenant-email.ts` |
-| اللاندنغ بيج العامة + ودجت الوكيل | ✅ | `app/(public)/[slug]` |
-| لاندنغ تسويقية + SEO/JSON-LD على `/` | ✅ | `app/page.tsx` |
-| تصميم جوال (كاروسيل أقسام + شريط سفلي) | ✅ | `components/dashboard/mobile-*` |
-| الـ CRM: الفرص (Pipeline/Kanban + 360°) + الطلبات + دليل العملاء | ✅ | `app/(dashboard)/customers`, `clients` |
-| المحفظة (SAR) + شحن Tap + شراء توكنز | ✅ | `app/(dashboard)/wallet`, `lib/wallet.ts` |
-| الاشتراكات (باقات + ترقية + فواتير، دفع محفظة/Tap) | ✅ | `app/(dashboard)/subscription` |
-| سوق الخدمات/الإضافات + شراء بالمحفظة + إضافة مساحة | ✅ | `app/(dashboard)/services`, `lib/marketplace.ts` |
-| حصص التخزين متعددة المستأجرين + ضغط الصور (sharp) | ✅ | `lib/storage/quota.ts`, `image.ts` — `docs/STORAGE.md` |
-| لوحة السوبر أدمن (شركات/باقات/توكنز/تخزين/متجر/إعدادات) | ✅ | `app/(admin)/admin` — `docs/ADMIN.md` |
-| Sentry + `GET /api/health` + ثلاث بيئات (`APP_ENV`) | ✅ | `lib/env.ts`, `sentry.*.config.ts`, `app/api/health` — `docs/DEPLOYMENT.md` |
-| **معمارية الوكلاء متعددة المراحل** (دستور Job Description + مصفوفة صلاحيات per-department + Skills + تنسيق) | ⬜ مخطّط (الحدث القادم) | `docs/AGENT_SYSTEM.md` |
-| تجديد الاشتراك التلقائي (Tap) · API عام v1 | ⬜ لاحقاً | — |
+| Neutral AI layer (Vertex/Gemini managed by default, BYOK optional) | ✅ | `lib/ai/` |
+| Managed mode: Vertex AI + token bank (`AI_MODE=managed`, **default**) | ✅ verified live | `lib/ai/providers/vertex.ts`, `lib/billing/tokens.ts` — ref: `docs/AI_VERTEX.md` |
+| Agent chat + tool calling (catalog/CRM/tasks/memory) | ✅ | `lib/agent/run.ts`, `tools.ts` |
+| Flexible data model: CRM (Customer) + customFields + unified Task | ✅ | `prisma/schema.prisma` |
+| Department and agent management + persona building | ✅ | `app/(dashboard)/agents`, `departments` |
+| Task execution engine (lifecycle + attempts + Timeline) | ✅ | `lib/agent/task.ts`, `core.ts` |
+| Triggers and scheduling (standalone worker) | ✅ | `lib/agent/scheduler.ts`, `scripts/scheduler.ts` |
+| Memory (semantic via pgvector + fallback) | ✅ | `lib/agent/memory.ts`, `lib/ai/embeddings.ts` |
+| R2 storage + product catalog | ✅ | `lib/storage/`, `app/(dashboard)/products` |
+| Notifications: per-tenant email (Resend) + SMS (Twilio optional) + escalation (Telegram) | ✅ | `lib/notifications/`, `tenant-email.ts` |
+| Public landing page + agent widget | ✅ | `app/(public)/[slug]` |
+| Marketing landing + SEO/JSON-LD on `/` | ✅ | `app/page.tsx` |
+| Mobile design (department carousel + bottom bar) | ✅ | `components/dashboard/mobile-*` |
+| CRM: opportunities (Pipeline/Kanban + 360°) + orders + customer directory | ✅ | `app/(dashboard)/customers`, `clients` |
+| Wallet (SAR) + Tap top-up + token purchase | ✅ | `app/(dashboard)/wallet`, `lib/wallet.ts` |
+| Subscriptions (plans + upgrade + invoices, wallet/Tap payment) | ✅ | `app/(dashboard)/subscription` |
+| Services/add-ons marketplace + wallet purchase + adding storage | ✅ | `app/(dashboard)/services`, `lib/marketplace.ts` |
+| Multi-tenant storage quotas + image compression (sharp) | ✅ | `lib/storage/quota.ts`, `image.ts` — `docs/STORAGE.md` |
+| Super-admin panel (companies/plans/tokens/storage/marketplace/settings) | ✅ | `app/(admin)/admin` — `docs/ADMIN.md` |
+| Sentry + `GET /api/health` + three environments (`APP_ENV`) | ✅ | `lib/env.ts`, `sentry.*.config.ts`, `app/api/health` — `docs/DEPLOYMENT.md` |
+| **Multi-phase agent architecture** (Job Description constitution + per-department permissions matrix + Skills + orchestration) | ⬜ planned (up next) | `docs/AGENT_SYSTEM.md` |
+| Automatic subscription renewal (Tap) · Public API v1 | ⬜ later | — |
 
-**التشغيل:** الويب عبر `Dockerfile` (يشغّل `prisma migrate deploy` تلقائياً)، والجدولة كخدمة ثانية `npm run scheduler` (نسخة واحدة).
+**Operation:** the web app via `Dockerfile` (runs `prisma migrate deploy` automatically), and scheduling as a second service `npm run scheduler` (single instance).
 
 ---
 
-## 11. روابط مهمة
+## 11. Important links
 
 - **Anthropic Docs:** https://docs.claude.com
 - **Google Gemini API:** https://ai.google.dev/docs
@@ -321,6 +321,6 @@ nx-iwork/
 
 ---
 
-**آخر تحديث:** 8 يوليو 2026
-**النسخة:** 0.1.0 NX iWork
-**المؤلف:** وليد + Claude Opus
+**Last updated:** 8 July 2026
+**Version:** 0.1.0 NX iWork
+**Author:** Waleed + Claude Opus

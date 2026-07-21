@@ -1,6 +1,6 @@
 # 🧠 Agent System - The Brain of NX iWork
 
-> **هذا أهم ملف تقني في المشروع.** يصف كيف يعمل "الموظف الذكي" الحقيقي - مش chatbot عادي.
+> **This is the most important technical file in the project.** It describes how the real "smart employee" works - not an ordinary chatbot.
 
 > **🆕 2026-07-16 — agent-module redesign.** The configuration/governance layer
 > described below was overhauled; the authoritative record is
@@ -29,151 +29,152 @@
 
 ---
 
-## 🎯 الفلسفة الأساسية
+## 🎯 Core philosophy
 
-**الموظف الذكي ≠ Chatbot**
+**The smart employee ≠ Chatbot**
 
-| Chatbot عادي | NX iWork Agent |
+| Ordinary chatbot | NX iWork Agent |
 |---|---|
-| يرد على رسالة، خلاص | يستيقظ بعدة triggers |
-| ما يتذكر شي | ذاكرة 3 طبقات |
-| ما يعرف شركتك | يعرف Company DNA كاملة |
-| ينفذ أمر واحد | يقدر يحوّل لموظف ثاني، يطلب موافقة، يقرر |
-| Stateless | Stateful مع timeline |
+| Replies to a message, that's it | Wakes up on several triggers |
+| Remembers nothing | 3-layer memory |
+| Doesn't know your company | Knows the full Company DNA |
+| Executes a single command | Can hand off to another employee, request approval, decide |
+| Stateless | Stateful with a timeline |
 
 ---
 
-## ⚖️ العقد ثنائي الطبقة (قانون تصميم الوكلاء)
+## ⚖️ The two-layer contract (agent design law)
 
-- **النظام** (كود حتمي داخل الوورك فلو) يملك المعاملات: الفواتير، الحجوزات، الطلبات،
-  سجلات CRM — برمجياً وبموثوقية عالية.
-- **الوكلاء** يؤدّون العمل الإنساني: الحكم، التواصل باللغة الطبيعية (مع العملاء وفيما
-  بينهم)، الغموض، المبادرة، التنسيق بين الأقسام. الوكيل يُدرِك حالة النظام، يقرّر ضمن
-  السياسة، يتواصل، و**يشغّل** الوورك فلو — ولا «يسجّل الفاتورة» بنفسه (النظام يفعل ذلك).
+- **The system** (deterministic code inside the workflow) owns transactions: invoices,
+  bookings, orders, CRM records — programmatically and with high reliability.
+- **The agents** do the human work: judgment, natural-language communication (with customers
+  and among themselves), ambiguity, initiative, cross-department coordination. The agent is
+  aware of the system's state, decides within policy, communicates, and **triggers** the workflow
+  — but does not "record the invoice" itself (the system does that).
 
-**اتجاه معمارية الوكلاء:** **المرحلة 1 ✅ مُنفَّذة** = دستور **Job Description**
-(`Agent.jobDescription`، يحكم الوكيل ويُحقن في الـsystem prompt، منفصل عن `persona`) +
-**مصفوفة صلاحيات per-department** (تبويب الأدوات حسب القسم فوق البوّابة الصارمة
-`getToolsForAgent`، تشمل صلاحيات عبر الأقسام) + «اختبار الجدوى» في واجهة الإنشاء.
-**القادم (مخطّط):** المرحلة 2 = نظام **Skills** قابل للتركيب · المرحلة 3 = **تنسيق**
-(ناقل أحداث داخلي + `delegate_to_agent` / `request_from_agent` / `depends_on`) ·
-المرحلة 4 = مركز عمليات (تقويم حجوزات + تقويم مهام الوكلاء + صفحة تتبّع). راجع
+**Agent architecture direction:** **Phase 1 ✅ implemented** = the **Job Description** constitution
+(`Agent.jobDescription`, governs the agent and is injected into the system prompt, separate from
+`persona`) + a **per-department permissions matrix** (tools grouped by department above the strict
+`getToolsForAgent` gate, including cross-department permissions) + a "feasibility check" in the
+create UI. **Coming next (planned):** phase 2 = a composable **Skills** system · phase 3 =
+**orchestration** (an internal event bus + `delegate_to_agent` / `request_from_agent` / `depends_on`) ·
+phase 4 = an operations center (bookings calendar + agent-tasks calendar + a tracking page). See
 [`ROADMAP.md`](./ROADMAP.md).
 
 ---
 
-## 🧩 نموذج الأدوار ثلاثي الطبقات (حيادي القطاعات)
+## 🧩 The three-layer role model (sector-agnostic)
 
-كل وكيل يُعرّف بثلاث طبقات، كلّها قابلة للتعديل من واجهة الإنشاء/التعديل:
+Every agent is defined by three layers, all editable from the create/edit UI:
 
-1. **النمط (Archetype)** — حزمة قدرات جاهزة في [`lib/agent/archetypes.ts`](../lib/agent/archetypes.ts):
-   ٦ أنماط حيادية قطاعياً (`front_desk` · `sales` · `care` · `marketing` ·
-   `operations` · `finance`)، كل نمط يبذر: الصلاحيات (أدوات) + المؤشرات + أنواع
-   المخرجات + الاستقلالية الافتراضية + شخصية مبدئية + **النطاق** (`surface`).
-2. **الشخصية (Persona) — مهيكلة** في [`lib/agent/persona.ts`](../lib/agent/persona.ts):
-   نبرة + إسهاب + سياسة اللغة + «التزم/تجنّب» + عبارات، تُترجَم حتمياً للـ prompt عبر
-   `compilePersona`. الحقل الحر `Agent.persona` صار ملخّصاً/احتياطياً فقط.
-3. **التفويض (Mandate)** — `Agent.jobDescription` + `autonomy` + ضوابط الحوكمة.
+1. **Archetype** — a ready-made capability bundle in [`lib/agent/archetypes.ts`](../lib/agent/archetypes.ts):
+   6 sector-agnostic archetypes (`front_desk` · `sales` · `care` · `marketing` ·
+   `operations` · `finance`), each seeding: permissions (tools) + KPIs + output
+   types + default autonomy + an initial persona + **surface** (`surface`).
+2. **Persona — structured** in [`lib/agent/persona.ts`](../lib/agent/persona.ts):
+   tone + verbosity + language policy + "do/avoid" + phrases, deterministically compiled into the
+   prompt via `compilePersona`. The free-text `Agent.persona` field is now only a summary/fallback.
+3. **Mandate** — `Agent.jobDescription` + `autonomy` + governance controls.
 
-**قصر خدمة العملاء (`Agent.surface`):** `CUSTOMER_FACING` فقط يخدم ويدجت الموقع؛
-`INTERNAL` (تسويق/مالية/عمليات) لا يردّ العميل أبداً — يعمل بالخلفية ويُسلّم للمركز.
-مُطبَّق في [`public-chat.ts`](../lib/agent/public-chat.ts) + مسار الويدجت + الاستقبال.
-أدوات `list_bookings` / `set_booking_staff` داخلية فقط (تحمل PII / إجراء مالك).
+**Restricting customer service (`Agent.surface`):** only `CUSTOMER_FACING` serves the site widget;
+`INTERNAL` (marketing/finance/operations) never replies to a customer — it works in the background
+and hands off to the center. Enforced in [`public-chat.ts`](../lib/agent/public-chat.ts) + the widget
+route + intake. The `list_bookings` / `set_booking_staff` tools are internal only (they carry PII / an owner action).
 
-## 📦 مركز مخرجات الوكلاء (Agent Workspace)
+## 📦 The agent outputs hub (Agent Workspace)
 
-مكان موحّد `/outputs` لكل ما يُنتجه الفريق: نموذج `AgentOutput`
-(`MESSAGE`/`REPORT`/`PLAN`/`CONTENT`/`ANALYSIS`/`ACTION_LOG`، بدورة حياة
-`DRAFT→READY→APPROVED→PUBLISHED`/`ARCHIVED`). الوكلاء الخلفيون يُسلّمون عبر أداة
-`create_output` بدل مجرد المحادثة، وتظهر شريحة كل وكيل في ملفه (`/agents/[id]` تبويب
-المخرجات). المراجعة عبر `setOutputStatus` ([`lib/actions/outputs.ts`](../lib/actions/outputs.ts)).
-
----
-
-## 🧠 نموذج الذكاء لكل وكيل (Model Registry)
-
-كل وكيل يمكن أن يعمل بنموذج ذكاء محدّد يختاره المالك — لا يقتصر على فئة
-(HAIKU/SONNET/OPUS). `Agent.aiModelId` يشير لصف في **`AiModel`** (يُدار من
-`/admin/models`)، وتظهر قائمة "نموذج الذكاء" في نموذج إنشاء/تعديل الوكيل. `null` →
-الافتراضي للفئة. النموذج المختار **يثبّت مزوّده** وقت التشغيل (Gemini/OpenAI/Claude)،
-فيمكن تشغيل وكيل على GPT-4o وآخر على Gemini في نفس الشركة. **إضافة نموذج جديد = صف
-بيانات، لا نشر.** التفاصيل: [`AI_VERTEX.md`](./AI_VERTEX.md) §2ب.
+A unified place `/outputs` for everything the team produces: the `AgentOutput` model
+(`MESSAGE`/`REPORT`/`PLAN`/`CONTENT`/`ANALYSIS`/`ACTION_LOG`, with a
+`DRAFT→READY→APPROVED→PUBLISHED`/`ARCHIVED` lifecycle). Background agents deliver via the
+`create_output` tool instead of just chatting, and each agent's slice appears on its profile
+(`/agents/[id]` outputs tab). Review is via `setOutputStatus` ([`lib/actions/outputs.ts`](../lib/actions/outputs.ts)).
 
 ---
 
-## 🗂️ الكائنات التجارية (Business Objects) كأداة للوكلاء
+## 🧠 Per-agent AI model (Model Registry)
 
-عندما يعرّف المالك أنواع بياناته الخاصة (مريض/مركبة/عقد… عبر `/data`)، يحصل الوكلاء
-تلقائياً على أدوات عامة للقراءة والكتابة عليها — مبوّبة تحت مجموعة `data` في مصفوفة
-الصلاحيات، ومحكومة بـ `CompanyModules.hasObjects` (لا تُسلَّم إلا إذا وُجد نوع واحد على
-الأقل، حفاظاً على خفّة السياق):
+Every agent can run on a specific AI model chosen by the owner — not limited to a tier
+(HAIKU/SONNET/OPUS). `Agent.aiModelId` points to a row in **`AiModel`** (managed from
+`/admin/models`), and an "AI model" dropdown appears in the agent create/edit form. `null` →
+the tier default. The chosen model **pins its provider** at runtime (Gemini/OpenAI/Claude),
+so you can run one agent on GPT-4o and another on Gemini within the same company. **Adding a new
+model = a data row, not a deployment.** Details: [`AI_VERTEX.md`](./AI_VERTEX.md) §2b.
 
-- **`list_object_types`** — يكتشف الأنواع وحقولها (يُستدعى أولاً).
-- **`query_records`** — يبحث في سجلات نوع (عنوان + مسح JSON)، محصور بالمستأجر.
-- **`create_record`** / **`update_record`** — يكتب، مع تحقّق ضد مخطّط الحقول
-  (`lib/objects/fields.ts`)؛ `values` تُمرَّر كسلسلة JSON (محمولة عبر كل المزوّدين).
+---
 
-هذه الأدوات **مستبعدة من قائمة الودجت العام** (`PUBLIC_ALLOWLIST`) لأن بيانات الأعمال
-قد تكون حسّاسة — فلا يمسّها إلا محادثة اللوحة والمهام الذاتية. الاستراتيجية الكاملة:
+## 🗂️ Business Objects as a tool for agents
+
+When the owner defines their own data types (patient/vehicle/contract… via `/data`), agents
+automatically get generic tools to read and write them — grouped under the `data` group in the
+permissions matrix, and governed by `CompanyModules.hasObjects` (not handed over unless at least
+one type exists, to keep the context lean):
+
+- **`list_object_types`** — discovers the types and their fields (called first).
+- **`query_records`** — searches a type's records (title + JSON scan), scoped to the tenant.
+- **`create_record`** / **`update_record`** — writes, with validation against the field schema
+  (`lib/objects/fields.ts`); `values` are passed as a JSON string (portable across all providers).
+
+These tools are **excluded from the public widget's list** (`PUBLIC_ALLOWLIST`) because business
+data can be sensitive — so only dashboard chat and autonomous tasks touch them. The full strategy:
 [`OPENCLAW_PARITY.md`](./OPENCLAW_PARITY.md).
 
 ---
 
-## 🏗️ Architecture الكامل
+## 🏗️ The full Architecture
 
 ```
 ┌────────────────────────────────────────────────┐
 │               THE AGENT LOOP                   │
 │                                                │
-│  1. TRIGGER → يستيقظ                          │
-│  2. LOAD CONTEXT → يحمّل ذاكرته (+ recall)     │
-│  3. THINK → يفكر مع مزوّد الشركة (Gemini/Claude)│
-│  4. ACT → ينفذ عبر الأدوات (tool loop)         │
-│  5. REMEMBER → يحفظ (save_memory)             │
-│  6. SLEEP → ينام (حتى التريقر التالي)          │
+│  1. TRIGGER → wakes up                         │
+│  2. LOAD CONTEXT → load memory (+ recall)      │
+│  3. THINK → reason w/ provider (Gemini/Claude) │
+│  4. ACT → execute via tools (tool loop)        │
+│  5. REMEMBER → persist (save_memory)           │
+│  6. SLEEP → sleep (until next trigger)         │
 └────────────────────────────────────────────────┘
 ```
 
-> ✅ **حالة التنفيذ:** النواة مبنية عبر طبقة AI محايدة (`lib/ai/`, Gemini افتراضي + Claude).
-> النواة المشتركة `lib/agent/core.ts` (تحميل السياق + حلقة الأدوات) تستخدمها المحادثة
-> (`run.ts`) وتنفيذ المهام (`task.ts`). الأدوات المُنفَّذة: `search_catalog`, `find_customer`,
+> ✅ **Implementation status:** the core is built on a neutral AI layer (`lib/ai/`, Gemini by default + Claude).
+> The shared core `lib/agent/core.ts` (context loading + the tool loop) is used by both chat
+> (`run.ts`) and task execution (`task.ts`). Implemented tools: `search_catalog`, `find_customer`,
 > `create_lead`, `update_lead`, `create_task`, `save_memory` (`lib/agent/tools.ts`).
-> الجدولة عبر `lib/agent/scheduler.ts` + worker `scripts/scheduler.ts`. الذاكرة الدلالية
-> عبر `lib/agent/memory.ts` (pgvector). الأدوات كلها **داخلية ومباشرة** عبر
-> function-calling، مبوّبة بـ `getToolsForAgent` (module ∩ `permissions`) — لا اعتماد على
-> تكاملات خارجية.
+> Scheduling via `lib/agent/scheduler.ts` + the `scripts/scheduler.ts` worker. Semantic memory
+> via `lib/agent/memory.ts` (pgvector). All tools are **internal and direct** via
+> function-calling, gated by `getToolsForAgent` (module ∩ `permissions`) — with no dependency on
+> external integrations.
 
 ---
 
-## 🔔 المرحلة 1: Triggers (متى يستيقظ؟)
+## 🔔 Stage 1: Triggers (when does it wake up?)
 
-كل Agent عنده **5 أنواع triggers**:
+Every Agent has **5 types of triggers**:
 
 ### 1. User Message Trigger
-- صاحب البزنس أرسل رسالة في chat الداخلي
-- زائر أرسل رسالة في chat widget على الموقع العام
-- **Latency:** فوري (real-time streaming)
+- The business owner sent a message in the internal chat
+- A visitor sent a message in the chat widget on the public site
+- **Latency:** immediate (real-time streaming)
 
 ### 2. Task Assignment Trigger
-- صاحب البزنس كلّفه بمهمة من dashboard
-- موظف ثاني أحاله مهمة (handoff)
-- **Latency:** فوري (background job)
+- The business owner assigned it a task from the dashboard
+- Another employee handed it a task (handoff)
+- **Latency:** immediate (background job)
 
 ### 3. Schedule Trigger
-- جدولة دورية: "يومياً 9 صباحاً"
-- "أسبوعياً يوم الأحد"
-- "كل ساعة"
-- **Latency:** حسب الجدول
+- A recurring schedule: "daily at 9 AM"
+- "weekly on Sunday"
+- "every hour"
+- **Latency:** per the schedule
 
 ### 4. Webhook Trigger
-- نظام خارجي أرسل event (مثلاً: عميل جديد سجّل من Form)
-- تكامل خارجي عبر الـ API العام (مخطّط)
-- **Latency:** فوري
+- An external system sent an event (e.g., a new customer registered from a Form)
+- External integration via the public API (planned)
+- **Latency:** immediate
 
 ### 5. Inter-Agent Trigger
-- موظف ثاني طلب منه شي
-- مثلاً: موظف المبيعات أحال للمحاسب لإصدار فاتورة
-- **Latency:** فوري
+- Another employee asked it for something
+- e.g., the sales employee handed off to the accountant to issue an invoice
+- **Latency:** immediate
 
 ### Implementation:
 
@@ -198,17 +199,17 @@ export async function wakeAgent(trigger: AgentTrigger) {
 
 ---
 
-## 🧠 المرحلة 2: Load Context (الذاكرة)
+## 🧠 Stage 2: Load Context (memory)
 
-كل موظف عنده **3 طبقات ذاكرة**:
+Every employee has **3 memory layers**:
 
-### Layer 1: Working Memory (داخل context كل call)
+### Layer 1: Working Memory (inside each call's context)
 
-**ما هي:** آخر 20 رسالة/حدث للموظف
+**What it is:** the employee's last 20 messages/events
 
-**التخزين:** ضمن system prompt + messages array
+**Storage:** within the system prompt + messages array
 
-**المثال:**
+**Example:**
 ```typescript
 const workingMemory = {
   recentMessages: [...last20Messages],
@@ -217,17 +218,17 @@ const workingMemory = {
 };
 ```
 
-**الحجم:** ~5,000 tokens
+**Size:** ~5,000 tokens
 
-### Layer 2: Episodic Memory (في DB)
+### Layer 2: Episodic Memory (in the DB)
 
-**ما هي:** كل المهام والمحادثات السابقة (تفاصيل كاملة)
+**What it is:** all past tasks and conversations (full details)
 
-**التخزين:** PostgreSQL tables (Tasks, ChatMessages, TaskAttempts)
+**Storage:** PostgreSQL tables (Tasks, ChatMessages, TaskAttempts)
 
-**كيف نستخدمها:**
-- لما نحتاج "هل هذا العميل سأل عن المنتج هذا قبل؟"
-- نسوي query في DB ونحصل على history
+**How we use it:**
+- When we need "has this customer asked about this product before?"
+- We run a query in the DB and get the history
 
 ```typescript
 async function getEpisodicMemory(agentId: string, query: {
@@ -245,19 +246,19 @@ async function getEpisodicMemory(agentId: string, query: {
 
 ### Layer 3: Semantic Memory (Vector DB)
 
-**ما هي:** ملخصات معنوية للأحداث المهمة (ذاكرة طويلة المدى)
+**What it is:** semantic summaries of important events (long-term memory)
 
-**التخزين:** PostgreSQL مع pgvector extension
+**Storage:** PostgreSQL with the pgvector extension
 
-**الإنشاء:**
-- كل ليلة، job يلخّص يوم الموظف
-- يحوّل الملخص لـ embeddings
-- يحفظه في `agent_memories` table
+**Creation:**
+- Every night, a job summarizes the employee's day
+- Converts the summary into embeddings
+- Saves it in the `agent_memories` table
 
-**الاسترجاع:**
-- لما الموظف يبدأ مهمة جديدة
-- يبحث عن ذكريات مشابهة
-- يحقنها في system prompt
+**Retrieval:**
+- When the employee starts a new task
+- It searches for similar memories
+- Injects them into the system prompt
 
 ```typescript
 async function getSemanticMemory(agentId: string, query: string) {
@@ -305,11 +306,11 @@ async function buildContext(agent: Agent, trigger: AgentTrigger) {
 
 ---
 
-## 🤔 المرحلة 3: Think (التفكير مع Claude)
+## 🤔 Stage 3: Think (reasoning with Claude)
 
 ### Tool Use Architecture
 
-نستخدم **Claude's Tool Use** (function calling) ليقدر الموظف:
+We use **Claude's Tool Use** (function calling) so the employee can:
 
 ```typescript
 const tools = [
@@ -409,9 +410,9 @@ async function think(context, trigger) {
 
 ---
 
-## ⚡ المرحلة 4: Act (التنفيذ)
+## ⚡ Stage 4: Act (execution)
 
-كل tool له handler:
+Every tool has a handler:
 
 ```typescript
 async function executeTool(toolName: string, input: any) {
@@ -439,20 +440,20 @@ async function executeTool(toolName: string, input: any) {
 
 ### Approval System
 
-لما الموظف يحتاج موافقة بشرية:
+When the employee needs human approval:
 
-1. ينشئ Approval record
-2. يوقف المهمة الحالية → status = `PENDING_APPROVAL`
-3. يرسل notification لصاحب البزنس
-4. صاحب البزنس يفتح "Approval Inbox"
-5. يوافق/يرفض/يعدّل
-6. الموظف يصحى ويكمل
+1. Creates an Approval record
+2. Pauses the current task → status = `PENDING_APPROVAL`
+3. Sends a notification to the business owner
+4. The business owner opens the "Approval Inbox"
+5. Approves/rejects/edits
+6. The employee wakes up and continues
 
 ---
 
-## 💾 المرحلة 5: Remember (الحفظ)
+## 💾 Stage 5: Remember (saving)
 
-بعد كل cycle:
+After each cycle:
 
 ### 1. Update Working Memory
 ```typescript
@@ -508,9 +509,9 @@ if (failed) {
 
 ---
 
-## 🌙 المرحلة 6: Sleep (Daily Summary Job)
+## 🌙 Stage 6: Sleep (Daily Summary Job)
 
-كل ليلة 2:00 ص:
+Every night at 2:00 AM:
 
 ```typescript
 async function nightlyConsolidation() {
@@ -544,80 +545,80 @@ async function nightlyConsolidation() {
 
 ## 🎭 Persona System
 
-كل Agent عنده **persona** (شخصية ثابتة):
+Every Agent has a **persona** (a fixed personality):
 
 ```typescript
 const persona = {
-  name: "سارة",
+  name: "Sara",              // Arabic display name
   nameEn: "Sarah",
-  role: "قائدة فريق التسويق",
+  role: "Marketing team lead",
   characteristics: [
-    "إبداعية ومحترفة",
-    "تكتب بأسلوب ودود لكن مهني",
-    "تركز على المحتوى السعودي",
-    "تحب البيانات والتحليلات"
+    "Creative and professional",
+    "Writes in a friendly but professional style",
+    "Focuses on Saudi content",
+    "Loves data and analytics"
   ],
-  communicationStyle: "ودودة، مختصرة، تستخدم الإيموجي بحدود",
-  values: ["الجودة", "الإبداع", "السرعة"],
-  tone: "محترف لكن دافئ",
-  language: "عربي فصيح مع لمسات خليجية",
+  communicationStyle: "Friendly, concise, uses emoji sparingly",
+  values: ["Quality", "Creativity", "Speed"],
+  tone: "Professional but warm",
+  language: "Eloquent Arabic with a Gulf touch",
 };
 ```
 
-هذا يتحوّل لـ system prompt:
+This compiles into a system prompt:
 
 ```
-أنت سارة، قائدة فريق التسويق في {company.name}.
+You are Sarah, the marketing team lead at {company.name}.
 
-شخصيتك:
-- إبداعية ومحترفة
-- تكتبين بأسلوب ودود لكن مهني
-- تركزين على المحتوى السعودي
-- تحبين البيانات والتحليلات
+Your personality:
+- Creative and professional
+- You write in a friendly but professional style
+- You focus on Saudi content
+- You love data and analytics
 
-أسلوب التواصل: ودود، مختصر، إيموجي بحدود
-القيم: الجودة، الإبداع، السرعة
+Communication style: friendly, concise, emoji in moderation
+Values: quality, creativity, speed
 
-اللغة: عربي فصيح مع لمسات خليجية
+Language: eloquent Arabic with a Gulf touch
 ```
 
 ---
 
 ## 🔧 Skills vs Tools
 
-### Skills (المعرفة)
-**ما هي:** فهم سياق محدد، patterns، best practices
+### Skills (knowledge)
+**What they are:** understanding a specific context, patterns, best practices
 
-**أمثلة:**
-- "Saudi VAT Calculation" - يفهم نظام الضريبة السعودي
-- "Arabic SEO" - يفهم SEO للسوق العربي
-- "ZATCA Invoice" - يفهم متطلبات الفاتورة الإلكترونية
+**Examples:**
+- "Saudi VAT Calculation" - understands the Saudi tax system
+- "Arabic SEO" - understands SEO for the Arabic market
+- "ZATCA Invoice" - understands e-invoice requirements
 
-**التطبيق:** يضاف لـ system prompt كنص تعليمي
+**Application:** added to the system prompt as instructional text
 
-### Tools (التنفيذ)
-**ما هي:** أدوات **داخلية** عبر function-calling، مبوّبة بـ `getToolsForAgent` (module ∩ `permissions`) — بوّابة صارمة: النموذج لا يصل لأداة لم تُسلَّم له.
+### Tools (execution)
+**What they are:** **internal** tools via function-calling, gated by `getToolsForAgent` (module ∩ `permissions`) — a strict gate: the model cannot reach a tool it wasn't handed.
 
-**أمثلة (مُنفَّذة):**
+**Examples (implemented):**
 - `search_catalog` · `find_customer` · `create_lead` / `update_lead` · `create_task` · `save_memory`
 
-> قدرات إضافية (نشر سوشيال ميديا، تكاملات خارجية) تأتي عبر **نظام Skills المخطّط**، لا عبر n8n (أُلغي).
+> Additional capabilities (social media posting, external integrations) come via the **planned Skills system**, not via n8n (cancelled).
 
-**التطبيق:** يضاف للـ tools array في Claude API call
+**Application:** added to the tools array in the Claude API call
 
 ---
 
 ## 📊 Performance Considerations
 
 ### Token Optimization
-- استخدم **Haiku** للمهام البسيطة (90% من المهام)
-- استخدم **Sonnet** للمهام المتوسطة (8%)
-- استخدم **Opus** للمهام المعقدة فقط (2%)
+- Use **Haiku** for simple tasks (90% of tasks)
+- Use **Sonnet** for medium tasks (8%)
+- Use **Opus** for complex tasks only (2%)
 
 ### Cost Estimation per Agent
-- موظف نشط: ~$5-15/شهر (BYOK، يدفعها العميل)
-- 10 موظفين: ~$50-150/شهر للعميل
-- موظفين قليلي الاستخدام: $1-3/شهر
+- An active employee: ~$5-15/month (BYOK, paid by the customer)
+- 10 employees: ~$50-150/month for the customer
+- Low-usage employees: $1-3/month
 
 ### Caching Strategy
 - Company DNA cache for 1 hour
@@ -629,55 +630,55 @@ const persona = {
 ## 🚨 Failure Modes & Recovery
 
 ### 1. API Limit Reached
-**الكشف:** Anthropic returns 429
-**الحل:** Save state, retry with exponential backoff
-**العرض:** Tab "فشل" مع reason + retry button
+**Detection:** Anthropic returns 429
+**Solution:** Save state, retry with exponential backoff
+**Display:** a "Failed" tab with reason + retry button
 
 ### 2. External Tool Failed
-**الكشف:** external API/integration timeout / 5xx
-**الحل:** Mark task as failed, suggest alternative
-**العرض:** Tab "فشل" مع reason
+**Detection:** external API/integration timeout / 5xx
+**Solution:** Mark task as failed, suggest alternative
+**Display:** a "Failed" tab with reason
 
 ### 3. Permission Denied
-**الكشف:** External API returns 403
-**الحل:** Request approval to re-link account
-**العرض:** Notification + Approval Inbox
+**Detection:** External API returns 403
+**Solution:** Request approval to re-link account
+**Display:** Notification + Approval Inbox
 
 ### 4. Conflicting Data
-**الكشف:** Validation fails (مثلاً: عميل مكرر)
-**الحل:** Pause task, request human decision
-**العرض:** Approval Inbox
+**Detection:** Validation fails (e.g., a duplicate customer)
+**Solution:** Pause task, request human decision
+**Display:** Approval Inbox
 
 ### 5. Hallucination Detection
-**الكشف:** Output doesn't match schema
-**الحل:** Retry with structured output enforcement
-**العرض:** Hidden retry, log for analysis
+**Detection:** Output doesn't match schema
+**Solution:** Retry with structured output enforcement
+**Display:** Hidden retry, log for analysis
 
 ---
 
-## 🎓 Best Practices لتعليم الـ Agents
+## 🎓 Best Practices for training Agents
 
-### 1. Persona واضحة ومحددة
-❌ "موظف تسويق ذكي"
-✅ "سارة، قائدة تسويق سعودية، 10 سنوات خبرة في التجارة الإلكترونية، تكتب بأسلوب عصري"
+### 1. A clear and specific Persona
+❌ "A smart marketing employee"
+✅ "Sarah, a Saudi marketing lead, 10 years of e-commerce experience, writes in a modern style"
 
-### 2. Skills محددة وقابلة للقياس
-❌ "تعرف التسويق"
+### 2. Specific, measurable Skills
+❌ "Knows marketing"
 ✅ "ZATCA Compliance, Arabic SEO, Instagram Ad Targeting"
 
-### 3. Examples في System Prompt
-أعطِ الموظف 3-5 أمثلة على القرارات الجيدة:
+### 3. Examples in the System Prompt
+Give the employee 3-5 examples of good decisions:
 ```
 Example 1:
-User: "اكتب منشور لمنتج جديد"
-Sarah's response: [مثال جيد]
+User: "Write a post for a new product"
+Sarah's response: [a good example]
 ```
 
-### 4. Boundaries واضحة
-حدد بوضوح:
-- ما يقدر يقرره وحده
-- ما يحتاج موافقة
-- ما يحوّله لإنسان
+### 4. Clear Boundaries
+Define clearly:
+- What it can decide on its own
+- What needs approval
+- What it hands off to a human
 
 ---
 
@@ -814,7 +815,7 @@ and the top-bar Automation toggle) — these **override** the autonomy dial:
 
 The active guardrails are passed to `buildSystemPrompt({ guardrails })` (loaded in
 `loadAgentWithContext`, wired by `run.ts` + `task.ts`) and rendered as a mandatory
-"قواعد الحوكمة (إلزامية)" block that **takes precedence over the autonomy level**.
+"قواعد الحوكمة (إلزامية)" ("Governance rules (mandatory)") block that **takes precedence over the autonomy level**.
 
 **Approval loop** (both halves): the agent calls `request_approval` → an `Approval`
 row (`PENDING`) + an `APPROVAL_REQUESTED` timeline event → surfaced in the Command
@@ -845,6 +846,6 @@ decision and **wakes the agent** with a follow-up `AGENT_TOOL` task.
 
 ---
 
-**هذا هو القلب التقني للمنصة.** بناء هذا الـ system بشكل صحيح = نجاح NX iWork.
+**This is the technical heart of the platform.** Building this system correctly = the success of NX iWork.
 
-**نتيجة كل سطر هنا:** موظف ذكي حقيقي، مش chatbot.
+**The bottom line of every line here:** a real smart employee, not a chatbot.
