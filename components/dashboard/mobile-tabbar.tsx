@@ -7,7 +7,7 @@ import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import {
   ShoppingBag,
-  Contact,
+  Target,
   LayoutDashboard,
   MessageSquare,
   LayoutGrid,
@@ -19,7 +19,7 @@ import { SidebarBrand, SidebarNav, type NavModules } from '@/components/dashboar
 // The four always-present primary destinations; the fifth slot is "More".
 const PRIMARY = [
   { href: '/overview', icon: LayoutDashboard, labelKey: 'overview' },
-  { href: '/crm', icon: Contact, labelKey: 'crm' },
+  { href: '/crm', icon: Target, labelKey: 'crm' },
   { href: '/orders', icon: ShoppingBag, labelKey: 'orders' },
   { href: '/chat', icon: MessageSquare, labelKey: 'chat' },
 ];

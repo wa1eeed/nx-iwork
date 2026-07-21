@@ -6,7 +6,7 @@
       "tasks": "Tasks"
     },
     "crmHub": {
-      "subtitle": "Pipeline, customers, and tasks — follow every opportunity in one place.",
+      "subtitle": "Opportunity pipeline and tasks — follow every deal in one place.",
       "openOpportunities": "Open opportunities",
       "overdueTasks": "Overdue tasks",
       "customers": "Customers",
@@ -558,6 +558,7 @@
     "sections": {
       "command": "Command Center",
       "crm": "CRM",
+      "customers": "Customers",
       "workforce": "AI workforce",
       "operations": "Operations",
       "team": "Team",

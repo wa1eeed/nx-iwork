@@ -3,10 +3,10 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { ClientsManager, type ClientRow } from '@/components/dashboard/clients-manager';
-import { CrmTabs } from '@/components/dashboard/crm-tabs';
 
-// Directory of actual customers — anyone with at least one order. Distinct from
-// the Opportunities pipeline; both link to the same 360° person detail.
+// Directory of actual customers — anyone with at least one order. Its own
+// top-level "Customers" section, distinct from the Opportunities pipeline;
+// both link to the same 360° person detail.
 export default async function ClientsPage() {
   const t = await getTranslations('clients');
   const session = await auth();
@@ -55,7 +55,6 @@ export default async function ClientsPage() {
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
-      <CrmTabs />
       <ClientsManager clients={rows} />
     </div>
   );
