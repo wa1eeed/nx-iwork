@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // available. No secrets — a short marker + commit sha only.
 export const dynamic = 'force-dynamic';
 
-const MARKER = 'show-first-overrides-role';
+const MARKER = 'token-exhaustion-ux';
 
 export function GET() {
   return NextResponse.json({

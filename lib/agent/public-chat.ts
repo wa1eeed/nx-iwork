@@ -12,8 +12,25 @@ import { buildSystemPrompt } from './prompt';
 import { loadAgentWithContext, runToolLoop, runToolLoopStream, agentModelId, skillPromptBlock, skillToolIds } from './core';
 import { recallMemoryBlock } from './memory';
 import { getToolsForAgent } from './tools';
+import { sendTokensExhaustedAlert } from '@/lib/notifications/billing-emails';
 
 const WORKING_MEMORY_LIMIT = 16;
+
+// Alert the owner at most once per this window per company — a busy widget would
+// otherwise fire an email on every blocked message. Per-process is fine (worst
+// case a couple of duplicates across replicas/restarts).
+const EXHAUSTED_ALERT_WINDOW_MS = 6 * 60 * 60 * 1000;
+const lastExhaustedAlert = new Map<string, number>();
+
+function alertTokensExhausted(companyId: string): void {
+  const now = Date.now();
+  const last = lastExhaustedAlert.get(companyId) ?? 0;
+  if (now - last < EXHAUSTED_ALERT_WINDOW_MS) return;
+  lastExhaustedAlert.set(companyId, now);
+  void sendTokensExhaustedAlert(companyId).catch((err) =>
+    console.error('[public-chat] tokens-exhausted alert failed', err)
+  );
+}
 
 export type PublicChatResult =
   | { ok: true; reply: string }
@@ -84,8 +101,13 @@ export async function runPublicAgentChat(
   // company default provider fetched above. Sync override — no extra round-trip.
   const effective = providerForAgentModel(providerResult, agent.aiModel);
   if (!effective.ok) return { ok: false, reason: 'unavailable' };
-  if (!budget.ok) return { ok: false, reason: budget.reason };
-  if (!agentBudget.ok) return { ok: false, reason: 'billing_limit' };
+  // Budget exhausted → the widget can't reply. Alert the owner (throttled) so they
+  // top up instead of losing customers silently — this is the customer-facing
+  // surface, so a dead chat is real lost business.
+  if (!budget.ok || !agentBudget.ok) {
+    void alertTokensExhausted(companyId);
+    return { ok: false, reason: budget.ok ? 'billing_limit' : budget.reason };
+  }
 
   // Working memory from this conversation's history.
   const history = await db.publicMessage.findMany({

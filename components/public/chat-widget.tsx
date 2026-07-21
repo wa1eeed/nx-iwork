@@ -19,6 +19,7 @@ export function ChatWidget({
   greeting,
   primaryColor,
   position,
+  whatsapp,
 }: {
   slug: string;
   agentName: string;
@@ -26,6 +27,8 @@ export function ChatWidget({
   primaryColor?: string | null;
   /** WebsiteConfig.chatPosition — "bottom-right" (default) or "bottom-left". */
   position?: string | null;
+  /** WhatsApp/phone number to fall back to when the AI can't reply (budget out). */
+  whatsapp?: string | null;
 }) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([]);
@@ -48,6 +51,12 @@ export function ChatWidget({
   }, [messages.length, sending]);
 
   const color = primaryColor || undefined;
+  // Shown when the AI can't reply (budget exhausted): keep the customer from a
+  // dead end by pointing them to the business directly instead of "unavailable".
+  const waLink = whatsapp ? `https://wa.me/${whatsapp.replace(/\D/g, '')}` : null;
+  const unavailableMsg = waLink
+    ? `المساعد الآلي مشغول حالياً 🙏 تواصل معنا مباشرة وبنردّ عليك فوراً: [تواصل عبر واتساب](${waLink})`
+    : 'المساعد الآلي مشغول حالياً 🙏 نعتذر، تواصل معنا مباشرة وبنخدمك فوراً.';
   // Physical side from the owner's setting (was hardcoded); mobile offsets sit
   // above the sticky booking bar.
   const side = position === 'bottom-left' ? 'left-5' : 'right-5';
@@ -119,7 +128,7 @@ export function ChatWidget({
           } else if (evt.type === 'done') {
             if (!started) upsert(evt.reply || 'تم.');
           } else if (evt.type === 'error') {
-            if (!started) upsert(evt.reason === 'billing_limit' ? 'الخدمة غير متاحة مؤقتاً.' : 'تعذّر الرد الآن. حاول بعد قليل.');
+            if (!started) upsert(evt.reason === 'billing_limit' ? unavailableMsg : 'تعذّر الرد الآن. حاول بعد قليل.');
           }
         }
       }

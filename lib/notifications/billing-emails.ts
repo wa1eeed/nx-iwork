@@ -78,3 +78,21 @@ export async function sendSubscriptionEnded(companyId: string, info: { tier: str
     cta: { label: 'Resubscribe · إعادة الاشتراك', url: subscriptionUrl() },
   });
 }
+
+// The AI token budget ran out, so the customer-facing widget/agents stopped
+// replying. Alert the owner (throttled by the caller) so they top up before they
+// lose more conversations silently.
+export async function sendTokensExhaustedAlert(companyId: string): Promise<void> {
+  const to = await ownerEmail(companyId);
+  if (!to) return;
+  await sendPlatformEmail({
+    to: to.email,
+    subject: 'Action needed — your AI assistant paused · توقّف مساعدك الذكي مؤقتاً',
+    heading: 'Your AI ran out of tokens · نفد رصيد الذكاء الاصطناعي',
+    intro:
+      `Heads up — ${to.company}'s AI token balance is used up, so your website chat and agents have stopped replying to customers. Top up now to bring them back online.\n` +
+      `تنبيه — نفد رصيد توكنات الذكاء الاصطناعي لحساب «${to.company}»، فتوقّف الشات ووكلاؤك عن الردّ على العملاء. اشحن الآن لإعادتهم للعمل فوراً.`,
+    cta: { label: 'Top up · اشحن الرصيد', url: `${APP_URL}/wallet` },
+    footnote: 'Customers currently see a message asking them to contact you directly.',
+  });
+}

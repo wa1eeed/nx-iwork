@@ -602,6 +602,7 @@ export default async function PublicBusinessPage({
           greeting={wc?.chatGreeting || (ar ? `مرحباً 👋 كيف أقدر أساعدك في ${company.name}؟` : `Hi 👋 How can we help you at ${company.name}?`)}
           primaryColor={wc?.chatPrimaryColor || accent}
           position={wc?.chatPosition}
+          whatsapp={wc?.whatsapp || wc?.phone || null}
         />
       )}
     </div>
