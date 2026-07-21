@@ -23,6 +23,17 @@ export async function register() {
     } catch (err) {
       console.error('[seed-admin] bootstrap failed:', err);
     }
+
+    // In-process autonomous engine. No-op unless CRON_SELF=1 — then the app
+    // drives its own scheduler on a 60s interval (single-flight via a DB lease),
+    // so autonomy runs without an external Coolify Scheduled Task. Dynamic import
+    // keeps the scheduler + Prisma out of the edge bundle.
+    try {
+      const { startSelfCron } = await import('@/lib/cron/self-scheduler');
+      startSelfCron();
+    } catch (err) {
+      console.error('[self-cron] start failed:', err);
+    }
   }
 
   if (process.env.NEXT_RUNTIME === 'edge') {

@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { timingSafeEqual } from 'node:crypto';
-import { Prisma } from '@prisma/client';
-import { db } from '@/lib/db';
-import { runDueSchedules, runDueTasks, runDueReminders, runReapStuckTasks } from '@/lib/agent/scheduler';
-import { runDueRenewals } from '@/lib/billing/renewals';
+import { runCronWork } from '@/lib/cron/run-tick';
 
 // Cron trigger for the scheduler, callable from inside the production image
 // (it's part of the Next build, unlike scripts/scheduler.ts which needs tsx +
@@ -41,23 +38,9 @@ async function handle(req: Request) {
   }
 
   try {
-    const [schedules, events, reminders, reaped, renewals] = await Promise.all([
-      runDueSchedules(),
-      runDueTasks(),
-      runDueReminders(),
-      runReapStuckTasks(),
-      // Subscription auto-renewal pass (due scan → saved-card charge → dunning).
-      runDueRenewals(),
-    ]);
-    // Heartbeat: stamp that autonomous execution ran, so the dashboard can prove
-    // it's alive and warn the owner if the cron ever stops firing.
-    const summary = { schedules, events, reminders, reaped, renewals };
-    const summaryJson = summary as unknown as Prisma.InputJsonValue;
-    await db.platformSettings.upsert({
-      where: { id: 'singleton' },
-      create: { id: 'singleton', lastCronRunAt: new Date(), lastCronSummary: summaryJson },
-      update: { lastCronRunAt: new Date(), lastCronSummary: summaryJson },
-    });
+    // Shared with the in-process self-scheduler (CRON_SELF=1) so both triggers
+    // run the exact same pass + stamp the same heartbeat.
+    const summary = await runCronWork();
     return NextResponse.json({ ok: true, ...summary });
   } catch (err) {
     console.error('cron run failed', err);
