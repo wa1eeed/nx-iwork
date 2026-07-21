@@ -1608,23 +1608,34 @@ export async function executeTool(
           take: 200,
           select: { id: true, title: true, data: true },
         });
-        // Word-by-word AND match across title + all field values (each word may
-        // hit any field), with Arabic surface variants. A single-substring match
-        // failed for natural queries: "فيلا للبيع" never matched a record whose
-        // JSON has "ptype":"فيلا" and "listing":"للبيع" in separate fields, so the
-        // agent wrongly answered "لا توجد فلل للبيع" for a real available listing.
+        // Rank records by how many query words they contain (across title + all
+        // field values, each word via its Arabic surface variants), best first.
+        // A strict substring/AND match failed on real queries: "فيلا للبيع" spans
+        // two fields, and Arabic morphology means "فلل"/"عقارات" never substring-
+        // match "فيلا" — so the agent wrongly denied real listings. Ranking keeps
+        // precision (more words matched → higher), and when NOTHING matches (a
+        // generic/plural query, or a filter with no hits) we fall back to the full
+        // recent set so the agent can still SHOW inventory and narrow it, instead
+        // of falsely saying "none". The agent filters the small returned list.
         const words = (args.query ?? '')
           .toLowerCase()
           .split(/\s+/)
           .map((w) => w.trim())
           .filter((w) => w.length >= 2);
-        const matched = (words.length
-          ? rows.filter((r) => {
+        let matched: typeof rows;
+        if (!words.length) {
+          matched = rows.slice(0, limit);
+        } else {
+          const scored = rows
+            .map((r) => {
               const hay = `${r.title ?? ''} ${JSON.stringify(r.data ?? {})}`.toLowerCase();
-              return words.every((w) => arabicVariants(w).some((v) => hay.includes(v)));
+              const score = words.filter((w) => arabicVariants(w).some((v) => hay.includes(v))).length;
+              return { r, score };
             })
-          : rows
-        ).slice(0, limit);
+            .filter((s) => s.score > 0)
+            .sort((a, b) => b.score - a.score);
+          matched = (scored.length ? scored.map((s) => s.r) : rows).slice(0, limit);
+        }
         return ok({
           type: type.key,
           count: matched.length,
