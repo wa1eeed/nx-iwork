@@ -6,7 +6,8 @@ import { useTranslations } from 'next-intl';
 import { LayoutDashboard, Building2, Store, HardDrive, SlidersHorizontal, Cpu, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const ITEMS: { href: string; key: string; icon: LucideIcon; exact?: boolean }[] = [
+// Shared by the desktop sidebar (AdminNav) and the phone-only strip (AdminMobileNav).
+export const ADMIN_NAV_ITEMS: { href: string; key: string; icon: LucideIcon; exact?: boolean }[] = [
   { href: '/admin', key: 'overview', icon: LayoutDashboard, exact: true },
   { href: '/admin/companies', key: 'companies', icon: Building2 },
   { href: '/admin/services', key: 'services', icon: Store },
@@ -20,7 +21,7 @@ export function AdminNav() {
   const path = usePathname();
   return (
     <nav className="flex-1 space-y-1 p-4">
-      {ITEMS.map(({ href, key, icon: Icon, exact }) => {
+      {ADMIN_NAV_ITEMS.map(({ href, key, icon: Icon, exact }) => {
         const active = exact ? path === href : path === href || path.startsWith(`${href}/`);
         return (
           <Link
