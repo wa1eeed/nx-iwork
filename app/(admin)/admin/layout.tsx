@@ -4,6 +4,7 @@ import { Sparkles, ShieldCheck } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { requireSuperAdmin } from '@/lib/admin';
 import { AdminNav } from '@/components/admin/admin-nav';
+import { AdminMobileNav } from '@/components/admin/admin-mobile-nav';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { LanguageSwitcher } from '@/components/language-switcher';
 import { UserMenu } from '@/components/dashboard/user-menu';
@@ -38,10 +39,21 @@ export default async function AdminLayout({ children }: { children: React.ReactN
 
       <div className="flex min-w-0 flex-1 flex-col">
         <header className="glass sticky top-0 z-30 flex h-16 items-center justify-end gap-1 border-b px-4 sm:px-6">
+          {/* Brand mark fills the otherwise-empty header left on phones (the
+              sidebar with the logo is hidden < md). `me-auto` keeps the controls
+              flush-right; `md:hidden` drops it once the sidebar returns. */}
+          <span className="me-auto inline-flex items-center gap-2 md:hidden">
+            <span className="flex size-8 items-center justify-center rounded-xl bg-gradient-brand text-white shadow-glow">
+              <Sparkles className="size-4" />
+            </span>
+            <span className="text-sm font-semibold">{t('title')}</span>
+          </span>
           <ThemeToggle />
           <LanguageSwitcher />
           <UserMenu name={session?.user?.name ?? ''} email={session?.user?.email ?? ''} />
         </header>
+        {/* Phone-only section strip; desktop uses the sidebar. */}
+        <AdminMobileNav />
         <main className="flex-1 p-4 sm:p-6">
           <ConfirmProvider>
             <PageTransition>{children}</PageTransition>

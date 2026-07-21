@@ -3,14 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { GitBranch, Users, ListChecks } from 'lucide-react';
+import { GitBranch, ListChecks } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-// Sub-navigation for the CRM module — the pipeline, the customer directory, and
-// tasks all live under one roof so the owner follows opportunities in one place.
+// Sub-navigation for the CRM module — the opportunity pipeline and its tasks.
+// (The customer directory now lives in its own top-level "Customers" section.)
 const TABS = [
   { href: '/crm', key: 'pipeline', icon: GitBranch },
-  { href: '/clients', key: 'customers', icon: Users },
   { href: '/tasks', key: 'tasks', icon: ListChecks },
 ] as const;
 

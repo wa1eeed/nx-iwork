@@ -30,6 +30,7 @@ import {
   Star,
   Wand2,
   Store,
+  Target,
   TicketPercent,
   Users,
   Wallet,
@@ -69,9 +70,15 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    // Advanced CRM — pipeline (opportunities) + customers + tasks in one place.
+    // Advanced CRM — the opportunity pipeline + tasks. (The customer directory
+    // was pulled out into its own section below so buyers are one tap away.)
     sectionKey: 'crm',
-    items: [{ href: '/crm', icon: Contact, labelKey: 'crm' }],
+    items: [{ href: '/crm', icon: Target, labelKey: 'crm' }],
+  },
+  {
+    // The people the business actually serves — everyone with an order.
+    sectionKey: 'customers',
+    items: [{ href: '/clients', icon: Contact, labelKey: 'clients' }],
   },
   {
     // Day-to-day operations — orders first (most-checked), then bookings + catalog.
