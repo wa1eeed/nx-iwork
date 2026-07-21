@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Sprout, Activity, CalendarCheck, ShoppingBag, ListChecks, ArrowRight } from 'lucide-react';
+import { Sprout, Activity, CalendarCheck, ShoppingBag, ListChecks, ArrowRight, Contact, Bot, Wallet } from 'lucide-react';
 import { getLocale, getTranslations } from 'next-intl/server';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -111,9 +111,30 @@ export default async function OverviewPage() {
 
   return (
     <div className="space-y-5">
-      <div>
-        <h1 className="text-xl font-semibold tracking-tight">{tb('title')}</h1>
-        <p className="text-sm text-muted-foreground">{tb('subtitle')}</p>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-xl font-semibold tracking-tight">{tb('title')}</h1>
+          <p className="text-sm text-muted-foreground">{tb('subtitle')}</p>
+        </div>
+        {/* Quick actions — one-tap into the busiest flows (IBP-style chips). */}
+        <div className="flex flex-wrap items-center gap-2">
+          {[
+            { href: '/bookings', icon: CalendarCheck, label: en ? 'New booking' : 'حجز جديد' },
+            { href: '/orders', icon: ShoppingBag, label: en ? 'New order' : 'طلب جديد' },
+            { href: '/customers', icon: Contact, label: en ? 'Customer' : 'عميل' },
+            { href: '/agents', icon: Bot, label: en ? 'Agents' : 'الوكلاء' },
+            { href: '/wallet', icon: Wallet, label: en ? 'Top up' : 'شحن الرصيد' },
+          ].map((a) => (
+            <Link
+              key={a.href}
+              href={a.href}
+              className="inline-flex items-center gap-1.5 rounded-lg border bg-card px-3 py-1.5 text-xs font-medium shadow-card transition hover:border-primary/40 hover:bg-accent/40"
+            >
+              <a.icon className="size-3.5 text-primary" />
+              {a.label}
+            </Link>
+          ))}
+        </div>
       </div>
 
       {/* Whole-business 360° snapshot. */}

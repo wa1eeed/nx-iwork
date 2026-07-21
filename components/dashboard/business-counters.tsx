@@ -69,7 +69,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
     {
       href: '/customers',
       icon: Contact,
-      accent: 'text-emerald-500',
+      tint: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
       label: t('customers'),
       value: num(custTotal),
       breakdown: [
@@ -82,7 +82,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
     {
       href: '/bookings',
       icon: CalendarCheck,
-      accent: 'text-indigo-500',
+      tint: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400',
       label: t('bookingsUpcoming'),
       value: num(bookUpcoming),
       breakdown: [
@@ -94,7 +94,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
     {
       href: '/sales',
       icon: CircleDollarSign,
-      accent: 'text-amber-500',
+      tint: 'bg-amber-500/10 text-amber-600 dark:text-amber-400',
       label: t('revenueMonth'),
       value: sar(Number(monthRevenue._sum.total ?? 0)),
       breakdown: [],
@@ -102,7 +102,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
     {
       href: '/orders',
       icon: ShoppingBag,
-      accent: 'text-sky-500',
+      tint: 'bg-sky-500/10 text-sky-600 dark:text-sky-400',
       label: t('orders'),
       value: num(orderTotal),
       breakdown: [
@@ -114,7 +114,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
     {
       href: '/agents',
       icon: Bot,
-      accent: 'text-fuchsia-500',
+      tint: 'bg-fuchsia-500/10 text-fuchsia-600 dark:text-fuchsia-400',
       label: t('workforceOnline'),
       value: num(agentsOnline),
       breakdown: [
@@ -132,7 +132,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
     {
       href: '/inventory',
       icon: Package2,
-      accent: lowStock > 0 ? 'text-amber-500' : 'text-muted-foreground',
+      tint: lowStock > 0 ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400' : 'bg-muted text-muted-foreground',
       label: t('inventoryItems'),
       value: num(inventory.length),
       breakdown: [
@@ -154,15 +154,19 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
         <Link
           key={c.label}
           href={c.href}
-          className="rounded-2xl border bg-card p-4 transition hover:bg-accent/40"
+          className="group flex flex-col rounded-2xl border bg-card p-4 shadow-card transition hover:-translate-y-0.5 hover:border-primary/30 hover:shadow-elevated"
         >
-          <div className="flex items-center justify-between">
-            <p className="text-xs text-muted-foreground">{c.label}</p>
-            <c.icon className={`size-4 ${c.accent}`} />
+          <div className="flex items-start gap-3">
+            <span className={`flex size-10 shrink-0 items-center justify-center rounded-xl ${c.tint}`}>
+              <c.icon className="size-5" />
+            </span>
+            <div className="min-w-0">
+              <p className="truncate text-2xl font-bold leading-tight tabular-nums">{c.value}</p>
+              <p className="mt-0.5 truncate text-xs text-muted-foreground">{c.label}</p>
+            </div>
           </div>
-          <p className="mt-1.5 text-xl font-bold tabular-nums">{c.value}</p>
           {c.breakdown.filter(Boolean).length > 0 && (
-            <div className="mt-2 flex flex-wrap gap-1">{c.breakdown}</div>
+            <div className="mt-3 flex flex-wrap gap-1">{c.breakdown}</div>
           )}
         </Link>
       ))}
