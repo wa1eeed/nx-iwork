@@ -6,7 +6,7 @@ import { NextResponse } from 'next/server';
 // available. No secrets — a short marker + commit sha only.
 export const dynamic = 'force-dynamic';
 
-const MARKER = 'query-records-rank-fallback';
+const MARKER = 'show-first-overrides-role';
 
 export function GET() {
   return NextResponse.json({
