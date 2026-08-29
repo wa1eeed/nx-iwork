@@ -1,5 +1,9 @@
 {
   "biz": {
+    "agentWorkTabs": {
+      "work": "المهام والجدولة",
+      "outputs": "المخرجات"
+    },
     "crmTabs": {
       "pipeline": "خط الأنابيب",
       "customers": "العملاء",

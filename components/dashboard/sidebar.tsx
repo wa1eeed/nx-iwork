@@ -100,7 +100,6 @@ export const NAV_SECTIONS: NavSection[] = [
       { href: '/agent-work', icon: ListChecks, labelKey: 'agentWork' },
       { href: '/skills', icon: Wand2, labelKey: 'skills' },
       { href: '/studio', icon: FlaskConical, labelKey: 'studio' },
-      { href: '/outputs', icon: Sparkles, labelKey: 'workspace' },
       { href: '/departments', icon: Building2, labelKey: 'departments' },
       { href: '/knowledge', icon: BookOpen, labelKey: 'knowledge' },
       { href: '/data', icon: Database, labelKey: 'data' },

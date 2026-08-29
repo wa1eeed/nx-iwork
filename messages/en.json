@@ -1,5 +1,9 @@
 {
   "biz": {
+    "agentWorkTabs": {
+      "work": "Tasks & schedule",
+      "outputs": "Deliverables"
+    },
     "crmTabs": {
       "pipeline": "Pipeline",
       "customers": "Customers",

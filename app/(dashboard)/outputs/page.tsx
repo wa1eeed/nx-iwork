@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { OutputsHub, type OutputItem } from '@/components/dashboard/outputs-hub';
+import { AgentWorkTabs } from '@/components/dashboard/agent-work-tabs';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,6 +64,8 @@ export default async function OutputsPage() {
         <h1 className="text-xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
+
+      <AgentWorkTabs />
 
       <div className="grid gap-4 sm:grid-cols-3">
         {stats.map((s) => (
