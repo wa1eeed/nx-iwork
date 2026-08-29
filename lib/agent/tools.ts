@@ -63,6 +63,7 @@ const TOOL_COMPANIONS: Record<string, string[]> = {
   check_availability: ['list_open_slots'],
   create_booking: ['list_open_slots'],
   update_booking: ['list_open_slots'],
+  find_customer: ['list_customers'],
 };
 
 // Per-agent function-calling permissions. An agent receives a tool only if it is
@@ -200,6 +201,28 @@ export const AGENT_TOOLS: AiTool[] = [
       properties: {
         phone: { type: 'string', description: 'رقم جوال العميل' },
         name: { type: 'string', description: 'اسم العميل أو جزء منه' },
+      },
+    },
+  },
+  {
+    name: 'list_customers',
+    description:
+      'اسرد عملاء الـ CRM حسب فترة التسجيل أو الحالة — يجيب أسئلة صاحب العمل مثل «مَن سجّل اليوم؟» أو «العملاء الجدد هذا الأسبوع». مرّر period (today افتراضياً) أو date ليوم محدّد، وحدّد status لتصفية الحالة. للاستخدام الداخلي فقط.',
+    parameters: {
+      type: 'object',
+      properties: {
+        period: {
+          type: 'string',
+          enum: ['today', 'yesterday', 'week', 'month', 'all'],
+          description: 'فترة التسجيل. today (الافتراضي)، yesterday، week (آخر ٧ أيام)، month (آخر ٣٠ يوماً)، all (الكل).',
+        },
+        date: { type: 'string', description: 'يوم محدّد YYYY-MM-DD (يتجاوز period).' },
+        status: {
+          type: 'string',
+          enum: ['NEW', 'INTERESTED', 'NEGOTIATING', 'DEFERRED', 'WON', 'LOST'],
+          description: 'تصفية حسب حالة العميل (اختياري).',
+        },
+        query: { type: 'string', description: 'تصفية بالاسم أو الجوال (اختياري).' },
       },
     },
   },
@@ -454,6 +477,13 @@ const listBookingsArgs = z.object({
   customer: z.string().trim().optional(),
   staff: z.string().trim().optional(),
   status: z.enum(['PENDING', 'CONFIRMED', 'WAITLIST', 'COMPLETED', 'CANCELLED', 'NO_SHOW']).optional(),
+});
+
+const listCustomersArgs = z.object({
+  period: z.enum(['today', 'yesterday', 'week', 'month', 'all']).optional(),
+  date: z.string().trim().optional(),
+  status: z.enum(['NEW', 'INTERESTED', 'NEGOTIATING', 'DEFERRED', 'WON', 'LOST']).optional(),
+  query: z.string().trim().optional(),
 });
 
 const setBookingStaffArgs = z.object({
@@ -1184,6 +1214,71 @@ export async function executeTool(
           select: { id: true, name: true, phone: true, status: true, notes: true },
         });
         return ok({ customers });
+      }
+
+      case 'list_customers': {
+        const args = listCustomersArgs.parse(rawArgs);
+        const tz = await companyTimezone(ctx.companyId);
+        // Resolve the registration window server-side so the model never does
+        // date math: period → business-local range; date → that whole day.
+        let gte: Date | undefined;
+        let lt: Date | undefined;
+        if (args.date) {
+          const r = localDayRange(args.date, tz);
+          gte = r.from;
+          lt = r.to;
+        } else {
+          const period = args.period ?? 'today';
+          const startOfToday = localDayRange(localDateISO(new Date(), tz), tz).from;
+          if (period === 'today') {
+            gte = startOfToday;
+            lt = new Date(startOfToday.getTime() + DAY_MS);
+          } else if (period === 'yesterday') {
+            const y = localDayRange(localDateISO(new Date(Date.now() - DAY_MS), tz), tz);
+            gte = y.from;
+            lt = y.to;
+          } else if (period === 'week') {
+            gte = new Date(startOfToday.getTime() - 6 * DAY_MS);
+          } else if (period === 'month') {
+            gte = new Date(startOfToday.getTime() - 29 * DAY_MS);
+          }
+          // 'all' leaves the window open (no createdAt filter).
+        }
+        const customers = await db.customer.findMany({
+          where: {
+            companyId: ctx.companyId,
+            ...(args.status ? { status: args.status } : {}),
+            ...(args.query
+              ? {
+                  OR: [
+                    { name: { contains: args.query, mode: Prisma.QueryMode.insensitive } },
+                    { phone: { contains: args.query } },
+                  ],
+                }
+              : {}),
+            ...(gte || lt ? { createdAt: { ...(gte ? { gte } : {}), ...(lt ? { lt } : {}) } } : {}),
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 50,
+          select: {
+            id: true, ref: true, name: true, phone: true, status: true, createdAt: true,
+            assignedAgent: { select: { name: true } },
+          },
+        });
+        return ok({
+          note: 'تواريخ التسجيل مُنسّقة مسبقاً بتوقيت النشاط. اعرضها كما هي.',
+          period: args.date ?? args.period ?? 'today',
+          count: customers.length,
+          customers: customers.map((c) => ({
+            id: c.id,
+            ref: c.ref,
+            name: c.name,
+            phone: c.phone,
+            status: c.status,
+            assignedTo: c.assignedAgent?.name ?? null,
+            registeredAt: fmtWhen(c.createdAt, tz).date,
+          })),
+        });
       }
 
       case 'create_lead': {
