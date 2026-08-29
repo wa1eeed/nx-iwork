@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { StudioClient, type StudioAgent } from '@/components/dashboard/studio-client';
+import { AgentsTabs } from '@/components/dashboard/agents-tabs';
 
 export default async function StudioPage({
   searchParams,
@@ -42,6 +43,8 @@ export default async function StudioPage({
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
+
+      <AgentsTabs />
       <StudioClient agents={list} initialAgentId={agentParam} />
     </div>
   );

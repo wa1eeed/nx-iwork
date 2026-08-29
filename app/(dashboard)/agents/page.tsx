@@ -7,6 +7,7 @@ import { getUserCompany } from '@/lib/companies';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AgentsView } from '@/components/dashboard/agents-view';
+import { AgentsTabs } from '@/components/dashboard/agents-tabs';
 
 // The AI Office: every employee, grouped by department.
 export default async function AgentsPage() {
@@ -83,6 +84,8 @@ export default async function AgentsPage() {
           </Button>
         )}
       </div>
+
+      <AgentsTabs />
 
       {/* Agent metrics dashboard. */}
       {totalAgents > 0 && (

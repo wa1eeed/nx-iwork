@@ -26,6 +26,7 @@ import { getAiMode } from '@/lib/ai';
 import { agentTokenCap } from '@/lib/plans';
 import { publicHost } from '@/lib/public-url';
 import type { INDUSTRIES } from '@/lib/validators/onboarding';
+import { SettingsTabs } from '@/components/dashboard/settings-tabs';
 
 type ChannelRow = { type: 'TELEGRAM' | 'WHATSAPP'; agentId: string | null; botUsername: string | null; isActive: boolean };
 
@@ -151,6 +152,8 @@ export default async function SettingsPage() {
         <h1 className="text-3xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="mt-1 text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
+
+      <SettingsTabs />
 
       <Tabs defaultValue="guardrails">
         <TabsList className="flex-wrap h-auto">

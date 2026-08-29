@@ -3,6 +3,7 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { ModulesManager } from '@/components/dashboard/modules-manager';
+import { SettingsTabs } from '@/components/dashboard/settings-tabs';
 
 // The owner enables only the modules their business needs. This drives the
 // sidebar, the visible pages, and which tools the agents receive.
@@ -24,6 +25,8 @@ export default async function ModulesPage() {
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
+
+      <SettingsTabs />
 
       <ModulesManager
         initial={{

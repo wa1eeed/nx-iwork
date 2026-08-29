@@ -4,6 +4,19 @@
       "work": "Tasks & schedule",
       "outputs": "Deliverables"
     },
+    "knowledgeTabs": {
+      "knowledge": "Knowledge & triggers",
+      "data": "Data"
+    },
+    "agentsTabs": {
+      "agents": "Agents",
+      "departments": "Departments",
+      "studio": "Studio"
+    },
+    "settingsTabs": {
+      "settings": "Settings",
+      "modules": "Modules"
+    },
     "crmTabs": {
       "pipeline": "Pipeline",
       "customers": "Customers",
