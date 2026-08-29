@@ -17,8 +17,8 @@ const ANTHROPIC_MODELS: TierMap = {
 // newer model is available in the company's region. Flash is the cost lever
 // the platform leans on (cheap, fast) — it's the default for chat.
 const GOOGLE_MODELS: TierMap = {
-  HAIKU: process.env.GOOGLE_MODEL_FAST ?? 'gemini-2.0-flash',
-  SONNET: process.env.GOOGLE_MODEL_BALANCED ?? 'gemini-2.0-flash',
+  HAIKU: process.env.GOOGLE_MODEL_FAST ?? 'gemini-2.5-flash',
+  SONNET: process.env.GOOGLE_MODEL_BALANCED ?? 'gemini-2.5-flash',
   OPUS: process.env.GOOGLE_MODEL_ADVANCED ?? 'gemini-2.5-pro',
 };
 
