@@ -1,11 +1,11 @@
 'use client';
 
-import { useMemo, useState, useTransition } from 'react';
+import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
 import { useTranslations, useLocale } from 'next-intl';
-import { Loader2, AlertTriangle, Lightbulb, Plus, Trash2, Zap, Wrench, ShieldCheck, FlaskConical, Cpu } from 'lucide-react';
+import { Loader2, AlertTriangle, Lightbulb, Plus, Trash2, Zap, Wrench, ShieldCheck, FlaskConical, Cpu, UserCircle, Smile } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,18 @@ import type { PersonaTone, PersonaVerbosity, LanguagePolicy } from '@/lib/agent/
 import { maxTokensForVerbosity } from '@/lib/agent/persona';
 import type { AgentInput } from '@/lib/validators/agents';
 import type { ConflictResult } from '@/lib/agent/conflict-check';
+
+// Settings sections for the sticky side-navigator. Each id anchors a <Card> so
+// the nav can jump + scroll-spy. Labels reuse the section title keys.
+const FORM_SECTIONS = [
+  { id: 'sec-identity', key: 'identity', icon: UserCircle },
+  { id: 'sec-personality', key: 'personalitySection', icon: Smile },
+  { id: 'sec-intelligence', key: 'intelligence', icon: Cpu },
+  { id: 'sec-governance', key: 'governanceSection', icon: ShieldCheck },
+  { id: 'sec-permissions', key: 'permissionsTitle', icon: Wrench },
+  { id: 'sec-advanced', key: 'scenariosTitle', icon: FlaskConical },
+] as const;
+
 
 // Persona knobs edited in the form. Lists are newline-delimited textareas here
 // and split into arrays on submit.
@@ -279,9 +291,52 @@ export function AgentForm({
 
   const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
 
+  const [activeSec, setActiveSec] = useState<string>('sec-identity');
+  useEffect(() => {
+    const els = FORM_SECTIONS.map((sec) => document.getElementById(sec.id)).filter(
+      (el): el is HTMLElement => !!el
+    );
+    if (!els.length) return;
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const vis = entries
+          .filter((e) => e.isIntersecting)
+          .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top)[0];
+        if (vis) setActiveSec(vis.target.id);
+      },
+      { rootMargin: '-15% 0px -75% 0px' }
+    );
+    els.forEach((el) => obs.observe(el));
+    return () => obs.disconnect();
+  }, []);
+
   return (
-    <div className="mx-auto max-w-2xl space-y-6">
-      <Card>
+    <>
+    <div className="lg:grid lg:grid-cols-[13rem_1fr] lg:items-start lg:gap-8">
+      <nav className="no-scrollbar sticky top-16 z-20 -mx-4 mb-3 flex gap-1 overflow-x-auto border-b bg-background/85 px-4 py-2 backdrop-blur lg:top-20 lg:mx-0 lg:mb-0 lg:flex-col lg:gap-0.5 lg:self-start lg:border-0 lg:bg-transparent lg:p-0 lg:backdrop-blur-none">
+        {FORM_SECTIONS.map((sec) => {
+          const on = activeSec === sec.id;
+          return (
+            <a
+              key={sec.id}
+              href={`#${sec.id}`}
+              onClick={() => setActiveSec(sec.id)}
+              className={cn(
+                'flex shrink-0 items-center gap-2 rounded-lg px-3 py-2 text-[13px] font-medium transition-colors',
+                on
+                  ? 'bg-gradient-brand-soft text-primary ring-1 ring-primary/20'
+                  : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground'
+              )}
+            >
+              <sec.icon className="size-4 shrink-0" />
+              <span className="whitespace-nowrap">{t(sec.key)}</span>
+            </a>
+          );
+        })}
+      </nav>
+
+      <div className="min-w-0 max-w-2xl space-y-6 pb-24">
+      <Card id="sec-identity" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="text-lg">{t('identity')}</CardTitle>
         </CardHeader>
@@ -374,7 +429,7 @@ export function AgentForm({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="sec-personality" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="text-lg">{t('personalitySection')}</CardTitle>
         </CardHeader>
@@ -451,7 +506,7 @@ export function AgentForm({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="sec-intelligence" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="text-lg">{t('intelligence')}</CardTitle>
         </CardHeader>
@@ -549,7 +604,7 @@ export function AgentForm({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="sec-governance" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <ShieldCheck className="h-4 w-4 text-primary" />
@@ -604,7 +659,7 @@ export function AgentForm({
         </CardContent>
       </Card>
 
-      <Card>
+      <Card id="sec-permissions" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Wrench className="h-4 w-4 text-primary" />
@@ -644,7 +699,7 @@ export function AgentForm({
       </Card>
 
       {!isEdit && (
-      <Card>
+      <Card id="sec-advanced" className="scroll-mt-24">
         <CardHeader>
           <CardTitle className="flex items-center gap-2 text-lg">
             <Zap className="h-4 w-4 text-amber-500" />
@@ -728,7 +783,10 @@ export function AgentForm({
         </Card>
       )}
 
-      <div className="flex justify-end gap-2">
+      </div>
+    </div>
+
+      <div className="sticky bottom-0 z-20 -mx-4 mt-4 flex items-center justify-end gap-2 border-t bg-background/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6">
         <Button variant="ghost" onClick={() => router.push('/agents')} disabled={saving}>
           {tc('cancel')}
         </Button>
@@ -737,6 +795,6 @@ export function AgentForm({
           {isEdit ? tc('save') : t('create')}
         </Button>
       </div>
-    </div>
+    </>
   );
 }
