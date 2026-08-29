@@ -6,6 +6,7 @@ import { expandOccurrences } from '@/lib/agent/schedule-time';
 import { getAutomationHealth } from '@/lib/agent/automation-health';
 import { AgentWorkView, type CalendarEvent } from '@/components/dashboard/agent-work-view';
 import { AutomationBanner } from '@/components/dashboard/automation-banner';
+import { AgentWorkTabs } from '@/components/dashboard/agent-work-tabs';
 
 // How far ahead the scheduled-runs calendar looks. Cron occurrences + dated
 // tasks are expanded server-side over this window so the client never ships a
@@ -168,6 +169,8 @@ export default async function AgentWorkPage() {
         {health.status === 'healthy' && <AutomationBanner status={health.status} agoLabel={health.agoLabel} />}
       </div>
       {health.status !== 'healthy' && <AutomationBanner status={health.status} agoLabel={health.agoLabel} />}
+
+      <AgentWorkTabs />
 
       <AgentWorkView
         todayKey={dayKey(now, tz)}

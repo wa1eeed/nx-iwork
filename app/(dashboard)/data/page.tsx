@@ -4,6 +4,7 @@ import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { parseFields } from '@/lib/objects/fields';
 import { ObjectTypesManager, type TypeCard } from '@/components/dashboard/object-types-manager';
+import { KnowledgeTabs } from '@/components/dashboard/knowledge-tabs';
 
 export default async function DataPage() {
   const t = await getTranslations('pages.data');
@@ -42,6 +43,8 @@ export default async function DataPage() {
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
+
+      <KnowledgeTabs />
       <ObjectTypesManager types={cards} />
     </div>
   );

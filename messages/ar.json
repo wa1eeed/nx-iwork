@@ -1,5 +1,22 @@
 {
   "biz": {
+    "agentWorkTabs": {
+      "work": "المهام والجدولة",
+      "outputs": "المخرجات"
+    },
+    "knowledgeTabs": {
+      "knowledge": "المعرفة والمحفّزات",
+      "data": "البيانات"
+    },
+    "agentsTabs": {
+      "agents": "الوكلاء",
+      "departments": "الأقسام",
+      "studio": "الاستوديو"
+    },
+    "settingsTabs": {
+      "settings": "الإعدادات",
+      "modules": "الوحدات"
+    },
     "crmTabs": {
       "pipeline": "خط الأنابيب",
       "customers": "العملاء",

@@ -5,6 +5,7 @@ import { getUserCompany } from '@/lib/companies';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { FaqManager } from '@/components/dashboard/faq-manager';
 import { TriggerManager } from '@/components/dashboard/trigger-manager';
+import { KnowledgeTabs } from '@/components/dashboard/knowledge-tabs';
 
 // Two pillars that make agents smarter and proactive:
 //  - FAQ: structured knowledge the agents read (search_faq)
@@ -47,6 +48,8 @@ export default async function KnowledgePage() {
         <h1 className="text-xl font-semibold">{tk('title')}</h1>
         <p className="text-sm text-muted-foreground">{tk('subtitle')}</p>
       </div>
+
+      <KnowledgeTabs />
 
       <Card>
         <CardHeader>
