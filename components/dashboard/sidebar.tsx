@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl';
 import { motion } from 'framer-motion';
 import {
   Bot,
+  Building2,
   BookOpen,
   CalendarCheck,
   CheckCircle,
@@ -82,6 +83,7 @@ export const NAV_SECTIONS: NavSection[] = [
     items: [
       { href: '/orders', icon: ShoppingBag, labelKey: 'orders' },
       { href: '/bookings', icon: CalendarCheck, labelKey: 'bookings', module: 'hasBookings' },
+      { href: '/departments', icon: Building2, labelKey: 'departments' },
       { href: '/services', icon: Store, labelKey: 'services', module: 'hasServices' },
       { href: '/products', icon: Package, labelKey: 'products', module: 'hasEcommerce' },
       { href: '/inventory', icon: Package2, labelKey: 'inventory' },
@@ -89,7 +91,7 @@ export const NAV_SECTIONS: NavSection[] = [
     ],
   },
   {
-    // The AI workforce: employees, their departments, and the knowledge they use.
+    // The AI workforce: the employees, their work queue, skills, and knowledge.
     sectionKey: 'workforce',
     items: [
       { href: '/agents', icon: Bot, labelKey: 'agents' },

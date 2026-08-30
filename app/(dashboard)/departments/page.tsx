@@ -3,7 +3,6 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { DepartmentManager } from '@/components/dashboard/department-manager';
-import { AgentsTabs } from '@/components/dashboard/agents-tabs';
 
 export default async function DepartmentsPage() {
   const t = await getTranslations('pages.departments');
@@ -34,8 +33,6 @@ export default async function DepartmentsPage() {
         <h1 className="text-xl font-semibold">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
       </div>
-
-      <AgentsTabs />
 
       <DepartmentManager
         departments={departments.map((d) => ({

@@ -3,14 +3,13 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useTranslations } from 'next-intl';
-import { Bot, Building2, FlaskConical } from 'lucide-react';
+import { Bot, FlaskConical } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // One "Agents" nav entry, three tabs: the roster, the org/departments, and the
 // sandbox to test an agent. Folds the old "Departments" and "Studio" nav items in.
 const TABS = [
   { href: '/agents', key: 'agents', icon: Bot },
-  { href: '/departments', key: 'departments', icon: Building2 },
   { href: '/studio', key: 'studio', icon: FlaskConical },
 ] as const;
 
