@@ -229,6 +229,12 @@ export function AgentForm({
     });
   }
 
+  // "Custom — no template": the owner defines the role + permissions by hand.
+  // Never re-seeds tools; just marks the agent as template-free.
+  function selectCustom() {
+    setV((p) => ({ ...p, archetype: 'custom' }));
+  }
+
   const activeTemp = TEMP_PRESETS.reduce((a, b) =>
     Math.abs(b.value - v.temperature) < Math.abs(a.value - v.temperature) ? b : a
   ).value;
@@ -394,6 +400,20 @@ export function AgentForm({
           <div className="space-y-2">
             <Label>{t('archetypeLabel')}</Label>
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              <button
+                type="button"
+                onClick={() => selectCustom()}
+                className={cn(
+                  'rounded-xl border p-3 text-start transition',
+                  v.archetype === 'custom' ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted',
+                )}
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-sm font-semibold">{t('archetypeCustom')}</span>
+                  <span className="rounded-full bg-muted px-1.5 py-0.5 text-[10px] font-medium text-muted-foreground">{t('archetypeCustomTag')}</span>
+                </div>
+                <p className="mt-1 text-xs text-muted-foreground">{t('archetypeCustomHelp')}</p>
+              </button>
               {ARCHETYPES.map((a) => {
                 const active = v.archetype === a.key;
                 return (
