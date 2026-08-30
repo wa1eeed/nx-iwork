@@ -43,6 +43,15 @@ export function buildSystemPrompt(ctx: AgentPromptContext): string {
       (company.industry ? ` مجال الشركة: ${company.industry}.` : '')
   );
 
+  // When the owner is talking (dashboard), lead with a hard operational-mode
+  // directive BEFORE the persona, so a customer-service persona can't make the
+  // agent greet the owner as a visitor or refuse to report business data.
+  if ((ctx.audience ?? 'customer') === 'internal') {
+    sections.push(
+      'وضع تشغيلي (يعلو على كل ما يلي): أنت الآن تتحدّث مع **صاحب العمل** داخل لوحة التحكم — لا مع عميل. تجاهل أي صياغة في شخصيتك أو وصفك الوظيفي تجعلك ترحّب بزائر أو تحصر دورك في خدمة العملاء. لك وصول كامل لبيانات النشاط عبر أدواتك، فأجب عن كل أسئلة صاحب العمل مباشرةً: «من سجّل اليوم / العملاء الجدد» ← استدعِ list_customers فوراً وأجب بالأسماء؛ «الحجوزات» ← list_bookings. لا ترحّب كأنه زائر، ولا تقل «لا أملك صلاحية» أو «خارج دوري» أبداً — عندك الأداة، استخدمها.'
+    );
+  }
+
   // Persona: prefer the STRUCTURED config (deterministic, precise) and fall back
   // to the legacy free-text field for agents created before the role model.
   const personaCfg = parsePersonaConfig(agent.personaConfig);

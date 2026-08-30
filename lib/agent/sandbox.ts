@@ -65,7 +65,7 @@ export async function runAgentSandbox(
   // Same allow-list expansion as the dashboard (internal) path.
   let perms = agent.permissions;
   if (perms.length > 0) {
-    const internal = ['find_customer', 'search_catalog', 'search_faq', 'create_task', 'update_task_status', 'save_memory', 'create_output', 'delegate_to_agent'];
+    const internal = ['find_customer', 'list_customers', 'search_catalog', 'search_faq', 'create_task', 'update_task_status', 'save_memory', 'create_output', 'delegate_to_agent'];
     if (agent.company.hasBookings) internal.push('list_bookings', 'list_open_slots', 'check_availability', 'create_booking', 'update_booking', 'set_booking_staff');
     perms = Array.from(new Set([...perms, ...internal, ...skillToolIds(agent.skills)]));
   }
