@@ -1539,8 +1539,8 @@
       "opusHint": "Complex tasks and analysis"
     },
     "roleModelSection": "Role & scope",
-    "archetypeLabel": "Role archetype",
-    "archetypeHelp": "Sets the starting capabilities and whether this agent can talk to customers.",
+    "archetypeLabel": "Quick-start template (optional)",
+    "archetypeHelp": "Optional — just pre-fills a starting set of tools. The job title above can be ANY specialty you want; the tools you grant below are what the agent can actually do.",
     "scopeCustomer": "Customer-facing",
     "scopeInternal": "Internal · background",
     "toneLabel": "Tone",
