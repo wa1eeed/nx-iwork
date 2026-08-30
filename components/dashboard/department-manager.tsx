@@ -217,6 +217,10 @@ export function DepartmentManager({ departments }: { departments: DepartmentRow[
                     {d.tagline && (
                       <p className="mt-0.5 truncate text-xs text-muted-foreground">{d.tagline}</p>
                     )}
+                    <div className="mt-1.5 flex flex-wrap items-center gap-3 text-[11px] text-muted-foreground">
+                      <span className="inline-flex items-center gap-1"><ShoppingCart className="size-3" />{d.serviceCount}</span>
+                      <span className="inline-flex items-center gap-1"><Bot className="size-3" />{d.agentCount}</span>
+                    </div>
                   </div>
                   <div className="flex shrink-0 items-center">
                     <Button variant="ghost" size="icon" onClick={() => openEdit(d)}>
