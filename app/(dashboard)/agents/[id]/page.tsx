@@ -1,8 +1,10 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
 import { getLocale, getTranslations } from 'next-intl/server';
-import { ArrowRight, Sparkles, Gauge, Brain, Database, Network, MessageSquare } from 'lucide-react';
+import { ArrowRight, Sparkles, Gauge, Brain, Database, Network, MessageSquare, FlaskConical } from 'lucide-react';
 import { HolographicAvatar } from '@/components/dashboard/holographic-avatar';
+import { AgentChatPanel } from '@/components/dashboard/agent-chat-panel';
+import { StudioClient, type StudioAgent } from '@/components/dashboard/studio-client';
 import { deptHue } from '@/lib/ui/dept-accent';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
@@ -25,10 +27,13 @@ import type { AgentKpi } from '@/lib/agent/templates';
 
 export default async function AgentProfilePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ id: string }>;
+  searchParams: Promise<{ tab?: string }>;
 }) {
   const { id } = await params;
+  const { tab } = await searchParams;
   const t = await getTranslations('agentProfile');
   const ta = await getTranslations('pages.agents');
   const to = await getTranslations('outputs');
@@ -208,13 +213,22 @@ export default async function AgentProfilePage({
     </span>
   );
 
+  // Deep-linkable tabs (e.g. the settings form's "Test" CTA opens ?tab=test).
+  const validTabs = ['chat', 'activity', 'outputs', 'scenarios', 'kpis', 'memory', 'test', 'settings'];
+  const validTab = tab && validTabs.includes(tab) ? tab : 'chat';
+
+  // Single-agent list for the embedded test sandbox tab.
+  const studioAgents: StudioAgent[] = [
+    { id: agent.id, name: agent.name, role: agent.role, surface: agent.surface, model: agent.aiModel?.label ?? null },
+  ];
+
   return (
     <div style={{ ['--dept-h' as string]: String(hue) }} className="space-y-6">
       {/* Department-accent banner */}
       <div className="h-2 rounded-full dept-accent-bg" />
 
       <div>
-        <Link href="/overview" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
+        <Link href="/command" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
           <ArrowRight className="h-4 w-4 rtl:rotate-180" />
           {t('backToCenter')}
         </Link>
@@ -251,15 +265,21 @@ export default async function AgentProfilePage({
       )}
 
       <div className="grid gap-5 lg:grid-cols-[1fr_300px]">
-        <Tabs defaultValue="activity">
+        <Tabs defaultValue={validTab}>
         <TabsList className="flex-wrap h-auto">
+          <TabsTrigger value="chat" className="gap-1.5"><MessageSquare className="size-4" />{t('tabs.chat')}</TabsTrigger>
           <TabsTrigger value="activity">{t('tabs.activity')}</TabsTrigger>
           <TabsTrigger value="outputs">{t('tabs.outputs')}</TabsTrigger>
           <TabsTrigger value="scenarios">{t('tabs.scenarios')}</TabsTrigger>
           <TabsTrigger value="kpis">{t('tabs.kpis')}</TabsTrigger>
           <TabsTrigger value="memory">{t('tabs.memory')}</TabsTrigger>
+          <TabsTrigger value="test" className="gap-1.5"><FlaskConical className="size-4" />{t('tabs.test')}</TabsTrigger>
           <TabsTrigger value="settings">{t('tabs.settings')}</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="chat" className="space-y-4">
+          <AgentChatPanel agentId={agent.id} agentName={agent.name} locale={locale === 'en' ? 'en' : 'ar'} />
+        </TabsContent>
 
         <TabsContent value="activity" className="space-y-4">
           <AgentActivity
@@ -279,21 +299,6 @@ export default async function AgentProfilePage({
             }))}
             approvals={pendingApprovals.map((a) => ({ id: a.id, decision: a.decision }))}
           />
-
-          {/* Internal-mode chat entry point (design View 2 → Activity). */}
-          <Link
-            href={`/chat?agent=${agent.id}`}
-            className="flex items-center gap-3 rounded-2xl border bg-card p-4 transition hover:bg-accent"
-          >
-            <span className="dept-tint-bg dept-accent-text flex size-10 shrink-0 items-center justify-center rounded-xl">
-              <MessageSquare className="size-5" />
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-semibold">{t('chatTitle', { name: agent.name })}</p>
-              <p className="text-sm text-muted-foreground">{t('chatSubtitle')}</p>
-            </div>
-            <ArrowRight className="size-4 shrink-0 text-muted-foreground rtl:rotate-180" />
-          </Link>
         </TabsContent>
 
         <TabsContent value="outputs" className="space-y-3">
@@ -449,6 +454,10 @@ export default async function AgentProfilePage({
               </ul>
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="test" className="space-y-4">
+          <StudioClient agents={studioAgents} initialAgentId={agent.id} />
         </TabsContent>
 
         <TabsContent value="settings" className="space-y-6">
