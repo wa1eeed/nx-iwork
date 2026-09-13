@@ -122,7 +122,7 @@ export default async function OverviewPage() {
           {[
             { href: '/bookings', icon: CalendarCheck, label: en ? 'New booking' : 'حجز جديد' },
             { href: '/orders', icon: ShoppingBag, label: en ? 'New order' : 'طلب جديد' },
-            { href: '/customers', icon: Contact, label: en ? 'Customer' : 'عميل' },
+            { href: '/clients', icon: Contact, label: en ? 'Customer' : 'عميل' },
             { href: '/agents', icon: Bot, label: en ? 'Agents' : 'الوكلاء' },
             { href: '/wallet', icon: Wallet, label: en ? 'Top up' : 'شحن الرصيد' },
           ].map((a) => (

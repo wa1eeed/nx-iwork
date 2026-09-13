@@ -5,11 +5,14 @@ const { auth } = NextAuth(authConfig);
 
 const AUTH_PAGES = ['/login', '/signup'];
 const PROTECTED_PREFIXES = [
+  '/command',
   '/overview',
   '/agents',
+  '/agent-work',
   '/departments',
+  '/clients',
+  '/crm',
   '/customers',
-  '/tasks',
   '/chat',
   '/orders',
   '/services',
@@ -27,7 +30,7 @@ export default auth((req) => {
   const path = req.nextUrl.pathname;
 
   if (AUTH_PAGES.includes(path) && isLoggedIn) {
-    return Response.redirect(new URL('/overview', req.nextUrl));
+    return Response.redirect(new URL('/command', req.nextUrl));
   }
 
   if (
