@@ -1,13 +1,12 @@
 import Link from 'next/link';
 import { getTranslations } from 'next-intl/server';
-import { Plus, Users, MessageSquare } from 'lucide-react';
+import { Plus, Users, Radar, MessageSquare } from 'lucide-react';
 import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { AgentsView } from '@/components/dashboard/agents-view';
-import { AgentsTabs } from '@/components/dashboard/agents-tabs';
 
 // The AI Office: every employee, grouped by department.
 export default async function AgentsPage() {
@@ -76,16 +75,22 @@ export default async function AgentsPage() {
           <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
         {hasDept > 0 && (
-          <Button asChild>
-            <Link href="/agents/new">
-              <Plus className="me-1 h-4 w-4" />
-              {t('new')}
-            </Link>
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button asChild>
+              <Link href="/command">
+                <Radar className="me-1 h-4 w-4" />
+                {t('buildWithMaestro')}
+              </Link>
+            </Button>
+            <Button asChild variant="outline">
+              <Link href="/agents/new">
+                <Plus className="me-1 h-4 w-4" />
+                {t('newManual')}
+              </Link>
+            </Button>
+          </div>
         )}
       </div>
-
-      <AgentsTabs />
 
       {/* Agent metrics dashboard. */}
       {totalAgents > 0 && (
@@ -120,9 +125,17 @@ export default async function AgentsPage() {
           <CardContent className="flex flex-col items-center gap-3 py-16 text-center">
             <Users className="h-10 w-10 text-muted-foreground" />
             <p className="text-sm text-muted-foreground">{t('empty')}</p>
-            <Button asChild variant="outline">
-              <Link href="/agents/new">{t('addFirst')}</Link>
-            </Button>
+            <div className="flex flex-wrap items-center justify-center gap-2">
+              <Button asChild>
+                <Link href="/command">
+                  <Radar className="me-1 h-4 w-4" />
+                  {t('buildWithMaestro')}
+                </Link>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/agents/new">{t('addFirst')}</Link>
+              </Button>
+            </div>
           </CardContent>
         </Card>
       ) : (
@@ -168,7 +181,7 @@ export default async function AgentsPage() {
                             <Link href={`/agents/${a.id}`}>{tc('details')}</Link>
                           </Button>
                           <Button asChild variant="ghost" size="sm">
-                            <Link href="/chat">
+                            <Link href={`/agents/${a.id}?tab=chat`}>
                               <MessageSquare className="h-4 w-4" />
                             </Link>
                           </Button>

@@ -44,6 +44,51 @@ const BOOKING = ['check_availability', 'list_open_slots', 'create_booking', 'upd
 
 export const ARCHETYPES: Archetype[] = [
   {
+    // The conductor / "المايسترو" — the owner's chief of staff. Unlike every
+    // other archetype (which SERVES a function), this one BUILDS and DIRECTS the
+    // workforce: it can hire new agents, grant them permissions, delegate work,
+    // and report on live activity — all from a conversation. INTERNAL only: it
+    // never faces customers. There is at most one per company (ensureConductor).
+    key: 'conductor',
+    label: { ar: 'المايسترو — المدير الأساسي', en: 'Maestro — Chief of Staff' },
+    summary: {
+      ar: 'يبني الوكلاء ويمنحهم الصلاحيات، يوزّع المهام ويتابع نشاط فريق الوكلاء لحظياً.',
+      en: 'Builds agents and grants them permissions, delegates work, and tracks the workforce live.',
+    },
+    surface: 'INTERNAL',
+    permissions: [
+      // The conductor's signature power — hire and configure the workforce.
+      'create_agent', 'configure_agent', 'list_agents',
+      // Direct the workforce + track it.
+      'delegate_to_agent', 'create_task', 'update_task_status', 'create_output', 'save_memory',
+      // Answer the owner about the business (broad read access).
+      'find_customer', 'list_customers', 'search_catalog', 'search_faq', 'list_bookings',
+    ],
+    outputTypes: ['PLAN', 'REPORT', 'ACTION_LOG', 'ANALYSIS'],
+    autonomy: 'ASK',
+    kpis: [
+      { key: 'workforce_size', label: 'حجم الفريق', target: 5, unit: 'وكيل' },
+      { key: 'tasks_delegated', label: 'مهام موزّعة', target: 50, unit: '/شهر' },
+    ],
+    persona: {
+      tone: 'confident',
+      verbosity: 'balanced',
+      languagePolicy: 'mirror',
+      dos: [
+        'يفهم هدف صاحب العمل ثم يقترح الوكيل المناسب وصلاحياته قبل الإنشاء',
+        'يبني الوكلاء وينفّذ التعيينات بنفسه بدل أن يطلب من المالك ملء نماذج',
+        'يلخّص ما فعله بوضوح: من عُيّن، بأي صلاحيات، ولماذا',
+      ],
+      donts: [
+        'لا يواجه العملاء أبداً — دوره داخلي إداري بحت',
+        'لا يمنح صلاحيات حسّاسة دون توضيحها للمالك',
+      ],
+      signaturePhrases: [],
+    },
+    icon: 'Radar',
+    accent: 'oklch(0.72 0.15 195)',
+  },
+  {
     key: 'front_desk',
     label: { ar: 'الاستقبال والحجز', en: 'Front Desk & Booking' },
     summary: {
@@ -211,6 +256,13 @@ export function getArchetype(key: string | null | undefined): Archetype | null {
 }
 
 export const ARCHETYPE_KEYS = ARCHETYPES.map((a) => a.key);
+
+// Archetypes the owner may pick when hiring MANUALLY. The `conductor` (Maestro)
+// is auto-provisioned once per company (ensureConductor) and directs the rest —
+// it is never offered as a template chip in the create form.
+export const SELECTABLE_ARCHETYPES = ARCHETYPES.filter((a) => a.key !== 'conductor');
+
+export const CONDUCTOR_ARCHETYPE = 'conductor';
 
 // Map a legacy template key → a role-model archetype, so template-based hires
 // get the right customer/internal scope + capability bundle. Unknown → front_desk.

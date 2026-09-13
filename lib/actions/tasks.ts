@@ -52,7 +52,7 @@ export async function createTask(raw: TaskInput): Promise<TaskActionResult> {
       },
       select: { id: true },
     });
-    revalidatePath('/tasks');
+    revalidatePath('/agent-work');
     return { ok: true, id: task.id };
   } catch (err) {
     console.error('createTask failed', err);
@@ -72,7 +72,7 @@ export async function setTaskStatus(
       data: { status },
     });
     if (res.count === 0) return { ok: false, error: 'not_found' };
-    revalidatePath('/tasks');
+    revalidatePath('/agent-work');
     return { ok: true, id };
   } catch (err) {
     console.error('setTaskStatus failed', err);
@@ -86,7 +86,7 @@ export async function deleteTask(id: string): Promise<TaskActionResult> {
   try {
     const res = await db.task.deleteMany({ where: { id, companyId: cid } });
     if (res.count === 0) return { ok: false, error: 'not_found' };
-    revalidatePath('/tasks');
+    revalidatePath('/agent-work');
     return { ok: true, id };
   } catch (err) {
     console.error('deleteTask failed', err);

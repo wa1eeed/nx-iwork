@@ -5,10 +5,10 @@ import { auth } from '@/lib/auth';
 import { db } from '@/lib/db';
 import { getUserCompany } from '@/lib/companies';
 import { CustomerManager } from '@/components/dashboard/customer-manager';
-import { CrmTabs } from '@/components/dashboard/crm-tabs';
 
-// The CRM hub: pipeline (opportunities) + customers + tasks under one module,
-// fronted by a whole-relationship counter strip (IBP-style).
+// The CRM hub: the opportunity pipeline, fronted by a whole-relationship counter
+// strip (IBP-style). Customers live in their own section; agent tasks live in
+// Agent Work — CRM stays focused on the pipeline.
 export default async function CrmPage() {
   const t = await getTranslations('crm');
   const tb = await getTranslations('biz.crmHub');
@@ -68,8 +68,6 @@ export default async function CrmPage() {
           </div>
         ))}
       </div>
-
-      <CrmTabs />
 
       <CustomerManager
         customers={customers.map((c) => ({

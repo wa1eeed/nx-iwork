@@ -535,6 +535,7 @@
   },
   "dashboard": {
     "welcomeBack": "Welcome back, {name}",
+    "commandCenter": "Command Center",
     "overview": "Overview",
     "agents": "AI agents",
     "departments": "Departments",
@@ -1143,6 +1144,8 @@
       "title": "Employees",
       "subtitle": "Your team of AI employees, organized by department.",
       "new": "New employee",
+      "buildWithMaestro": "Build with Maestro",
+      "newManual": "Manual",
       "empty": "No employees yet.",
       "needDept": "Create a department first, then assign employees to it.",
       "createDept": "Create a department",
@@ -1415,10 +1418,12 @@
     "failed": "Failed",
     "tokens": "Tokens",
     "tabs": {
+      "chat": "Chat",
       "activity": "Activity",
       "scenarios": "Scenarios",
       "kpis": "KPIs",
       "memory": "Memory",
+      "test": "Test",
       "settings": "Settings",
       "outputs": "Outputs"
     },

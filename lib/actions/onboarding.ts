@@ -55,6 +55,7 @@ export async function createCompanyAction(
   }
 
   // redirect() throws an internal Next signal — must be outside the try/catch
-  // so it isn't swallowed as a generic error.
-  redirect('/overview');
+  // so it isn't swallowed as a generic error. Land in the command center — the
+  // Maestro greets the new owner and offers to build their first agent.
+  redirect('/command');
 }

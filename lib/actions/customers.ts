@@ -37,7 +37,7 @@ export async function createCustomer(raw: CustomerInput): Promise<CustomerResult
       },
       select: { id: true },
     });
-    revalidatePath('/customers');
+    revalidatePath('/clients');
     return { ok: true, id: c.id };
   } catch (err) {
     console.error('createCustomer failed', err);
@@ -62,7 +62,7 @@ export async function updateCustomer(id: string, raw: CustomerInput): Promise<Cu
       },
     });
     if (res.count === 0) return { ok: false, error: 'not_found' };
-    revalidatePath('/customers');
+    revalidatePath('/clients');
     revalidatePath(`/customers/${id}`);
     return { ok: true, id };
   } catch (err) {
@@ -78,7 +78,7 @@ export async function setCustomerStatus(id: string, status: LeadStatus): Promise
   try {
     const res = await db.customer.updateMany({ where: { id, companyId: cid }, data: { status } });
     if (res.count === 0) return { ok: false, error: 'not_found' };
-    revalidatePath('/customers');
+    revalidatePath('/clients');
     revalidatePath(`/customers/${id}`);
     return { ok: true, id };
   } catch (err) {
@@ -93,7 +93,7 @@ export async function deleteCustomer(id: string): Promise<CustomerResult> {
   try {
     const res = await db.customer.deleteMany({ where: { id, companyId: cid } });
     if (res.count === 0) return { ok: false, error: 'not_found' };
-    revalidatePath('/customers');
+    revalidatePath('/clients');
     return { ok: true, id };
   } catch (err) {
     console.error('deleteCustomer failed', err);

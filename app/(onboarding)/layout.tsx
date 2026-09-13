@@ -14,7 +14,7 @@ export default async function OnboardingLayout({
 
   const companyId = await getUserCompany(session.user.id);
   if (companyId) {
-    redirect('/overview');
+    redirect('/command');
   }
 
   return <div className="min-h-screen bg-background">{children}</div>;

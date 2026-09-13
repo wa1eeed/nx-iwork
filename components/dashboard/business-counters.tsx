@@ -67,7 +67,7 @@ export async function BusinessCounters({ companyId }: { companyId: string }) {
 
   const CARDS = [
     {
-      href: '/customers',
+      href: '/clients',
       icon: Contact,
       tint: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
       label: t('customers'),

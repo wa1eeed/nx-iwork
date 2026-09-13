@@ -63,7 +63,7 @@ export function CustomerEditor({ initial }: { initial: CustomerEditValues }) {
       const res = await deleteCustomer(v.id);
       if (res.ok) {
         feedback('success', t('deleted'));
-        router.push('/customers');
+        router.push('/clients');
         router.refresh();
       } else {
         feedback('error', t('deleteFailed'));

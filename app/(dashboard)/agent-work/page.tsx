@@ -40,7 +40,7 @@ export default async function AgentWorkPage() {
   const now = new Date();
   const windowEnd = new Date(now.getTime() + CALENDAR_DAYS * 24 * 60 * 60 * 1000);
 
-  const [tasks, schedules, datedTasks, settings] = companyId
+  const [tasks, schedules, datedTasks, settings, agents] = companyId
     ? await Promise.all([
         // Queue — the agent work items, newest first.
         db.task.findMany({
@@ -104,8 +104,14 @@ export default async function AgentWorkPage() {
           where: { companyId },
           select: { timezone: true, weekStart: true },
         }),
+        // Agents available to assign a new task to (create moved here from /tasks).
+        db.agent.findMany({
+          where: { companyId, status: { not: 'ARCHIVED' } },
+          orderBy: { name: 'asc' },
+          select: { id: true, name: true },
+        }),
       ])
-    : [[], [], [], null];
+    : [[], [], [], null, []];
 
   const tz = settings?.timezone ?? 'Asia/Riyadh';
   const weekStart = settings?.weekStart ?? 'sunday';
@@ -206,6 +212,7 @@ export default async function AgentWorkPage() {
           agentName: s.agent?.name ?? null,
         }))}
         events={events}
+        agents={agents}
       />
     </div>
   );
