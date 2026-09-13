@@ -17,7 +17,7 @@ import { createAgent, updateAgent } from '@/lib/actions/agents';
 import { celebrate } from '@/lib/ui/celebrate';
 import { TRIGGER_EVENTS } from '@/lib/agent/events-catalog';
 import { TOOL_CATALOG, TOOL_GROUPS, type ToolGroup } from '@/lib/agent/tool-labels';
-import { ARCHETYPES } from '@/lib/agent/archetypes';
+import { ARCHETYPES, SELECTABLE_ARCHETYPES } from '@/lib/agent/archetypes';
 import type { PersonaTone, PersonaVerbosity, LanguagePolicy } from '@/lib/agent/persona';
 import { maxTokensForVerbosity } from '@/lib/agent/persona';
 import type { AgentInput } from '@/lib/validators/agents';
@@ -414,7 +414,7 @@ export function AgentForm({
                 </div>
                 <p className="mt-1 text-xs text-muted-foreground">{t('archetypeCustomHelp')}</p>
               </button>
-              {ARCHETYPES.map((a) => {
+              {SELECTABLE_ARCHETYPES.map((a) => {
                 const active = v.archetype === a.key;
                 return (
                   <button

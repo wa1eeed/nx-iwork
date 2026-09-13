@@ -535,6 +535,7 @@
   },
   "dashboard": {
     "welcomeBack": "مرحباً، {name}",
+    "commandCenter": "مركز القيادة",
     "overview": "النظرة العامة",
     "agents": "وكلاء الذكاء",
     "departments": "الأقسام",

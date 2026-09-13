@@ -22,6 +22,7 @@ import {
   Package2,
   Gem,
   Plug,
+  Radar,
   Settings,
   Sparkles,
   Star,
@@ -58,9 +59,10 @@ interface NavSection {
 // Exported so the mobile tab strip / bottom bar reuse the exact same source.
 export const NAV_SECTIONS: NavSection[] = [
   {
-    // The cockpit — glanceable state + talking to the workforce.
+    // The cockpit — the command center first, then glanceable state + chat.
     sectionKey: 'command',
     items: [
+      { href: '/command', icon: Radar, labelKey: 'commandCenter' },
       { href: '/overview', icon: LayoutDashboard, labelKey: 'overview' },
       { href: '/approvals', icon: CheckCircle, labelKey: 'approvals' },
       { href: '/chat', icon: MessageSquare, labelKey: 'chat' },

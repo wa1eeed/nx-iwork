@@ -16,7 +16,7 @@ import { PauseAgentButton } from '@/components/dashboard/pause-agent-button';
 import { AgentSchedules } from '@/components/dashboard/agent-schedules';
 import { AgentActivity } from '@/components/dashboard/agent-activity';
 import { getToolsForAgent } from '@/lib/agent/tools';
-import { TOOL_LABELS } from '@/lib/agent/tool-labels';
+import { DISPLAY_TOOL_LABELS } from '@/lib/agent/tool-labels';
 import { formatNumber, formatDate } from '@/lib/format';
 import { AgentScenarios } from '@/components/dashboard/agent-scenarios';
 import { AgentKpisEditor } from '@/components/dashboard/agent-kpis-editor';
@@ -528,7 +528,7 @@ export default async function AgentProfilePage({
                       : 'dept-tint-bg dept-accent-text rounded-full px-2.5 py-0.5 text-[11px]'
                   }
                 >
-                  {TOOL_LABELS[tool.name] ?? tool.name}
+                  {DISPLAY_TOOL_LABELS[tool.name] ?? tool.name}
                 </span>
               ))}
               {hasMcp && (

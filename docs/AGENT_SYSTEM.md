@@ -846,6 +846,41 @@ decision and **wakes the agent** with a follow-up `AGENT_TOOL` task.
 
 ---
 
+## The Maestro (conductor) & the Command Center
+
+The owner should **direct a team**, not fill in forms. The **Maestro** is one
+`INTERNAL` agent per company (`archetype: 'conductor'`) that builds and configures
+the rest of the workforce from a conversation — the OpenClaw-style model.
+
+- **Provisioning** — `ensureConductor(companyId)` in `lib/agent/conductor.ts`
+  (idempotent; called on every `/command` visit). Seeds it from the `conductor`
+  archetype (`lib/agent/archetypes.ts`): `INTERNAL` scope, SONNET tier, and the
+  three workforce tools below plus broad read access.
+- **Powers** — three tools in `lib/agent/tools.ts`:
+  - `create_agent` — hires a new agent via the existing HR gateway
+    (`hrAgent.onboardAndDeployAgent`, `force:true`): name, role, focus, scope
+    (customer/internal), granted permissions, department, model tier.
+  - `configure_agent` — grant/revoke/replace permissions, change role/focus,
+    flip scope, pause/resume. Refuses to edit the Maestro itself.
+  - `list_agents` — the workforce roster + each agent's status/scope/capabilities.
+- **Privilege gating (security)** — these three are in `PRIVILEGED_TOOLS`:
+  excluded from `getToolsForCompany` (so "all tools" agents and the **public
+  widget** never receive them) and re-added in `getToolsForAgent` **only** when an
+  agent's stored allow-list names them. They are deliberately kept OUT of
+  `TOOL_CATALOG`/`TOOL_LABELS` (the permission matrix and skill-tool validator key
+  off those) so they can't be granted by the matrix or smuggled in via a skill;
+  `DISPLAY_TOOL_LABELS` carries read-only labels for capability chips.
+
+**The Command Center** (`/command`, `app/(dashboard)/command/page.tsx`) is the new
+home: a neon radar of the workforce (the Maestro at the core, agents orbiting on
+inner=internal / outer=customer rings, status colours + animated delegation
+spokes) beside a chat/voice console that commands the Maestro. Live state comes
+from `lib/command/state.ts` `getCommandState()` — shared by the page (SSR) and the
+polled `GET /api/command/state`. Voice today is browser-native dictation
+(Web Speech API); full voice conversation is a later phase.
+
+---
+
 **This is the technical heart of the platform.** Building this system correctly = the success of NX iWork.
 
 **The bottom line of every line here:** a real smart employee, not a chatbot.

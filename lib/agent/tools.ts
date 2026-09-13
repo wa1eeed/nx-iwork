@@ -14,6 +14,7 @@ import { nextRef } from '@/lib/refs';
 import { createBooking, BookingError, generateDaySlots, checkSlotAvailable, promoteFromWaitlist } from '@/lib/booking/engine';
 import { saveMemory } from './memory';
 import { dispatchEvent } from './events';
+import { getArchetype } from './archetypes';
 import { sendBookingConfirmation } from '@/lib/notifications/booking-emails';
 import { parseFields, coerceRecord, computeTitle, recordSummary } from '@/lib/objects/fields';
 import { isMcpTool, callMcpTool } from '@/lib/mcp/registry';
@@ -39,11 +40,18 @@ const SALES_TOOLS = new Set(['search_catalog', 'create_order']);
 const BOOKING_TOOLS = new Set(['check_availability', 'list_open_slots', 'list_bookings', 'create_booking', 'update_booking', 'set_booking_staff']);
 // Business Objects tools — only when the owner has defined a data type.
 const OBJECT_TOOLS = new Set(['list_object_types', 'query_records', 'create_record', 'update_record']);
+// Workforce-management tools — the conductor's (Maestro's) signature powers:
+// building and configuring other agents. These are PRIVILEGED: never part of the
+// "all module tools" base and never reachable on the public widget. An agent
+// receives one ONLY if its stored allow-list names it explicitly (the conductor
+// does; the owner may also grant them to another internal agent from the matrix).
+const PRIVILEGED_TOOLS = new Set(['create_agent', 'configure_agent', 'list_agents']);
 
 // Dynamic tools: only hand the model the tools for the modules this company has
 // enabled (cheaper context + the agent never offers what the business can't do).
 export function getToolsForCompany(m: CompanyModules): AiTool[] {
   return AGENT_TOOLS.filter((t) => {
+    if (PRIVILEGED_TOOLS.has(t.name)) return false; // granted explicitly only — never in "all"
     if (SALES_TOOLS.has(t.name)) return m.hasEcommerce || m.hasServices;
     if (BOOKING_TOOLS.has(t.name)) return m.hasBookings;
     if (OBJECT_TOOLS.has(t.name)) return m.hasObjects;
@@ -73,13 +81,16 @@ const TOOL_COMPANIONS: Record<string, string[]> = {
 // never call a tool it wasn't handed, so a tool outside its permissions is
 // unreachable.
 export function getToolsForAgent(m: CompanyModules, permissions: string[]): AiTool[] {
-  const base = getToolsForCompany(m);
+  const base = getToolsForCompany(m); // privileged tools already excluded here
   if (!permissions || permissions.length === 0) return base;
   const allowed = new Set(permissions);
   for (const p of permissions) {
     for (const c of TOOL_COMPANIONS[p] ?? []) allowed.add(c);
   }
-  return base.filter((t) => allowed.has(t.name));
+  // Privileged (workforce-management) tools are added back ONLY when the agent's
+  // allow-list names them — they are never inherited via the "all tools" default.
+  const privileged = AGENT_TOOLS.filter((t) => PRIVILEGED_TOOLS.has(t.name) && allowed.has(t.name));
+  return [...base.filter((t) => allowed.has(t.name)), ...privileged];
 }
 
 // ---- Tool catalogue (schemas advertised to the model) ----------------------
@@ -446,7 +457,81 @@ export const AGENT_TOOLS: AiTool[] = [
       required: ['recordId', 'values'],
     },
   },
+  // ---- Workforce management (conductor / Maestro only) ---------------------
+  {
+    name: 'list_agents',
+    description:
+      'اسرد فريق الوكلاء الحالي وحالة كل وكيل (نشط/متوقف)، دوره، نطاقه (عميل/داخلي)، وصلاحياته. استخدمها قبل إنشاء وكيل جديد أو تعديل وكيل قائم لتعرف الفريق.',
+    parameters: {
+      type: 'object',
+      properties: {
+        includeArchived: { type: 'boolean', description: 'أدرج الوكلاء المؤرشفين أيضاً (الافتراضي لا).' },
+      },
+    },
+  },
+  {
+    name: 'create_agent',
+    description:
+      'وظِّف وكيلاً جديداً في الفريق فوراً — أنت تبنيه بنفسك بدل أن يملأ صاحب العمل نموذجاً. مرّر الاسم (name) والدور/المنصب (role). ' +
+      'حدّد customerFacing=true إذا كان يخاطب العملاء (استقبال/مبيعات/دعم) أو false إذا كان داخلياً (تسويق/عمليات/مالية/تحليل). ' +
+      'امنحه صلاحياته عبر permissions كقائمة من معرّفات الأدوات الصحيحة فقط: ' +
+      'find_customer, list_customers, create_lead, update_lead, create_order, search_catalog, ' +
+      'check_availability, list_open_slots, list_bookings, create_booking, update_booking, set_booking_staff, ' +
+      'search_faq, create_task, update_task_status, create_output, delegate_to_agent, request_approval, ' +
+      'query_records, create_record, update_record, save_memory, use_mcp. ' +
+      'اترك permissions فارغة لاستخدام صلاحيات افتراضية مناسبة لنوعه. model: "fast" (سريع/اقتصادي، الافتراضي) أو "smart" (أقوى للتحليل). department اختياري (اسم القسم).',
+    parameters: {
+      type: 'object',
+      properties: {
+        name: { type: 'string', description: 'اسم الوكيل (مثل: فهد، نورة)' },
+        role: { type: 'string', description: 'الدور أو المنصب (مثل: مندوب مبيعات عقارات)' },
+        focus: { type: 'string', description: 'مجال تركيز الوكيل ومسؤولياته باختصار (اختياري)' },
+        customerFacing: { type: 'boolean', description: 'true إن كان يخاطب العملاء، false إن كان داخلياً. الافتراضي true.' },
+        permissions: { type: 'array', items: { type: 'string' }, description: 'قائمة معرّفات الأدوات الممنوحة (انظر الوصف). فارغة = افتراضي حسب النوع.' },
+        department: { type: 'string', description: 'اسم القسم الذي يتبع له (اختياري؛ يُنشأ إن لم يوجد).' },
+        model: { type: 'string', enum: ['fast', 'smart'], description: 'مستوى الذكاء. fast (الافتراضي) أو smart.' },
+        autonomy: { type: 'string', enum: ['SUGGEST', 'ASK', 'AUTOPILOT'], description: 'حد الاستقلالية. الافتراضي ASK.' },
+      },
+      required: ['name', 'role'],
+    },
+  },
+  {
+    name: 'configure_agent',
+    description:
+      'عدّل وكيلاً قائماً: غيّر دوره أو تركيزه، امنحه أو اسحب منه صلاحيات، بدّل نطاقه (عميل/داخلي)، أو أوقفه/شغّله. ' +
+      'حدّد الوكيل بالاسم أو المعرّف (agent). لمنح صلاحيات استخدم grantPermissions، ولسحبها revokePermissions، أو setPermissions لاستبدال القائمة كاملة (نفس معرّفات الأدوات في create_agent).',
+    parameters: {
+      type: 'object',
+      properties: {
+        agent: { type: 'string', description: 'اسم الوكيل أو معرّفه (AGT-00x)' },
+        role: { type: 'string', description: 'دور/منصب جديد (اختياري)' },
+        focus: { type: 'string', description: 'مجال تركيز جديد (اختياري)' },
+        grantPermissions: { type: 'array', items: { type: 'string' }, description: 'صلاحيات تُضاف' },
+        revokePermissions: { type: 'array', items: { type: 'string' }, description: 'صلاحيات تُسحب' },
+        setPermissions: { type: 'array', items: { type: 'string' }, description: 'استبدال قائمة الصلاحيات كاملة' },
+        customerFacing: { type: 'boolean', description: 'true عميل / false داخلي (اختياري)' },
+        autonomy: { type: 'string', enum: ['SUGGEST', 'ASK', 'AUTOPILOT'], description: 'تغيير حد الاستقلالية (اختياري)' },
+        paused: { type: 'boolean', description: 'true لإيقاف الوكيل، false لتشغيله (اختياري)' },
+      },
+      required: ['agent'],
+    },
+  },
 ];
+
+// Capability ids an owner/conductor may grant to a NEW or existing agent. Derived
+// from the tool catalogue (minus the privileged workforce tools, which are not
+// handed out by the builder) plus `use_mcp` (a grant, not a built-in tool).
+const GRANTABLE_TOOLS = new Set<string>([
+  ...AGENT_TOOLS.map((t) => t.name).filter((n) => !PRIVILEGED_TOOLS.has(n)),
+  'use_mcp',
+]);
+
+// Keep only real, grantable capability ids — silently drops unknowns and any
+// privileged workforce tool (so the builder never spawns another agent-builder).
+function sanitizePermissions(ids: string[] | undefined): string[] {
+  if (!ids) return [];
+  return Array.from(new Set(ids.filter((i) => GRANTABLE_TOOLS.has(i))));
+}
 
 // ---- Executors -------------------------------------------------------------
 
@@ -601,6 +686,65 @@ const queryRecordsArgs = z.object({
 const recordValues = z.union([z.string(), z.record(z.unknown())]);
 const createRecordArgs = z.object({ type: z.string().trim().min(1), values: recordValues });
 const updateRecordArgs = z.object({ recordId: z.string().trim().min(1), values: recordValues });
+
+// Workforce-management tool args (conductor only).
+const createAgentArgs = z.object({
+  name: z.string().trim().min(1).max(60),
+  role: z.string().trim().min(1).max(80),
+  focus: z.string().trim().max(2000).optional(),
+  customerFacing: z.coerce.boolean().optional(),
+  permissions: z.array(z.string().trim()).max(40).optional(),
+  department: z.string().trim().max(80).optional(),
+  model: z.enum(['fast', 'smart']).optional(),
+  autonomy: z.enum(['SUGGEST', 'ASK', 'AUTOPILOT']).optional(),
+});
+const configureAgentArgs = z.object({
+  agent: z.string().trim().min(1).max(120),
+  role: z.string().trim().max(80).optional(),
+  focus: z.string().trim().max(2000).optional(),
+  grantPermissions: z.array(z.string().trim()).max(40).optional(),
+  revokePermissions: z.array(z.string().trim()).max(40).optional(),
+  setPermissions: z.array(z.string().trim()).max(40).optional(),
+  customerFacing: z.coerce.boolean().optional(),
+  autonomy: z.enum(['SUGGEST', 'ASK', 'AUTOPILOT']).optional(),
+  paused: z.coerce.boolean().optional(),
+});
+const listAgentsArgs = z.object({ includeArchived: z.coerce.boolean().optional() });
+
+// Resolve a department by (fuzzy) name for a new hire, creating it if missing;
+// with no name, reuse the oldest department or create a generic one. Every agent
+// needs a departmentId (required, onDelete: Restrict).
+async function resolveOrCreateDepartment(companyId: string, name?: string): Promise<string> {
+  if (name && name.trim()) {
+    const found = await db.department.findFirst({
+      where: {
+        companyId,
+        OR: [
+          { name: { contains: name, mode: Prisma.QueryMode.insensitive } },
+          { nameEn: { contains: name, mode: Prisma.QueryMode.insensitive } },
+        ],
+      },
+      select: { id: true },
+    });
+    if (found) return found.id;
+    const created = await db.department.create({
+      data: { companyId, name: name.trim(), icon: 'briefcase', color: '#06b6d4' },
+      select: { id: true },
+    });
+    return created.id;
+  }
+  const any = await db.department.findFirst({
+    where: { companyId },
+    orderBy: { createdAt: 'asc' },
+    select: { id: true },
+  });
+  if (any) return any.id;
+  const created = await db.department.create({
+    data: { companyId, name: 'عام', nameEn: 'General', icon: 'briefcase', color: '#06b6d4' },
+    select: { id: true },
+  });
+  return created.id;
+}
 
 // Coerce the model's `values` (JSON string or object) into a plain object.
 function parseValues(values: string | Record<string, unknown>): Record<string, unknown> | null {
@@ -1782,6 +1926,133 @@ export async function executeTool(
           data: { data: merged as Prisma.InputJsonValue, title: computeTitle(fields, merged) },
         });
         return ok({ recordId: rec.id, message: `تم تحديث سجل ${rec.objectType.name}.` });
+      }
+
+      case 'list_agents': {
+        const args = listAgentsArgs.parse(rawArgs);
+        const agents = await db.agent.findMany({
+          where: {
+            companyId: ctx.companyId,
+            ...(args.includeArchived ? {} : { status: { not: 'ARCHIVED' } }),
+          },
+          orderBy: { createdAt: 'asc' },
+          select: {
+            ref: true, name: true, role: true, status: true, surface: true,
+            archetype: true, permissions: true, tasksCompleted: true,
+            department: { select: { name: true } },
+          },
+        });
+        return ok({
+          count: agents.length,
+          agents: agents.map((a) => ({
+            ref: a.ref,
+            name: a.name,
+            role: a.role,
+            status: a.status,
+            scope: a.surface === 'CUSTOMER_FACING' ? 'customer' : 'internal',
+            isConductor: a.archetype === 'conductor',
+            department: a.department?.name ?? null,
+            capabilities: a.permissions.length ? a.permissions : ['(all)'],
+            tasksCompleted: a.tasksCompleted,
+          })),
+        });
+      }
+
+      case 'create_agent': {
+        const args = createAgentArgs.parse(rawArgs);
+        const customerFacing = args.customerFacing ?? true;
+        // The archetype only seeds surface + a sensible default persona; the
+        // granted permissions below fully override its capability bundle.
+        const archetypeKey = customerFacing ? 'front_desk' : 'operations';
+        const arch = getArchetype(archetypeKey);
+        const permissions =
+          args.permissions && args.permissions.length
+            ? sanitizePermissions(args.permissions)
+            : (arch?.permissions ?? []);
+        const departmentId = await resolveOrCreateDepartment(ctx.companyId, args.department);
+        // Reuse the HR hiring gateway (ref, token cap, onboarding, activation).
+        // Dynamic import avoids a static cycle and keeps the chat hot-path lean.
+        const { hrAgent } = await import('./hr-agent');
+        const agentId = await hrAgent.onboardAndDeployAgent(ctx.companyId, {
+          source: 'custom',
+          departmentId,
+          parentId: ctx.agentId, // the conductor becomes the new hire's manager
+          name: args.name,
+          role: args.role,
+          jobDescription: args.focus || null,
+          permissions,
+          archetype: archetypeKey,
+          autonomy: args.autonomy ?? 'ASK',
+          model: args.model === 'smart' ? 'SONNET' : 'HAIKU',
+          force: true, // the owner asked via the conductor — don't block on overlap
+        });
+        await db.timelineEvent.create({
+          data: {
+            companyId: ctx.companyId,
+            agentId: ctx.agentId,
+            type: 'AGENT_MESSAGE',
+            title: 'عُيّن وكيل جديد',
+            description: `${args.name} — ${args.role} (${customerFacing ? 'واجهة العملاء' : 'داخلي'})`,
+          },
+        });
+        return ok({
+          agentId,
+          name: args.name,
+          role: args.role,
+          scope: customerFacing ? 'customer' : 'internal',
+          capabilitiesGranted: permissions,
+          message: `تم تعيين ${args.name} (${args.role}) وتفعيله في الفريق.`,
+        });
+      }
+
+      case 'configure_agent': {
+        const args = configureAgentArgs.parse(rawArgs);
+        const target = await db.agent.findFirst({
+          where: {
+            companyId: ctx.companyId,
+            status: { not: 'ARCHIVED' },
+            OR: [
+              { ref: args.agent },
+              { name: { contains: args.agent, mode: Prisma.QueryMode.insensitive } },
+              { nameEn: { contains: args.agent, mode: Prisma.QueryMode.insensitive } },
+              { role: { contains: args.agent, mode: Prisma.QueryMode.insensitive } },
+            ],
+          },
+          select: { id: true, name: true, permissions: true, archetype: true },
+        });
+        if (!target) return fail('لم أجد وكيلاً بهذا الاسم أو المعرّف. استخدم list_agents لعرض الفريق.');
+        if (target.archetype === 'conductor') {
+          return fail('المايسترو لا يُعدَّل من هنا — دوره ثابت كمدير للفريق.');
+        }
+
+        // Resolve the new capability set: setPermissions replaces; otherwise
+        // grant/revoke mutate the current list.
+        let permissions = target.permissions;
+        if (args.setPermissions) {
+          permissions = sanitizePermissions(args.setPermissions);
+        } else if (args.grantPermissions || args.revokePermissions) {
+          const set = new Set(permissions);
+          for (const g of sanitizePermissions(args.grantPermissions)) set.add(g);
+          for (const r of args.revokePermissions ?? []) set.delete(r);
+          permissions = Array.from(set);
+        }
+
+        const data: Prisma.AgentUpdateManyMutationInput = { permissions };
+        if (args.role) data.role = args.role;
+        if (args.focus !== undefined) data.jobDescription = args.focus || null;
+        if (args.autonomy) data.autonomy = args.autonomy;
+        if (args.customerFacing !== undefined) {
+          data.surface = args.customerFacing ? 'CUSTOMER_FACING' : 'INTERNAL';
+        }
+        if (args.paused !== undefined) data.status = args.paused ? 'PAUSED' : 'ONLINE';
+
+        await db.agent.updateMany({ where: { id: target.id, companyId: ctx.companyId }, data });
+        return ok({
+          agentId: target.id,
+          name: target.name,
+          capabilities: permissions,
+          message: `تم تحديث ${target.name}.`,
+        });
       }
 
       default:

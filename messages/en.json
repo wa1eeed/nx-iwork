@@ -535,6 +535,7 @@
   },
   "dashboard": {
     "welcomeBack": "Welcome back, {name}",
+    "commandCenter": "Command Center",
     "overview": "Overview",
     "agents": "AI agents",
     "departments": "Departments",

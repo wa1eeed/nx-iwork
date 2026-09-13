@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import {
   ARCHETYPES,
+  SELECTABLE_ARCHETYPES,
   getArchetype,
   isCustomerFacing,
   archetypeForTemplate,
@@ -8,9 +9,9 @@ import {
 import { parsePersonaConfig, compilePersona } from './persona';
 
 describe('archetypes', () => {
-  it('exposes the 6 sector-agnostic archetypes', () => {
+  it('exposes the sector-agnostic archetypes plus the conductor', () => {
     expect(ARCHETYPES.map((a) => a.key).sort()).toEqual(
-      ['care', 'finance', 'front_desk', 'marketing', 'operations', 'sales'].sort(),
+      ['care', 'conductor', 'finance', 'front_desk', 'marketing', 'operations', 'sales'].sort(),
     );
   });
 
@@ -35,6 +36,16 @@ describe('archetypes', () => {
     expect(archetypeForTemplate('appointments')).toBe('front_desk');
     expect(archetypeForTemplate('unknown')).toBe('front_desk');
     expect(getArchetype(archetypeForTemplate('marketing'))?.surface).toBe('INTERNAL');
+  });
+
+  it('the conductor is internal and never offered as a pickable template', () => {
+    expect(getArchetype('conductor')?.surface).toBe('INTERNAL');
+    expect(isCustomerFacing('conductor')).toBe(false);
+    expect(SELECTABLE_ARCHETYPES.map((a) => a.key)).not.toContain('conductor');
+    // It must own the workforce-building tools.
+    expect(getArchetype('conductor')?.permissions).toEqual(
+      expect.arrayContaining(['create_agent', 'configure_agent', 'list_agents']),
+    );
   });
 
   it('only internal archetypes can produce deliverables via create_output', () => {

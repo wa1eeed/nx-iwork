@@ -59,3 +59,21 @@ export const TOOL_CATALOG: { id: string; label: string; group: ToolGroup }[] = [
 export const TOOL_LABELS: Record<string, string> = Object.fromEntries(
   TOOL_CATALOG.map((t) => [t.id, t.label])
 );
+
+// Display-only labels for the PRIVILEGED workforce-management tools (the
+// conductor's powers). Kept OUT of TOOL_CATALOG and TOOL_LABELS on purpose:
+// the permission matrix, the skills picker, and the skill-tool validator all key
+// off those, so leaving these out guarantees they can never be granted by the
+// matrix or smuggled in via a skill. This map exists solely so capability chips
+// render a human label instead of the raw id.
+export const PRIVILEGED_TOOL_LABELS: Record<string, string> = {
+  create_agent: 'Build agents',
+  configure_agent: 'Configure agents',
+  list_agents: 'View workforce',
+};
+
+// A read-only superset for DISPLAY of an agent's resolved capabilities.
+export const DISPLAY_TOOL_LABELS: Record<string, string> = {
+  ...TOOL_LABELS,
+  ...PRIVILEGED_TOOL_LABELS,
+};
