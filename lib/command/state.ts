@@ -34,12 +34,13 @@ export interface CommandActivity {
 export interface CommandState {
   conductorId: string | null;
   stats: { total: number; online: number; working: number; paused: number };
+  pendingApprovals: number;
   agents: CommandAgent[];
   activity: CommandActivity[];
 }
 
 export async function getCommandState(companyId: string): Promise<CommandState> {
-  const [agents, events] = await Promise.all([
+  const [agents, events, pendingApprovals] = await Promise.all([
     db.agent.findMany({
       where: { companyId, status: { not: 'ARCHIVED' } },
       orderBy: { createdAt: 'asc' },
@@ -58,6 +59,7 @@ export async function getCommandState(companyId: string): Promise<CommandState> 
         agentId: true, agent: { select: { name: true } },
       },
     }),
+    db.approval.count({ where: { companyId, status: 'PENDING' } }),
   ]);
 
   // Latest event per agent → "what this agent is doing right now".
@@ -78,6 +80,7 @@ export async function getCommandState(companyId: string): Promise<CommandState> 
       working: agents.filter((a) => a.status === 'WORKING').length,
       paused: agents.filter((a) => a.status === 'PAUSED' || a.status === 'OFFLINE').length,
     },
+    pendingApprovals,
     agents: agents.map((a) => {
       const act = latestByAgent.get(a.id) ?? null;
       return {

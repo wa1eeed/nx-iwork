@@ -180,7 +180,7 @@ export default async function OverviewPage() {
           </Panel>
 
           {/* Agent tasks in progress */}
-          <Panel title={tb('agentTasks')} icon={ListChecks} href="/tasks" empty={tb('noTasks')}>
+          <Panel title={tb('agentTasks')} icon={ListChecks} href="/agent-work" empty={tb('noTasks')}>
             {openTasks.length > 0 ? (
               <div className="divide-y">
                 {openTasks.map((tk) => (

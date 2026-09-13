@@ -6,6 +6,8 @@ import { useTranslations, useLocale } from 'next-intl';
 import { toast } from 'sonner';
 import {
   Play,
+  Plus,
+  Trash2,
   Loader2,
   ChevronDown,
   ChevronLeft,
@@ -24,9 +26,20 @@ import {
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { useConfirm } from '@/components/ui/confirm-dialog';
 import { formatDateTime } from '@/lib/format';
+import { feedback } from '@/lib/ui/feedback';
+import { createTask, deleteTask } from '@/lib/actions/tasks';
 import { cn } from '@/lib/utils';
+
+export interface AgentOption {
+  id: string;
+  name: string;
+}
 
 export interface TaskRow {
   id: string;
@@ -101,6 +114,7 @@ export function AgentWorkView({
   tasks,
   schedules,
   events,
+  agents,
 }: {
   todayKey: string;
   weekStart: string;
@@ -108,6 +122,7 @@ export function AgentWorkView({
   tasks: TaskRow[];
   schedules: ScheduleRow[];
   events: CalendarEvent[];
+  agents: AgentOption[];
 }) {
   const t = useTranslations('pages.agentWork');
 
@@ -125,7 +140,7 @@ export function AgentWorkView({
       </TabsList>
 
       <TabsContent value="queue">
-        <Queue statusCounts={statusCounts} tasks={tasks} />
+        <Queue statusCounts={statusCounts} tasks={tasks} agents={agents} />
       </TabsContent>
 
       <TabsContent value="calendar">
@@ -136,30 +151,124 @@ export function AgentWorkView({
 }
 
 // ── Queue ──────────────────────────────────────────────────────────────────
-function Queue({ statusCounts, tasks }: { statusCounts: Record<string, number>; tasks: TaskRow[] }) {
+const selectCls = 'h-10 w-full rounded-md border border-input bg-background px-3 text-sm';
+
+function Queue({
+  statusCounts,
+  tasks,
+  agents,
+}: {
+  statusCounts: Record<string, number>;
+  tasks: TaskRow[];
+  agents: AgentOption[];
+}) {
   const t = useTranslations('pages.agentWork');
+  const tm = useTranslations('taskMgr');
+  const router = useRouter();
   const [filter, setFilter] = useState<string | null>(null);
+
+  // Assign-a-task (merged in from the old /tasks page so work lives in one place).
+  const [adding, setAdding] = useState(false);
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [agentId, setAgentId] = useState(agents[0]?.id ?? '');
+  const [priority, setPriority] = useState('MEDIUM');
+  const [saving, startSave] = useTransition();
 
   const total = tasks.length;
   const present = Object.keys(STATUS).filter((s) => statusCounts[s]);
   const visible = filter ? tasks.filter((tk) => tk.status === filter) : tasks;
 
+  function submit() {
+    if (!title.trim()) return toast.error(tm('titleRequired'));
+    if (!agentId) return toast.error(tm('agentRequired'));
+    startSave(async () => {
+      const res = await createTask({
+        title: title.trim(),
+        description: description.trim(),
+        agentId,
+        kind: 'AGENT_TASK',
+        priority: priority as 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT',
+      });
+      if (res.ok) {
+        feedback('scheduled', tm('added'));
+        setTitle('');
+        setDescription('');
+        setAdding(false);
+        router.refresh();
+      } else {
+        feedback('error', tm('addError'));
+      }
+    });
+  }
+
   return (
     <div className="space-y-4">
-      {/* Status filter chips */}
-      <div className="flex flex-wrap gap-2">
-        <FilterChip active={filter === null} onClick={() => setFilter(null)} label={t('filterAll')} count={total} />
-        {present.map((s) => (
-          <FilterChip
-            key={s}
-            active={filter === s}
-            onClick={() => setFilter(s)}
-            label={t(`status.${s}`)}
-            count={statusCounts[s]}
-            dot={STATUS[s].dot}
-          />
-        ))}
+      {/* Assign a new task */}
+      <div className="flex items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-2">
+          <FilterChip active={filter === null} onClick={() => setFilter(null)} label={t('filterAll')} count={total} />
+          {present.map((s) => (
+            <FilterChip
+              key={s}
+              active={filter === s}
+              onClick={() => setFilter(s)}
+              label={t(`status.${s}`)}
+              count={statusCounts[s]}
+              dot={STATUS[s].dot}
+            />
+          ))}
+        </div>
+        {!adding && (
+          <Button size="sm" onClick={() => setAdding(true)} disabled={agents.length === 0} className="shrink-0 gap-1">
+            <Plus className="size-4" />
+            {tm('newTask')}
+          </Button>
+        )}
       </div>
+
+      {agents.length === 0 && <p className="text-sm text-muted-foreground">{tm('createFirstAgent')}</p>}
+
+      {adding && (
+        <Card>
+          <CardContent className="space-y-4 pt-6">
+            <div className="space-y-2">
+              <Label>{tm('titleLabel')}</Label>
+              <Input value={title} onChange={(e) => setTitle(e.target.value)} placeholder={tm('titlePlaceholder')} />
+            </div>
+            <div className="space-y-2">
+              <Label>{tm('detailsLabel')}</Label>
+              <Textarea rows={3} value={description} onChange={(e) => setDescription(e.target.value)} placeholder={tm('detailsPlaceholder')} />
+            </div>
+            <div className="grid gap-4 sm:grid-cols-2">
+              <div className="space-y-2">
+                <Label>{tm('agentLabel')}</Label>
+                <select className={selectCls} value={agentId} onChange={(e) => setAgentId(e.target.value)}>
+                  {agents.map((a) => (
+                    <option key={a.id} value={a.id}>{a.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div className="space-y-2">
+                <Label>{tm('priorityLabel')}</Label>
+                <select className={selectCls} value={priority} onChange={(e) => setPriority(e.target.value)}>
+                  <option value="LOW">{tm('priorityLow')}</option>
+                  <option value="MEDIUM">{tm('priorityMedium')}</option>
+                  <option value="HIGH">{tm('priorityHigh')}</option>
+                  <option value="URGENT">{tm('priorityUrgent')}</option>
+                </select>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button variant="ghost" onClick={() => setAdding(false)} disabled={saving}>{tm('cancel')}</Button>
+              <Button onClick={submit} disabled={saving}>
+                {saving && <Loader2 className="me-1 size-4 animate-spin" />}
+                {tm('addTask')}
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {visible.length === 0 ? (
         <p className="py-12 text-center text-sm text-muted-foreground">{t('emptyQueue')}</p>
@@ -204,10 +313,14 @@ function FilterChip({
 
 function TaskCard({ task }: { task: TaskRow }) {
   const t = useTranslations('pages.agentWork');
+  const tm = useTranslations('taskMgr');
+  const tc = useTranslations('common');
   const locale = useLocale();
   const router = useRouter();
+  const confirm = useConfirm();
   const [open, setOpen] = useState(false);
   const [running, startRun] = useTransition();
+  const [removing, startRemove] = useTransition();
 
   const runNow = () => {
     startRun(async () => {
@@ -218,6 +331,19 @@ function TaskCard({ task }: { task: TaskRow }) {
         router.refresh();
       } catch {
         toast.error(t('runFailed'));
+      }
+    });
+  };
+
+  const remove = async () => {
+    if (!(await confirm({ title: tm('confirmDelete'), destructive: true, confirmLabel: tc('delete'), cancelLabel: tc('cancel') }))) return;
+    startRemove(async () => {
+      const res = await deleteTask(task.id);
+      if (res.ok) {
+        toast.success(tm('deleted'));
+        router.refresh();
+      } else {
+        toast.error(tm('deleteError'));
       }
     });
   };
@@ -268,6 +394,16 @@ function TaskCard({ task }: { task: TaskRow }) {
                 <ChevronDown className={cn('size-3 transition-transform', open && 'rotate-180')} />
               </button>
             )}
+            <Button
+              size="icon"
+              variant="ghost"
+              onClick={remove}
+              disabled={removing}
+              className="size-8 text-destructive hover:text-destructive"
+              aria-label={tc('delete')}
+            >
+              {removing ? <Loader2 className="size-4 animate-spin" /> : <Trash2 className="size-4" />}
+            </Button>
           </div>
         </div>
 

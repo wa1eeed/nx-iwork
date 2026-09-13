@@ -1,9 +1,10 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import ReactMarkdown from 'react-markdown';
 import { toast } from 'sonner';
-import { Radar, Send, Mic, Bot, Crown, Sparkles, Loader2, Radio } from 'lucide-react';
+import { Radar, Send, Mic, Bot, Crown, Sparkles, Loader2, Radio, Bell, Activity } from 'lucide-react';
 import type { CommandState, CommandAgent } from '@/lib/command/state';
 
 // ── The Command Center ──────────────────────────────────────────────────────
@@ -42,6 +43,26 @@ function statusMeta(s: string) {
   return STATUS_META[s] ?? STATUS_META.OFFLINE;
 }
 
+// Colour per timeline-event family, for the live activity feed dots.
+function eventColor(type: string): string {
+  if (type.includes('COMPLETED') || type === 'OUTPUT_DELIVERED') return '#34d399';
+  if (type.includes('FAILED') || type === 'SYSTEM_ALERT') return '#f87171';
+  if (type.includes('APPROVAL') || type === 'DECISION_NEEDED') return '#a855f7';
+  if (type.includes('STARTED') || type === 'AGENT_WOKE' || type === 'AGENT_HANDOFF') return '#fbbf24';
+  return '#22d3ee';
+}
+
+function timeAgo(iso: string, en: boolean): string {
+  const s = Math.max(0, Math.round((Date.now() - new Date(iso).getTime()) / 1000));
+  if (s < 60) return en ? 'now' : 'الآن';
+  const m = Math.round(s / 60);
+  if (m < 60) return en ? `${m}m` : `${m} د`;
+  const h = Math.round(m / 60);
+  if (h < 24) return en ? `${h}h` : `${h} س`;
+  const d = Math.round(h / 24);
+  return en ? `${d}d` : `${d} ي`;
+}
+
 interface Placed extends CommandAgent {
   x: number;
   y: number;
@@ -78,7 +99,15 @@ export function CommandCenter({ initial, conductorId, locale }: Props) {
       const res = await fetch('/api/command/state', { cache: 'no-store' });
       if (!res.ok) return;
       const data = (await res.json()) as CommandState & { ok: boolean };
-      if (data.ok) setState({ conductorId: data.conductorId, stats: data.stats, agents: data.agents, activity: data.activity });
+      if (data.ok) {
+        setState({
+          conductorId: data.conductorId,
+          stats: data.stats,
+          pendingApprovals: data.pendingApprovals,
+          agents: data.agents,
+          activity: data.activity,
+        });
+      }
     } catch {
       /* transient — the next tick retries */
     }
@@ -257,6 +286,16 @@ export function CommandCenter({ initial, conductorId, locale }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2 text-xs">
+          {state.pendingApprovals > 0 && (
+            <Link
+              href="/approvals"
+              className="flex items-center gap-1.5 rounded-full border border-violet-400/40 bg-violet-500/15 px-2.5 py-1 text-violet-100 transition hover:bg-violet-500/25"
+            >
+              <Bell className="size-3.5 text-violet-300" />
+              <span className="font-semibold">{state.pendingApprovals}</span>
+              <span className="text-violet-200/80">{en ? 'need you' : 'تنتظر قرارك'}</span>
+            </Link>
+          )}
           <StatPill color="#22d3ee" label={en ? 'Online' : 'نشِط'} value={state.stats.online} />
           <StatPill color="#fbbf24" label={en ? 'Working' : 'في مهمة'} value={state.stats.working} />
           <StatPill color="#64748b" label={en ? 'Idle' : 'متوقف'} value={state.stats.paused} />
@@ -490,6 +529,32 @@ export function CommandCenter({ initial, conductorId, locale }: Props) {
             </button>
           </div>
         </section>
+      </div>
+
+      {/* Live activity feed — the real pulse of the workforce */}
+      <div className="relative z-10 px-4 pb-5 sm:px-6">
+        <div className="cc-panel rounded-2xl p-4">
+          <div className="mb-3 flex items-center gap-2">
+            <Activity className="size-4 text-cyan-300" />
+            <h2 className="text-sm font-semibold">{en ? 'Live activity' : 'النشاط الحيّ'}</h2>
+          </div>
+          {state.activity.length === 0 ? (
+            <p className="py-4 text-center text-xs text-slate-400">
+              {en ? 'No activity yet — put your agents to work.' : 'لا نشاط بعد — شغّل وكلاءك.'}
+            </p>
+          ) : (
+            <ul className="grid gap-x-6 gap-y-2 sm:grid-cols-2">
+              {state.activity.map((e) => (
+                <li key={e.id} className="flex items-center gap-2.5 text-xs">
+                  <span className="size-1.5 shrink-0 rounded-full" style={{ background: eventColor(e.type), boxShadow: `0 0 6px ${eventColor(e.type)}` }} />
+                  <span className="min-w-0 flex-1 truncate text-slate-200">{e.title}</span>
+                  {e.agentName && <span className="shrink-0 text-cyan-200/60">{e.agentName}</span>}
+                  <span className="shrink-0 tabular-nums text-slate-500">{timeAgo(e.at, en)}</span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
     </div>
   );
