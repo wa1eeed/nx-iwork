@@ -44,6 +44,7 @@ export const TOOL_CATALOG: { id: string; label: string; group: ToolGroup }[] = [
   { id: 'create_task', label: 'Create task', group: 'operations' },
   { id: 'update_task_status', label: 'Update task status', group: 'operations' },
   { id: 'create_output', label: 'Deliver output', group: 'operations' },
+  { id: 'list_outputs', label: 'View outputs & reports', group: 'operations' },
   { id: 'delegate_to_agent', label: 'Delegate to agent', group: 'operations' },
   { id: 'request_approval', label: 'Request approval', group: 'operations' },
   { id: 'list_object_types', label: 'List data types', group: 'data' },

@@ -60,7 +60,7 @@ export const ARCHETYPES: Archetype[] = [
       // The conductor's signature power — hire and configure the workforce.
       'create_agent', 'configure_agent', 'list_agents',
       // Direct the workforce + track it.
-      'delegate_to_agent', 'create_task', 'update_task_status', 'create_output', 'save_memory',
+      'delegate_to_agent', 'create_task', 'update_task_status', 'create_output', 'list_outputs', 'save_memory',
       // Answer the owner about the business (broad read access).
       'find_customer', 'list_customers', 'search_catalog', 'search_faq', 'list_bookings',
     ],

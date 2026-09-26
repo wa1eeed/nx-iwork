@@ -31,7 +31,7 @@ function internalPerms(permissions: string[], hasBookings: boolean): string[] {
   if (permissions.length === 0) return []; // empty = all base tools
   const internal = [
     'find_customer', 'search_catalog', 'search_faq', 'create_task',
-    'update_task_status', 'save_memory', 'create_output', 'delegate_to_agent',
+    'update_task_status', 'save_memory', 'create_output', 'list_outputs', 'delegate_to_agent',
   ];
   if (hasBookings) {
     internal.push('list_bookings', 'list_open_slots', 'check_availability', 'create_booking', 'update_booking', 'set_booking_staff');
