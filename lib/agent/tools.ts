@@ -397,6 +397,33 @@ export const AGENT_TOOLS: AiTool[] = [
     },
   },
   {
+    name: 'list_outputs',
+    description:
+      'اعرض المخرجات والتقارير التي أنتجها الوكلاء (تقارير، خطط، محتوى تسويقي، تحليلات، مسودات رسائل، سجلّ إجراءات). استخدمها فوراً عندما يطلب صاحب العمل «التقارير» أو «المخرجات» أو «وش سلّموا الوكلاء» — لا تطلب منه تحديد التفاصيل أولاً؛ اعرض الأحدث مباشرة ثم اقترح التضييق. يمكن التصفية بالنوع أو الوكيل أو الفترة.',
+    parameters: {
+      type: 'object',
+      properties: {
+        type: {
+          type: 'string',
+          enum: ['MESSAGE', 'REPORT', 'PLAN', 'CONTENT', 'ANALYSIS', 'ACTION_LOG'],
+          description: 'نوع المخرج (اختياري)',
+        },
+        status: {
+          type: 'string',
+          enum: ['DRAFT', 'READY', 'APPROVED', 'PUBLISHED', 'ARCHIVED'],
+          description: 'حالة المخرج (اختياري)',
+        },
+        agent: { type: 'string', description: 'اسم الوكيل أو معرّفه لتصفية مخرجاته (اختياري)' },
+        period: {
+          type: 'string',
+          enum: ['today', 'yesterday', 'week', 'month', 'all'],
+          description: 'الفترة الزمنية. الافتراضي all (الأحدث).',
+        },
+        query: { type: 'string', description: 'بحث في العنوان (اختياري)' },
+      },
+    },
+  },
+  {
     name: 'delegate_to_agent',
     description:
       'فوّض مهمة لزميل وكيل آخر عندما تكون خارج نطاق دورك أو تخصّ تخصّصاً آخر (مثلاً: تحويل طلب محتوى للتسويق، أو متابعة تحصيل للمالية، أو تصعيد شكوى لرعاية العملاء). مرّر اسم الزميل أو دوره (colleague) ووصف المهمة (task). ستُسند إليه وينفّذها تلقائياً. لا تفوّض ما تستطيع إنجازه بنفسك بأدواتك.',
@@ -647,6 +674,14 @@ const createOutputArgs = z.object({
   body: z.string().trim().min(1).max(20_000),
   status: z.enum(['DRAFT', 'READY']).optional(),
   customerName: z.string().trim().max(200).optional(),
+});
+
+const listOutputsArgs = z.object({
+  type: z.enum(['MESSAGE', 'REPORT', 'PLAN', 'CONTENT', 'ANALYSIS', 'ACTION_LOG']).optional(),
+  status: z.enum(['DRAFT', 'READY', 'APPROVED', 'PUBLISHED', 'ARCHIVED']).optional(),
+  agent: z.string().trim().max(120).optional(),
+  period: z.enum(['today', 'yesterday', 'week', 'month', 'all']).optional(),
+  query: z.string().trim().max(120).optional(),
 });
 
 const delegateToAgentArgs = z.object({
@@ -1421,6 +1456,75 @@ export async function executeTool(
             status: c.status,
             assignedTo: c.assignedAgent?.name ?? null,
             registeredAt: fmtWhen(c.createdAt, tz).date,
+          })),
+        });
+      }
+
+      case 'list_outputs': {
+        const args = listOutputsArgs.parse(rawArgs);
+        const tz = await companyTimezone(ctx.companyId);
+        // Resolve the period server-side (business-local), same as list_customers.
+        let gte: Date | undefined;
+        let lt: Date | undefined;
+        const period = args.period ?? 'all';
+        if (period !== 'all') {
+          const startOfToday = localDayRange(localDateISO(new Date(), tz), tz).from;
+          if (period === 'today') {
+            gte = startOfToday;
+            lt = new Date(startOfToday.getTime() + DAY_MS);
+          } else if (period === 'yesterday') {
+            const y = localDayRange(localDateISO(new Date(Date.now() - DAY_MS), tz), tz);
+            gte = y.from;
+            lt = y.to;
+          } else if (period === 'week') {
+            gte = new Date(startOfToday.getTime() - 6 * DAY_MS);
+          } else if (period === 'month') {
+            gte = new Date(startOfToday.getTime() - 29 * DAY_MS);
+          }
+        }
+        // Optional agent filter by name/ref.
+        let agentId: string | undefined;
+        if (args.agent) {
+          const a = await db.agent.findFirst({
+            where: {
+              companyId: ctx.companyId,
+              OR: [
+                { ref: args.agent },
+                { name: { contains: args.agent, mode: Prisma.QueryMode.insensitive } },
+                { nameEn: { contains: args.agent, mode: Prisma.QueryMode.insensitive } },
+              ],
+            },
+            select: { id: true },
+          });
+          if (!a) return fail('لم أجد وكيلاً بهذا الاسم. استخدم list_agents لعرض الفريق.');
+          agentId = a.id;
+        }
+        const outputs = await db.agentOutput.findMany({
+          where: {
+            companyId: ctx.companyId,
+            ...(args.type ? { type: args.type as AgentOutputType } : {}),
+            ...(args.status ? { status: args.status as AgentOutputStatus } : {}),
+            ...(agentId ? { agentId } : {}),
+            ...(args.query ? { title: { contains: args.query, mode: Prisma.QueryMode.insensitive } } : {}),
+            ...(gte || lt ? { createdAt: { ...(gte ? { gte } : {}), ...(lt ? { lt } : {}) } } : {}),
+          },
+          orderBy: { createdAt: 'desc' },
+          take: 20,
+          select: {
+            id: true, title: true, type: true, status: true, body: true, createdAt: true,
+            agent: { select: { name: true } },
+          },
+        });
+        return ok({
+          count: outputs.length,
+          period: args.period ?? 'all',
+          outputs: outputs.map((o) => ({
+            title: o.title,
+            type: o.type,
+            status: o.status,
+            agent: o.agent?.name ?? null,
+            deliveredAt: fmtWhen(o.createdAt, tz).date,
+            summary: o.body.length > 500 ? `${o.body.slice(0, 500)}…` : o.body,
           })),
         });
       }
