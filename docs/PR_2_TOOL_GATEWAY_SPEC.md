@@ -1,162 +1,176 @@
-# PR-2 Technical Specification — Tool Gateway (pass-through)
+# PR-2 Technical Specification — Tool Gateway (pass-through) — REV 2
 
-**Status:** DESIGN ONLY. No code. PR-2 is **observational/pass-through** — it establishes the execution seam and begins gateway telemetry; it activates **no enforcement**. Current `executeTool` behavior stays functionally identical.
-**Builds on:** PR-1 (`ActivityEvent` + `ActivitySource.GATEWAY` reserved). **Does not** start the queued Agent-Intelligence-Reliability work (see `docs/TECH_DEBT.md` TD-2).
+**Status:** DESIGN ONLY. No code. PR-2 is **observational/pass-through**: it establishes a **permanent** execution seam and writes minimal per-invocation telemetry. It activates **no enforcement**. `executeTool` behavior stays functionally identical.
+**Rev 2** incorporates the 7 mandatory refinements: permanent chokepoint; log **every** invocation (incl. reads) with an `effect` class; **actor vs initiator** separation; deterministic `executionId` ownership; `source=GATEWAY,sourceId=contractId` idempotent identity; **awaited fail-open** telemetry (no fire-and-forget); structural-metadata-only (no titles/snippets/raw args/results); env-flag gates telemetry **write only** (gateway path unconditional; no schema change).
+**Builds on:** PR-1 (`ActivityEvent` + reserved `ActivitySource.GATEWAY` + `@@unique([source, sourceId])`). Does **not** start TD-2 (Agent-Intelligence-Reliability).
 
 ---
 
 ## 1. Exact current tool-execution architecture
-- Single dispatch chokepoint: `executeTool(name, rawArgs, ctx: ToolContext): Promise<string>` — `lib/agent/tools.ts:974`. `ToolContext = { companyId, agentId }` — `tools.ts:22`. MCP third-party tools dispatch **inside** it: `if (isMcpTool(name)) return await callMcpTool(...)` — `tools.ts:982`. Built-ins are a private `switch(name)`; individual handlers are **not exported** (so they can't be invoked directly).
-- The only invokers are the two loop functions in `lib/agent/core.ts`: `runToolLoop` (call site `core.ts:141`) and `runToolLoopStream` (call site `core.ts:202`; it also falls back to `runToolLoop` at `core.ts:165`). Loop input is `ToolLoopArgs` (`core.ts:76`) carrying `ctx: ToolContext` (`core.ts:87`), tools (from `getToolsForAgent`, `tools.ts:83`), model, `streamFinalOnly` (`core.ts:101`), etc. Round cap `MAX_TOOL_ROUNDS = 5` (`core.ts:11`).
-- Result contract: every tool returns a JSON **string** via `ok()`/`fail()` (`tools.ts:632/635`); errors are caught **inside** `executeTool` (`tools.ts` trailing `try/catch` → `fail('تعذّر تنفيذ الأداة.')`), so the loop always receives a string, never a throw.
+- Single dispatch chokepoint: `executeTool(name, rawArgs, ctx): Promise<string>` — `lib/agent/tools.ts:974`. `ToolContext = { companyId, agentId }` — `tools.ts:22`. MCP dispatches inside it — `tools.ts:982` (`callMcpTool`, which returns the same `{ok,...}` envelope — `lib/mcp/registry.ts:86`). Built-in handlers are a private `switch`; not individually exported.
+- Only invokers: `runToolLoop` (`core.ts:141`) and `runToolLoopStream` (`core.ts:202`, plus its fallback to `runToolLoop` at `core.ts:165`). `ToolLoopArgs` at `core.ts:76` carries `ctx` (`core.ts:87`). Round cap `MAX_TOOL_ROUNDS=5` (`core.ts:11`).
+- Every tool returns a JSON **string** via `ok()`/`fail()` (`tools.ts:632/635`); errors are caught inside `executeTool`, so the loop always gets a string.
 
 ## 2. Every current caller of `executeTool` (the funnel)
-`executeTool` is reached **only** through `runToolLoop`/`runToolLoopStream`. Those two are called from exactly four entry points:
+Reached **only** via `runToolLoop`/`runToolLoopStream`, called from four entry points:
 
-| Entry point | File:line | Surface / audience | executionId source |
-|---|---|---|---|
-| Dashboard chat (incl. Maestro/conductor) | `lib/agent/run.ts:175-176` | internal, owner | generated per loop run |
-| Public storefront / widget / channels | `lib/agent/public-chat.ts:196-197` | customer (`surface==='INTERNAL'` rejected `public-chat.ts:99`; `PUBLIC_ALLOWLIST` `:151-167`; `streamFinalOnly:true` `:188`; `ctx:{companyId,agentId}` `:189`) | generated per loop run |
-| Scheduled / autonomous / delegated tasks | `lib/agent/task.ts:127` | internal, system/agent | **reuse `TaskAttempt.id`** (`task.ts:89`, `attemptNumber` `:87-88`) |
-| Sandbox / test | `lib/agent/sandbox.ts:83` | internal, owner (no persistence) | generated per loop run |
+| Entry point | File:line | actor / surface | initiator | executionId |
+|---|---|---|---|---|
+| Dashboard chat (incl. Maestro) | `lib/agent/run.ts:175-176` | AGENT / internal | HUMAN (dashboard user) | generated before loop |
+| Public storefront/widget/channels | `lib/agent/public-chat.ts:196-197` | AGENT / customer | CUSTOMER (identity usually absent) | generated before loop |
+| Scheduled/autonomous/delegated tasks | `lib/agent/task.ts:127` | AGENT / internal | SYSTEM (or delegating agent) | **`TaskAttempt.id`** |
+| Sandbox/test | `lib/agent/sandbox.ts:83` | AGENT / internal | HUMAN (owner) | generated before loop |
 
-**Because all four converge on `core.ts:141/202`, wrapping there covers every path with one change** — chat, Maestro, public, tasks, delegation, sandbox — with no per-entry-point edits to the execution call itself (entry points only supply lineage metadata; see §6).
+All four converge on `core.ts:141/202` → wrapping there covers every path with one change.
 
 ## 3. Bypass paths (back-door analysis)
-**No agent-tool execution bypasses `executeTool`.** Handlers aren't exported; MCP goes through `executeTool`→`callMcpTool`. Verified: the only `executeTool` references are `core.ts:141`, `core.ts:202`, and its definition (`tools.ts:974`) (grep `executeTool` across `lib/ app/ scripts/`).
-Direct DB mutations that are **not** agent-tool calls (so out of PR-2 scope, not back doors): the customer storefront actions `app/api/public/[slug]/{order,book,slots,review}/route.ts` (a human customer acting, not an agent), owner server actions in `lib/actions/*` (owner UI; super-admin ones already audited via `lib/actions/admin.ts:79-81`), and scheduler/event plumbing (`lib/agent/events.ts` `dispatchEvent`, `lib/agent/scheduler.ts`) which create `Task`/`TimelineEvent` rows. These are deliberately outside the agent Tool Gateway; PR-1's dual-write already captures their `TimelineEvent`/`AuditLog` footprint.
+**No agent-tool execution bypasses `executeTool`** (handlers unexported; MCP via `executeTool`→`callMcpTool`; grep shows the only refs are `core.ts:141`, `core.ts:202`, def `tools.ts:974`). Non-agent DB writers out of scope: customer storefront routes `app/api/public/[slug]/{order,book,slots,review}`, owner server actions `lib/actions/*` (super-admin already audited `lib/actions/admin.ts:79-81`), scheduler/event plumbing (`lib/agent/events.ts`, `lib/agent/scheduler.ts`). PR-1 dual-write already captures their `TimelineEvent`/`AuditLog` footprint.
+**After PR-2, `executeTool` must have exactly one production caller: the gateway** (§17 acceptance).
 
-## 4. Proposed Tool Gateway API/interface
-New module `lib/agent/gateway.ts`:
+## 4. Gateway API — a PERMANENT chokepoint (Refinement 1)
+New module `lib/agent/gateway.ts`. **`core.ts` always calls the gateway; it never calls `executeTool` directly again.** The env flag toggles the telemetry **write** only — it must **never** bypass the gateway (future enforcement lives inside this seam).
 ```ts
-export interface ExecutionMeta {         // lineage supplied by the entry point
-  executionId: string;
-  actorType: 'HUMAN' | 'AGENT' | 'SYSTEM';
+export type Effect = 'READ' | 'WRITE' | 'EXTERNAL' | 'UNKNOWN';
+export type InitiatorType = 'HUMAN' | 'SYSTEM' | 'CUSTOMER';
+
+export interface ExecutionMeta {          // supplied by the entry point, threaded unchanged
+  executionId: string;                    // generated once per run (or TaskAttempt.id)
   surface: 'internal' | 'customer';
-  ownerId?: string; goalId?: string; taskId?: string; sessionId?: string;
+  initiator: { type: InitiatorType; userId?: string };  // userId only when reliably known
+  goalId?: string; taskId?: string; sessionId?: string;
   autonomy?: 'SUGGEST' | 'ASK' | 'AUTOPILOT';
 }
-// The ONLY change at the call sites: core.ts calls this instead of executeTool.
+
+// The ONLY execution call in core.ts, in both loop functions.
 export async function runToolThroughGateway(
   name: string,
   args: Record<string, unknown>,
-  ctx: ToolContext,          // unchanged {companyId, agentId}
+  ctx: ToolContext,        // unchanged {companyId, agentId}
   meta: ExecutionMeta,
-): Promise<string>;          // returns the SAME string executeTool returns
+): Promise<string>;        // returns the EXACT string executeTool returns
 ```
-Internally: `buildContract()` → (PR-6+ enforcement stages inserted here, **absent in PR-2**) → `const t0=Date.now(); result = await executeTool(name,args,ctx)` → capture outcome+duration → `recordGatewayActivity()` (best-effort) → `return result`. `executeTool`'s signature and body are **unchanged**.
+Internal flow (always): build contract → *[PR-6+ enforcement inserts here — absent in PR-2]* → `const t0=Date.now(); const result = await executeTool(name,args,ctx); const durationMs=Date.now()-t0;` → parse outcome → **`try { await recordGatewayActivity(...) } catch { warn }`** (Refinement 6) → `return result`. When telemetry flag is off, the `recordGatewayActivity` step is skipped but the wrapper + `executeTool` call are unchanged.
 
-## 5. Proposed Execution Contract (TypeScript)
+## 5. Execution Contract (TypeScript) — actor vs initiator (Refinement 3)
 ```ts
 export interface ExecutionContract {
-  executionId: string;                 // per loop-run (§6)
-  contractId: string;                  // per tool invocation (uuid)
+  executionId: string;                 // per run (§6)
+  contractId: string;                  // per invocation (uuid) — authoritative internal id
+  toolCallId?: string;                 // optional provider correlation (advisory)
   companyId: string;                   // tenant
-  actorType: 'HUMAN' | 'AGENT' | 'SYSTEM';
+
+  // The ACTOR is always the agent for a gateway call — it executed the tool.
+  actorType: 'AGENT';
   agentId: string;
-  ownerId?: string;                    // where known
-  goalId?: string; taskId?: string; sessionId?: string;   // lineage, where known
+  // The INITIATOR is who caused the run — a human/scheduler/customer — NOT the executor.
+  initiator: { type: 'HUMAN' | 'SYSTEM' | 'CUSTOMER'; userId?: string };
+
   capability: string;                  // == tool name
-  argsRef: { keys: string[]; count: number };  // redacted reference, NOT raw args (§9)
-  resource?: { type: string; id?: string };    // where derivable (best-effort)
+  effect: 'READ' | 'WRITE' | 'EXTERNAL' | 'UNKNOWN';
+  argKeys: string[];                   // key NAMES only (never values)
+  resource?: { type: string; id?: string };  // ONLY if explicitly & reliably derived
   surface: 'internal' | 'customer';
-  autonomy?: 'SUGGEST' | 'ASK' | 'AUTOPILOT';  // advisory context
-  risk?: undefined;                    // placeholder (PR-6)
-  estCost?: undefined;                 // placeholder (economics PR)
-  approvalRef?: undefined;             // placeholder (approval PR)
-  idempotencyRef?: undefined;          // placeholder (idempotency PR)
-  startedAt: string; finishedAt?: string;
-  outcome?: 'success' | 'error'; errorClass?: string; durationMs?: number;
+  goalId?: string; taskId?: string; sessionId?: string;
+  autonomy?: 'SUGGEST' | 'ASK' | 'AUTOPILOT';  // advisory
+
+  // placeholders (later PRs) — stay undefined in PR-2, never faked
+  risk?: undefined; estCost?: undefined; approvalRef?: undefined; idempotencyRef?: undefined;
+
+  startedAt: string; finishedAt?: string; durationMs?: number;
+  outcome?: 'success' | 'error'; errorClass?: string;  // generic code, never the message
+  resultSize?: number;                 // chars of the returned string
 }
 ```
-Policy/economic fields stay `undefined`/advisory in PR-2 — **no faked data**.
+For **all** current gateway calls `actorType='AGENT'`, `actorId=ctx.agentId`. Initiator is stored separately (in `ActivityEvent.metadata`) when reliably known; a dashboard user is `{HUMAN,userId}`, a scheduler is `{SYSTEM}`, a delegating agent is `{SYSTEM}` (or a later delegation ref), a public customer is `{CUSTOMER}` with **no userId** (identity not reliably available — `surface=customer` suffices). **Never manufacture an initiator the runtime can't prove.** Renamed the ambiguous `ownerId` → `initiator.userId` (a.k.a. `initiatorUserId`).
 
-## 6. executionId / contractId lifecycle — and §7 answer
-- **executionId** = one *execution instance* = one `runToolLoop(Stream)` run (one attempt/turn of work). Generated once at the top of the loop and threaded via `ExecutionMeta` to every tool invocation in that run. **For task-originated runs, reuse `TaskAttempt.id`** (`task.ts:89`) as the executionId — it already *is* the durable per-attempt execution record. Chat/sandbox runs use a generated uuid (their turn is already persisted as `ChatMessage`/nothing).
-- **contractId** = one per tool invocation (uuid), sharing the run's executionId.
-- Lineage realized: `task → TaskAttempt(executionId) → tool action(contractId) → ActivityEvent(executionId,contractId)` — enough for the gateway layer, **no workflow engine**.
+## 6. executionId / contractId lifecycle — deterministic (Refinement 4)
+- **The entry point generates `executionId` once, before entering the loop**, and passes it in `ExecutionMeta`:
+  - dashboard chat (`run.ts`), public chat (`public-chat.ts`), sandbox (`sandbox.ts`) → a generated uuid;
+  - task execution (`task.ts`) → **the actual `TaskAttempt.id`**.
+- **Known code change (no schema change):** `task.ts:89` currently does `await db.taskAttempt.create({ data: {...} })` **without capturing the id**. PR-2 changes it to `const attempt = await db.taskAttempt.create({ data:{...}, select:{ id:true } })` and uses `attempt.id` as `executionId`.
+- **Stable across streaming fallback:** `runToolLoopStream` (`core.ts:159`) falls back to `runToolLoop` (`core.ts:165`) — it must pass the **same `ExecutionMeta`** (same `executionId`), never regenerate. `executionId` lives in `ToolLoopArgs`, not created inside the loop.
+- **contractId** = one uuid per tool invocation, generated inside the gateway. Optional provider `toolCallId` (from the model's tool-call) carried as advisory correlation; **`contractId` is the authoritative internal invocation id.**
+- Lineage: `task → TaskAttempt(executionId) → tool invocation(contractId) → ActivityEvent(executionId, contractId)`. No workflow engine.
 
-## 7. Does PR-2 need a DB `AgentExecution` model? — **No.**
-Prefer the simpler solution: a **runtime-carried executionId** (reusing `TaskAttempt.id` for tasks) is sufficient for correctness in an observational PR. `ActivityEvent.executionId` (added in PR-1) already persists the linkage. A dedicated mutable `AgentExecution` table adds a write per run and durable state we don't yet consume — **defer** it to the phase that needs cross-run execution state (e.g., budgets/outcome attribution). **Decision: no new model in PR-2.**
+## 7. DB `AgentExecution` model? — **No** (unchanged)
+Runtime `executionId` (reusing `TaskAttempt.id` for tasks) is sufficient; linkage persists on `ActivityEvent.executionId` (PR-1). Defer a dedicated table to the phase that needs cross-run execution state. No new model in PR-2.
 
-## 8. ActivityEvent integration — and the "how many events" challenge
-**Recommendation (challenging the start/result assumption): write ONE terminal `ActivityEvent` (`source: GATEWAY`) per *material* tool invocation, on completion/failure — not a start event, not per read.**
-- Fields: `source=GATEWAY`, `actorType`, `actorId=agentId`, `action=<capability>`, `executionId`, `taskId`/`sessionId`, `contractId`, `outcome`('success'|'error'), `decision=null` (PR-2 has no policy decision), `metadata={durationMs, resultSize, errorClass, argKeys, resourceRef}`, `occurredAt=startedAt`, `recordedAt=now`.
-- **Reads excluded by default.** A static `MATERIAL_CAPABILITIES` set (the mutating tools: `create_order, create_booking, update_booking, create_lead, update_lead, create_order, create_task, update_task_status, create_output, delegate_to_agent, create_record, update_record, create_agent, configure_agent, set_booking_staff, request_approval, save_memory`, plus any `mcp__*` since side effects are opaque) is logged; pure reads (`search_catalog, search_faq, find_customer, list_customers, list_bookings, list_open_slots, check_availability, list_agents, list_outputs, list_object_types, query_records`) are **not** logged (flag can enable sampling later). No capability registry needed yet — a `const` set suffices (PR-6 replaces it).
-- **Why not two events (requested+completed):** doubles volume and adds a "requested" row that's rarely actionable for sub-second tool calls; a single terminal row carries outcome+duration. If in-flight visibility is later needed, add a requested event then — not now.
-- **Why not a dedicated execution record instead of ActivityEvent:** ActivityEvent already exists, is append-only, and is the unified stream; reusing it (source=GATEWAY, one row per material action) avoids a second store. Keep ActivityEvent append-only; do **not** mutate rows.
-- **De-dup note:** some material tools already emit a `TimelineEvent` (→ dual-written as `source=TIMELINE`, e.g. `create_output`→OUTPUT_DELIVERED, `delegate_to_agent`→AGENT_HANDOFF, `create_agent`→AGENT_MESSAGE). The GATEWAY row is a *different grain* (tool-execution + duration + outcome) than the TIMELINE row (business lifecycle). They coexist distinguished by `source`; acceptable and useful. If later judged redundant, the material set can exclude tools that already timeline-log.
+## 8. ActivityEvent integration — log EVERY invocation (Refinements 2 & 5)
+**One terminal `ActivityEvent` per tool invocation — including reads.** This is foundational observability (e.g. to later prove an agent actually called `list_agents`/`list_customers`/`list_outputs`/`query_records` before asserting a business fact). It is **not** Agent-Intelligence-Reliability work — it only builds the data.
+- **Identity (idempotent):** `source='GATEWAY'`, `sourceId=contractId`, and `metadata.contractId=contractId`. This reuses PR-1's `@@unique([source, sourceId])` so a retried telemetry write cannot create a duplicate GATEWAY row. **No ActivityEvent schema change.**
+- **Row shape:** `actorType='AGENT'`, `actorId=agentId`, `action=<capability>`, `occurredAt=startedAt`, `recordedAt=now`, `decision=null` (no policy in PR-2), `taskId`/`sessionId` when known, `executionId`.
+- **`metadata` (structural only):** `{ effect, argKeys, resultSize, durationMs, outcome, errorClass?, initiator?: {type,userId?}, toolCallId?, resource?: {type,id} }`. **No `summary`, no titles, no names, no snippets, no raw args, no raw results, no error messages.**
+- **`effect` classification (small static map, not a registry):**
+  - `READ`: search_catalog, search_faq, find_customer, list_customers, list_bookings, list_open_slots, check_availability, list_agents, list_outputs, list_object_types, query_records
+  - `WRITE`: create_lead, update_lead, create_order, create_booking, update_booking, set_booking_staff, create_task, update_task_status, create_output, delegate_to_agent, create_record, update_record, create_agent, configure_agent, save_memory, request_approval
+  - `EXTERNAL`: any `mcp__*` tool (calls a third-party provider)
+  - `UNKNOWN`: default for anything unmapped
+- **Deterministic outcome parser:** the returned string is the `{ok:boolean,...}` envelope (built-ins `tools.ts:632/635`; MCP `registry.ts:86`). Parse JSON: `ok===false` → `outcome='error'`, `errorClass` = a **safe generic code** (e.g. the envelope's known error slug mapped to a small allow-list, else `'tool_error'`) — **never the raw error string**; otherwise `outcome='success'`. Unparseable/non-envelope → `outcome='success'` (a string was returned) with `errorClass` unset. `resultSize` = returned string length.
 
-## 9. Sanitization / redaction (lightweight — not a DLP subsystem)
-Current args/results DO carry sensitive data: `create_lead`/`find_customer`/`create_order` (phone/email/name/PII), `save_memory`/`create_output` (free text, possibly large), `mcp__*` (opaque — could contain tokens/external API bodies), read results like `list_customers` (names+phones). So **PR-2 never stores raw args or raw results.** Instead a minimal redacted envelope:
-- **Store fully:** capability name, `outcome`, `durationMs`, `resultSize` (char count), `errorClass`, `argKeys` (key names only), `resource.type`/`id` when trivially derivable.
-- **Redact completely (never store the value):** any arg whose key matches `/pass|secret|token|key|auth|otp|cvv|card|iban|credential/i`; all values under `mcp__*` tools (opaque).
-- **Mask/omit (PII):** phone/email/name values → omitted (keys still recorded); no PII values in the stream.
-- **Never store:** passwords, API keys, tokens, auth headers, payment data, uploaded file bytes, external API response bodies, full `create_output.body` (store title + length only).
-- **Caps:** any incidentally-stored string truncated to 512 chars; `metadata` JSON capped (e.g. ≤2 KB).
-Helper: `redactForActivity(name, args, resultMeta)` in `lib/agent/gateway.ts` (or `lib/agent/redact.ts`). This is intentionally small — a key-denylist + caps + MCP-opaque rule, **not** content scanning/DLP.
+## 9. Sanitization / redaction — minimize further (Refinement 7)
+PR-2 stores **only structural metadata** (§8): capability, effect, argKeys (names only), resultSize, outcome, durationMs, executionId, contractId, task/session lineage, surface, initiator (type + userId only when reliable), and a `resource {type,id}` **only when explicitly and reliably derivable** from a known id-typed argument (e.g. an arg literally named `recordId`/`bookingId`/`customerId` that the system set) — **never inferred from arbitrary/free text**. This removes almost all of the redaction problem: no raw args, no raw results, no user-supplied titles/snippets/names, no error messages, no MCP payloads. `argKeys` is the arg object's top-level key names (safe); MCP arg values are never stored (effect=EXTERNAL, opaque). A tiny helper `structuralMeta(name, args, resultString)` produces this envelope. **Not a DLP subsystem.**
 
 ## 10. Success / error lifecycle
-- **Tool success:** gateway returns `executeTool`'s exact string; writes one GATEWAY ActivityEvent (`outcome:'success'`) for material capabilities.
-- **Tool error:** `executeTool` already returns a `fail(...)` string (it catches internally); the gateway passes it through **unchanged** and records `outcome:'error'` + `errorClass` (parsed from the fail payload — never raw sensitive detail). The gateway never converts behavior.
-- **No new terminal states**; PR-2 does not add PENDING/approval outcomes (enforcement era).
+- **Success:** gateway returns `executeTool`'s exact string; writes one GATEWAY event `outcome='success'`.
+- **Error:** `executeTool` already returns a `fail(...)` string; gateway passes it through **unchanged** and records `outcome='error'` + a generic `errorClass` (no message). No behavior change; no new terminal states.
 
-## 11. Pass-through compatibility approach
-The only behavioral surface is the **string returned to the model** — unchanged, because the gateway returns `executeTool`'s output verbatim. Preserved: tool names, arg schemas, results to the LLM, `getToolsForAgent` permission behavior (`tools.ts:83`), prompts, task behavior, and customer-facing behavior. Entry points change **only** to supply `ExecutionMeta`; `executeTool`'s signature/body are untouched.
+## 11. Pass-through compatibility
+Only surface is the string returned to the model — unchanged (verbatim). Preserved: tool names, arg schemas, results to the LLM, `getToolsForAgent` permissions (`tools.ts:83`), prompts, task behavior, customer-facing behavior. Entry points change only to build `ExecutionMeta`; `executeTool` signature/body untouched.
 
-## 12. Gateway instrumentation-failure semantics (fail-open, like PR-1)
-- Building the contract / redaction throwing → caught, `console.warn`, **tool still runs**.
-- ActivityEvent write failing → caught, `console.warn('[gateway] activity write failed', {executionId, capability, err})`, **never affects the tool result or the business op** (mirrors PR-1's DB-trigger fail-open, refinement 1).
-- **No fail-closed anywhere in PR-2.** (Fail-closed arrives only with the enforcement stages, later.)
-- **Timeouts:** **non-goal** — PR-2 adds none; current MCP/tool timing behavior is preserved.
+## 12. Gateway instrumentation-failure semantics — awaited, fail-open (Refinement 6)
+- **No fire-and-forget.** `tool executes → result captured → `try { await recordGatewayActivity() } catch { console.warn('[gateway] telemetry failed', {executionId, contractId, capability, err}) }` → return the exact original result.` A telemetry failure **never** converts a successful tool into a failure (mirrors PR-1's fail-open).
+- Contract-build/classification throwing → caught, warn, tool still runs.
+- **No timeout subsystem** in PR-2. Current MCP/tool timing behavior preserved.
 
 ## 13. Expected DB-write / latency overhead
-- Flag **off:** zero — `core.ts` calls `executeTool` exactly as today.
-- Flag **on:** **+1 INSERT only for *material* tool invocations** (reads add zero DB writes). A typical chat turn issues mostly reads → often **0** extra writes; a build/mutate action → 1 small insert. The insert is best-effort and its ~1–5 ms is dominated by the multi-second model round-trip. To guarantee no added user-perceived latency, the write is issued **after the tool result is captured** and **not awaited on the path that returns the result to the loop** (fire-and-forget with a caught promise), or awaited-but-non-fatal if strict ordering is preferred (flag). Net: negligible; proportional to *meaningful* actions, not read chatter.
+- Telemetry flag **off:** wrapper runs, `executeTool` called as today, **no** telemetry write → ~zero overhead.
+- Telemetry flag **on:** **+1 awaited INSERT per tool invocation (all invocations, incl. reads).** A chat turn with N tool calls → N small inserts, each awaited *after* its tool (which itself took tens–hundreds ms), each ~1–5 ms and dwarfed by the multi-second model round-trip. Per your explicit trade-off, this is an excellent price for complete observability. If a specific high-volume path ever needs relief, the flag can disable the write while the **gateway path stays unconditional**.
 
-## 14. Feature flag / rollout
-- Flag `TOOL_GATEWAY` — env (`TOOL_GATEWAY_ENABLED`) and/or a `PlatformSettings` field for per-tenant. **Off by default.** Off → bypass wrapper entirely (call `executeTool` directly). On → wrap + log-only.
-- Rollout: land dark → enable on a demo tenant (`refine`/`khedmatak`) → verify GATEWAY rows accrue for material actions with correct redaction → enable broadly. No user-visible change at any step.
+## 14. Feature flag / rollout (Refinement: telemetry-only, no schema field)
+- **Env flag only:** `GATEWAY_TELEMETRY_ENABLED` gates the ActivityEvent **write**. **The gateway call path (`core → gateway → executeTool`) is always on and cannot be flagged off.** **No `PlatformSettings` field, no schema change.**
+- Rollout: land the gateway (path always on) with telemetry default-on in non-prod, verify GATEWAY rows for READ/WRITE/EXTERNAL with correct effect + no raw content, then enable in prod. No user-visible change.
 
 ## 15. Tests
-- **Unit (`lib/agent/gateway.test.ts`):** pass-through returns byte-identical result to a stubbed `executeTool`; telemetry-failure is fail-open (tool result still returned); `redactForActivity` drops denylisted keys, masks PII, caps sizes, treats `mcp__*` opaque; material-vs-read classification; contract built with correct lineage.
-- **Integration (extend `lib/activity/activity-event.test.ts`, env-guarded):** a material tool invocation writes exactly one `source=GATEWAY` ActivityEvent with `executionId/capability/outcome/durationMs`; a read writes none; a forced telemetry failure doesn't break the tool.
-- **No-bypass guard:** a test asserting `core.ts` routes through the gateway (and a grep-style check that `executeTool` has no callers other than the gateway + its def).
-- **Public-surface leak test:** a customer-path tool call produces server-side GATEWAY telemetry but the SSE response to the customer is unchanged (no tool names/metadata/internal errors).
+- **Unit (`lib/agent/gateway.test.ts`):** pass-through returns byte-identical result to a stubbed `executeTool`; **awaited fail-open** (telemetry throws → tool result still returned); `effect` classification (read/write/mcp→external/unmapped→unknown); deterministic outcome parser (`{ok:false}`→error+generic class, `{ok:true}`→success, non-envelope→success); `structuralMeta` stores only keys/sizes, **never values/titles/messages**; contract carries actor=AGENT + initiator separate.
+- **Integration (extend `lib/activity/activity-event.test.ts`, env-guarded):** a READ invocation and a WRITE invocation each write **exactly one** `source=GATEWAY` row with correct `effect`, `executionId`, `contractId` (== sourceId), `outcome`, `durationMs`, and **no raw content**; a duplicate telemetry write with the same `contractId` is idempotent (unique `(source,sourceId)`); a task run uses `TaskAttempt.id` as `executionId`; `runToolLoopStream`→`runToolLoop` fallback keeps the **same** executionId.
+- **No-bypass guard:** assert `executeTool` has exactly one production caller (the gateway) — grep-style check + a core.ts routing test.
+- **Public-surface leak test:** a customer-path tool call writes server-side GATEWAY telemetry but the SSE response to the customer is unchanged (no tool names/metadata/errors).
 
 ## 16. Exact files expected to change
-- **NEW** `lib/agent/gateway.ts` (+ optional `lib/agent/redact.ts`).
-- `lib/agent/core.ts` — replace the two `executeTool(...)` calls (`:141`, `:202`) with `runToolThroughGateway(...)`; extend `ToolLoopArgs` (`:76`) with `meta?: ExecutionMeta`; generate/thread `executionId`.
-- Entry points populate `ExecutionMeta`: `lib/agent/run.ts` (~`:175`), `lib/agent/public-chat.ts` (~`:196`), `lib/agent/task.ts` (~`:127`, reuse `TaskAttempt.id`), `lib/agent/sandbox.ts` (~`:83`).
-- **NEW** tests (§15). Optional flag field in `prisma/schema.prisma` `PlatformSettings` **only if** per-tenant is wanted (else env-only → no schema change).
-- **NO change** to `lib/agent/tools.ts` `executeTool`, tool names/schemas, `getToolsForAgent`, prompts, or `ActivityEvent` schema (PR-1 columns suffice).
+- **NEW** `lib/agent/gateway.ts` (gateway + `structuralMeta` + `effectFor` + `parseOutcome`).
+- `lib/agent/core.ts` — replace both `executeTool(...)` calls (`:141`, `:202`) with `runToolThroughGateway(...)`; extend `ToolLoopArgs` (`:76`) with `meta: ExecutionMeta`; ensure `runToolLoopStream`'s fallback (`:165`) forwards the **same** meta.
+- Entry points build `ExecutionMeta` + generate/pass `executionId`: `lib/agent/run.ts` (~`:175`, initiator HUMAN+userId, surface internal), `lib/agent/public-chat.ts` (~`:196`, initiator CUSTOMER no userId, surface customer), `lib/agent/sandbox.ts` (~`:83`, initiator HUMAN), `lib/agent/task.ts` (`:127`; **and change the `TaskAttempt.create` at `:89` to `select:{id:true}`** and use `attempt.id` as executionId; initiator SYSTEM).
+- **NEW** tests (§15).
+- **NO change** to `lib/agent/tools.ts` `executeTool`/schemas, `getToolsForAgent`, prompts, permissions, or `prisma/schema.prisma` (PR-1 columns + unique suffice; env flag only).
 
 ## 17. Acceptance criteria
-1. Flag off → behavior byte-identical (no extra writes, no latency); CI green.
-2. Flag on → material tool calls produce exactly one `source=GATEWAY` ActivityEvent with correct `executionId`, `capability`, `outcome`, `durationMs`; reads produce none.
-3. Tool results returned to the LLM are unchanged for every tool (pass-through).
-4. Telemetry/instrumentation failure never turns a successful tool into a failure.
-5. Customer-facing responses unchanged; no tool names/args/metadata/internal errors leak to the storefront.
-6. No secrets/PII/payment/file/MCP-opaque data stored in ActivityEvent.
-7. No new agent abilities; permissions/prompts/tasks unchanged. `tsc` + full suite green.
+1. **Permanent chokepoint:** `core.ts` routes tool execution only through `runToolThroughGateway`; **`executeTool` has exactly one production caller (the gateway)** — verified by grep + test. The telemetry flag never bypasses the gateway.
+2. Every tool invocation (incl. reads) writes exactly one `source=GATEWAY` ActivityEvent with `sourceId=contractId`, correct `effect`, `executionId`, `outcome`, `durationMs`.
+3. **Actor vs initiator:** rows have `actorType=AGENT`, `actorId=agentId`; initiator stored in metadata only when reliable; customer runs carry no initiator userId.
+4. `executionId` is generated once per run (or = `TaskAttempt.id`) and is **identical** across the `runToolLoopStream→runToolLoop` fallback; each invocation has its own `contractId`.
+5. Telemetry write is **awaited + fail-open**: a telemetry failure never fails a successful tool.
+6. **No raw content** stored: no args/results/titles/names/snippets/error messages; only structural metadata.
+7. Idempotent telemetry: duplicate contract write → no duplicate row (`@@unique([source,sourceId])`).
+8. Pass-through: tool names/arg schemas/results-to-LLM/permissions/prompts/customer-facing behavior unchanged; no data leaks to the storefront. `tsc` + full CI green. No schema change.
 
-## 18. Rollback strategy
-Flag off → instant revert to direct `executeTool` (zero effect). Additive code + (optional) additive column → a clean PR revert with no data migration. ActivityEvent GATEWAY rows are inert history.
+## 18. Rollback
+- Telemetry flag off → gateway path still runs (chokepoint preserved), no rows written.
+- Full revert → removing the gateway restores `core → executeTool` (and reverts the `task.ts` `select:{id:true}` line). Additive, no schema/data migration. GATEWAY rows are inert history.
 
-## 19. Explicit non-goals (must NOT appear in PR-2)
-Enforcement stages (tenantAssert, capability policy, autonomy levels, budgets, approvals, idempotency, credential broker) — **absent/inactive**; `AgentExecution` DB model; timeouts; DLP/content scanning; a capability registry; any read-surface consuming ActivityEvent; changes to tool names/args/results/prompts/permissions; workflow engine; the queued Agent-Intelligence-Reliability work (TD-2).
+## 19. Explicit non-goals
+Enforcement (tenantAssert, capability policy, autonomy levels, budgets, approvals, idempotency, credential broker) — designed as insertion points, **inactive**; `AgentExecution` DB model; timeouts; DLP/content scanning; capability registry; read-surface consuming ActivityEvent; changes to tool names/args/results/prompts/permissions; workflow engine; **material-only filtering (we log all)**; TD-2 (Agent-Intelligence-Reliability).
 
 ## 20. Over-engineering flags → simpler alternative
-| Tempting | Simpler PR-2 choice |
+| Tempting | PR-2 choice |
 |---|---|
-| `AgentExecution` DB model now | Runtime `executionId` (reuse `TaskAttempt.id` for tasks); persist only on `ActivityEvent.executionId` |
-| Start + completed events per tool | One terminal event per **material** action |
-| Log every tool call incl. reads | Material-only by default (`const` set); reads off/sampled |
-| Full arg/result capture + DLP | Minimal redacted envelope (keys, sizes, outcome); MCP opaque |
-| Capability registry for classification | A `const MATERIAL_CAPABILITIES` set (PR-6 replaces it) |
-| New `GatewayContext` type everywhere | Extend `ToolLoopArgs` with one optional `meta` object |
-| Synchronous awaited audit on hot path | Best-effort, non-blocking write; proportional to material actions |
+| `AgentExecution` DB model | Runtime `executionId` (reuse `TaskAttempt.id`); persist only on `ActivityEvent.executionId` |
+| Start + completed events per tool | One terminal event per invocation |
+| Capability registry for `effect` | Small static `effectFor` map + `UNKNOWN`/`EXTERNAL` defaults (PR-6 replaces) |
+| Storing args/results + DLP | Structural metadata only (keys, sizes, effect, outcome); never values |
+| Fire-and-forget telemetry | **Awaited, fail-open** write (reliable + non-blocking to the business op) |
+| `PlatformSettings` flag field | Env flag for telemetry write only; gateway path unconditional |
+| Feature-flag-off bypass of the gateway | Gateway is permanent; only the telemetry write is toggleable |
 
 ---
 
-*Design only. No code, no migration. Awaiting review before implementing PR-2. Enforcement stays for later PRs; the Agent-Intelligence-Reliability issue remains queued (TD-2) and untouched.*
+*Rev 2 — design only. No code, no migration. Enforcement stays for later PRs; TD-2 remains queued and untouched.*
