@@ -1590,6 +1590,80 @@ model TimelineEvent {
 }
 
 // ========================================
+// UNIFIED ACTIVITY LOG (Phase 0 / PR-1)
+// ========================================
+// One stream for human, agent and system actions. Phase 0 PR-1 only STARTS
+// capturing into it via DB triggers that dual-write from the existing AuditLog
+// (human/super-admin) and TimelineEvent (agent/system) tables — see
+// prisma/migrations/*_activity_event/migration.sql. No read surface consumes it
+// yet; it introduces no new behavior. Deliberately FK-light (companyId/actorId
+// are plain strings, actorId is polymorphic across User|Agent) so it can be a
+// high-volume, append-only, retention-managed table that outlives deleted
+// entities. `occurredAt` = when the source event happened; `recordedAt` = when
+// this row was written (they diverge for backfills). Correlation ids are nullable
+// now and populated by later PRs (goal → task → execution → tool action lineage).
+enum ActivityActorType {
+  HUMAN
+  AGENT
+  SYSTEM
+}
+
+enum ActivitySource {
+  AUDIT_LOG // dual-written from AuditLog
+  TIMELINE // dual-written from TimelineEvent
+  GATEWAY // reserved: direct writes from the Tool Gateway (PR-2+)
+}
+
+model ActivityEvent {
+  id String @id @default(cuid())
+
+  // Provenance + idempotent identity (dual-write / backfill dedup).
+  source   ActivitySource
+  sourceId String? // originating AuditLog/TimelineEvent id; null for future GATEWAY rows
+
+  // Tenant (nullable: AuditLog rows may have no company; platform/system events).
+  companyId String?
+
+  // Actor — polymorphic (userId | agentId | null). No FK; type disambiguates.
+  actorType ActivityActorType
+  actorId   String?
+
+  // What happened.
+  action     String // TimelineEventType value, audit action string, or capability id (later)
+  entityType String?
+  entityId   String?
+  summary    String? @db.Text
+
+  // Execution lineage (nullable in PR-1; populated by later PRs).
+  goalId      String?
+  taskId      String?
+  executionId String?
+  sessionId   String?
+  contractId  String?
+
+  // Decision / cost / outcome slots (null in PR-1; gateway + economics fill later).
+  decision String?
+  cost     Json?
+  outcome  Json?
+
+  // Request context (from AuditLog today).
+  ipAddress String?
+  userAgent String?
+  metadata  Json?
+
+  // Temporal semantics: when it happened vs when we recorded it.
+  occurredAt DateTime
+  recordedAt DateTime @default(now())
+
+  @@unique([source, sourceId])
+  @@index([companyId, occurredAt])
+  @@index([actorType, actorId])
+  @@index([entityType, entityId])
+  @@index([taskId])
+  @@index([executionId])
+}
+
+// ========================================
 // API SETTINGS (BYOK)
 // ========================================
 
