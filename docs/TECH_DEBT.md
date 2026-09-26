@@ -29,3 +29,23 @@ as the actor (HUMAN) and keep the agent as the subject/`entityId`. At that point
 entityType = 'Agent', entityId = <agentId>`. No backfill of historical rows is required.
 
 **Status:** OPEN. Owner: approval-lineage PR.
+
+---
+
+## TD-2 — Agent Intelligence Reliability (QUEUED — explicitly not started)
+
+**What:** A tracked, deferred workstream on agent answer quality/reliability, to be
+scheduled after the Phase-0 foundation PRs. Do **not** start it during PR-2 or the
+other gateway/enforcement PRs. Covers:
+- hallucinated business facts (agents stating figures/policies not backed by tools/data);
+- stale agent names (referring to agents/roles that changed or no longer exist);
+- Task-vs-Booking confusion (conflating `Task` `APPOINTMENT`/`REMINDER` with `Booking`);
+- over-questioning (asking the owner for details the agent can derive via its tools);
+- tool-first business queries (answer owner data questions by calling the right tool, not guessing);
+- authoritative-data policy (which source is the source of truth per fact class);
+- memory hygiene (recall threshold, scope enforcement, provider-independent embeddings — see the memory-hardening note in `docs/PHASE_0_TECHNICAL_DESIGN.md §13`; the vector index already exists, do NOT re-add it).
+
+**Why deferred:** foundations (observability, tenant enforcement, policy, economics,
+idempotency) come first; reliability work builds on the gateway + business-state/memory layers.
+
+**Status:** QUEUED. Not scheduled to a PR yet. Do not lose.
