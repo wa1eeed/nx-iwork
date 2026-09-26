@@ -47,8 +47,16 @@ jobs:
           node-version: 20
           cache: npm
 
+      # NOTE: the committed package-lock.json was generated on macOS, so `npm ci`
+      # hits the known npm optional-deps bug (npm/cli#4828) and omits the Linux
+      # rollup native binary (@rollup/rollup-linux-x64-gnu), which makes vitest fail
+      # to start. The reliable fix on a Linux runner is to drop the lockfile and
+      # reinstall so the correct platform optionals are fetched. Runner-only — the
+      # committed lockfile is untouched.
       - name: Install deps
-        run: npm ci --legacy-peer-deps || npm install --legacy-peer-deps
+        run: |
+          rm -rf node_modules package-lock.json
+          npm install --legacy-peer-deps --no-audit --no-fund
 
       - name: Prisma generate
         run: npx prisma generate
