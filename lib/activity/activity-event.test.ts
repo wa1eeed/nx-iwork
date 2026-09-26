@@ -18,6 +18,7 @@ run('ActivityEvent dual-write (Postgres triggers)', () => {
   let companyA = '';
   let companyB = '';
   let agentId = '';
+  let userId = ''; // a REAL User row — AuditLog.userId is a FK, so non-null cases need it.
 
   beforeAll(async () => {
     const a = await db.company.create({ data: { name: 'A', slug: `${tag}-a` }, select: { id: true } });
@@ -30,25 +31,34 @@ run('ActivityEvent dual-write (Postgres triggers)', () => {
       select: { id: true },
     });
     agentId = agent.id;
+    const user = await db.user.create({ data: { name: 'Tester', email: `${tag}@test.local`, password: 'x' }, select: { id: true } });
+    userId = user.id;
   });
 
   afterAll(async () => {
-    // Company cascade removes departments/agents/timeline; ActivityEvent is FK-light, prune by tag.
-    await db.$executeRawUnsafe(`DELETE FROM "ActivityEvent" WHERE "companyId" IN ($1,$2)`, companyA, companyB);
+    // Deterministic teardown, child-before-parent, so no test rows survive to
+    // contaminate other cases. ActivityEvent is FK-light (delete by companyId).
+    await db.activityEvent.deleteMany({ where: { companyId: { in: [companyA, companyB] } } });
+    await db.auditLog.deleteMany({ where: { companyId: { in: [companyA, companyB] } } });
+    await db.timelineEvent.deleteMany({ where: { companyId: { in: [companyA, companyB] } } });
+    await db.agent.deleteMany({ where: { companyId: { in: [companyA, companyB] } } });
+    await db.department.deleteMany({ where: { companyId: { in: [companyA, companyB] } } });
     await db.company.deleteMany({ where: { id: { in: [companyA, companyB] } } });
+    await db.user.deleteMany({ where: { id: userId } });
     await db.$disconnect();
   });
 
   it('AuditLog with userId → HUMAN', async () => {
-    const row = await db.auditLog.create({ data: { userId: 'user_x', companyId: companyA, action: 'admin.test' } });
+    const row = await db.auditLog.create({ data: { userId, companyId: companyA, action: 'admin.test' } });
     const ev = await db.activityEvent.findUnique({ where: { source_sourceId: { source: 'AUDIT_LOG', sourceId: row.id } } });
     expect(ev?.actorType).toBe('HUMAN');
-    expect(ev?.actorId).toBe('user_x');
+    expect(ev?.actorId).toBe(userId);
     expect(ev?.action).toBe('admin.test');
     expect(ev?.companyId).toBe(companyA);
   });
 
   it('AuditLog without userId → SYSTEM', async () => {
+    // userId intentionally omitted (null) so SYSTEM attribution stays explicitly tested.
     const row = await db.auditLog.create({ data: { companyId: companyA, action: 'system.test' } });
     const ev = await db.activityEvent.findUnique({ where: { source_sourceId: { source: 'AUDIT_LOG', sourceId: row.id } } });
     expect(ev?.actorType).toBe('SYSTEM');
@@ -68,6 +78,7 @@ run('ActivityEvent dual-write (Postgres triggers)', () => {
   });
 
   it('TimelineEvent without agentId → SYSTEM', async () => {
+    // agentId intentionally null → SYSTEM attribution stays explicitly tested.
     const row = await db.timelineEvent.create({ data: { companyId: companyA, type: 'SYSTEM_ALERT', title: 'sys' } });
     const ev = await db.activityEvent.findUnique({ where: { source_sourceId: { source: 'TIMELINE', sourceId: row.id } } });
     expect(ev?.actorType).toBe('SYSTEM');
@@ -83,12 +94,12 @@ run('ActivityEvent dual-write (Postgres triggers)', () => {
   });
 
   it('duplicate/backfill projection is idempotent (ON CONFLICT DO NOTHING)', async () => {
-    const row = await db.auditLog.create({ data: { userId: 'u', companyId: companyA, action: 'dup.test' } });
+    const row = await db.auditLog.create({ data: { userId, companyId: companyA, action: 'dup.test' } });
     const before = await db.activityEvent.count({ where: { source: 'AUDIT_LOG', sourceId: row.id } });
     // Re-project the same source row (simulates a backfill running while triggers are live).
     await db.$executeRawUnsafe(
       `INSERT INTO "ActivityEvent" ("id","source","sourceId","companyId","actorType","actorId","action","occurredAt")
-       SELECT gen_random_uuid()::text,'AUDIT_LOG',"id","companyId",'HUMAN','u',"action","createdAt"
+       SELECT gen_random_uuid()::text,'AUDIT_LOG',"id","companyId",'HUMAN',"userId","action","createdAt"
        FROM "AuditLog" WHERE "id"=$1 ON CONFLICT ("source","sourceId") DO NOTHING`,
       row.id,
     );
@@ -100,7 +111,7 @@ run('ActivityEvent dual-write (Postgres triggers)', () => {
   it('FAIL-OPEN: a logging failure does not break the business insert', async () => {
     await db.$executeRawUnsafe(`ALTER TABLE "ActivityEvent" ADD CONSTRAINT pr1_no_boom CHECK ("action" <> 'BOOM')`);
     try {
-      const row = await db.auditLog.create({ data: { userId: 'u', companyId: companyA, action: 'BOOM' } });
+      const row = await db.auditLog.create({ data: { userId, companyId: companyA, action: 'BOOM' } });
       // Business row committed…
       const still = await db.auditLog.findUnique({ where: { id: row.id } });
       expect(still).not.toBeNull();
@@ -113,7 +124,7 @@ run('ActivityEvent dual-write (Postgres triggers)', () => {
   });
 
   it('tenant scoping: reads filter by companyId', async () => {
-    await db.auditLog.create({ data: { userId: 'u', companyId: companyB, action: 'b.only' } });
+    await db.auditLog.create({ data: { userId, companyId: companyB, action: 'b.only' } });
     const aRows = await db.activityEvent.findMany({ where: { companyId: companyA, action: 'b.only' } });
     expect(aRows).toHaveLength(0);
   });
